@@ -1,12 +1,14 @@
 {
     "page_title": "User Manual",
-    "search_placeholder": "Search the manual...",
+    "search_placeholder": "Search this guide...",
     "toc": "Contents",
     "how_to_read": "How to use this manual",
     "on_this_page": "On this page",
     "language": "Language",
     "no_results": "No matching sections. Try another word.",
     "chapters": "Chapters",
-    "open_chapter": "Open chapter",
+    "open_chapter": "Open guide",
+    "all_guides": "All guides",
+    "figure_placeholder": "Screenshot to be added",
     "back_to_top": "Back to top"
 }

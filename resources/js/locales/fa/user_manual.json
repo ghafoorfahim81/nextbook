@@ -1,12 +1,14 @@
 {
     "page_title": "راهنمای کاربر",
-    "search_placeholder": "جستجو در راهنما...",
+    "search_placeholder": "جستجو در این راهنما...",
     "toc": "فهرست مطالب",
     "how_to_read": "این راهنما را چگونه بخوانیم",
     "on_this_page": "در این صفحه",
     "language": "زبان",
     "no_results": "بخشی یافت نشد. واژهٔ دیگری را امتحان کنید.",
     "chapters": "فصل‌ها",
-    "open_chapter": "باز کردن فصل",
+    "open_chapter": "باز کردن راهنما",
+    "all_guides": "همهٔ راهنماها",
+    "figure_placeholder": "اسکرین‌شات بعداً افزوده می‌شود",
     "back_to_top": "بازگشت به بالا"
 }

@@ -73,6 +73,7 @@ export default {
                 },
                 {
                     type: 'figure',
+                    src: '/images/user-manual/inventory/item-fields.png',
                     caption: 'فرم ثبت جنس — تب‌های معلومات عمومی، حساب‌ها و موجودی',
                     hint: 'اسکرین‌شات صفحهٔ ساختن جنس',
                 },
@@ -161,6 +162,7 @@ export default {
                 },
                 {
                     type: 'figure',
+                    src: '/images/user-manual/inventory/pricing.png',
                     caption: 'صفحهٔ قیمت‌گذاری گروهی اجناس',
                     hint: 'اسکرین‌شات صفحهٔ قیمت‌گذاری',
                 },

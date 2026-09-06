@@ -1,12 +1,14 @@
 {
     "page_title": "د کارن لارښود",
-    "search_placeholder": "په لارښود کې لټون...",
+    "search_placeholder": "په دې لارښود کې لټون...",
     "toc": "فهرست",
     "how_to_read": "دا لارښود څنګه ولولئ",
     "on_this_page": "په دې پاڼه کې",
     "language": "ژبه",
     "no_results": "هیڅ برخه ونه موندل شوه. بله کلمه وازمایئ.",
     "chapters": "څپرکي",
-    "open_chapter": "څپرکی پرانیستل",
+    "open_chapter": "لارښود پرانیستل",
+    "all_guides": "ټول لارښودونه",
+    "figure_placeholder": "سکرین‌شاټ به وروسته اضافه شي",
     "back_to_top": "بېرته پورته"
 }

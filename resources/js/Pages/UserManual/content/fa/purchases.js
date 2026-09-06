@@ -143,6 +143,7 @@ export default {
                 },
                 {
                     type: 'figure',
+                    src: '/images/user-manual/purchases/field-reference.png',
                     caption: 'فرم ثبت فاکتور خرید',
                     hint: 'اسکرین‌شات صفحهٔ ساختن خرید',
                 },
