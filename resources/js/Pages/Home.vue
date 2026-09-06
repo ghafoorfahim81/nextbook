@@ -1050,12 +1050,10 @@ function nextTerm() {
         </div>
       </section>
 
-      <!-- ── Main grid ──────────────────────────────────────────────────── -->
-      <div class="grid gap-4 xl:grid-cols-3">
-        <!-- Left column: weather + rates -->
-        <div class="space-y-4 xl:col-span-2">
-          <!-- Weather -->
-          <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <!-- ── Main grid: weather, then clock / calendar / rates ──────────── -->
+      <div class="space-y-4">
+        <!-- Weather -->
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 class="text-base font-semibold text-card-foreground">{{ t('home.weather.title') }}</h2>
@@ -1129,6 +1127,8 @@ function nextTerm() {
             </div>
           </div>
 
+        <!-- Clock · Calendar · Currency rates -->
+        <div class="grid gap-4 lg:grid-cols-3">
           <!-- Currency rates -->
           <div class="rounded-2xl border border-border bg-card shadow-sm">
             <div class="flex items-start justify-between gap-4 p-5 pb-4">
@@ -1171,10 +1171,7 @@ function nextTerm() {
               </table>
             </div>
           </div>
-        </div>
 
-        <!-- Right column: clock + calendar -->
-        <div class="space-y-4">
           <!-- Clock & dates -->
           <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div>
