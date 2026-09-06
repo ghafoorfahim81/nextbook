@@ -162,5 +162,96 @@
     "type": "Type",
     "incompatible": "Units are not compatible",
     "no_units": "No units available"
+  },
+  "journal": {
+    "title": "Journal Entry Scratchpad",
+    "description": "Draft a double-entry posting and see instantly whether it balances.",
+    "account": "Account",
+    "debit": "Debit",
+    "credit": "Credit",
+    "add_line": "Add line",
+    "remove_line": "Remove line",
+    "reset": "Reset",
+    "total_debit": "Total debit",
+    "total_credit": "Total credit",
+    "balanced": "Balanced",
+    "out_by": "Out by {amount}"
+  },
+  "depreciation": {
+    "title": "Depreciation",
+    "description": "Build a yearly schedule for a fixed asset.",
+    "cost": "Cost",
+    "salvage": "Salvage value",
+    "life": "Useful life (years)",
+    "method": "Method",
+    "straight_line": "Straight-line",
+    "declining_balance": "Declining balance",
+    "year": "Year",
+    "expense": "Expense",
+    "book_value": "Book value",
+    "hint": "Enter a cost above the salvage value to see the schedule."
+  },
+  "tax": {
+    "title": "Tax Calculator",
+    "description": "Add or peel out business receipts tax (BRT) at any rate.",
+    "mode_add": "Add tax",
+    "mode_extract": "Extract tax",
+    "amount": "Amount",
+    "rate": "Rate (%)",
+    "net": "Net",
+    "tax": "Tax",
+    "gross": "Gross"
+  },
+  "markup": {
+    "title": "Markup & Margin",
+    "description": "Work out a selling price, or the margin behind one.",
+    "from_margin": "Margin → price",
+    "from_price": "Price → margin",
+    "cost": "Cost",
+    "price": "Selling price",
+    "margin_pct": "Margin (%)",
+    "profit": "Profit",
+    "margin": "Margin",
+    "markup": "Markup",
+    "hint": "Enter a cost and a margin or price to see the result."
+  },
+  "term": {
+    "title": "Term of the Day",
+    "description": "A quick accounting refresher, one term at a time.",
+    "another": "Another term",
+    "terms": {
+      "accrual": {
+        "name": "Accrual",
+        "definition": "Recording revenue or expense when it is earned or incurred, not when cash changes hands."
+      },
+      "deferral": {
+        "name": "Deferral",
+        "definition": "Postponing recognition of cash already received or paid until the related revenue or expense belongs to the period."
+      },
+      "contra_account": {
+        "name": "Contra Account",
+        "definition": "An account that offsets a related account, such as accumulated depreciation against a fixed asset."
+      },
+      "double_entry": {
+        "name": "Double Entry",
+        "definition": "Every transaction posts equal debits and credits, so the accounting equation always stays in balance."
+      },
+      "trial_balance": {
+        "name": "Trial Balance",
+        "definition": "A list of every ledger balance used to check that total debits equal total credits before preparing statements."
+      },
+      "depreciation": {
+        "name": "Depreciation",
+        "definition": "Spreading the cost of a long-lived asset over the years it is expected to be useful."
+      },
+      "working_capital": {
+        "name": "Working Capital",
+        "definition": "Current assets minus current liabilities — the short-term funds available to run day-to-day operations."
+      },
+      "fifo": {
+        "name": "FIFO",
+        "definition": "First-in, first-out: the earliest stock purchased is treated as the first sold when costing inventory."
+      }
+    }
   }
 }
