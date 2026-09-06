@@ -28,5 +28,6 @@
     "upload_logo": "بارگذاری لوگو",
     "upload_logo_description": "PNG, JPG, GIF حداکثر 2 مگابایت",
     "logo_can_be_updated_in_edit_mode": "لوگو می تواند در حالت ویرایش به روز شود",
+    "invoice_designer_view_only": "برای تغییر قالب فاکتور شرکت روی ویرایش کلیک کنید. از اینجا می‌توانید قالب‌ها را پیش‌نمایش کنید.",
     "costing_method": "روش محاسبه هزینه"
 }

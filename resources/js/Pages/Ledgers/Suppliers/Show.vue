@@ -14,6 +14,7 @@ import PhotoUpload from '@/Components/next/PhotoUpload.vue';
 import LedgerStatement from '@/Components/ledger/LedgerStatement.vue';
 import LedgerCurrencyBalances from '@/Components/ledger/LedgerCurrencyBalances.vue';
 import LedgerOpenItems from '@/Components/ledger/LedgerOpenItems.vue';
+import { printDocument } from '@/composables/usePrintDocument';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
@@ -57,7 +58,7 @@ const exportUrl = (list) => route('suppliers.export', {
 
 const openPrint = (routeName, id) => {
     if (!routeName || !id) return;
-    window.open(route(routeName, id), '_blank');
+    printDocument(route(routeName, id));
 };
 
 const openTransaction = (routeName, id) => {

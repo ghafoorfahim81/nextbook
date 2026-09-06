@@ -14,6 +14,7 @@ import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paym
 import { getCreditSummary } from '@/composables/useCreditLimit';
 import AttachmentList from '@/Components/AttachmentList.vue';
 import PhotoUpload from '@/Components/next/PhotoUpload.vue';
+import { printDocument } from '@/composables/usePrintDocument';
 
 const props = defineProps({
     customer: { type: Object, required: true },
@@ -57,7 +58,7 @@ const exportUrl = (list) => route('customers.export', {
 
 const openPrint = (routeName, id) => {
     if (!routeName || !id) return;
-    window.open(route(routeName, id), '_blank');
+    printDocument(route(routeName, id));
 };
 
 const openTransaction = (routeName, id) => {

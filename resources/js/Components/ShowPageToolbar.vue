@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/Components/ui/button'
 import { ArrowLeft, Printer, Download, SquarePen } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import { printDocument } from '@/composables/usePrintDocument'
 
 const { t } = useI18n()
 const { can } = useAuth()
@@ -60,12 +61,10 @@ const canEdit = () => {
                     {{ t('report.export_excel') }}
                 </Button>
             </a>
-            <a v-if="printUrl" :href="printUrl" target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm">
-                    <Printer class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {{ t('general.print') }}
-                </Button>
-            </a>
+            <Button v-if="printUrl" type="button" variant="outline" size="sm" @click="printDocument(printUrl)">
+                <Printer class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                {{ t('general.print') }}
+            </Button>
             <Button
                 v-if="canEdit()"
                 variant="default"

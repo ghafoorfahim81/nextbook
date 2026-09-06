@@ -31,6 +31,7 @@ const props = defineProps({
   currentTheme:        { type: String, default: 'format1' },
   searchQuery:         { type: String, default: '' },
   searchToken:         { type: String, default: '' },
+  editable:            { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['selectTheme'])
@@ -48,8 +49,39 @@ const formats    = ref([...props.invoiceFormats])
 const selected   = ref(null)   // id of selected (custom) format, or null
 const editing    = ref(false)  // is a custom format editor open?
 const previewOpen = ref(false)
+const builtinPreviewOpen = ref(false)
+const previewedTheme = ref(null)
 const saving     = ref(false)
 const delConfirm = ref(false)
+
+watch(() => props.invoiceFormats, (value) => {
+  formats.value = [...(value ?? [])]
+})
+
+watch(() => props.editable, (value) => {
+  if (!value) {
+    editing.value = false
+  }
+})
+
+const themeLabel = (theme) => theme?.name ? t(theme.name, theme.id) : (theme?.id ?? '')
+
+const builtinThemeById = (id) => props.invoiceThemes.find((theme) => theme.id === id) ?? null
+previewedTheme.value = builtinThemeById(props.currentTheme)
+
+const openBuiltin = (theme) => {
+  previewedTheme.value = theme
+  editing.value = false
+  selected.value = null
+  if (props.editable) {
+    selectTheme(theme.id)
+  }
+}
+
+const openBuiltinPreview = (theme) => {
+  previewedTheme.value = theme
+  builtinPreviewOpen.value = true
+}
 
 // The working copy of the format being edited/created
 const draft = reactive({
@@ -257,13 +289,20 @@ const resetDraft = () => {
 
 // ─── actions ─────────────────────────────────────────────────────────────────
 const openNew = () => {
+  if (!props.editable) return
   resetDraft()
   editing.value = true
   selected.value = null
+  previewedTheme.value = null
 }
 
 const openEdit = (fmt) => {
   loadDraft(fmt)
+  previewedTheme.value = null
+  if (!props.editable) {
+    previewOpen.value = true
+    return
+  }
   editing.value = true
   selected.value = fmt.id
 }
@@ -293,6 +332,7 @@ const payload = () => ({
 })
 
 const save = async () => {
+  if (!props.editable) return
   if (!draft.name.trim()) { toast.error(t('preferences.invoice_designer.name_required')); return }
   saving.value = true
   try {
@@ -319,9 +359,9 @@ const save = async () => {
   }
 }
 
-const confirmDelete = () => { delConfirm.value = true }
+const confirmDelete = () => { if (props.editable) delConfirm.value = true }
 const doDelete = async () => {
-  if (!draft.id) return
+  if (!props.editable || !draft.id) return
   try {
     await axios.delete(`/invoice-formats/${draft.id}`)
     formats.value = formats.value.filter(f => f.id !== draft.id)
@@ -334,6 +374,7 @@ const doDelete = async () => {
 }
 
 const cloneFormat = async (fmt) => {
+  if (!props.editable) return
   try {
     const { data } = await axios.post(`/invoice-formats/${fmt.id}/clone`)
     formats.value.push(data.data)
@@ -345,6 +386,7 @@ const cloneFormat = async (fmt) => {
 }
 
 const setDefault = async (fmt) => {
+  if (!props.editable) return
   try {
     const { data } = await axios.patch(`/invoice-formats/${fmt.id}/set-default`)
     formats.value.forEach(f => { f.is_default = f.id === fmt.id })
@@ -354,7 +396,10 @@ const setDefault = async (fmt) => {
   }
 }
 
-const selectTheme = (themeId) => { emit('selectTheme', themeId) }
+const selectTheme = (themeId) => {
+  if (!props.editable) return
+  emit('selectTheme', themeId)
+}
 
 // ─── preview sample data ─────────────────────────────────────────────────────
 const sampleInvoice = {
@@ -426,17 +471,34 @@ const paperLabel = computed(() => {
       <!-- Built-in formats -->
       <div>
         <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{{ t('preferences.invoice_designer.builtin_formats') }}</p>
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-2">
           <button
             v-for="theme in invoiceThemes"
             :key="theme.id"
-            class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-start transition-colors hover:bg-accent"
-            :class="currentTheme === theme.id ? 'border-primary bg-accent font-medium' : 'border-transparent'"
-            @click="selectTheme(theme.id)"
+            type="button"
+            class="flex items-center gap-2 rounded-lg border px-2 py-2 text-sm text-start transition-colors hover:bg-accent"
+            :class="currentTheme === theme.id || previewedTheme?.id === theme.id ? 'border-primary bg-accent font-medium' : 'border-transparent'"
+            @click="openBuiltin(theme)"
           >
-            <FileText class="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span class="flex-1 truncate">{{ theme.name ? $t(theme.name, theme.id) : theme.id }}</span>
+            <img
+              v-if="theme.preview_url"
+              :src="theme.preview_url"
+              :alt="themeLabel(theme)"
+              class="h-14 w-10 shrink-0 rounded border bg-muted object-cover object-top"
+            />
+            <FileText v-else class="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span class="flex-1 truncate">{{ themeLabel(theme) }}</span>
             <span v-if="currentTheme === theme.id" class="text-xs text-primary font-medium">{{ t('preferences.invoice_designer.active') }}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="h-7 w-7 shrink-0"
+              :title="t('preferences.invoice_designer.preview')"
+              @click.stop="openBuiltinPreview(theme)"
+            >
+              <Eye class="h-3.5 w-3.5" />
+            </Button>
           </button>
         </div>
       </div>
@@ -445,7 +507,7 @@ const paperLabel = computed(() => {
       <div>
         <div class="flex items-center justify-between mb-2">
           <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ t('preferences.invoice_designer.custom_formats') }}</p>
-          <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" @click="openNew">
+          <Button v-if="editable" variant="ghost" size="sm" class="h-6 px-2 text-xs" @click="openNew">
             <Plus class="h-3 w-3 mr-1" /> {{ t('preferences.invoice_designer.new') }}
           </Button>
         </div>
@@ -476,9 +538,46 @@ const paperLabel = computed(() => {
     <!-- ── RIGHT: Editor ─────────────────────────────────── -->
     <div class="flex-1 min-w-0">
 
+      <!-- Built-in preview -->
+      <div
+        v-if="!editing && previewedTheme"
+        class="flex h-full flex-col gap-4 rounded-xl border bg-muted/20 p-4"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-medium">{{ themeLabel(previewedTheme) }}</p>
+            <p class="text-sm text-muted-foreground">
+              {{ currentTheme === previewedTheme.id
+                ? t('preferences.invoice_designer.active')
+                : t('preferences.sale.preview_hint')
+              }}
+            </p>
+          </div>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" @click="openBuiltinPreview(previewedTheme)">
+              <Eye class="h-4 w-4 mr-2" /> {{ t('preferences.invoice_designer.preview') }}
+            </Button>
+            <Button
+              v-if="editable && currentTheme !== previewedTheme.id"
+              size="sm"
+              @click="selectTheme(previewedTheme.id)"
+            >
+              <Printer class="h-4 w-4 mr-2" /> {{ t('preferences.invoice_designer.use_for_printing') }}
+            </Button>
+          </div>
+        </div>
+        <div class="overflow-hidden rounded-lg border bg-background">
+          <img
+            :src="previewedTheme.preview_url"
+            :alt="themeLabel(previewedTheme)"
+            class="max-h-[70vh] w-full object-contain object-top"
+          />
+        </div>
+      </div>
+
       <!-- Empty state -->
       <div
-        v-if="!editing"
+        v-else-if="!editing"
         class="flex h-full flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-12 text-center text-muted-foreground"
       >
         <Layout class="h-12 w-12 opacity-30" />
@@ -486,7 +585,7 @@ const paperLabel = computed(() => {
           <p class="font-medium">{{ t('preferences.invoice_designer.empty_state') }}</p>
           <p class="text-sm mt-1">{{ t('preferences.invoice_designer.empty_state_hint') }}</p>
         </div>
-        <Button variant="outline" size="sm" @click="openNew">
+        <Button v-if="editable" variant="outline" size="sm" @click="openNew">
           <Plus class="h-4 w-4 mr-2" /> {{ t('preferences.invoice_designer.create') }}
         </Button>
       </div>
@@ -496,9 +595,9 @@ const paperLabel = computed(() => {
 
         <!-- Toolbar -->
         <div class="flex items-center gap-2 flex-wrap">
-          <Input v-model="draft.name" :placeholder="t('preferences.invoice_designer.format_name')" class="w-56" />
+          <Input v-model="draft.name" :placeholder="t('preferences.invoice_designer.format_name')" class="w-56" :disabled="!editable" />
 
-          <Button :disabled="saving" @click="save">
+          <Button v-if="editable" :disabled="saving" @click="save">
             <Save class="h-4 w-4 mr-2" />
             {{ saving ? t('preferences.invoice_designer.saving') : (draft.id ? t('preferences.invoice_designer.save') : t('preferences.invoice_designer.create_btn')) }}
           </Button>
@@ -508,7 +607,7 @@ const paperLabel = computed(() => {
           </Button>
 
           <Button
-            v-if="draft.id"
+            v-if="editable && draft.id"
             variant="outline"
             :class="draft.is_default ? 'text-amber-600' : ''"
             @click="draft.is_default = !draft.is_default; draft.id && setDefault({ id: draft.id })"
@@ -518,7 +617,7 @@ const paperLabel = computed(() => {
           </Button>
 
           <Button
-            v-if="draft.id"
+            v-if="editable && draft.id"
             variant="outline"
             @click="selectTheme(draft.id)"
             :title="t('preferences.invoice_designer.use_for_printing')"
@@ -529,10 +628,10 @@ const paperLabel = computed(() => {
 
           <div class="flex-1" />
 
-          <Button v-if="draft.id" variant="ghost" size="icon" title="Clone" @click="cloneFormat({ id: draft.id })">
+          <Button v-if="editable && draft.id" variant="ghost" size="icon" title="Clone" @click="cloneFormat({ id: draft.id })">
             <Copy class="h-4 w-4" />
           </Button>
-          <Button v-if="draft.id" variant="ghost" size="icon" title="Delete" class="text-destructive" @click="confirmDelete">
+          <Button v-if="editable && draft.id" variant="ghost" size="icon" title="Delete" class="text-destructive" @click="confirmDelete">
             <Trash2 class="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" title="Cancel" @click="cancelEdit">
@@ -984,6 +1083,23 @@ const paperLabel = computed(() => {
             :custom-format="previewFormat"
           />
         </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+
+  <!-- ── Built-in preview modal ── -->
+  <Dialog v-model:open="builtinPreviewOpen">
+    <DialogContent class="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{{ previewedTheme ? themeLabel(previewedTheme) : t('preferences.sale.invoice_theme') }}</DialogTitle>
+        <DialogDescription>{{ t('preferences.sale.preview_dialog_description') }}</DialogDescription>
+      </DialogHeader>
+      <div v-if="previewedTheme" class="mt-3 overflow-hidden rounded-xl border bg-muted/30">
+        <img
+          :src="previewedTheme.preview_url"
+          :alt="themeLabel(previewedTheme)"
+          class="max-h-[75vh] w-full object-contain object-top"
+        />
       </div>
     </DialogContent>
   </Dialog>

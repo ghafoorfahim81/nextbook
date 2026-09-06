@@ -759,17 +759,23 @@ const setCalendarLocaleStorage = (selected) => {
                 </div>
             </div>
 
-            <section v-if="can('companies.update')" class="mt-6 rounded-lg border border-border bg-card shadow-sm">
+            <section class="mt-6 rounded-lg border border-border bg-card shadow-sm">
                 <div class="border-b border-border p-6">
                     <h2 class="text-lg font-semibold text-foreground">{{ t('preferences.tabs.invoice_designer') }}</h2>
-                    <p class="mt-1 text-sm text-muted-foreground">{{ t('preferences.invoice_designer.select_help') }}</p>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        {{ isEditing
+                            ? t('preferences.invoice_designer.select_help')
+                            : t('company.invoice_designer_view_only')
+                        }}
+                    </p>
                 </div>
-                <div class="p-6">
+                <div class="p-6" :class="isEditing ? '' : 'pointer-events-auto'">
                     <InvoiceDesigner
                         :invoice-themes="invoiceThemes"
                         :invoice-formats="invoiceFormats"
                         :invoice-format-defaults="invoiceFormatDefaults"
                         :current-theme="currentInvoiceTheme"
+                        :editable="isEditing"
                         @select-theme="selectInvoiceTheme"
                     />
                 </div>
