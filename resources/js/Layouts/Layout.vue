@@ -107,6 +107,7 @@ import PageLoadingOverlay from '@/Components/next/PageLoadingOverlay.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon, Home } from 'lucide-vue-next'
 // @ts-ignore - Vue SFC default export shim
 import NotificationDropdown from '@/Components/notifications/NotificationDropdown.vue'
+import ManualWelcomeDialog from '@/Components/Onboarding/ManualWelcomeDialog.vue'
 import GlobalSearch from '@/Components/GlobalSearch.vue'
 import QuickLinks from '@/Components/next/QuickLinks.vue'
 const { t } = useI18n()
@@ -876,6 +877,7 @@ function logout() {
         :position="isRTL ? 'bottom-left' : 'bottom-right'"
     />
     <PageLoadingOverlay />
+    <ManualWelcomeDialog />
     <SidebarProvider v-model:open="sidebarOpen" :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>

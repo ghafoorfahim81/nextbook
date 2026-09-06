@@ -71,6 +71,7 @@ Route::middleware([
     Route::post('/notifications/bulk', [NotificationController::class, 'bulk'])->name('notifications.bulk');
     Route::get('/whats-new', fn () => Inertia::render('WhatsNew'))->name('whats-new');
     Route::get('/user-manual', fn () => Inertia::render('UserManual/Index'))->name('user-manual');
+    Route::post('/onboarding/manual-prompt/dismiss', [\App\Http\Controllers\OnboardingController::class, 'dismissManualPrompt'])->name('onboarding.manual-prompt.dismiss');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.unread');
     Route::post('/notifications/{notification}/favorite', [NotificationController::class, 'toggleFavorite'])->name('notifications.favorite');
