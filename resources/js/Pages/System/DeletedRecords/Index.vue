@@ -228,15 +228,15 @@ function daysBadgeClass(daysRemaining) {
     <Head :title="t('deleted_records.title')" />
 
     <div class="space-y-6 text-foreground">
-      <section class="overflow-hidden rounded-[30px] border border-border/70 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950 p-6 text-white shadow-[0_20px_50px_rgba(15,23,42,0.35)]">
+      <section class="overflow-hidden rounded-[30px] border border-violet-200/70 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100 p-6 text-foreground shadow-sm dark:border-border/70 dark:from-slate-950 dark:via-slate-900 dark:to-violet-950 dark:text-white dark:shadow-[0_20px_50px_rgba(15,23,42,0.35)]">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="space-y-2">
-            <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur">
+            <div class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white/70 px-3 py-1 text-xs font-medium text-violet-700 backdrop-blur dark:border-white/10 dark:bg-white/10 dark:text-white/80">
               <Trash2 class="h-3.5 w-3.5" />
               {{ t('deleted_records.badge') }}
             </div>
             <h1 class="text-3xl font-semibold tracking-tight">{{ t('deleted_records.title') }}</h1>
-            <p class="max-w-3xl text-sm leading-7 text-white/75">{{ t('deleted_records.subtitle') }}</p>
+            <p class="max-w-3xl text-sm leading-7 text-muted-foreground dark:text-white/75">{{ t('deleted_records.subtitle') }}</p>
           </div>
         </div>
       </section>

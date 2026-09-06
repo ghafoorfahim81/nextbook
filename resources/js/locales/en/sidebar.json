@@ -11,6 +11,7 @@
     "purchase": "Purchase",
     "sale": "Sale",
     "ledger": "Ledger",
+    "cash_transactions": "Cash Transactions",
     "receipt": "Receipt",
     "payment": "Payment",
     "transfer": "Account Transfers",
