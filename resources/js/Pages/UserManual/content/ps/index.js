@@ -5,7 +5,11 @@ import inventory from './inventory'
 import accounting from './accounting'
 import cash from './cash'
 import expenses from './expenses'
-import hr from './hr'
+import employees from './employees'
+import attendance from './attendance'
+import leave from './leave'
+import payroll from './payroll'
+import recruitment from './recruitment'
 import reports from './reports'
 import administration from './administration'
 
@@ -18,5 +22,20 @@ export default {
         howToRead:
             'د خپل لارښود لپاره لاندې لړلیک څخه یو ماژول وټاکئ. که نوی یاست، له «پیل او عمومي کتنه» پیل وکړئ. هر لارښود خپل د څپرکو فهرست لري او په یوازې توګه لوستل کېږي.',
     },
-    guides: [overview, sales, purchases, inventory, accounting, cash, expenses, hr, reports, administration],
+    guides: [
+        overview,
+        sales,
+        purchases,
+        inventory,
+        accounting,
+        cash,
+        expenses,
+        employees,
+        attendance,
+        leave,
+        payroll,
+        recruitment,
+        reports,
+        administration,
+    ],
 }

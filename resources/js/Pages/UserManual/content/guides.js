@@ -15,7 +15,11 @@ export const GUIDE_META = [
     { id: 'accounting', icon: 'Calculator', accent: 'rose' },
     { id: 'cash', icon: 'ArrowLeftRight', accent: 'teal' },
     { id: 'expenses', icon: 'ReceiptText', accent: 'orange' },
-    { id: 'hr', icon: 'Users', accent: 'indigo' },
+    { id: 'employees', icon: 'UsersRound', accent: 'indigo' },
+    { id: 'attendance', icon: 'CalendarClock', accent: 'sky' },
+    { id: 'leave', icon: 'Palmtree', accent: 'emerald' },
+    { id: 'payroll', icon: 'Banknote', accent: 'amber' },
+    { id: 'recruitment', icon: 'UserPlus', accent: 'violet' },
     { id: 'reports', icon: 'BarChart3', accent: 'cyan' },
     { id: 'administration', icon: 'Building2', accent: 'slate' },
 ]
