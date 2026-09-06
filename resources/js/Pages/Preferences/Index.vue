@@ -20,9 +20,8 @@ import { toast } from 'vue-sonner';
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
-    Save, Plug, Eye, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText
+    Save, Plug, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText
 } from 'lucide-vue-next'
-import InvoiceDesigner from '@/Pages/Preferences/InvoiceDesigner.vue'
 import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode } from '@/lib/theme'
 import { vHighlightSearch } from '@/directives/highlightSearch'
 import { stringsMatchQuery, tabSearchValues, translateSearchKeys } from '@/Pages/Preferences/preferenceSearchIndex'
@@ -39,9 +38,6 @@ const props = defineProps({
     sizes: { type: [Array, Object], required: true },
     currencies: { type: [Array, Object], required: true },
     ledgers: { type: [Array, Object], required: true },
-    invoiceThemes:         { type: Array,  required: true },
-    invoiceFormats:        { type: Array,  default: () => [] },
-    invoiceFormatDefaults: { type: Object, default: () => ({}) },
     soundOptions:          { type: Object, default: () => ({}) },
 })
 
@@ -73,7 +69,6 @@ const tabs = [
     { id: 'backup', label: 'preferences.tabs.backup', icon: Database },
     { id: 'localization', label: 'preferences.tabs.localization', icon: Globe },
     { id: 'display', label: 'preferences.tabs.display', icon: Monitor },
-    { id: 'invoice_designer', label: 'preferences.tabs.invoice_designer', icon: FileText },
 ]
 
 const tabSearchTerms = {
@@ -400,7 +395,6 @@ const allWarehouses = computed(() => props.warehouses?.data ?? props.warehouses 
 const allSizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const allCurrencies = computed(() => props.currencies?.data ?? props.currencies ?? [])
 const allLedgers = computed(() => props.ledgers?.data ?? props.ledgers ?? [])
-const invoiceThemes = computed(() => props.invoiceThemes ?? [])
 
 const customerLedgers = computed(() => allLedgers.value.filter(l => l.type === 'customer'))
 const supplierLedgers = computed(() => allLedgers.value.filter(l => l.type === 'supplier'))
@@ -581,24 +575,6 @@ const saleTransactionTypes = ['sale', 'sale_order', 'sale_return', 'sale_quotati
 const purchaseTransactionTypes = ['purchase', 'purchase_order', 'purchase_return', 'purchase_quotation']
 const activeSaleType = ref('sale')
 const activePurchaseType = ref('purchase')
-const previewInvoiceTheme = ref(null)
-const invoiceThemePreviewOpen = ref(false)
-
-const selectedInvoiceTheme = computed(() => {
-    return invoiceThemes.value.find(theme => theme.id === form.sale?.invoice_theme) ?? invoiceThemes.value[0] ?? null
-})
-
-const selectInvoiceTheme = (themeId) => {
-    if (!form.sale) form.sale = {}
-    form.sale.invoice_theme = themeId
-}
-
-const openInvoiceThemePreview = (theme) => {
-    previewInvoiceTheme.value = theme
-    invoiceThemePreviewOpen.value = true
-}
-
-const invoiceThemeLabel = (theme) => t(theme?.name ?? '')
 
 const generalFields = [
     { key: 'number', label: 'preferences.fields.number' },
@@ -776,7 +752,6 @@ const tabSearchExtras = computed(() => ({
             ...sharedFieldLabelKeys.value,
             ...saleTransactionTypes.map((type) => `preferences.sale.types.${type}`),
         ]),
-        ...(props.invoiceThemes ?? []).flatMap((theme) => [t(theme?.name ?? ''), theme?.id]),
         ...(tabSearchTerms.sale ?? []),
     ],
     purchase: [
@@ -850,10 +825,6 @@ const tabSearchExtras = computed(() => ({
     display: [
         t('preferences.tabs.display'),
         ...(tabSearchTerms.display ?? []),
-    ],
-    invoice_designer: [
-        t('preferences.tabs.invoice_designer'),
-        ...(props.invoiceFormats ?? []).map((format) => format.name),
     ],
 }))
 
@@ -1266,80 +1237,6 @@ watch(normalizedMenuSearch, (query) => {
                             </template>
 
                             <template v-if="activeSaleType === 'sale'">
-                                <div class="space-y-4">
-                                    <div class="space-y-1">
-                                        <Label class="text-base font-medium">{{ t('preferences.sale.invoice_theme') }}</Label>
-                                        <p class="text-sm text-muted-foreground">
-                                            {{ t('preferences.sale.invoice_theme_description') }}
-                                        </p>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                        <div
-                                            v-for="theme in invoiceThemes"
-                                            :key="theme.id"
-                                            class="overflow-hidden rounded-xl border bg-background shadow-sm transition-all"
-                                            :class="form.sale.invoice_theme === theme.id ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'"
-                                        >
-                                            <button
-                                                type="button"
-                                                class="block w-full bg-muted/40"
-                                                @click="openInvoiceThemePreview(theme)"
-                                            >
-                                                <img
-                                                    :src="theme.preview_url"
-                                                    :alt="invoiceThemeLabel(theme)"
-                                                    class="aspect-[4/5] h-full w-full object-cover object-top transition-transform duration-200 hover:scale-[1.01]"
-                                                >
-                                            </button>
-
-                                            <div class="space-y-3 p-4">
-                                                <div class="flex items-start justify-between gap-3">
-                                                    <div>
-                                                        <p class="font-medium text-foreground">{{ invoiceThemeLabel(theme) }}</p>
-                                                        <p class="text-sm text-muted-foreground">
-                                                            {{ form.sale.invoice_theme === theme.id
-                                                                ? t('preferences.sale.selected_theme')
-                                                                : t('preferences.sale.preview_hint')
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                    <span
-                                                        v-if="form.sale.invoice_theme === theme.id"
-                                                        class="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-                                                    >
-                                                        {{ t('preferences.sale.selected') }}
-                                                    </span>
-                                                </div>
-
-                                                <div class="flex gap-2">
-                                                    <Button type="button" variant="outline" size="sm" class="flex-1" @click="openInvoiceThemePreview(theme)">
-                                                        <Eye class="mr-2 h-4 w-4" />
-                                                        {{ t('preferences.sale.preview') }}
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        class="flex-1"
-                                                        :variant="form.sale.invoice_theme === theme.id ? 'default' : 'secondary'"
-                                                        @click="selectInvoiceTheme(theme.id)"
-                                                    >
-                                                        {{ form.sale.invoice_theme === theme.id
-                                                            ? t('preferences.sale.selected')
-                                                            : t('preferences.sale.select_theme')
-                                                        }}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div v-if="selectedInvoiceTheme" class="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-                                        <span class="font-medium text-foreground">{{ t('preferences.sale.current_theme') }}:</span>
-                                        {{ invoiceThemeLabel(selectedInvoiceTheme) }}
-                                    </div>
-                                </div>
-
                                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     <div class="flex items-center gap-3">
                                         <Switch
@@ -2569,46 +2466,8 @@ watch(normalizedMenuSearch, (query) => {
                         </CardContent>
                     </Card>
 
-                    <!-- Invoice Designer -->
-                    <Card v-show="activeTab === 'invoice_designer'" class="animate-in fade-in duration-200">
-                        <CardHeader>
-                            <CardTitle>{{ t('preferences.tabs.invoice_designer') }}</CardTitle>
-                            <CardDescription>{{ t('preferences.invoice_designer.select_help') }}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <InvoiceDesigner
-                                :invoice-themes="invoiceThemes"
-                                :invoice-formats="invoiceFormats"
-                                :invoice-format-defaults="invoiceFormatDefaults"
-                                :current-theme="form.sale?.invoice_theme ?? 'format1'"
-                                :search-query="normalizedMenuSearch"
-                                :search-token="activeTab"
-                                @select-theme="(id) => { selectInvoiceTheme(id); save() }"
-                            />
-                        </CardContent>
-                    </Card>
-
                 </div>
             </div>
         </div>
-
-        <Dialog :open="invoiceThemePreviewOpen" @update:open="invoiceThemePreviewOpen = $event">
-            <DialogContent v-highlight-search="preferenceSearchContext" class="max-w-5xl">
-                <DialogHeader>
-                    <DialogTitle>{{ previewInvoiceTheme ? invoiceThemeLabel(previewInvoiceTheme) : t('preferences.sale.invoice_theme') }}</DialogTitle>
-                    <DialogDescription>
-                        {{ t('preferences.sale.preview_dialog_description') }}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div v-if="previewInvoiceTheme" class="overflow-hidden rounded-xl border bg-muted/30">
-                    <img
-                        :src="previewInvoiceTheme.preview_url"
-                        :alt="invoiceThemeLabel(previewInvoiceTheme)"
-                        class="max-h-[75vh] w-full object-contain object-top"
-                    >
-                </div>
-            </DialogContent>
-        </Dialog>
     </AppLayout>
 </template>

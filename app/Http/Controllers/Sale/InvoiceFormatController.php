@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Sale;
 
 use App\Http\Controllers\Controller;
+use App\Models\Administration\Company;
 use App\Models\Sale\InvoiceFormat;
 use App\Services\ActivityLogService;
+use App\Support\Preferences\InvoiceThemeOptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,7 @@ class InvoiceFormatController extends Controller
     public function store(Request $request, ActivityLogService $activityLogService): JsonResponse
     {
         $company = $request->user()->company;
+        $this->authorize('update', $company);
 
         $validated = $this->validateFormat($request);
         $validated['company_id'] = $company->id;
@@ -54,6 +57,7 @@ class InvoiceFormatController extends Controller
     public function update(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse
     {
         $company = $request->user()->company;
+        $this->authorize('update', $company);
         abort_if($invoiceFormat->company_id !== $company->id, 403);
 
         $validated = $this->validateFormat($request, $invoiceFormat->id);
@@ -86,6 +90,7 @@ class InvoiceFormatController extends Controller
     public function destroy(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse
     {
         $company = $request->user()->company;
+        $this->authorize('update', $company);
         abort_if($invoiceFormat->company_id !== $company->id, 403);
 
         $activityLogService->logAction(
@@ -104,6 +109,7 @@ class InvoiceFormatController extends Controller
     public function setDefault(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse
     {
         $company = $request->user()->company;
+        $this->authorize('update', $company);
         abort_if($invoiceFormat->company_id !== $company->id, 403);
 
         DB::transaction(function () use ($invoiceFormat, $company) {
@@ -125,6 +131,7 @@ class InvoiceFormatController extends Controller
     public function clone(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse
     {
         $company = $request->user()->company;
+        $this->authorize('update', $company);
         abort_if($invoiceFormat->company_id !== $company->id, 403);
 
         $clone = $invoiceFormat->replicate(['is_default', 'created_by', 'updated_by', 'created_at', 'updated_at', 'deleted_at']);
@@ -143,6 +150,42 @@ class InvoiceFormatController extends Controller
         );
 
         return response()->json(['data' => $clone], 201);
+    }
+
+    public function selectTheme(Request $request, ActivityLogService $activityLogService): JsonResponse
+    {
+        /** @var Company $company */
+        $company = $request->user()->company;
+        $this->authorize('update', $company);
+
+        $theme = $request->validate([
+            'theme' => ['required', 'string', 'max:50'],
+        ])['theme'];
+
+        $isBuiltIn = in_array($theme, InvoiceThemeOptions::ids(), true);
+        $isCompanyFormat = InvoiceFormat::query()
+            ->whereKey($theme)
+            ->where('company_id', $company->id)
+            ->exists();
+
+        abort_unless($isBuiltIn || $isCompanyFormat, 422, 'The selected invoice theme is invalid.');
+
+        $before = $company->invoice_theme;
+        $company->update([
+            'invoice_theme' => $theme,
+            'updated_by' => $request->user()->id,
+        ]);
+
+        $activityLogService->logUpdate(
+            reference: $company,
+            before: ['invoice_theme' => $before],
+            after: ['invoice_theme' => $theme],
+            module: 'setting',
+            description: "Company invoice theme updated to '{$theme}'.",
+            metadata: ['action' => 'company_invoice_theme_update'],
+        );
+
+        return response()->json(['data' => ['invoice_theme' => $theme]]);
     }
 
     private function validateFormat(Request $request, ?string $ignoreId = null): array

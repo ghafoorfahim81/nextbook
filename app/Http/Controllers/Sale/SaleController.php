@@ -1653,7 +1653,7 @@ class SaleController extends Controller
             ],
         );
 
-        $invoiceTheme = user_preference('sale.invoice_theme', InvoiceThemeOptions::DEFAULT);
+        $invoiceTheme = $company?->invoice_theme ?: InvoiceThemeOptions::DEFAULT;
         $customFormat = null;
 
         // If the selected theme is not a built-in format, treat it as a custom InvoiceFormat ULID

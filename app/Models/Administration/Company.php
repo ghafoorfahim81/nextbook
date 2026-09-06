@@ -50,6 +50,7 @@ class Company extends Model
         'email',
         'website',
         'invoice_description',
+        'invoice_theme',
         'created_by',
         'updated_by',
     ];

@@ -23,10 +23,8 @@ use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Ledger\LedgerResource;
-use App\Support\Preferences\InvoiceThemeOptions;
 use App\Support\Preferences\SoundOptions;
 use App\Services\ActivityLogService;
-use App\Models\Sale\InvoiceFormat;
 
 class PreferencesController extends Controller
 {
@@ -34,8 +32,6 @@ class PreferencesController extends Controller
     {
         $user = $request->user();
         $preferences = $user->getAllPreferences();
-        $company = $user->company;
-
         // Get accounts for default cash account dropdown
         $cashAccounts = Account::select('id', 'name')
             ->where('is_active', true)
@@ -62,13 +58,6 @@ class PreferencesController extends Controller
                 ->get()
         );
 
-        $invoiceFormats = $company
-            ? InvoiceFormat::where('company_id', $company->id)
-                ->orderByDesc('is_default')
-                ->orderBy('name')
-                ->get()
-            : collect();
-
         return Inertia::render('Preferences/Index', [
             'preferences' => $preferences,
             'defaultPreferences' => User::DEFAULT_PREFERENCES,
@@ -81,9 +70,6 @@ class PreferencesController extends Controller
             'sizes' => $sizes,
             'currencies' => $currencies,
             'ledgers' => $ledgers,
-            'invoiceThemes' => InvoiceThemeOptions::all(),
-            'invoiceFormats' => $invoiceFormats,
-            'invoiceFormatDefaults' => InvoiceFormat::defaultConfig(),
             'soundOptions' => SoundOptions::grouped(),
         ]);
     }

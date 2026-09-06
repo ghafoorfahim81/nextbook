@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Preferences;
 
-use App\Support\Preferences\InvoiceThemeOptions;
 use App\Support\Preferences\SoundOptions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -50,7 +49,6 @@ use Illuminate\Validation\Rule;
             'sale.item_columns' => 'sometimes|array',
             'sale.item_columns.*' => 'sometimes|boolean',
             'sale.invoice_prefix' => 'sometimes|string|max:20',
-            'sale.invoice_theme' => ['sometimes', 'nullable', 'string', 'max:50'],
             'sale.start_number' => 'sometimes|integer|min:1',
             'sale.terms' => 'sometimes|nullable|string|max:1000',
             'sale.due_days' => 'sometimes|integer|min:0|max:365',
