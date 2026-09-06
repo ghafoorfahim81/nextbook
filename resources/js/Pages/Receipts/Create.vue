@@ -39,6 +39,7 @@ if (!rpPrefs.visible_fields || typeof rpPrefs.visible_fields !== 'object') rpPre
 const rpFields = computed(() => rpPrefs.visible_fields)
 const showPreferencesPanel = ref(false)
 import { toast } from 'vue-sonner'
+import { printDocument } from '@/composables/usePrintDocument'
 const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
 const billLoading = ref(false)
 useLazyProps(page.props, ['ledgers', 'accounts'])
@@ -66,7 +67,6 @@ const form = useForm({
 })
 
 const submitAction = ref(null)
-const pendingPrintWindow = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'create_and_print')
@@ -98,10 +98,6 @@ const handleSettlementSave = ({ allocations, applied_cash }) => {
 
 const submitActionHandler = (action = 'create') => {
   submitAction.value = action
-
-  if (action === 'create_and_print') {
-    pendingPrintWindow.value = window.open('about:blank', '_blank')
-  }
 
   submit({
     createAndNew: action === 'create_and_new',
@@ -153,24 +149,7 @@ function oldBalanceText() {
 }
 
 function finalizePrint(page) {
-  const printUrl = page?.props?.flash?.print_url
-
-  if (!printUrl) {
-    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-      pendingPrintWindow.value.close()
-    }
-    pendingPrintWindow.value = null
-    return
-  }
-
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.location = printUrl
-    pendingPrintWindow.value.focus?.()
-  } else {
-    window.open(printUrl, '_blank')
-  }
-
-  pendingPrintWindow.value = null
+  printDocument(page?.props?.flash?.print_url)
 }
 
 watch([() => form.ledger_id, () => form.payment_mode], async ([ledgerId, paymentMode], [prevLedgerId, prevPaymentMode]) => {
@@ -207,11 +186,6 @@ function nextNumberAfterSave(page) {
 }
 
 function cleanupPrintWindow() {
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.close()
-  }
-
-  pendingPrintWindow.value = null
 }
 
 function submit({ createAndNew = false, createAndPrint = false } = {}) {

@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { router } from '@inertiajs/vue3'
+import { printDocument } from '@/composables/usePrintDocument'
 const { t } = useI18n();
 
 const props = defineProps({
@@ -28,7 +29,7 @@ const showItem = (id) => {
 }
 
 const printItem = (id) => {
-    window.open(route('receipts.print', id), '_blank')
+    printDocument(route('receipts.print', id))
 }
 
 

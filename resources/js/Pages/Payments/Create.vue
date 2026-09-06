@@ -17,6 +17,7 @@ import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { printDocument } from '@/composables/usePrintDocument'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n()
 
@@ -72,14 +73,8 @@ const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'create_and_print')
-const pendingPrintWindow = ref(null)
-
 const submitActionHandler = (action = 'create') => {
   submitAction.value = action
-
-  if (action === 'create_and_print') {
-    pendingPrintWindow.value = window.open('about:blank', '_blank')
-  }
 
   submit({
     createAndNew: action === 'create_and_new',
@@ -162,24 +157,7 @@ function oldBalanceText() {
 }
 
 function finalizePrint(page) {
-  const printUrl = page?.props?.flash?.print_url
-
-  if (!printUrl) {
-    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-      pendingPrintWindow.value.close()
-    }
-    pendingPrintWindow.value = null
-    return
-  }
-
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.location = printUrl
-    pendingPrintWindow.value.focus?.()
-  } else {
-    window.open(printUrl, '_blank')
-  }
-
-  pendingPrintWindow.value = null
+  printDocument(page?.props?.flash?.print_url)
 }
 
 // The store redirects back to the create page, so the response carries a
@@ -194,11 +172,6 @@ function nextNumberAfterSave(page) {
 }
 
 function cleanupPrintWindow() {
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.close()
-  }
-
-  pendingPrintWindow.value = null
 }
 
 function submit({ createAndNew = false, createAndPrint = false } = {}) {

@@ -17,6 +17,7 @@ import { Spinner } from '@/Components/ui/spinner'
 import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Components/ui/toast/use-toast'
+import { printDocument } from '@/composables/usePrintDocument'
 const { t } = useI18n()
 const { toast } = useToast()
 const page = usePage()
@@ -72,7 +73,6 @@ const removeExistingAttachment = (id) => {
   })
 }
 const submitAction = ref('update')
-const pendingPrintWindow = ref(null)
 
 function parseIdFromUrl() {
   const path = page.url.split('?')[0]
@@ -165,40 +165,14 @@ function oldBalanceText() {
 }
 
 function finalizePrint(page) {
-  const printUrl = page?.props?.flash?.print_url
-
-  if (!printUrl) {
-    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-      pendingPrintWindow.value.close()
-    }
-    pendingPrintWindow.value = null
-    return
-  }
-
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.location = printUrl
-    pendingPrintWindow.value.focus?.()
-  } else {
-    window.open(printUrl, '_blank')
-  }
-
-  pendingPrintWindow.value = null
+  printDocument(page?.props?.flash?.print_url)
 }
 
 function cleanupPrintWindow() {
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.close()
-  }
-
-  pendingPrintWindow.value = null
 }
 
 function submit(action = 'update') {
   submitAction.value = action
-
-  if (action === 'save_and_print') {
-    pendingPrintWindow.value = window.open('about:blank', '_blank')
-  }
 
   form.transform((data) => ({
     ...data,

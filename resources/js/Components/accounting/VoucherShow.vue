@@ -25,6 +25,7 @@ import {
 } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { formatMoney, currencyLabel } from '@/utils/money'
+import { printDocument } from '@/composables/usePrintDocument'
 
 const { t } = useI18n()
 const { can } = useAuth()
@@ -77,12 +78,10 @@ const forexClass = (kind) => (kind === 'gain'
         {{ t('general.back') }}
       </Button>
       <div class="flex items-center gap-2">
-        <a :href="route(printRoute, data.id)" target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm">
-            <Printer class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-            {{ t('general.print') }}
-          </Button>
-        </a>
+        <Button type="button" variant="outline" size="sm" @click="printDocument(route(printRoute, data.id))">
+          <Printer class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          {{ t('general.print') }}
+        </Button>
         <Button
           v-if="can(permission) && data.id"
           variant="default"

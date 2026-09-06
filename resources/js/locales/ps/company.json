@@ -25,5 +25,6 @@
     "selected_currency": "ټاکل شوې اسعار",
     "selected_business_type": "ټاکل شوې د سوداګرۍ ډول",
     "upload_logo": "لوګو پورته کول",
-    "upload_logo_description": "PNG, JPG, GIF تر ۲ میګابایټ پورې"
+    "upload_logo_description": "PNG, JPG, GIF تر ۲ میګابایټ پورې",
+    "invoice_designer_view_only": "د شرکت د فاکتور بڼه بدلولو لپاره سمون کېکاږئ. دلته یې بیا هم کتلی شئ."
 }
