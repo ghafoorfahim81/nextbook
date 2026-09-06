@@ -129,7 +129,6 @@ const tabSearchTerms = {
         'start number',
         'due days',
         'terms',
-        'invoice theme',
         'auto reminders',
         'reminder days',
         'late fee percentage',
@@ -472,7 +471,10 @@ const handleSoundUpload = (category, event) => {
         preserveState: true,
         onSuccess: (page) => {
             const updated = page.props.preferences?.notifications?.sound
-            if (updated) form.notifications.sound = { ...updated }
+            if (updated) {
+                form.notifications.sound = { ...updated }
+                form.defaults(page.props.preferences)
+            }
             toast.success(t('preferences.saved'), { class: 'bg-green-600' })
         },
         onError: () => {
@@ -492,7 +494,10 @@ const removeSoundUpload = (category) => {
         preserveState: true,
         onSuccess: (page) => {
             const updated = page.props.preferences?.notifications?.sound
-            if (updated) form.notifications.sound = { ...updated }
+            if (updated) {
+                form.notifications.sound = { ...updated }
+                form.defaults(page.props.preferences)
+            }
         },
         onFinish: () => {
             soundRemoving.value = ''
@@ -554,6 +559,8 @@ const handleFileUpload = (event) => {
 
     router.post(route('preferences.import'), formData, {
         onSuccess: () => {
+            form.defaults(props.preferences)
+            form.reset()
             toast({ title: t('preferences.import_success') })
         },
         onError: () => {
@@ -596,6 +603,8 @@ const itemColumns = [
     { key: 'batch', label: 'preferences.fields.batch' },
     { key: 'expiry', label: 'preferences.fields.expiry' },
     { key: 'on_hand', label: 'preferences.fields.on_hand' },
+    { key: 'reserved_out', label: 'general.reserved_out' },
+    { key: 'reserved_in', label: 'general.reserved_in' },
     { key: 'measure', label: 'preferences.fields.measure' },
     { key: 'discount', label: 'preferences.fields.discount' },
     { key: 'tax', label: 'preferences.fields.tax' },
@@ -624,6 +633,8 @@ const itemManagementFields = [
     { key: 'sku', label: 'preferences.fields.sku' },
     { key: 'is_batch_tracked', label: 'preferences.item_fields.is_batch_tracked' },
     { key: 'is_expiry_tracked', label: 'preferences.item_fields.is_expiry_tracked' },
+    { key: 'is_color_tracked', label: 'preferences.item_fields.is_color_tracked' },
+    { key: 'is_size_tracked', label: 'preferences.item_fields.is_size_tracked' },
     ]
 
 const receiptPaymentFields = [
@@ -645,6 +656,12 @@ const transactionPostModules = [
     { key: 'account_transfer_post_immediately', label: 'preferences.transaction.modules.account_transfer' },
     { key: 'item_transfer_post_immediately', label: 'preferences.transaction.modules.item_transfer' },
     { key: 'drawing_post_immediately', label: 'preferences.transaction.modules.drawing' },
+    { key: 'stock_adjustment_post_immediately', label: 'preferences.transaction.modules.stock_adjustment' },
+    { key: 'sale_return_post_immediately', label: 'preferences.transaction.modules.sale_return' },
+    { key: 'sale_quotation_post_immediately', label: 'preferences.transaction.modules.sale_quotation' },
+    { key: 'purchase_order_post_immediately', label: 'preferences.transaction.modules.purchase_order' },
+    { key: 'purchase_return_post_immediately', label: 'preferences.transaction.modules.purchase_return' },
+    { key: 'purchase_quotation_post_immediately', label: 'preferences.transaction.modules.purchase_quotation' },
 ]
 
 // Per-module "confirm before save" toggles for modules without a dedicated
@@ -1137,7 +1154,7 @@ watch(normalizedMenuSearch, (query) => {
                             </div>
                             <div class="space-y-2 mt-3">
                                 <Label>{{ t('preferences.tax_currency.spec_text') }}</Label>
-                                <Input v-model="form.item_management.spec_text" rows="3" />
+                                <Textarea v-model="form.item_management.spec_text" rows="3" />
                             </div>
                             <div class="rounded-lg border border-border bg-background/70 p-4 mt-3 flex items-center justify-between">
                                 <div class="space-y-1">
@@ -1317,7 +1334,7 @@ watch(normalizedMenuSearch, (query) => {
                                     <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
                                     <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
                                 </div>
-                                <Switch :model-value="getConfirmSave('sale')" @update:model-value="(v) => setConfirmSave('sale', v)" />
+                                <Switch :model-value="getConfirmSave(activeSaleType)" @update:model-value="(v) => setConfirmSave(activeSaleType, v)" />
                             </div>
                         </CardContent>
                     </Card>
@@ -1447,14 +1464,14 @@ watch(normalizedMenuSearch, (query) => {
                                         <Label>{{ t('preferences.purchase.show_attachments') }}</Label>
                                     </div>
                                 </div>
-                                <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
-                                    <div class="space-y-1">
-                                        <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
-                                        <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
-                                    </div>
-                                    <Switch :model-value="getConfirmSave('purchase')" @update:model-value="(v) => setConfirmSave('purchase', v)" />
-                                </div>
                             </template>
+                            <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                    <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                </div>
+                                <Switch :model-value="getConfirmSave(activePurchaseType)" @update:model-value="(v) => setConfirmSave(activePurchaseType, v)" />
+                            </div>
                         </CardContent>
                     </Card>
 

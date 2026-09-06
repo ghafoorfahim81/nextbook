@@ -120,7 +120,7 @@ class User extends Authenticatable
             'spec_text' => 'Batch',
         ],
         'sale' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true, 'description' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'warehouse' => true, 'description' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => true,
@@ -180,7 +180,7 @@ class User extends Authenticatable
             'due_days' => 30,
         ],
         'sale_return' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => true,
@@ -203,7 +203,7 @@ class User extends Authenticatable
             'accepted_return_days' => 30,
         ],
         'sale_quotation' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => false,
@@ -225,7 +225,7 @@ class User extends Authenticatable
             'start_number' => 1,
         ],
         'purchase' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true, 'description' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'warehouse' => true, 'description' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => true,
@@ -267,6 +267,11 @@ class User extends Authenticatable
             'item_transfer_post_immediately' => true,
             'drawing_post_immediately' => true,
             'stock_adjustment_post_immediately' => true,
+            'purchase_order_post_immediately' => true,
+            'purchase_return_post_immediately' => true,
+            'purchase_quotation_post_immediately' => false,
+            'sale_return_post_immediately' => true,
+            'sale_quotation_post_immediately' => false,
         ],
         // Stock adjustment module settings. reason_accounts maps each reason to
         // the offset expense account slug (9040 shrinkage vs 9050 adjustments).
@@ -296,7 +301,13 @@ class User extends Authenticatable
         // confirmation appears until a user disables it per module in Module Settings.
         'confirmations' => [
             'sale' => true,
+            'sale_order' => true,
+            'sale_return' => true,
+            'sale_quotation' => true,
             'purchase' => true,
+            'purchase_order' => true,
+            'purchase_return' => true,
+            'purchase_quotation' => true,
             'receipt' => true,
             'payment' => true,
             'expense' => true,
@@ -333,7 +344,7 @@ class User extends Authenticatable
             'start_number' => 1,
         ],
         'purchase_return' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => true,
@@ -355,7 +366,7 @@ class User extends Authenticatable
             'start_number' => 1,
         ],
         'purchase_quotation' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => false,
@@ -537,7 +548,27 @@ class User extends Authenticatable
      */
     public function getAllPreferences(): array
     {
-        return array_replace_recursive(self::DEFAULT_PREFERENCES, $this->preferences ?? []);
+        $preferences = array_replace_recursive(self::DEFAULT_PREFERENCES, $this->preferences ?? []);
+
+        foreach (['sale', 'sale_order', 'sale_return', 'sale_quotation', 'purchase', 'purchase_order', 'purchase_return', 'purchase_quotation'] as $module) {
+            $fields = &$preferences[$module]['general_fields'];
+            $legacyFields = data_get($this->preferences, "{$module}.general_fields", []);
+
+            if (is_array($legacyFields) && array_key_exists('store', $legacyFields) && ! array_key_exists('warehouse', $legacyFields)) {
+                $fields['warehouse'] = $legacyFields['store'];
+            }
+
+            unset($fields['store']);
+            unset($fields);
+        }
+
+        $itemFields = &$preferences['item_management']['visible_fields'];
+        if (is_array($itemFields) && array_key_exists('file_upload', $itemFields) && ! array_key_exists('photo', $itemFields)) {
+            $itemFields['photo'] = $itemFields['file_upload'];
+        }
+        unset($itemFields);
+
+        return $preferences;
     }
 
     /**

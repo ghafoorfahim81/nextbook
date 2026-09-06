@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Administration;
 
 use App\Http\Controllers\Controller;
+use App\Support\Inertia\CacheKey;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -42,7 +43,8 @@ class SwitchBranchController extends Controller
         cache()->forget('home_currency');
         cache()->forget('account_types');
         cache()->forget('roles');
-        cache()->forget('user_preferences');
+        cache()->forget(CacheKey::forUser($request, 'preferences'));
+        cache()->forget(CacheKey::forUser($request, 'business_profile'));
         cache()->forget('transaction_types');
         cache()->forget('transaction_statuses');
         cache()->forget('capital_accounts');
