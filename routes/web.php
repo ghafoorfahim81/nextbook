@@ -70,6 +70,7 @@ Route::middleware([
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::post('/notifications/bulk', [NotificationController::class, 'bulk'])->name('notifications.bulk');
     Route::get('/whats-new', fn () => Inertia::render('WhatsNew'))->name('whats-new');
+    Route::get('/user-manual', fn () => Inertia::render('UserManual/Index'))->name('user-manual');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.unread');
     Route::post('/notifications/{notification}/favorite', [NotificationController::class, 'toggleFavorite'])->name('notifications.favorite');
