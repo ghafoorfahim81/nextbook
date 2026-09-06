@@ -8,7 +8,7 @@ import {
   DialogPortal,
   useForwardPropsEmits,
 } from 'radix-vue';
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref } from 'vue';
 
 const props = defineProps({
   forceMount: { type: Boolean, required: false },
@@ -18,6 +18,7 @@ const props = defineProps({
   as: { type: null, required: false },
   class: { type: null, required: false },
   overlayClass: { type: null, required: false },
+  draggable: { type: Boolean, default: true },
 });
 const emits = defineEmits([
   'escapeKeyDown',
@@ -29,12 +30,67 @@ const emits = defineEmits([
 ]);
 
 const delegatedProps = computed(() => {
-  const { class: _, ...delegated } = props;
+  const { class: _, overlayClass: __, draggable: ___, ...delegated } = props;
 
   return delegated;
 });
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits);
+
+const offset = reactive({ x: 0, y: 0 })
+const dragging = ref(false)
+const dragStart = reactive({ x: 0, y: 0, offsetX: 0, offsetY: 0 })
+
+const contentStyle = computed(() => ({
+  transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+}))
+
+const isDragHandle = (target) => {
+  if (!(target instanceof Element)) {
+    return false
+  }
+
+  if (target.closest('button, a, input, textarea, select, [data-no-drag]')) {
+    return false
+  }
+
+  return Boolean(target.closest('[data-dialog-drag]'))
+}
+
+const onPointerMove = (event) => {
+  if (!dragging.value) {
+    return
+  }
+
+  offset.x = dragStart.offsetX + event.clientX - dragStart.x
+  offset.y = dragStart.offsetY + event.clientY - dragStart.y
+}
+
+const stopDrag = () => {
+  if (!dragging.value) {
+    return
+  }
+
+  dragging.value = false
+  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('pointerup', stopDrag)
+}
+
+const onPointerDown = (event) => {
+  if (!props.draggable || event.button !== 0 || !isDragHandle(event.target)) {
+    return
+  }
+
+  dragging.value = true
+  dragStart.x = event.clientX
+  dragStart.y = event.clientY
+  dragStart.offsetX = offset.x
+  dragStart.offsetY = offset.y
+  window.addEventListener('pointermove', onPointerMove)
+  window.addEventListener('pointerup', stopDrag)
+}
+
+onBeforeUnmount(stopDrag)
 </script>
 
 <template>
@@ -47,12 +103,15 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
     />
     <DialogContent
       v-bind="forwarded"
+      :style="contentStyle"
       :class="
         cn(
-          'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg',
+          'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:rounded-lg',
+          dragging && 'select-none',
           props.class,
         )
       "
+      @pointerdown="onPointerDown"
     >
       <slot />
 
