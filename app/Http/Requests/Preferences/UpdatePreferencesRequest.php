@@ -146,6 +146,11 @@ use Illuminate\Validation\Rule;
             'transaction.item_transfer_post_immediately' => 'sometimes|boolean',
             'transaction.drawing_post_immediately' => 'sometimes|boolean',
             'transaction.stock_adjustment_post_immediately' => 'sometimes|boolean',
+            'transaction.purchase_order_post_immediately' => 'sometimes|boolean',
+            'transaction.purchase_return_post_immediately' => 'sometimes|boolean',
+            'transaction.purchase_quotation_post_immediately' => 'sometimes|boolean',
+            'transaction.sale_return_post_immediately' => 'sometimes|boolean',
+            'transaction.sale_quotation_post_immediately' => 'sometimes|boolean',
 
             // Stock Adjustment
             'stock_adjustment' => 'sometimes|array',

@@ -16,6 +16,7 @@ class PreferencesSoundController extends Controller
      */
     public function store(Request $request, string $category)
     {
+        abort_unless($request->user()->can('preferences.update'), 403);
         $request->validate([
             'file' => ['required', 'file', 'mimetypes:audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/wave,audio/ogg', 'max:2048'],
         ]);
@@ -45,6 +46,7 @@ class PreferencesSoundController extends Controller
     public function destroy(Request $request, string $category)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.update'), 403);
         $path = $user->getPreference("notifications.sound.{$category}_custom_path");
 
         if ($path && Storage::disk('public')->exists($path)) {

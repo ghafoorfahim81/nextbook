@@ -21,6 +21,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Support\Preferences\SoundOptions;
@@ -44,16 +45,15 @@ class PreferencesController extends Controller
                 ->get()
         );
 
-        $categories = CategoryResource::collection(Category::query()->orderBy('name')->where('is_active', false)->get());
-        $warehouses = WarehouseResource::collection(Warehouse::query()->orderBy('name')->where('is_active', false)->get());
-        $sizes = SizeResource::collection(Size::query()->orderBy('name')->where('is_active', false)->get());
-        $currencies = CurrencyResource::collection(Currency::query()->orderBy('name')->where('is_active', false)->get());
+        $categories = CategoryResource::collection(Category::query()->orderBy('name')->get());
+        $warehouses = WarehouseResource::collection(Warehouse::query()->orderBy('name')->get());
+        $sizes = SizeResource::collection(Size::query()->orderBy('name')->get());
+        $currencies = CurrencyResource::collection(Currency::query()->orderBy('name')->get());
 
         $ledgers = LedgerResource::collection(
             Ledger::query()
                 ->whereIn('type', ['customer', 'supplier'])
                 ->orderBy('name')
-                ->where('is_active', false)
                 ->limit(500)
                 ->get()
         );
@@ -77,6 +77,7 @@ class PreferencesController extends Controller
     public function update(UpdatePreferencesRequest $request)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.update'), 403);
         $validated = $request->validated();
 
         // Merge validated preferences with existing ones
@@ -103,6 +104,7 @@ class PreferencesController extends Controller
             ],
         );
         Cache::forget(CacheKey::forUser($request, 'preferences'));
+        Cache::forget(CacheKey::forUser($request, 'business_profile'));
         Cache::forget(CacheKey::forUser($request, 'recordsPerPage'));
         Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
         Cache::forget('balance_nature_format');
@@ -125,6 +127,7 @@ class PreferencesController extends Controller
     public function resetPreferences(Request $request, ?string $category = null)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.update'), 403);
         $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
         $user->resetPreferences($category)->save();
         $afterPreferences = $user->fresh()->preferences ?? User::DEFAULT_PREFERENCES;
@@ -142,12 +145,14 @@ class PreferencesController extends Controller
             ],
         );
         Cache::forget(CacheKey::forUser($request, 'preferences'));
+        Cache::forget(CacheKey::forUser($request, 'business_profile'));
         return redirect()->back()->with('success', __('preferences.preferences_reset'));
     }
 
     public function updateInstallPlugins(Request $request)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.update') && $user->can('companies.update'), 403);
         $beforeState = [
             'unit_measures' => UnitMeasure::query()->where('is_active', true)->pluck('id')->values()->all(),
             'categories' => Category::query()->where('is_active', true)->pluck('id')->values()->all(),
@@ -231,6 +236,7 @@ class PreferencesController extends Controller
     public function exportPreferences(Request $request)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.export'), 403);
         $preferences = $user->getAllPreferences();
 
         app(ActivityLogService::class)->logAction(
@@ -250,6 +256,7 @@ class PreferencesController extends Controller
 
     public function importPreferences(Request $request)
     {
+        abort_unless($request->user()->can('preferences.import'), 403);
         $request->validate([
             'file' => 'required|file|mimes:json|max:1024',
         ]);
@@ -261,9 +268,28 @@ class PreferencesController extends Controller
             return redirect()->back()->with('error', __('preferences.invalid_preferences_file'));
         }
 
+        $unknownCategories = array_diff(array_keys($preferences), array_keys(User::DEFAULT_PREFERENCES));
+        if ($unknownCategories !== []) {
+            return redirect()->back()->withErrors([
+                'file' => __('preferences.invalid_preferences_file'),
+            ]);
+        }
+
+        $validator = Validator::make($preferences, (new UpdatePreferencesRequest())->rules());
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $validated = $validator->validated();
+        unset($validated['sale']['invoice_theme']);
+
         $user = $request->user();
         $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
-        $user->update(['preferences' => array_replace_recursive(User::DEFAULT_PREFERENCES, $preferences)]);
+        $user->update(['preferences' => array_replace_recursive(User::DEFAULT_PREFERENCES, $validated)]);
+        Cache::forget(CacheKey::forUser($request, 'preferences'));
+        Cache::forget(CacheKey::forUser($request, 'business_profile'));
 
         app(ActivityLogService::class)->logUpdate(
             reference: $user,
@@ -303,6 +329,7 @@ class PreferencesController extends Controller
             ['value' => 'user_management', 'label' => 'sidebar.main.user_management'],
             ['value' => 'trash', 'label' => 'sidebar.main.trash'],
             ['value' => 'reports', 'label' => 'sidebar.main.reports'],
+            ['value' => 'preferences', 'label' => 'sidebar.main.preferences'],
         ];
     }
 

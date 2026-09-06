@@ -16,10 +16,20 @@ import { useI18n } from 'vue-i18n'
 export function useSaveConfirmation() {
     const page = usePage()
     const { t } = useI18n()
+    const preferenceModule = (module) => ({
+        sales: 'sale',
+        sale_orders: 'sale_order',
+        sale_returns: 'sale_return',
+        sale_quotations: 'sale_quotation',
+        purchase_orders: 'purchase_order',
+        purchase_returns: 'purchase_return',
+        purchase_quotations: 'purchase_quotation',
+        payments: 'payment',
+    }[module] ?? module)
 
     const isEnabled = (module) => {
         if (!module) return false
-        return page.props?.user_preferences?.confirmations?.[module] ?? true
+        return page.props?.user_preferences?.confirmations?.[preferenceModule(module)] ?? true
     }
 
     const confirmSave = (module, proceed) => {
