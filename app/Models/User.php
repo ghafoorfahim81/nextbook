@@ -52,6 +52,11 @@ class User extends Authenticatable
      * Default preferences structure.
      */
     public const DEFAULT_PREFERENCES = [
+        'onboarding' => [
+            // Set once the user opens the manual or dismisses the welcome
+            // prompt; while null, the first-login manual dialog is shown.
+            'manual_prompt_dismissed_at' => null,
+        ],
         'appearance' => [
             'theme' => 'system',
             'accent_color' => 'system',

@@ -85,6 +85,11 @@ final class CoreShared
                     'roles' => $roles,
                     'role_slugs' => $roleSlugs,
                     'calendar_type' => $user->company?->calendar_type,
+                    // Drives the one-time "check the user manual" dialog. True
+                    // only for a user who belongs to a company and has never
+                    // opened the manual or dismissed the prompt.
+                    'show_manual_prompt' => (bool) $user->company_id
+                        && blank(data_get($userPreferences, 'onboarding.manual_prompt_dismissed_at')),
                 ] : null,
             ],
             'flash' => [

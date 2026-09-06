@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { usePage } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
 import {
@@ -271,6 +272,12 @@ function onHashChange() {
 }
 
 onMounted(async () => {
+    // Reaching the manual by any route counts as onboarding done — stop the
+    // first-login prompt from appearing again.
+    if (usePage().props.auth?.user?.show_manual_prompt) {
+        window.axios?.post(route('onboarding.manual-prompt.dismiss')).catch(() => {})
+    }
+
     articleRef.value?.addEventListener('scroll', updateActiveFromScroll, { passive: true })
     window.addEventListener('hashchange', onHashChange)
     await nextTick()
