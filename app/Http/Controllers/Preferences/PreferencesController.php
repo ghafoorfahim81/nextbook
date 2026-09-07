@@ -305,13 +305,19 @@ class PreferencesController extends Controller
         return redirect()->back()->with('success', __('settings.settings_imported'));
     }
 
+    /**
+     * Toggleable sidebar menu groups.
+     *
+     * Every `value` here must match a top-level `key` in the sidebar's
+     * `navMain` (resources/js/Layouts/Layout.vue) or the checkbox does nothing.
+     * `home` is intentionally omitted — it is always shown so a user can never
+     * hide their way out of the app. Order mirrors the sidebar.
+     */
     private function getSidebarMenuOptions(): array
     {
         return [
-            ['value' => 'home', 'label' => 'sidebar.main.home'],
             ['value' => 'dashboard', 'label' => 'sidebar.main.dashboard'],
             ['value' => 'account', 'label' => 'sidebar.main.account'],
-            ['value' => 'administration', 'label' => 'sidebar.main.administration'],
             ['value' => 'inventory', 'label' => 'sidebar.main.inventory'],
             ['value' => 'ledger', 'label' => 'sidebar.main.ledger'],
             ['value' => 'hr', 'label' => 'sidebar.main.hr'],
@@ -324,11 +330,11 @@ class PreferencesController extends Controller
             ['value' => 'purchase', 'label' => 'sidebar.main.purchase'],
             ['value' => 'sale', 'label' => 'sidebar.main.sale'],
             ['value' => 'cash_transactions', 'label' => 'sidebar.main.cash_transactions'],
-            ['value' => 'transfer', 'label' => 'sidebar.main.transfer'],
             ['value' => 'user_management', 'label' => 'sidebar.main.user_management'],
+            ['value' => 'preferences', 'label' => 'sidebar.main.preferences'],
+            ['value' => 'administration', 'label' => 'sidebar.main.administration'],
             ['value' => 'trash', 'label' => 'sidebar.main.trash'],
             ['value' => 'reports', 'label' => 'sidebar.main.reports'],
-            ['value' => 'preferences', 'label' => 'sidebar.main.preferences'],
         ];
     }
 

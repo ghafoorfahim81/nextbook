@@ -203,6 +203,8 @@
         "olive": "Olive",
         "decimal_places": "Decimal Places",
         "sidebar_menus": "Sidebar Menus",
+        "sidebar_menus_select_all": "Select all",
+        "sidebar_menus_deselect_all": "Deselect all",
         "sidebar_font_size": "Sidebar Font Size",
         "heading_font_size": "Heading Font Size",
         "table_header_font_size": "Table Header Font Size",
