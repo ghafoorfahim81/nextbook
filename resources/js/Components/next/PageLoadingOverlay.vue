@@ -41,8 +41,23 @@ function isDataTableRefresh(event) {
     }
 }
 
+// Saving preferences (and the other mutations on that page) refreshes props in
+// place, and the Preferences page renders its own inline spinners for each
+// action. The full-screen BookLoader on top of that just double-loads, so skip
+// it for any non-GET request to a /preferences endpoint.
+function isPreferencesMutation(event) {
+    try {
+        const visit = event?.detail?.visit ?? {}
+        const method = String(visit.method ?? 'get').toLowerCase()
+        const path = visit.url?.pathname ?? ''
+        return method !== 'get' && (path === '/preferences' || path.startsWith('/preferences/'))
+    } catch {
+        return false
+    }
+}
+
 function handleStart(event) {
-    if (isSamePageReportsRefresh(event) || isDataTableRefresh(event)) return
+    if (isSamePageReportsRefresh(event) || isDataTableRefresh(event) || isPreferencesMutation(event)) return
 
     clearTimeout(hideTimer)
     clearTimeout(showTimer)
