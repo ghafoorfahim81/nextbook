@@ -73,9 +73,10 @@
 
 @layer base {
     :root {
-      /* Main Background Colors - Clean whites */
-      --background: 0 0% 100%;
-      --foreground: 0 0% 15%;
+      /* Main Background Colors - a hair off pure white so large surfaces
+         don't glare, with a faint tint toward the primary hue */
+      --background: 270 30% 99%;
+      --foreground: 264 12% 16%;
 
       /* Card and Popover - Pure white */
       --card: 0 0% 100%;
@@ -94,7 +95,7 @@
 
       /* Muted - Light blue-gray for input fields */
       --muted: 210 20% 96%;
-      --muted-foreground: 0 0% 45%;
+      --muted-foreground: 264 6% 40%;
 
       /* Accent - soft primary tint for highlights */
       --accent: 270 35% 92%;
@@ -164,7 +165,7 @@
 
       /* Muted - Darker blue-gray */
       --muted: 270 20% 20%;
-      --muted-foreground: 0 0% 65%;
+      --muted-foreground: 264 8% 70%;
 
       /* Accent - soft primary tint for dark mode highlights */
       --accent: 270 28% 22%;
@@ -594,6 +595,41 @@
     :root[data-accent-color='mist'] { --accent-color-600: 210 24% 38%; --accent-color-700: 210 26% 30%; --accent-color-900: 210 30% 20%; --accent-color-foreground: 0 0% 100%; --accent-color-foreground-dark: 210 45% 98%; }
     :root[data-accent-color='olive'] { --accent-color-600: 75 38% 32%; --accent-color-700: 75 40% 25%; --accent-color-900: 75 42% 17%; --accent-color-foreground: 0 0% 100%; --accent-color-foreground-dark: 75 42% 96%; }
 
+    /* ---------------------------------------------------------------------------
+       Per-palette hue. The generic mapping blocks below build every surface
+       (background, card, border, input, sidebar, muted) from this hue at a
+       restrained, fixed saturation, so the whole chrome carries the selected
+       colour rather than just the primary button. Vivid palettes and
+       near-neutral palettes get their own saturation ramp. `cyan` and
+       `violet-900` keep their hand-tuned blocks above and are not listed here.
+       --------------------------------------------------------------------------- */
+    :root[data-theme='red'],     .dark[data-theme='red']     { --theme-hue: 0; }
+    :root[data-theme='orange'],  .dark[data-theme='orange']  { --theme-hue: 24; }
+    :root[data-theme='amber'],   .dark[data-theme='amber']   { --theme-hue: 38; }
+    :root[data-theme='yellow'],  .dark[data-theme='yellow']  { --theme-hue: 45; }
+    :root[data-theme='lime'],    .dark[data-theme='lime']    { --theme-hue: 84; }
+    :root[data-theme='green'],   .dark[data-theme='green']   { --theme-hue: 142; }
+    :root[data-theme='emerald'], .dark[data-theme='emerald'] { --theme-hue: 160; }
+    :root[data-theme='teal'],    .dark[data-theme='teal']    { --theme-hue: 173; }
+    :root[data-theme='sky'],     .dark[data-theme='sky']     { --theme-hue: 199; }
+    :root[data-theme='blue'],    .dark[data-theme='blue']    { --theme-hue: 220; }
+    :root[data-theme='indigo'],  .dark[data-theme='indigo']  { --theme-hue: 239; }
+    :root[data-theme='violet'],  .dark[data-theme='violet']  { --theme-hue: 262; }
+    :root[data-theme='purple'],  .dark[data-theme='purple']  { --theme-hue: 271; }
+    :root[data-theme='fuchsia'], .dark[data-theme='fuchsia'] { --theme-hue: 292; }
+    :root[data-theme='pink'],    .dark[data-theme='pink']    { --theme-hue: 330; }
+    :root[data-theme='rose'],    .dark[data-theme='rose']    { --theme-hue: 350; }
+    :root[data-theme='slate'],   .dark[data-theme='slate']   { --theme-hue: 215; }
+    :root[data-theme='gray'],    .dark[data-theme='gray']    { --theme-hue: 220; }
+    :root[data-theme='zinc'],    .dark[data-theme='zinc']    { --theme-hue: 240; }
+    :root[data-theme='neutral'], .dark[data-theme='neutral'] { --theme-hue: 0; }
+    :root[data-theme='stone'],   .dark[data-theme='stone']   { --theme-hue: 25; }
+    :root[data-theme='taupe'],   .dark[data-theme='taupe']   { --theme-hue: 28; }
+    :root[data-theme='mauve'],   .dark[data-theme='mauve']   { --theme-hue: 274; }
+    :root[data-theme='mist'],    .dark[data-theme='mist']    { --theme-hue: 210; }
+    :root[data-theme='olive'],   .dark[data-theme='olive']   { --theme-hue: 75; }
+
+    /* Vivid palettes - light */
     :root[data-theme='red'],
     :root[data-theme='orange'],
     :root[data-theme='amber'],
@@ -609,48 +645,40 @@
     :root[data-theme='purple'],
     :root[data-theme='fuchsia'],
     :root[data-theme='pink'],
-    :root[data-theme='rose'],
-    :root[data-theme='slate'],
-    :root[data-theme='gray'],
-    :root[data-theme='zinc'],
-    :root[data-theme='neutral'],
-    :root[data-theme='stone'],
-    :root[data-theme='taupe'],
-    :root[data-theme='mauve'],
-    :root[data-theme='mist'],
-    :root[data-theme='olive'] {
-      --background: var(--theme-50);
-      --foreground: var(--theme-950);
+    :root[data-theme='rose'] {
+      --background: var(--theme-hue) 40% 98%;
+      --foreground: var(--theme-hue) 28% 12%;
       --card: 0 0% 100%;
-      --card-foreground: var(--theme-950);
+      --card-foreground: var(--theme-hue) 28% 12%;
       --popover: 0 0% 100%;
-      --popover-foreground: var(--theme-950);
+      --popover-foreground: var(--theme-hue) 28% 12%;
       --primary: var(--theme-600);
       --primary-foreground: var(--theme-on-primary);
-      --secondary: var(--theme-100);
-      --secondary-foreground: var(--theme-950);
-      --muted: var(--theme-100);
-      --muted-foreground: var(--theme-900);
-      --accent: var(--theme-100);
-      --accent-foreground: var(--theme-950);
-      --border: var(--theme-300);
-      --input: var(--theme-100);
+      --secondary: var(--theme-hue) 32% 94%;
+      --secondary-foreground: var(--theme-hue) 30% 20%;
+      --muted: var(--theme-hue) 24% 96%;
+      --muted-foreground: var(--theme-hue) 12% 40%;
+      --accent: var(--theme-hue) 34% 91%;
+      --accent-foreground: var(--theme-hue) 35% 22%;
+      --border: var(--theme-hue) 24% 87%;
+      --input: var(--theme-hue) 24% 93%;
       --ring: var(--theme-600);
       --chart-1: var(--theme-600);
       --chart-2: var(--theme-500);
       --chart-3: var(--theme-400);
       --chart-4: var(--theme-300);
       --chart-5: var(--theme-900);
-      --sidebar-background: var(--theme-50);
-      --sidebar-foreground: var(--theme-950);
+      --sidebar-background: var(--theme-hue) 32% 97%;
+      --sidebar-foreground: var(--theme-hue) 28% 15%;
       --sidebar-primary: var(--theme-600);
       --sidebar-primary-foreground: var(--theme-on-primary);
-      --sidebar-accent: var(--theme-100);
-      --sidebar-accent-foreground: var(--theme-950);
-      --sidebar-border: var(--theme-300);
+      --sidebar-accent: var(--theme-hue) 30% 91%;
+      --sidebar-accent-foreground: var(--theme-hue) 30% 18%;
+      --sidebar-border: var(--theme-hue) 24% 87%;
       --sidebar-ring: var(--theme-600);
     }
 
+    /* Vivid palettes - dark */
     .dark[data-theme='red'],
     .dark[data-theme='orange'],
     .dark[data-theme='amber'],
@@ -666,7 +694,82 @@
     .dark[data-theme='purple'],
     .dark[data-theme='fuchsia'],
     .dark[data-theme='pink'],
-    .dark[data-theme='rose'],
+    .dark[data-theme='rose'] {
+      --background: var(--theme-hue) 36% 7%;
+      --foreground: var(--theme-hue) 16% 91%;
+      --card: var(--theme-hue) 30% 11%;
+      --card-foreground: var(--theme-hue) 16% 91%;
+      --popover: var(--theme-hue) 30% 11%;
+      --popover-foreground: var(--theme-hue) 16% 91%;
+      --primary: var(--theme-400);
+      --primary-foreground: var(--theme-hue) 45% 9%;
+      --secondary: var(--theme-hue) 24% 17%;
+      --secondary-foreground: var(--theme-hue) 16% 91%;
+      --muted: var(--theme-hue) 20% 16%;
+      --muted-foreground: var(--theme-hue) 12% 66%;
+      --accent: var(--theme-hue) 24% 22%;
+      --accent-foreground: var(--theme-hue) 16% 94%;
+      --border: var(--theme-hue) 18% 24%;
+      --input: var(--theme-hue) 20% 18%;
+      --ring: var(--theme-400);
+      --chart-1: var(--theme-400);
+      --chart-2: var(--theme-300);
+      --chart-3: var(--theme-500);
+      --chart-4: var(--theme-600);
+      --chart-5: var(--theme-100);
+      --sidebar-background: var(--theme-hue) 33% 8%;
+      --sidebar-foreground: var(--theme-hue) 16% 91%;
+      --sidebar-primary: var(--theme-400);
+      --sidebar-primary-foreground: var(--theme-hue) 45% 9%;
+      --sidebar-accent: var(--theme-hue) 22% 16%;
+      --sidebar-accent-foreground: var(--theme-hue) 16% 91%;
+      --sidebar-border: var(--theme-hue) 18% 22%;
+      --sidebar-ring: var(--theme-400);
+    }
+
+    /* Near-neutral palettes - light (lower saturation so they read as grey) */
+    :root[data-theme='slate'],
+    :root[data-theme='gray'],
+    :root[data-theme='zinc'],
+    :root[data-theme='neutral'],
+    :root[data-theme='stone'],
+    :root[data-theme='taupe'],
+    :root[data-theme='mauve'],
+    :root[data-theme='mist'],
+    :root[data-theme='olive'] {
+      --background: var(--theme-hue) 16% 98%;
+      --foreground: var(--theme-hue) 12% 14%;
+      --card: 0 0% 100%;
+      --card-foreground: var(--theme-hue) 12% 14%;
+      --popover: 0 0% 100%;
+      --popover-foreground: var(--theme-hue) 12% 14%;
+      --primary: var(--theme-600);
+      --primary-foreground: var(--theme-on-primary);
+      --secondary: var(--theme-hue) 12% 94%;
+      --secondary-foreground: var(--theme-hue) 14% 20%;
+      --muted: var(--theme-hue) 10% 96%;
+      --muted-foreground: var(--theme-hue) 8% 40%;
+      --accent: var(--theme-hue) 13% 91%;
+      --accent-foreground: var(--theme-hue) 15% 22%;
+      --border: var(--theme-hue) 12% 86%;
+      --input: var(--theme-hue) 12% 93%;
+      --ring: var(--theme-600);
+      --chart-1: var(--theme-600);
+      --chart-2: var(--theme-500);
+      --chart-3: var(--theme-400);
+      --chart-4: var(--theme-300);
+      --chart-5: var(--theme-900);
+      --sidebar-background: var(--theme-hue) 13% 97%;
+      --sidebar-foreground: var(--theme-hue) 14% 15%;
+      --sidebar-primary: var(--theme-600);
+      --sidebar-primary-foreground: var(--theme-on-primary);
+      --sidebar-accent: var(--theme-hue) 12% 91%;
+      --sidebar-accent-foreground: var(--theme-hue) 14% 18%;
+      --sidebar-border: var(--theme-hue) 12% 86%;
+      --sidebar-ring: var(--theme-600);
+    }
+
+    /* Near-neutral palettes - dark */
     .dark[data-theme='slate'],
     .dark[data-theme='gray'],
     .dark[data-theme='zinc'],
@@ -676,35 +779,35 @@
     .dark[data-theme='mauve'],
     .dark[data-theme='mist'],
     .dark[data-theme='olive'] {
-      --background: var(--theme-950);
-      --foreground: var(--theme-50);
-      --card: var(--theme-900);
-      --card-foreground: var(--theme-50);
-      --popover: var(--theme-900);
-      --popover-foreground: var(--theme-50);
+      --background: var(--theme-hue) 14% 8%;
+      --foreground: var(--theme-hue) 9% 90%;
+      --card: var(--theme-hue) 12% 11%;
+      --card-foreground: var(--theme-hue) 9% 90%;
+      --popover: var(--theme-hue) 12% 11%;
+      --popover-foreground: var(--theme-hue) 9% 90%;
       --primary: var(--theme-400);
-      --primary-foreground: var(--theme-950);
-      --secondary: var(--theme-900);
-      --secondary-foreground: var(--theme-50);
-      --muted: var(--theme-900);
-      --muted-foreground: var(--theme-300);
-      --accent: var(--theme-900);
-      --accent-foreground: var(--theme-50);
-      --border: var(--theme-900);
-      --input: var(--theme-900);
+      --primary-foreground: var(--theme-hue) 20% 10%;
+      --secondary: var(--theme-hue) 10% 17%;
+      --secondary-foreground: var(--theme-hue) 9% 90%;
+      --muted: var(--theme-hue) 9% 16%;
+      --muted-foreground: var(--theme-hue) 7% 64%;
+      --accent: var(--theme-hue) 10% 22%;
+      --accent-foreground: var(--theme-hue) 9% 93%;
+      --border: var(--theme-hue) 9% 24%;
+      --input: var(--theme-hue) 9% 18%;
       --ring: var(--theme-400);
       --chart-1: var(--theme-400);
       --chart-2: var(--theme-300);
       --chart-3: var(--theme-500);
       --chart-4: var(--theme-600);
       --chart-5: var(--theme-100);
-      --sidebar-background: var(--theme-950);
-      --sidebar-foreground: var(--theme-50);
+      --sidebar-background: var(--theme-hue) 12% 9%;
+      --sidebar-foreground: var(--theme-hue) 9% 90%;
       --sidebar-primary: var(--theme-400);
-      --sidebar-primary-foreground: var(--theme-950);
-      --sidebar-accent: var(--theme-900);
-      --sidebar-accent-foreground: var(--theme-50);
-      --sidebar-border: var(--theme-900);
+      --sidebar-primary-foreground: var(--theme-hue) 20% 10%;
+      --sidebar-accent: var(--theme-hue) 10% 16%;
+      --sidebar-accent-foreground: var(--theme-hue) 9% 90%;
+      --sidebar-border: var(--theme-hue) 9% 22%;
       --sidebar-ring: var(--theme-400);
     }
 
@@ -986,175 +1089,109 @@
     font-family: 'PlusJakartaSans-Medium', sans-serif !important;
   }
 
-  html[data-theme='cyan'] .vs__dropdown-option:hover,
-  html[data-theme='cyan'] .vs__dropdown-option--highlight {
+  /* ===========================================================================
+     Custom-palette utility bridge.
+
+     A lot of components hard-code Tailwind violet / indigo / purple utilities
+     (the old brand hue) instead of the semantic tokens. Under any non-default
+     palette those would keep painting violet and break the theme, so remap the
+     common ones onto the active `--theme-*` scale. Scoped to every custom
+     palette via :not([data-theme='default']) — the default palette is violet by
+     design and is left untouched.
+     =========================================================================== */
+  html[data-theme]:not([data-theme='default']) .vs__dropdown-option:hover,
+  html[data-theme]:not([data-theme='default']) .vs__dropdown-option--highlight {
     background: hsl(var(--primary)) !important;
     color: hsl(var(--primary-foreground)) !important;
   }
 
-  html[data-theme='cyan'] .text-violet-500,
-  html[data-theme='cyan'] .text-violet-600,
-  html[data-theme='cyan'] .text-purple-500,
-  html[data-theme='cyan'] .text-indigo-700,
-  html[data-theme='cyan'] .text-indigo-600,
-  html[data-theme='cyan'] .text-indigo-500,
-  html.dark[data-theme='cyan'] .dark\:text-violet-300,
-  html.dark[data-theme='cyan'] .dark\:text-indigo-300 {
+  html[data-theme]:not([data-theme='default']) .text-violet-400,
+  html[data-theme]:not([data-theme='default']) .text-violet-500,
+  html[data-theme]:not([data-theme='default']) .text-violet-600,
+  html[data-theme]:not([data-theme='default']) .text-violet-700,
+  html[data-theme]:not([data-theme='default']) .text-purple-500,
+  html[data-theme]:not([data-theme='default']) .text-purple-600,
+  html[data-theme]:not([data-theme='default']) .text-indigo-500,
+  html[data-theme]:not([data-theme='default']) .text-indigo-600,
+  html[data-theme]:not([data-theme='default']) .text-indigo-700,
+  html[data-theme]:not([data-theme='default']) .hover\:text-violet-500:hover,
+  html[data-theme]:not([data-theme='default']) .hover\:text-indigo-500:hover,
+  html[data-theme]:not([data-theme='default']) .focus\:text-violet-500:focus,
+  html.dark[data-theme]:not([data-theme='default']) .dark\:text-violet-300,
+  html.dark[data-theme]:not([data-theme='default']) .dark\:text-indigo-300 {
     color: hsl(var(--theme-500)) !important;
   }
 
-  html[data-theme='cyan'] .bg-violet-500,
-  html[data-theme='cyan'] .bg-violet-600,
-  html[data-theme='cyan'] .bg-purple-500,
-  html[data-theme='cyan'] .bg-indigo-500,
-  html[data-theme='cyan'] .bg-indigo-600,
-  html[data-theme='cyan'] .hover\:bg-violet-500:hover,
-  html[data-theme='cyan'] .hover\:bg-violet-600:hover,
-  html[data-theme='cyan'] .hover\:bg-purple-500:hover,
-  html[data-theme='cyan'] .hover\:bg-indigo-600:hover,
-  html[data-theme='cyan'] .focus\:bg-indigo-600:focus {
+  html[data-theme]:not([data-theme='default']) .bg-violet-500,
+  html[data-theme]:not([data-theme='default']) .bg-violet-600,
+  html[data-theme]:not([data-theme='default']) .bg-purple-500,
+  html[data-theme]:not([data-theme='default']) .bg-purple-600,
+  html[data-theme]:not([data-theme='default']) .bg-indigo-500,
+  html[data-theme]:not([data-theme='default']) .bg-indigo-600,
+  html[data-theme]:not([data-theme='default']) .hover\:bg-violet-500:hover,
+  html[data-theme]:not([data-theme='default']) .hover\:bg-violet-600:hover,
+  html[data-theme]:not([data-theme='default']) .hover\:bg-purple-500:hover,
+  html[data-theme]:not([data-theme='default']) .hover\:bg-indigo-600:hover,
+  html[data-theme]:not([data-theme='default']) .focus\:bg-indigo-600:focus,
+  html[data-theme]:not([data-theme='default']) .\[\&\:hover\]\:bg-violet-500:hover,
+  html[data-theme]:not([data-theme='default']) .\[\&\:focus\]\:bg-violet-500:focus,
+  html[data-theme]:not([data-theme='default']) .data-\[highlighted\]\:bg-purple-500[data-highlighted],
+  html[data-theme]:not([data-theme='default']) .data-\[highlighted\]\:bg-violet-500[data-highlighted] {
     background-color: hsl(var(--theme-500)) !important;
   }
 
-  html[data-theme='cyan'] .bg-violet-100,
-  html[data-theme='cyan'] .bg-indigo-50 {
+  html[data-theme]:not([data-theme='default']) .bg-violet-100,
+  html[data-theme]:not([data-theme='default']) .bg-purple-100,
+  html[data-theme]:not([data-theme='default']) .bg-indigo-50,
+  html[data-theme]:not([data-theme='default']) .bg-indigo-100 {
     background-color: hsl(var(--theme-100)) !important;
   }
 
-  html[data-theme='cyan'] .bg-violet-500\/10,
-  html[data-theme='cyan'] .bg-violet-500\/12,
-  html[data-theme='cyan'] .bg-violet-500\/30 {
+  html[data-theme]:not([data-theme='default']) .bg-violet-500\/10,
+  html[data-theme]:not([data-theme='default']) .bg-violet-500\/12,
+  html[data-theme]:not([data-theme='default']) .bg-violet-500\/20,
+  html[data-theme]:not([data-theme='default']) .bg-violet-500\/30 {
     background-color: hsl(var(--theme-500) / 0.12) !important;
   }
 
-  html[data-theme='cyan'] .border-violet-500,
-  html[data-theme='cyan'] .border-violet-400,
-  html[data-theme='cyan'] .border-indigo-400,
-  html[data-theme='cyan'] .focus\:border-indigo-500:focus,
-  html.dark[data-theme='cyan'] .dark\:focus\:border-indigo-600:focus {
+  html[data-theme]:not([data-theme='default']) .border-violet-400,
+  html[data-theme]:not([data-theme='default']) .border-violet-500,
+  html[data-theme]:not([data-theme='default']) .border-purple-500,
+  html[data-theme]:not([data-theme='default']) .border-indigo-400,
+  html[data-theme]:not([data-theme='default']) .border-indigo-500,
+  html[data-theme]:not([data-theme='default']) .focus\:border-indigo-500:focus,
+  html.dark[data-theme]:not([data-theme='default']) .dark\:focus\:border-indigo-600:focus {
     border-color: hsl(var(--theme-500)) !important;
   }
 
-  html[data-theme='cyan'] .focus\:ring-violet-500:focus,
-  html[data-theme='cyan'] .focus\:ring-indigo-500:focus,
-  html.dark[data-theme='cyan'] .dark\:focus\:ring-indigo-600:focus {
+  html[data-theme]:not([data-theme='default']) .focus\:ring-violet-500:focus,
+  html[data-theme]:not([data-theme='default']) .focus\:ring-indigo-500:focus,
+  html.dark[data-theme]:not([data-theme='default']) .dark\:focus\:ring-indigo-600:focus {
     --tw-ring-color: hsl(var(--ring)) !important;
   }
 
-  html[data-theme='cyan'] .hover\:text-violet-500:hover,
-  html[data-theme='cyan'] .hover\:text-indigo-500:hover,
-  html[data-theme='cyan'] .focus\:text-violet-500:focus {
-    color: hsl(var(--theme-500)) !important;
-  }
-
-  html[data-theme='cyan'] .from-violet-500 {
+  html[data-theme]:not([data-theme='default']) .from-violet-500 {
     --tw-gradient-from: hsl(var(--theme-500)) var(--tw-gradient-from-position) !important;
     --tw-gradient-to: hsl(var(--theme-500) / 0) var(--tw-gradient-to-position) !important;
     --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
   }
 
-  html[data-theme='cyan'] .from-violet-400 {
+  html[data-theme]:not([data-theme='default']) .from-violet-400 {
     --tw-gradient-from: hsl(var(--theme-400)) var(--tw-gradient-from-position) !important;
     --tw-gradient-to: hsl(var(--theme-400) / 0) var(--tw-gradient-to-position) !important;
     --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
   }
 
-  html[data-theme='cyan'] .via-violet-900 {
+  html[data-theme]:not([data-theme='default']) .via-violet-900 {
     --tw-gradient-to: hsl(var(--theme-900) / 0) var(--tw-gradient-to-position) !important;
     --tw-gradient-stops: var(--tw-gradient-from), hsl(var(--theme-900)) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
   }
 
-  html[data-theme='cyan'] .to-violet-400 {
+  html[data-theme]:not([data-theme='default']) .to-violet-400 {
     --tw-gradient-to: hsl(var(--theme-400)) var(--tw-gradient-to-position) !important;
   }
 
-  html[data-theme='cyan'] .to-violet-950 {
-    --tw-gradient-to: hsl(var(--theme-950)) var(--tw-gradient-to-position) !important;
-  }
-
-  html[data-theme='violet-900'] .vs__dropdown-option:hover,
-  html[data-theme='violet-900'] .vs__dropdown-option--highlight {
-    background: hsl(var(--primary)) !important;
-    color: hsl(var(--primary-foreground)) !important;
-  }
-
-  html[data-theme='violet-900'] .text-violet-500,
-  html[data-theme='violet-900'] .text-violet-600,
-  html[data-theme='violet-900'] .text-purple-500,
-  html[data-theme='violet-900'] .text-indigo-700,
-  html[data-theme='violet-900'] .text-indigo-600,
-  html[data-theme='violet-900'] .text-indigo-500,
-  html.dark[data-theme='violet-900'] .dark\:text-violet-300,
-  html.dark[data-theme='violet-900'] .dark\:text-indigo-300 {
-    color: hsl(var(--theme-500)) !important;
-  }
-
-  html[data-theme='violet-900'] .bg-violet-500,
-  html[data-theme='violet-900'] .bg-violet-600,
-  html[data-theme='violet-900'] .bg-purple-500,
-  html[data-theme='violet-900'] .bg-indigo-500,
-  html[data-theme='violet-900'] .bg-indigo-600,
-  html[data-theme='violet-900'] .hover\:bg-violet-500:hover,
-  html[data-theme='violet-900'] .hover\:bg-violet-600:hover,
-  html[data-theme='violet-900'] .hover\:bg-purple-500:hover,
-  html[data-theme='violet-900'] .hover\:bg-indigo-600:hover,
-  html[data-theme='violet-900'] .focus\:bg-indigo-600:focus {
-    background-color: hsl(var(--theme-500)) !important;
-  }
-
-  html[data-theme='violet-900'] .bg-violet-100,
-  html[data-theme='violet-900'] .bg-indigo-50 {
-    background-color: hsl(var(--theme-100)) !important;
-  }
-
-  html[data-theme='violet-900'] .bg-violet-500\/10,
-  html[data-theme='violet-900'] .bg-violet-500\/12,
-  html[data-theme='violet-900'] .bg-violet-500\/30 {
-    background-color: hsl(var(--theme-500) / 0.12) !important;
-  }
-
-  html[data-theme='violet-900'] .border-violet-500,
-  html[data-theme='violet-900'] .border-violet-400,
-  html[data-theme='violet-900'] .border-indigo-400,
-  html[data-theme='violet-900'] .focus\:border-indigo-500:focus,
-  html.dark[data-theme='violet-900'] .dark\:focus\:border-indigo-600:focus {
-    border-color: hsl(var(--theme-500)) !important;
-  }
-
-  html[data-theme='violet-900'] .focus\:ring-violet-500:focus,
-  html[data-theme='violet-900'] .focus\:ring-indigo-500:focus,
-  html.dark[data-theme='violet-900'] .dark\:focus\:ring-indigo-600:focus {
-    --tw-ring-color: hsl(var(--ring)) !important;
-  }
-
-  html[data-theme='violet-900'] .hover\:text-violet-500:hover,
-  html[data-theme='violet-900'] .hover\:text-indigo-500:hover,
-  html[data-theme='violet-900'] .focus\:text-violet-500:focus {
-    color: hsl(var(--theme-500)) !important;
-  }
-
-  html[data-theme='violet-900'] .from-violet-500 {
-    --tw-gradient-from: hsl(var(--theme-500)) var(--tw-gradient-from-position) !important;
-    --tw-gradient-to: hsl(var(--theme-500) / 0) var(--tw-gradient-to-position) !important;
-    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-  }
-
-  html[data-theme='violet-900'] .from-violet-400 {
-    --tw-gradient-from: hsl(var(--theme-400)) var(--tw-gradient-from-position) !important;
-    --tw-gradient-to: hsl(var(--theme-400) / 0) var(--tw-gradient-to-position) !important;
-    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-  }
-
-  html[data-theme='violet-900'] .via-violet-900 {
-    --tw-gradient-to: hsl(var(--theme-900) / 0) var(--tw-gradient-to-position) !important;
-    --tw-gradient-stops: var(--tw-gradient-from), hsl(var(--theme-900)) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
-  }
-
-  html[data-theme='violet-900'] .to-violet-400 {
-    --tw-gradient-to: hsl(var(--theme-400)) var(--tw-gradient-to-position) !important;
-  }
-
-  html[data-theme='violet-900'] .to-violet-950 {
+  html[data-theme]:not([data-theme='default']) .to-violet-950 {
     --tw-gradient-to: hsl(var(--theme-950)) var(--tw-gradient-to-position) !important;
   }
 

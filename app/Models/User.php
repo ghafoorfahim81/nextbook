@@ -89,9 +89,7 @@ class User extends Authenticatable
                 'expense',
                 'purchase',
                 'sale',
-                'receipt',
-                'payment',
-                'transfer',
+                'cash_transactions',
                 'user_management',
                 'trash',
                 'reports',
@@ -554,6 +552,34 @@ class User extends Authenticatable
     public function getAllPreferences(): array
     {
         $preferences = array_replace_recursive(self::DEFAULT_PREFERENCES, $this->preferences ?? []);
+
+        // array_replace_recursive merges list-style preferences by numeric
+        // index, so a stored list that is shorter than the default keeps the
+        // default's leftover tail entries (e.g. a user who hides all but two
+        // sidebar menus still gets ~20 back). Restore the sidebar menu list
+        // from the raw stored value so the user's exact selection is honoured,
+        // and fold away legacy keys (receipt/payment were merged into the
+        // cash_transactions group; transfer moved under the Account menu).
+        $storedMenus = data_get($this->preferences, 'appearance.sidebar_menus');
+
+        if (is_array($storedMenus)) {
+            $normalizedMenus = [];
+
+            foreach ($storedMenus as $menu) {
+                $menu = match ($menu) {
+                    'receipt', 'payment' => 'cash_transactions',
+                    default => $menu,
+                };
+
+                if ($menu === 'transfer' || ! is_string($menu) || $menu === '') {
+                    continue;
+                }
+
+                $normalizedMenus[$menu] = true;
+            }
+
+            data_set($preferences, 'appearance.sidebar_menus', array_keys($normalizedMenus));
+        }
 
         foreach (['sale', 'sale_order', 'sale_return', 'sale_quotation', 'purchase', 'purchase_order', 'purchase_return', 'purchase_quotation'] as $module) {
             $fields = &$preferences[$module]['general_fields'];

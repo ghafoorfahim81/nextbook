@@ -203,6 +203,8 @@
         "olive": "Olive",
         "decimal_places": "تعداد اعشار",
         "sidebar_menus": "منوهای سایدبار",
+        "sidebar_menus_select_all": "انتخاب همه",
+        "sidebar_menus_deselect_all": "لغو انتخاب همه",
         "sidebar_font_size": "اندازه فونت سایدبار",
         "heading_font_size": "اندازه فونت عنوان",
         "table_header_font_size": "اندازه فونت سرآیند جدول",

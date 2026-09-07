@@ -365,6 +365,17 @@ form.appearance.accent_color = accentColorOptions.includes(form.appearance.accen
     ? form.appearance.accent_color
     : resolveAccentColor(props.preferences)
 
+const allSidebarMenusSelected = computed(() => {
+    const selected = form.appearance.sidebar_menus ?? []
+    return (props.sidebarMenus ?? []).every((menu) => selected.includes(menu.value))
+})
+
+function toggleAllSidebarMenus() {
+    form.appearance.sidebar_menus = allSidebarMenusSelected.value
+        ? []
+        : (props.sidebarMenus ?? []).map((menu) => menu.value)
+}
+
 watch(
     () => [
         form.appearance?.theme,
@@ -1103,20 +1114,30 @@ watch(normalizedMenuSearch, (query) => {
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <Label>{{ t('preferences.appearance.sidebar_menus') }}</Label>
+                                <div class="flex items-center justify-between gap-3">
+                                    <Label>{{ t('preferences.appearance.sidebar_menus') }}</Label>
+                                    <Button
+                                        type="button"
+                                        variant="link"
+                                        size="sm"
+                                        class="h-auto p-0"
+                                        @click="toggleAllSidebarMenus"
+                                    >
+                                        {{ allSidebarMenusSelected
+                                            ? t('preferences.appearance.sidebar_menus_deselect_all')
+                                            : t('preferences.appearance.sidebar_menus_select_all') }}
+                                    </Button>
+                                </div>
                                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                     <div v-for="menu in sidebarMenus" :key="menu.value" class="flex items-center gap-2">
                                         <Checkbox
                                             :id="`menu-${menu.value}`"
                                             :checked="form.appearance.sidebar_menus?.includes(menu.value)"
                                             @update:checked="(checked) => {
-                                                if (!form.appearance.sidebar_menus) form.appearance.sidebar_menus = []
-                                                if (checked) {
-                                                    if (form.appearance.sidebar_menus.includes(menu.value)) return
-                                                    form.appearance.sidebar_menus.push(menu.value)
-                                                } else {
-                                                    form.appearance.sidebar_menus = form.appearance.sidebar_menus.filter(m => m !== menu.value)
-                                                }
+                                                const current = Array.isArray(form.appearance.sidebar_menus) ? form.appearance.sidebar_menus : []
+                                                form.appearance.sidebar_menus = checked
+                                                    ? [...new Set([...current, menu.value])]
+                                                    : current.filter(m => m !== menu.value)
                                             }"
                                         />
                                         <Label :for="`menu-${menu.value}`" class="font-normal cursor-pointer">{{ t(menu.label) }}</Label>

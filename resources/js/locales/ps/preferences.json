@@ -191,7 +191,9 @@
         "mist": "Mist",
         "olive": "Olive",
         "decimal_places": "لسیزې ځایونه",
-        "sidebar_menus": "سایډبار مینوګانې"
+        "sidebar_menus": "سایډبار مینوګانې",
+        "sidebar_menus_select_all": "ټول وټاکئ",
+        "sidebar_menus_deselect_all": "ټول لرې کړئ"
     },
     "item_management": {
         "description": "د توکو فورمونو کې لیدلی ساحې تنظیم کړئ",
