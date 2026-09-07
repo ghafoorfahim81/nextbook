@@ -596,6 +596,25 @@ class AccountController extends Controller
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account')]));
     }
 
+    /**
+     * Flip the account between active and inactive.
+     *
+     * Deactivating keeps every posted balance and transaction intact; it only
+     * takes the account out of the pickers on new documents. Main accounts stay
+     * eligible — the delete guard explicitly points users here as the safe
+     * alternative to deleting one.
+     */
+    public function toggleActive(Request $request, Account $chart_of_account)
+    {
+        $this->authorize('update', $chart_of_account);
+
+        $chart_of_account->update(['is_active' => ! $chart_of_account->is_active]);
+
+        return back()->with('success', __('general.status_updated_successfully', [
+            'resource' => __('general.resource.account'),
+        ]));
+    }
+
     public function forceDelete(Request $request, Account $chart_of_account)
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('accounts', (string) $chart_of_account->id);

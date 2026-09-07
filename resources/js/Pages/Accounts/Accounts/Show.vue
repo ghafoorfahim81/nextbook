@@ -3,10 +3,12 @@ import AppLayout from '@/Layouts/Layout.vue';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router, usePage } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import { Button } from '@/Components/ui/button';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 import TimeSeriesChart from '@/Components/charts/TimeSeriesChart.vue';
-import { ArrowLeft, SquarePen } from 'lucide-vue-next';
+import { ArrowLeft, SquarePen, Power, PowerOff, Loader2 } from 'lucide-vue-next';
+import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue';
 import { useAuth } from '@/composables/useAuth';
 
 const { t } = useI18n();
@@ -29,6 +31,42 @@ const transactionList = computed(() => props.transactions?.data ?? props.transac
 const openings = computed(() => props.opening ? [props.opening?.data ?? props.opening] : []);
 
 const activeMainTab = ref('general');
+
+const isActive = computed(() => accountData.value.is_active !== false);
+
+const confirmToggleOpen = ref(false);
+const togglingActive = ref(false);
+
+const requestToggleActive = () => {
+    if (!accountData.value.id || togglingActive.value) return;
+    confirmToggleOpen.value = true;
+};
+
+const performToggleActive = () => {
+    confirmToggleOpen.value = false;
+
+    const activating = !isActive.value;
+    togglingActive.value = true;
+    router.patch(route('chart-of-accounts.toggle-active', accountData.value.id), {}, {
+        preserveScroll: true,
+        // Skip the full-screen BookLoader — the button shows its own spinner.
+        headers: { 'X-DataTable-Refresh': '1' },
+        onSuccess: () => {
+            const flashError = page.props.flash?.error;
+            if (flashError) {
+                toast.error(flashError, { class: 'bg-pink-600 text-white' });
+                return;
+            }
+            toast.success(t('general.success'), {
+                description: activating
+                    ? t('account.account_activated')
+                    : t('account.account_deactivated'),
+                class: 'bg-green-600',
+            });
+        },
+        onFinish: () => { togglingActive.value = false; },
+    });
+};
 
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
@@ -179,16 +217,34 @@ const exportUrl = computed(() =>
                 <ArrowLeft class="h-4 w-4 rtl:rotate-180 text-primary" />
                 {{ t('general.back') }}
             </Button>
-                <Button
-                    v-if="can('accounts.update') && accountData.id"
-                    variant="default"
-                    size="sm"
-                    class="gap-1.5 bg-primary text-primary-foreground"
-                    @click="router.visit(route('chart-of-accounts.edit', accountData.id))"
-                >
-                    <SquarePen class="h-4 w-4" />
-                    {{ t('datatable.edit') }}
-                </Button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <Button
+                        v-if="can('accounts.update') && accountData.id"
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        :disabled="togglingActive"
+                        class="h-8 gap-1.5"
+                        :class="isActive
+                            ? 'border-amber-500/50 text-amber-600 hover:bg-amber-500/10 dark:text-amber-400'
+                            : 'border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400'"
+                        @click="requestToggleActive"
+                    >
+                        <Loader2 v-if="togglingActive" class="h-4 w-4 animate-spin" />
+                        <component :is="isActive ? PowerOff : Power" v-else class="h-4 w-4" />
+                        {{ isActive ? t('account.deactivate') : t('account.activate') }}
+                    </Button>
+                    <Button
+                        v-if="can('accounts.update') && accountData.id"
+                        variant="default"
+                        size="sm"
+                        class="gap-1.5 bg-primary text-primary-foreground"
+                        @click="router.visit(route('chart-of-accounts.edit', accountData.id))"
+                    >
+                        <SquarePen class="h-4 w-4" />
+                        {{ t('datatable.edit') }}
+                    </Button>
+                </div>
             </div>
 
             <!-- Tabs -->
@@ -216,7 +272,17 @@ const exportUrl = computed(() =>
                         <div class="text-center">
                             <div class="text-base font-semibold text-primary">{{ accountData.local_name }}</div>
                             <div class="text-xs text-muted-foreground mt-1">{{ accountData.number }}</div>
-                            <div class="mt-2 text-xs text-muted-foreground/80">{{ t('account.account') }}</div>
+                            <div class="mt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground/80">
+                                <span>{{ t('account.account') }}</span>
+                                <span
+                                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                    :class="isActive
+                                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                        : 'bg-muted text-muted-foreground'"
+                                >
+                                    {{ isActive ? t('general.active') : t('general.inactive') }}
+                                </span>
+                            </div>
                         </div>
                         <div class="w-full bg-background border border-border rounded-xl overflow-hidden mt-4 divide-y divide-border">
                             <div v-for="section in currencySections" :key="section.currency_id" class="flex flex-col divide-y divide-border">
@@ -272,6 +338,12 @@ const exportUrl = computed(() =>
                             <div><div class="text-xs text-muted-foreground">{{ t('account.account_type') }}</div><div class="font-medium">{{ accountData.account_type?.name || '' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.branch') }}</div><div class="font-medium">{{ accountData.branch?.name || '' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('account.parent') }}</div><div class="font-medium">{{ accountData.parent?.name || '' }}</div></div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.status') }}</div>
+                                <div class="font-medium" :class="isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'">
+                                    {{ isActive ? t('general.active') : t('general.inactive') }}
+                                </div>
+                            </div>
                             <div class="md:col-span-2"><div class="text-xs text-muted-foreground">{{ t('general.remark') }}</div><div class="font-medium">{{ accountData.remark }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.created_by') }}</div><div class="font-medium">{{ accountData.created_by?.name || '' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.updated_by') }}</div><div class="font-medium">{{ accountData.updated_by?.name || '' }}</div></div>
@@ -334,5 +406,15 @@ const exportUrl = computed(() =>
                 </table>
             </div>
         </div>
+
+        <ConfirmDeleteDialog
+            :open="confirmToggleOpen"
+            :title="isActive ? t('account.deactivate_confirm_title') : t('account.activate_confirm_title')"
+            :description="isActive ? t('account.deactivate_confirm_desc') : t('account.activate_confirm_desc')"
+            :cancel-text="t('general.cancel')"
+            :continue-text="isActive ? t('account.deactivate') : t('account.activate')"
+            @update:open="value => (confirmToggleOpen = value)"
+            @confirm="performToggleActive"
+        />
     </AppLayout>
 </template>
