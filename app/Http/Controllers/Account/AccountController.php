@@ -25,7 +25,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Models\Transaction\TransactionLine;
 use App\Models\Transaction\Transaction;
-use App\Models\User;
 use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use App\Support\BranchContext;
@@ -38,47 +37,98 @@ class AccountController extends Controller
 
     public function index(Request $request)
     {
-
-        $perPage = $request->input('perPage',  recordsPerPage());
-        $sortField = $request->input('sortField', 'balance_amount');
-        $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $balanceFields = ['balance_amount', 'balance'];
-
-        $query = Account::with(['accountType', 'parent'])
+        // The list is rendered grouped by account-type nature (asset, liability,
+        // equity, income, expense, non-posting), so the whole chart is returned
+        // in one go and the grouping/collapsing happens on the client. Charts run
+        // to a few dozen accounts, so there is nothing to paginate.
+        $accounts = Account::query()
+            ->with(['accountType'])
+            ->withStatementTotals()
             ->search($request->query('search'))
-            ->filter($filters);
+            ->filter($filters)
+            ->orderBy('number')
+            ->get();
 
-        if (in_array($sortField, $balanceFields)) {
-            $query->orderByRaw(
-                '(SELECT ABS(COALESCE(SUM(tl.debit * t.rate), 0) - COALESCE(SUM(tl.credit * t.rate), 0))
-                  FROM transaction_lines tl
-                  JOIN transactions t ON t.id = tl.transaction_id
-                  WHERE tl.account_id = accounts.id
-                  AND t.status IN (\'posted\', \'reversed\')) ' . ($sortDirection === 'asc' ? 'ASC' : 'DESC')
-            );
-        } else {
-            $query->orderBy($sortField, $sortDirection);
-        }
+        $isFiltered = filled($request->query('search'))
+            || collect($filters)->contains(fn ($value) => $value !== null && $value !== '');
 
-        $accounts = $query->paginate($perPage)->withQueryString();
         return inertia('Accounts/Accounts/Index', [
             'accounts' => AccountListResource::collection($accounts),
-            'filterOptions' => [
-                'accountTypes' => AccountType::orderBy('name')->get(['id', 'name']),
-                'users' => User::query()
-                    ->whereNull('deleted_at') 
-                    ->get(['id', 'name']),
-            ],
+            'summary' => $this->chartSummary($accounts, $isFiltered),
             'filters' => [
                 'search' => $request->query('search'),
-                'perPage' => $perPage,
-                'sortField' => $sortField,
-                'sortDirection' => $sortDirection,
                 'filters' => $filters,
             ],
         ]);
+    }
+
+    /**
+     * Per-category balance subtotals and the trial-balance identity for the
+     * chart-of-accounts list.
+     *
+     * Everything is in home currency (the statement accessor already folds
+     * foreign lines back to base). `signed` is debit-positive; a normal payable,
+     * equity or income account therefore reads negative and is flipped to its
+     * natural credit amount for the equation. Non-posting accounts are left out
+     * of the equation entirely.
+     *
+     * @param  \Illuminate\Support\Collection<int, Account>  $accounts
+     * @return array<string, mixed>
+     */
+    private function chartSummary($accounts, bool $isFiltered): array
+    {
+        $byNature = [];
+
+        foreach ($accounts as $account) {
+            $nature = $account->accountType?->nature ?? 'other';
+            $statement = $account->statement;
+
+            $byNature[$nature] ??= ['debit' => 0.0, 'credit' => 0.0, 'count' => 0];
+            $byNature[$nature]['debit'] += (float) $statement['total_debit'];
+            $byNature[$nature]['credit'] += (float) $statement['total_credit'];
+            $byNature[$nature]['count']++;
+        }
+
+        $groups = [];
+        foreach ($byNature as $nature => $row) {
+            $net = round($row['debit'] - $row['credit'], 2);
+            $groups[$nature] = [
+                'count' => $row['count'],
+                'signed' => $net,
+                'net' => abs($net),
+                'nature' => $net > 0 ? 'dr' : ($net < 0 ? 'cr' : null),
+            ];
+        }
+
+        $signed = fn (string $nature) => (float) ($groups[$nature]['signed'] ?? 0);
+
+        $assets = round($signed('asset'), 2);
+        $liabilities = round(-$signed('liability'), 2);
+        $equity = round(-$signed('equity'), 2);
+        $income = round(-$signed('income'), 2);
+        $expense = round($signed('expense'), 2);
+
+        $left = $assets;
+        $right = round($liabilities + $equity + $income - $expense, 2);
+        $difference = round($left - $right, 2);
+
+        return [
+            'groups' => $groups,
+            'is_filtered' => $isFiltered,
+            'equation' => [
+                'assets' => $assets,
+                'liabilities' => $liabilities,
+                'equity' => $equity,
+                'income' => $income,
+                'expense' => $expense,
+                'left' => $left,
+                'right' => $right,
+                'difference' => $difference,
+                'balanced' => abs($difference) < 0.01,
+            ],
+        ];
     }
 
     public function create()
