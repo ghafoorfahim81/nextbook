@@ -52,8 +52,11 @@ trait ValidatesItemPayload
         return [
             'name' => ['required', 'string', 'max:256', $unique('name')],
             'code' => ['required', 'string', 'max:256', $unique('code')],
-            'sku' => ['nullable', 'string', 'max:100', $unique('sku')],
-            'barcode' => ['nullable', 'string', 'max:100', $unique('barcode')],
+            // SKU and barcode are variant-level now — uniqueness is enforced on
+            // item_variants. These stay only so a legacy payload still validates;
+            // the value is overwritten from the default variant on save.
+            'sku' => ['nullable', 'string', 'max:100'],
+            'barcode' => ['nullable', 'string', 'max:100'],
 
             'item_type' => ['nullable', 'string', Rule::in(ItemType::values())],
             'generic_name' => ['nullable', 'string', 'max:256'],
@@ -101,8 +104,10 @@ trait ValidatesItemPayload
             'rate_c' => ['nullable', 'numeric', 'min:0'],
 
             // --- Stock control --------------------------------------------
+            // Reorder thresholds are validated per variant (variantRules); the
+            // item columns are written from the default variant on save.
             'minimum_stock' => ['nullable', 'numeric', 'min:0'],
-            'maximum_stock' => ['nullable', 'numeric', 'min:0', 'gte:minimum_stock'],
+            'maximum_stock' => ['nullable', 'numeric', 'min:0'],
             'reorder_quantity' => ['nullable', 'numeric', 'min:0'],
             'lead_time_days' => ['nullable', 'integer', 'min:0'],
             'rack_no' => ['nullable', 'string', 'max:100'],
@@ -174,8 +179,6 @@ trait ValidatesItemPayload
             // not a valid rule expression and never fired.
             'openings.*.unit_price' => ['nullable', 'numeric', 'min:0'],
             'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
-            'openings.*.color' => ['nullable', 'string'],
-            'openings.*.size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'openings.*.status' => ['nullable', 'string'],
         ];
     }
@@ -192,9 +195,30 @@ trait ValidatesItemPayload
             $this->assertUniqueWithinPayload($validator, $variants, 'sku');
             $this->assertUniqueWithinPayload($validator, $variants, 'barcode');
             $this->assertUniqueVariantAttributes($validator, $variants);
+            $this->assertVariantStockBounds($validator, $variants);
             $this->assertOpeningPricesPresent($validator);
             $this->assertOpeningVariantPresent($validator, $variants);
         });
+    }
+
+    /**
+     * A variant's maximum stock, when given, cannot sit below its minimum.
+     *
+     * @param  array<int, array<string, mixed>>  $variants
+     */
+    private function assertVariantStockBounds(Validator $validator, array $variants): void
+    {
+        foreach ($variants as $index => $variant) {
+            $min = $variant['minimum_stock'] ?? null;
+            $max = $variant['maximum_stock'] ?? null;
+
+            if ($min !== null && $min !== '' && $max !== null && $max !== '' && (float) $max < (float) $min) {
+                $validator->errors()->add(
+                    "variants.{$index}.maximum_stock",
+                    __('item.validation.variant_max_below_min')
+                );
+            }
+        }
     }
 
     private function assertSingleDefaultVariant(Validator $validator, array $variants): void

@@ -130,6 +130,7 @@
     "available": "Available",
     "variants": "Variants",
     "variant": "Variant",
+    "identification_pricing": "Identification & Pricing",
     "variant_attributes": "Attributes",
     "add_variant": "Add Variant",
     "add_attribute_placeholder": "e.g. color, ram",
@@ -144,7 +145,8 @@
         "duplicate_variant_field": "This :field is used by another variant.",
         "opening_price_required": "A unit price is required when an opening quantity is entered.",
         "opening_warehouse_required": "A warehouse is required when an opening quantity is entered.",
-        "opening_variant_required": "Select which variant this opening quantity belongs to."
+        "opening_variant_required": "Select which variant this opening quantity belongs to.",
+        "variant_max_below_min": "Maximum stock cannot be below minimum stock."
     },
     "spec": {
         "batch": "Batch",

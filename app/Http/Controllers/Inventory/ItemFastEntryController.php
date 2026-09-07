@@ -5,10 +5,8 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\FastEntryRequest;
 use App\Models\Inventory\Item;
-use App\Models\Inventory\StockOpening;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Enums\ItemType;
 use App\Enums\StockMovementType;
@@ -34,28 +32,27 @@ class ItemFastEntryController extends Controller
         $validated = $request->validated();
         $rows = collect($validated['items']);
         DB::transaction(function () use ($rows) {
-            $today = Carbon::now()->toDateString();
-
-            $rows->each(function ($r) use ($today) {
+            $rows->each(function ($r) {
                 // 1) Create the item
                 $glAccounts = BranchContext::glAccounts();
                 $item = Item::create([
-                    // Adjust fields to match your Item fillables/columns
-                    'id'             => (string) Str::ulid(), // if your Item uses ULIDs; remove if auto-increment
                     'name'           => $r['name'],
                     'item_type'      => ItemType::INVENTORY_MATERIALS->value,
-                    'asset_account_id' => $glAccounts['inventory-stock'],
-                    'income_account_id' => $glAccounts['product-income'],
-                    'cost_account_id' => $glAccounts['cost-of-goods-sold'],
+                    'asset_account_id' => $glAccounts['inventory-stock'] ?? null,
+                    'income_account_id' => $glAccounts['product-income'] ?? null,
+                    'cost_account_id' => $glAccounts['cost-of-goods-sold'] ?? null,
                     'code'           => $r['code'] ?? null,
                     'barcode'        => $r['barcode'] ?? null,
-                    'unit_measure_id'=> $r['measure_id'],     // align with your schema
+                    'unit_measure_id'=> $r['measure_id'],
                     'purchase_price' => $r['purchase_price'] ?? null,
                     'sale_price'     => $r['sale_price'] ?? null,
-                    'is_batch_tracked' => $r['batch']?true:false,
-                    'is_expiry_tracked' => $r['expire_date']?true:false,
-                    // add any other default columns your Item requires
+                    'is_batch_tracked' => ! empty($r['batch']),
+                    'is_expiry_tracked' => ! empty($r['expire_date']),
                 ]);
+
+                // Every item carries at least one variant — SKU, barcode and
+                // price live there, not on the item.
+                app(\App\Services\ItemVariantService::class)->ensureDefault($item);
 
                 // 2) Opening stock (only when warehouse & qty present)
                 $qty = (float) ($r['quantity'] ?? 0);
@@ -65,7 +62,7 @@ class ItemFastEntryController extends Controller
                     $stockService = app(\App\Services\StockService::class);
 
 
-                    $stock = $stockService->post([
+                    $stockService->post([
                         'item_id'         => $item->id,
                         'movement_type'   => StockMovementType::IN->value,
                         'unit_measure_id' => $r['measure_id'], // from item form
@@ -76,9 +73,8 @@ class ItemFastEntryController extends Controller
                         'batch'           => $r['batch'] ?? null,
                         'date'            => Carbon::now()->toDateString(),
                         'expire_date'     => $r['expire_date'] ?? null,
-                        'size_id'         => $r['size_id'] ?? null,
                         'warehouse_id'    => $r['warehouse_id'],
-                        'branch_id'       => auth()->user()->company->branch_id,
+                        'branch_id'       => $item->branch_id,
                     ]);
 
                     $cost = (float)($r['purchase_price'] ?? 0);

@@ -367,7 +367,6 @@ class ItemOpeningService
             'batch'           => $row['batch'] ?? null,
             'date'            => Carbon::now()->toDateString(),
             'expire_date'     => $row['expire_date'] ?? null,
-            'size_id'         => $item->size_id,
             'warehouse_id'    => $row['warehouse_id'],
             'branch_id'       => $item->branch_id ?? auth()->user()?->branch_id ?? app('active_branch_id'),
         ]);

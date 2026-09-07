@@ -77,6 +77,58 @@ class ItemCrudTest extends TestCase
         $this->assertSame('5000001', $variant->barcode);
     }
 
+    public function test_ensure_default_gives_a_bare_item_its_single_variant(): void
+    {
+        // Fast entry / imports create the item row directly; the service still
+        // has to guarantee the default variant so variant_id is never null.
+        $item = Item::factory()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'unit_measure_id' => $this->ctx['unit_measure']->id,
+            'sku' => 'BARE-1',
+            'barcode' => '7000001',
+            'purchase_price' => 12,
+            'sale_price' => 20,
+        ]);
+
+        $this->assertCount(0, $item->variants);
+
+        app(\App\Services\ItemVariantService::class)->ensureDefault($item);
+
+        $item->refresh();
+        $this->assertCount(1, $item->variants);
+
+        $variant = $item->variants->first();
+        $this->assertTrue($variant->is_default);
+        $this->assertSame('BARE-1', $variant->sku);
+        $this->assertSame('7000001', $variant->barcode);
+        $this->assertSame('12.0000', (string) $variant->purchase_price);
+
+        // Idempotent — a second call does not add a row.
+        app(\App\Services\ItemVariantService::class)->ensureDefault($item->refresh());
+        $this->assertCount(1, $item->refresh()->variants);
+    }
+
+    public function test_the_default_variant_identity_and_price_mirror_onto_the_item(): void
+    {
+        // SKU, barcode and price are variant-level now, but the legacy item
+        // columns are kept in step with the default variant so purchase/sale
+        // pricing and barcode scanning keep working during the transition.
+        $this->post(route('items.store'), $this->payload([
+            'variants' => [
+                ['attributes' => [], 'sku' => 'PARA-500', 'barcode' => '5000001', 'purchase_price' => 90, 'sale_price' => 130, 'minimum_stock' => 6, 'maximum_stock' => 40, 'is_default' => true, 'sort_order' => 0],
+            ],
+        ]))->assertRedirect();
+
+        $item = Item::where('code', '9001')->firstOrFail();
+
+        $this->assertSame('PARA-500', $item->sku);
+        $this->assertSame('5000001', $item->barcode);
+        $this->assertSame('90.00', (string) $item->purchase_price);
+        $this->assertSame('130.00', (string) $item->sale_price);
+        $this->assertSame('6.00', (string) $item->minimum_stock);
+        $this->assertSame('40.00', (string) $item->maximum_stock);
+    }
+
     public function test_every_item_gets_a_variant_even_when_none_is_submitted(): void
     {
         $payload = $this->payload();

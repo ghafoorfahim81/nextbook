@@ -49,87 +49,6 @@ class ItemController extends Controller
 
     public function index(Request $request)
     {
-        // Update each item's avg_cost based on all IN-type stock movements, considering multi-unit
-
-        // Get all items with at least one stock movement (IN type)
-        // Item::chunk(500, function ($items) {
-        //     foreach ($items as $item) {
-        //         // Get all IN-type stock movements for this item
-        //         $movements = StockMovement::where('item_id', $item->id)
-        //             ->where('movement_type', StockMovementType::IN->value)
-        //             ->get();
-
-        //         $totalBaseQty = 0.0;
-        //         $totalCost = 0.0;
-        //         foreach ($movements as $movement) {
-        //             // Get item's base unit (unit_measure_id)
-        //             $itemUnitId = $item->unit_measure_id;
-        //             $movementUnitId = $movement->unit_measure_id;
-
-        //             // Calculate conversion factor between movement's unit and item's base unit
-        //             if ($itemUnitId == $movementUnitId || !$movementUnitId) {
-        //                 $factor = 1;
-        //             } else {
-        //                 // fetch UnitMeasure for conversion
-        //                 $itemUnit = \App\Models\Administration\UnitMeasure::find($itemUnitId);
-        //                 $movementUnit = \App\Models\Administration\UnitMeasure::find($movementUnitId);
-
-        //                 $itemBase = $itemUnit?->unit ?: 1;
-        //                 $movementBase = $movementUnit?->unit ?: 1;
-
-        //                 // Avoid division by zero
-        //                 $factor = ($itemBase != 0) ? ($movementBase / $itemBase) : 1;
-        //             }
-
-        //             // Convert movement quantity to item's base unit
-        //             $qtyInBaseUnit = $movement->quantity * $factor;
-        //             $lineCost = $movement->unit_cost * $movement->quantity;
-
-        //             $totalBaseQty += $qtyInBaseUnit;
-        //             $totalCost += $lineCost;
-        //         }
-
-        //         $avgCost = $totalBaseQty > 0 ? $totalCost / $totalBaseQty : 0;
-
-        //         // Only update if there's a difference, to avoid unnecessary writes
-        //         if ((float) $item->avg_cost !== (float) $avgCost) {
-        //             $item->avg_cost = $avgCost;
-        //             $item->save();
-        //         }
-        //     }
-        // });
-
-            // dd($mappedMovements->toArray());
-
-        //     $avgCosts = StockMovement::query()
-        //     ->selectRaw('item_id, SUM(quantity) as total_quantity, SUM(unit_cost * quantity) as total_cost')
-        //     ->where('movement_type', StockMovementType::IN->value)
-        //     ->groupBy('item_id')
-        //     ->get()
-        //     ->mapWithKeys(function ($itemMovement) {
-        //         // Avoid division by zero just in case
-        //         $avgCost = ($itemMovement->total_quantity != 0)
-        //             ? $itemMovement->total_cost / $itemMovement->total_quantity
-        //             : 0;
-        //         return [$itemMovement->item_id => $avgCost];
-        //     })
-        //     ->toArray();
-
-        // // Handle in batches to avoid memory/timeout issues on large data sets
-        // foreach (array_chunk($avgCosts, 1000, true) as $batch) {
-        //     // Build a single CASE WHEN SQL expression for batch update
-        //     $ids = array_keys($batch);
-        //     $caseSql = "CASE id ";
-        //     foreach ($batch as $itemId => $avgCost) {
-        //         $caseSql .= "WHEN '" . addslashes($itemId) . "' THEN " . (float)$avgCost . " ";
-        //     }
-        //     $caseSql .= "END";
-        //     // Run a single update query for this batch
-        //     Item::whereIn('id', $ids)->update([
-        //         'avg_cost' => DB::raw($caseSql),
-        //     ]);
-        // }
-
         $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
@@ -254,8 +173,6 @@ class ItemController extends Controller
                         'batch'           => $o['batch'] ?? null,
                         'date'            => Carbon::now()->toDateString(),
                         'expire_date'     => $o['expire_date'] ?? null,
-                        'size_id'         => $o['size_id'] ?? $validated['size_id'] ?? null,
-                        'color'           => $o['color'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
                         'branch_id'       => $branchId,
                     ]);
@@ -539,114 +456,13 @@ class ItemController extends Controller
             if ($request->hasFile('attachments')) {
                 $attachmentService->store($item, $request->file('attachments'));
             }
-            // $existingDraftOpenings = $item->openings()
-            //     ->where('status', StockStatus::DRAFT->value)
-            //     ->orderBy('created_at')
-            //     ->orderBy('id')
-            //     ->get()
-            //     ->keyBy('id');
 
             // 1) Update item
             $item->update($validated);
 
-            // 2) Variants
+            // 2) Variants — SKU, barcode and price live here; the service
+            //    mirrors the default variant back onto the item columns.
             app(ItemVariantService::class)->sync($item, $variants);
-
-            // 2) Handle openings
-            // $openings = collect($validated['openings'] ?? []);
-            // $transactionService = app(\App\Services\TransactionService::class);
-            // $submittedOpeningIds = $openings
-            //     ->pluck('id')
-            //     ->filter()
-            //     ->values();
-
-            // $existingDraftOpenings
-            //     ->reject(fn (StockMovement $opening) => $submittedOpeningIds->contains($opening->id))
-            //     ->each(function (StockMovement $opening) {
-            //         $this->deleteOpeningBalance($opening);
-            //     });
-
-            // $existingDraftOpenings->each(function (StockMovement $opening) {
-            //     $opening->forceDelete();
-            // });
-
-            // $openings
-            //     ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0 && $o['status'] == StockStatus::DRAFT->value)
-            //     ->each(function ($o) use ($item, $validated, $existingDraftOpenings) {
-            //         $existingOpening = !empty($o['id']) ? $existingDraftOpenings->get($o['id']) : null;
-            //         $balanceId = $existingOpening ? $this->resolveOpeningBalanceId($existingOpening) : null;
-            //         $stockService = app(\App\Services\StockService::class);
-            //         $branchId = auth()->user()->branch_id ?? app('active_branch_id');
-
-            //         $stock = $stockService->post([
-            //             'item_id'         => $item->id,
-            //             'movement_type'   => StockMovementType::IN->value,
-            //             'unit_measure_id' => $validated['unit_measure_id'], // from item form
-            //             'quantity'        => (float) $o['quantity'],
-            //             'source'          => StockSourceType::OPENING->value,
-            //             'unit_cost'       => (float) $o['unit_price'],
-            //             'status'          => StockStatus::DRAFT->value,
-            //             'batch'           => $o['batch'] ?? null,
-            //             'date'            => Carbon::now()->toDateString(),
-            //             'expire_date'     => $o['expire_date'] ?? null,
-            //             'size_id'         => $validated['size_id'] ?? null,
-            //             'warehouse_id'    => $o['warehouse_id'],
-            //             'branch_id'       => $branchId,
-            //             'balance_id'      => $balanceId,
-            //             'replace_balance' => $balanceId !== null,
-            //         ]);
-
-            //     });
-
-                // Delete opening stocks
-                // $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0);
-
-                // $openingTransaction = $item->openingTransaction()->first();
-                //     if ($openingTransaction) {
-                //         // Then safely delete the related transactions
-                //         if ($openingTransaction->id) {
-                //             TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
-                //             Transaction::where('id', $openingTransaction->id)->forceDelete();
-                //         }
-                //     }
-
-                // Create opening transactions
-                // if ($filteredOpenings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
-                //     $glAccounts = BranchContext::glAccounts();
-                //     $homeCurrency = BranchContext::homeCurrency();
-                //     $itemType = $validated['item_type'];
-                //     $openingBalanceAccount = $glAccounts['opening-balance-equity'];
-                //     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
-                //         $inventoryAccount = $glAccounts['inventory-stock'];
-                //     }
-                //     elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
-                //         $inventoryAccount = $glAccounts['non-inventory-items'];
-                //     }
-                //     elseif ($itemType == ItemType::RAW_MATERIALS->value) {
-                //         $inventoryAccount = $glAccounts['raw-materials'];
-                //     }
-                //     elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
-                //         $inventoryAccount = $glAccounts['finished-goods'];
-                //     }
-                //     $transaction = $transactionService->post(
-                //         header: [
-                //           'currency_id' => $homeCurrency->id,
-                //           'rate' => 1,
-                //           'date' => Carbon::now()->toDateString(),
-                //           'reference_type' => Item::class,
-                //           'reference_id' => $item->id,
-                //           'remark' => 'Opening balance for item ' . $item->name,
-                //         ],
-                //         lines: [
-                //           ['account_id' => $inventoryAccount,   'debit' => $filteredOpenings->sum(function ($o) {
-                //             return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
-                //         }), 'credit' => 0],
-                //           ['account_id' => $openingBalanceAccount, 'debit' => 0,    'credit' => $filteredOpenings->sum(function ($o) {
-                //             return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
-                //         })],
-                //         ]
-                //       );
-                // }
 
             // 3) Replace the openings that are still free to change. Any opening
             //    already issued against is refused inside the service rather
@@ -815,70 +631,6 @@ class ItemController extends Controller
         }
 
         return $variants->get((int) $index)?->id;
-    }
-
-    private function resolveOpeningBalanceId(StockMovement $opening): ?string
-    {
-        return StockBalance::query()
-            ->where('item_id', $opening->item_id)
-            ->where('branch_id', $opening->branch_id)
-            ->where('warehouse_id', $opening->warehouse_id)
-            ->when($opening->batch !== null, function ($query) use ($opening) {
-                return $query->where('batch', $opening->batch);
-            }, function ($query) {
-                return $query->whereNull('batch');
-            })
-            ->when($opening->expire_date !== null, function ($query) use ($opening) {
-                return $query->whereDate('expire_date', $opening->expire_date->toDateString());
-            }, function ($query) {
-                return $query->whereNull('expire_date');
-            })
-            ->when($opening->color !== null, function ($query) use ($opening) {
-                return $query->where('color', $opening->color);
-            }, function ($query) {
-                return $query->whereNull('color');
-            })
-            ->when($opening->size_id !== null, function ($query) use ($opening) {
-                return $query->where('size_id', $opening->size_id);
-            }, function ($query) {
-                return $query->whereNull('size_id');
-            })
-            ->lockForUpdate()
-            ->value('id');
-    }
-
-    private function deleteOpeningBalance(StockMovement $opening): void
-    {
-        $balance = StockBalance::query()
-            ->where('item_id', $opening->item_id)
-            ->where('branch_id', $opening->branch_id)
-            ->where('warehouse_id', $opening->warehouse_id)
-            ->when($opening->batch !== null, function ($query) use ($opening) {
-                return $query->where('batch', $opening->batch);
-            }, function ($query) {
-                return $query->whereNull('batch');
-            })
-            ->when($opening->expire_date !== null, function ($query) use ($opening) {
-                return $query->whereDate('expire_date', $opening->expire_date->toDateString());
-            }, function ($query) {
-                return $query->whereNull('expire_date');
-            })
-            ->when($opening->color !== null, function ($query) use ($opening) {
-                return $query->where('color', $opening->color);
-            }, function ($query) {
-                return $query->whereNull('color');
-            })
-            ->when($opening->size_id !== null, function ($query) use ($opening) {
-                return $query->where('size_id', $opening->size_id);
-            }, function ($query) {
-                return $query->whereNull('size_id');
-            })
-            ->lockForUpdate()
-            ->first();
-
-        if ($balance) {
-            $balance->forceDelete();
-        }
     }
 
     protected function exportStockMovements(

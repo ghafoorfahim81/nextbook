@@ -115,8 +115,6 @@ const itemManagementFields = [
     { key: 'code', labelKey: 'preferences.item_fields.code' },
     { key: 'generic_name', labelKey: 'preferences.item_fields.generic_name' },
     { key: 'packing', labelKey: 'preferences.item_fields.packing' },
-    { key: 'colors', labelKey: 'preferences.item_fields.colors' },
-    { key: 'size', labelKey: 'preferences.item_fields.size' },
     { key: 'brand', labelKey: 'preferences.item_fields.brand' },
     { key: 'minimum_stock', labelKey: 'preferences.item_fields.minimum_stock' },
     { key: 'maximum_stock', labelKey: 'preferences.item_fields.maximum_stock' },
@@ -131,8 +129,6 @@ const itemManagementFields = [
     { key: 'sku', labelKey: 'preferences.fields.sku' },
     { key: 'is_batch_tracked', labelKey: 'preferences.item_fields.is_batch_tracked' },
     { key: 'is_expiry_tracked', labelKey: 'preferences.item_fields.is_expiry_tracked' },
-    { key: 'is_color_tracked', labelKey: 'preferences.item_fields.is_color_tracked' },
-    { key: 'is_size_tracked', labelKey: 'preferences.item_fields.is_size_tracked' },
 ]
 
 const receiptPaymentFields = [
