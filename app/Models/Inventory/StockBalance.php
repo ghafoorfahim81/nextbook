@@ -18,6 +18,8 @@ class StockBalance extends Model
     public $incrementing = false;
     protected $fillable = [
         'item_id',
+        'variant_id',
+        'lot_id',
         'branch_id',
         'quantity',
         'reserved_out',
@@ -50,6 +52,10 @@ class StockBalance extends Model
     public function item()
     {
         return $this->belongsTo(Item::class);
+    }
+    public function variant()
+    {
+        return $this->belongsTo(ItemVariant::class, 'variant_id');
     }
     public function branch()
     {

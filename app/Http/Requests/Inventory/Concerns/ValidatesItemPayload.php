@@ -193,6 +193,7 @@ trait ValidatesItemPayload
             $this->assertUniqueWithinPayload($validator, $variants, 'barcode');
             $this->assertUniqueVariantAttributes($validator, $variants);
             $this->assertOpeningPricesPresent($validator);
+            $this->assertOpeningVariantPresent($validator, $variants);
         });
     }
 
@@ -267,6 +268,32 @@ trait ValidatesItemPayload
                 $validator->errors()->add(
                     "openings.{$index}.warehouse_id",
                     __('item.validation.opening_warehouse_required')
+                );
+            }
+        }
+    }
+
+    /**
+     * When an item has more than one variant, an opening quantity has to say
+     * which variant it belongs to — otherwise the stock cannot be placed. A
+     * single-variant item needs no choice: the lone variant is implied.
+     *
+     * @param  array<int, array<string, mixed>>  $variants
+     */
+    private function assertOpeningVariantPresent(Validator $validator, array $variants): void
+    {
+        if (count($variants) < 2) {
+            return;
+        }
+
+        foreach ((array) $this->input('openings', []) as $index => $opening) {
+            $quantity = (float) ($opening['quantity'] ?? 0);
+            $variantIndex = $opening['variant_index'] ?? null;
+
+            if ($quantity > 0 && ($variantIndex === null || $variantIndex === '')) {
+                $validator->errors()->add(
+                    "openings.{$index}.variant_index",
+                    __('item.validation.opening_variant_required')
                 );
             }
         }

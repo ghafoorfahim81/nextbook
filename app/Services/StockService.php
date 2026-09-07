@@ -374,16 +374,27 @@ class StockService
      */
     protected function increaseBalance(Item $item, array $data): void
     {
+        $keys = [
+            'branch_id' => $data['branch_id'],
+            'item_id' => $data['item_id'],
+            'warehouse_id' => $data['warehouse_id'],
+            'batch' => $data['batch'] ?? null,
+            'color' => $data['color'] ?? null,
+            'size_id' => $data['size_id'] ?? null,
+            'expire_date' => $data['expire_date'] ? $this->normalizeDate($data['expire_date']) : null,
+        ];
+
+        // Only a caller that actually resolved a variant (an item with the
+        // variants section on) narrows the bucket by it. Everything else —
+        // purchases, plain-item openings — leaves the key out, so the row it
+        // matches and the row it creates both keep variant_id NULL exactly as
+        // before.
+        if (! empty($data['variant_id'])) {
+            $keys['variant_id'] = $data['variant_id'];
+        }
+
         $balance = StockBalance::firstOrCreate(
-            [
-                'branch_id' => $data['branch_id'],
-                'item_id' => $data['item_id'],
-                'warehouse_id' => $data['warehouse_id'],
-                'batch' => $data['batch'] ?? null,
-                'color' => $data['color'] ?? null,
-                'size_id' => $data['size_id'] ?? null,
-                'expire_date' => $data['expire_date'] ? $this->normalizeDate($data['expire_date']) : null,
-            ],
+            $keys,
             [
                 'quantity' => 0,
                 'status' => $data['status'] ?? StockStatus::DRAFT->value,
