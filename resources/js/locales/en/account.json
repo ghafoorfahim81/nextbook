@@ -15,5 +15,18 @@
     "main_account": "Main",
     "custom_account": "Custom",
     "cannot_delete_main_account_title": "This is a main account",
-    "cannot_delete_main_account_desc": "Main accounts are part of the core chart of accounts and cannot be deleted. You can still edit its name or deactivate it if you no longer use it."
+    "cannot_delete_main_account_desc": "Main accounts are part of the core chart of accounts and cannot be deleted. You can still edit its name or deactivate it if you no longer use it.",
+    "expand_all": "Expand all",
+    "collapse_all": "Collapse all",
+    "total_accounts": "{count} accounts",
+    "books_balanced": "Books balanced",
+    "books_unbalanced": "Out of balance by {amount}",
+    "natures": {
+        "asset": "Asset",
+        "liability": "Liability",
+        "equity": "Equity",
+        "income": "Income",
+        "expense": "Expense",
+        "non-posting": "Non-Posting"
+    }
 }

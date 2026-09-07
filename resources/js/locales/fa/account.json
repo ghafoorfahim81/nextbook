@@ -15,5 +15,18 @@
     "main_account": "اصلی",
     "custom_account": "سفارشی",
     "cannot_delete_main_account_title": "این یک حساب اصلی است",
-    "cannot_delete_main_account_desc": "حساب‌های اصلی بخشی از چارت حساب‌های اساسی هستند و قابل حذف نیستند. می‌توانید نام آن را ویرایش کنید یا در صورت عدم استفاده آن را غیرفعال کنید."
+    "cannot_delete_main_account_desc": "حساب‌های اصلی بخشی از چارت حساب‌های اساسی هستند و قابل حذف نیستند. می‌توانید نام آن را ویرایش کنید یا در صورت عدم استفاده آن را غیرفعال کنید.",
+    "expand_all": "باز کردن همه",
+    "collapse_all": "بستن همه",
+    "total_accounts": "{count} حساب",
+    "books_balanced": "دفاتر متوازن است",
+    "books_unbalanced": "عدم توازن به مبلغ {amount}",
+    "natures": {
+        "asset": "دارایی",
+        "liability": "بدهی",
+        "equity": "سرمایه",
+        "income": "درآمد",
+        "expense": "هزینه",
+        "non-posting": "غیرقابل ثبت"
+    }
 }
