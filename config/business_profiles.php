@@ -35,21 +35,26 @@ return [
         ],
 
         // Initial values for the tracking flags on a new item.
+        //
+        // Colour and size are no longer tracking flags — they are ordinary
+        // variant attributes now, typed straight into the variant grid. The
+        // is_color_tracked / is_size_tracked columns and the sale/purchase
+        // pickers that still read them are retired with the rest of the
+        // transaction refactor.
         'defaults' => [
             'is_batch_tracked'  => false,
             'is_expiry_tracked' => false,
             'is_serial_tracked' => false,
-            'is_color_tracked'  => false,
-            'is_size_tracked'   => false,
             'is_weighted'       => false,
             'has_variants'      => false,
         ],
 
         'fields' => [
             // --- Identity ---------------------------------------------------
+            // SKU, barcode and price are variant-level now — every item has at
+            // least one variant, and its collapsed row holds them for a simple
+            // product. Only the catalogue `code` stays on the item.
             'code'         => true,
-            'sku'          => true,
-            'barcode'      => true,
             'item_type'    => true,
             'generic_name' => false,
             'packing'      => true,
@@ -58,18 +63,14 @@ return [
             'model'        => false,
 
             // --- Classification ----------------------------------------------
-            // items.colors and items.size_id are superseded by item_variants
-            // and are not rendered as item-level inputs. The is_color_tracked
-            // / is_size_tracked toggles below still drive the opening rows.
+            // Colour and size are variant attributes now — typed into the
+            // variant grid, not item-level inputs and not opening columns.
             'category'     => true,
             'brand'        => true,
             'unit_measure' => true,
 
             // --- Pricing -------------------------------------------------------
-            'purchase_price'    => true,
-            'cost'              => true,
-            'sale_price'        => true,
-            'margin_percentage' => true,
+            // Price tiers stay item-level until the price-list module lands.
             'rate_a'            => false,
             'rate_b'            => false,
             'rate_c'            => false,
@@ -77,8 +78,8 @@ return [
             'costing_method'    => false,
 
             // --- Stock control ----------------------------------------------
-            'minimum_stock'     => true,
-            'maximum_stock'     => true,
+            // Reorder thresholds are per-variant now (the variant grid); only
+            // planning fields that have no variant column stay item-level.
             'reorder_quantity'  => false,
             'lead_time_days'    => false,
             'rack_no'           => false,
@@ -111,8 +112,6 @@ return [
             // --- Tracking toggles ------------------------------------------------
             'is_batch_tracked'  => false,
             'is_expiry_tracked' => false,
-            'is_color_tracked'  => false,
-            'is_size_tracked'   => false,
             'is_serial_tracked' => false,
 
             // --- Accounting ------------------------------------------------------
@@ -182,15 +181,13 @@ return [
         // Size and colour variants, price tiers, import paperwork.
         BusinessType::CLOTHING->value => [
             'sections' => ['variants' => true],
-            'defaults' => ['has_variants' => true, 'is_color_tracked' => true, 'is_size_tracked' => true],
+            'defaults' => ['has_variants' => true],
             'fields' => [
                 'model'             => true,   // style number
                 'rate_a'            => true,
                 'rate_b'            => true,
                 'country_of_origin' => true,
                 'hs_code'           => true,
-                'is_color_tracked'  => true,
-                'is_size_tracked'   => true,
                 'rack_no'           => true,
             ],
         ],
@@ -207,7 +204,6 @@ return [
                 'hs_code'           => true,
                 'weight'            => true,
                 'is_serial_tracked' => true,
-                'is_color_tracked'  => true,
             ],
         ],
 
@@ -267,7 +263,6 @@ return [
                 'country_of_origin' => true,
                 'hs_code'           => true,
                 'model'             => true,   // design
-                'is_color_tracked'  => true,
                 'is_serial_tracked' => true,
                 'pricing_method'    => true,
                 'costing_method'    => true,
@@ -369,8 +364,6 @@ return [
                 'rack_no'          => true,
                 'rate_a'           => true,
                 'reorder_quantity' => true,
-                'is_color_tracked' => true,
-                'is_size_tracked'  => true,
             ],
         ],
 
@@ -386,11 +379,7 @@ return [
         BusinessType::ACCOUNTING->value => [
             'sections' => ['openings' => false],
             'fields' => [
-                'minimum_stock' => false,
-                'maximum_stock' => false,
                 'packing'       => false,
-                'barcode'       => false,
-                'sku'           => false,
                 'photo'         => false,
                 'fast_search'   => false,
                 'is_stockable'  => true,

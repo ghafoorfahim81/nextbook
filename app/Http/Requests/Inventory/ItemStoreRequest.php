@@ -48,10 +48,11 @@ class ItemStoreRequest extends FormRequest
             }
         }
 
-        // Every item carries at least one variant. A trade with no choices
-        // still gets one, empty, so variant_id is never null downstream.
+        // Every item carries at least one variant. A payload with no variant
+        // grid still gets one, seeded from any flat identity/price fields it
+        // sent, so variant_id is never null downstream.
         if (blank($this->input('variants'))) {
-            $merge['variants'] = [[
+            $merge['variants'] = [array_filter([
                 'attributes' => [],
                 'sku' => $this->input('sku'),
                 'barcode' => $this->input('barcode'),
@@ -62,7 +63,7 @@ class ItemStoreRequest extends FormRequest
                 'is_default' => true,
                 'is_active' => true,
                 'sort_order' => 0,
-            ]];
+            ], fn ($value) => $value !== null)];
         }
 
         if (! empty($merge)) {

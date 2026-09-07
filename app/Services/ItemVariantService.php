@@ -51,7 +51,69 @@ class ItemVariantService
 
         $this->retireMissing($existing, $kept);
 
-        return $item->variants()->get();
+        $variants = $item->variants()->get();
+
+        $this->mirrorDefaultToItem($item, $variants);
+
+        return $variants;
+    }
+
+    /**
+     * Guarantee the item has its one default variant.
+     *
+     * For entry points that create an item without a variant grid (fast entry,
+     * imports): seeds the single default row from the item's own identity and
+     * price columns so variant_id is never null downstream.
+     */
+    public function ensureDefault(Item $item): ItemVariant
+    {
+        $existing = $item->variants()->orderBy('sort_order')->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return $this->sync($item, [[
+            'attributes' => [],
+            'sku' => $item->sku,
+            'barcode' => $item->barcode,
+            'sale_price' => $item->sale_price,
+            'purchase_price' => $item->purchase_price,
+            'minimum_stock' => $item->minimum_stock,
+            'maximum_stock' => $item->maximum_stock,
+            'is_default' => true,
+            'is_active' => true,
+            'sort_order' => 0,
+        ]])->first();
+    }
+
+    /**
+     * Keep the legacy item-level identity and price columns in step with the
+     * default variant.
+     *
+     * SKU, barcode and price are variant-level now, but purchase/sale line
+     * pricing and barcode scanning still read items.* until those modules are
+     * moved over. Mirroring the default variant keeps them working; the columns
+     * are dropped once nothing reads them.
+     *
+     * @param  Collection<int, ItemVariant>  $variants
+     */
+    private function mirrorDefaultToItem(Item $item, Collection $variants): void
+    {
+        $default = $variants->firstWhere('is_default', true) ?? $variants->first();
+
+        if ($default === null) {
+            return;
+        }
+
+        $item->forceFill([
+            'sku' => $default->sku,
+            'barcode' => $default->barcode,
+            'purchase_price' => $default->purchase_price,
+            'sale_price' => $default->sale_price,
+            'minimum_stock' => $default->minimum_stock,
+            'maximum_stock' => $default->maximum_stock,
+        ])->save();
     }
 
     /**

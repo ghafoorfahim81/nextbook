@@ -5,6 +5,8 @@
     "quantity": "مقدار",
     "purchase_price": "قیمت خرید",
     "sale_price": "قیمت فروش",
+    "margin_percentage": "د ګټې سلنه (%)",
+    "identification_pricing": "پیژندنه او بیه",
     "minimum_stock": "حداقل موجودی",
     "maximum_stock": "حداکثر موجودی",
     "colors": "رنگ",
@@ -31,6 +33,7 @@
     "rate_b": "نرخ B",
     "rate_c": "نرخ C",
     "barcode": "بارکد",
+    "generate_new_barcode": "نوی بارکوډ جوړ کړئ",
     "in_records": "د ورودي ریکارډونه",
     "out_records": "د وتلو ریکارډونه",
     "in_vs_out": "ننوتل او وتل",
@@ -104,7 +107,8 @@
         "duplicate_variant_field": "دا :field د بل ډول لخوا کارول شوی.",
         "opening_price_required": "د پرانیستې اندازې په ورکولو سره د واحد بیه اړینه ده.",
         "opening_warehouse_required": "د پرانیستې اندازې په ورکولو سره ګودام اړین دی.",
-        "opening_variant_required": "وټاکئ چې دا د پرانیستې اندازه کوم ډول ته اړه لري."
+        "opening_variant_required": "وټاکئ چې دا د پرانیستې اندازه کوم ډول ته اړه لري.",
+        "variant_max_below_min": "ډیره موجودي د لږترلږه موجودۍ څخه ټیټه نشي کیدی."
     },
     "spec": {
         "batch": "بچ",

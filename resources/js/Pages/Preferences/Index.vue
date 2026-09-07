@@ -100,8 +100,6 @@ const tabSearchTerms = {
         'code',
         'generic name',
         'packing',
-        'colors',
-        'size',
         'brand',
         'minimum stock',
         'maximum stock',
@@ -628,8 +626,6 @@ const itemManagementFields = [
     { key: 'code', label: 'preferences.item_fields.code' },
     { key: 'generic_name', label: 'preferences.item_fields.generic_name' },
     { key: 'packing', label: 'preferences.item_fields.packing' },
-    { key: 'colors', label: 'preferences.item_fields.colors' },
-    { key: 'size', label: 'preferences.item_fields.size' },
     { key: 'brand', label: 'preferences.item_fields.brand' },
     { key: 'minimum_stock', label: 'preferences.item_fields.minimum_stock' },
     { key: 'maximum_stock', label: 'preferences.item_fields.maximum_stock' },
@@ -644,8 +640,6 @@ const itemManagementFields = [
     { key: 'sku', label: 'preferences.fields.sku' },
     { key: 'is_batch_tracked', label: 'preferences.item_fields.is_batch_tracked' },
     { key: 'is_expiry_tracked', label: 'preferences.item_fields.is_expiry_tracked' },
-    { key: 'is_color_tracked', label: 'preferences.item_fields.is_color_tracked' },
-    { key: 'is_size_tracked', label: 'preferences.item_fields.is_size_tracked' },
     ]
 
 const receiptPaymentFields = [

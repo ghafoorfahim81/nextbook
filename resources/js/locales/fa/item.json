@@ -130,6 +130,7 @@
     "available": "قابل دسترس",
     "variants": "انواع",
     "variant": "نوع",
+    "identification_pricing": "شناسه و قیمت‌گذاری",
     "variant_attributes": "ویژگی‌ها",
     "add_variant": "افزودن نوع",
     "add_attribute_placeholder": "مثلاً رنگ، رم",
@@ -144,7 +145,8 @@
         "duplicate_variant_field": "این :field توسط نوع دیگری استفاده شده است.",
         "opening_price_required": "در صورت وارد کردن مقدار اولیه، قیمت واحد الزامی است.",
         "opening_warehouse_required": "در صورت وارد کردن مقدار اولیه، انتخاب گدام الزامی است.",
-        "opening_variant_required": "انتخاب کنید این مقدار اولیه مربوط به کدام نوع است."
+        "opening_variant_required": "انتخاب کنید این مقدار اولیه مربوط به کدام نوع است.",
+        "variant_max_below_min": "حداکثر موجودی نمی‌تواند کمتر از حداقل موجودی باشد."
     },
     "spec": {
         "batch": "بچ",

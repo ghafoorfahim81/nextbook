@@ -227,8 +227,6 @@
         "code": "کد",
         "generic_name": "نام عمومی",
         "packing": "بسته‌بندی",
-        "colors": "رنگ‌ها",
-        "size": "سایز",
         "brand": "برند",
         "minimum_stock": "حداقل موجودی",
         "maximum_stock": "حداکثر موجودی",
@@ -241,9 +239,7 @@
         "fast_search": "جستجوی سریع",
         "sku": "کد واحد نگهداری موجودی",
         "is_batch_tracked": "دارای بچ",
-        "is_expiry_tracked": "دارای انقضا",
-        "is_color_tracked": "دارای رنگ",
-        "is_size_tracked": "دارای سایز"
+        "is_expiry_tracked": "دارای انقضا"
     },
     "fields": {
         "number": "شماره",

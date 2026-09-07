@@ -5,7 +5,6 @@ import { computed, watch, ref, reactive, onMounted, nextTick } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { useForm, router } from '@inertiajs/vue3'
 import NextSelect from '@/Components/next/NextSelect.vue'
-import { COLOR_OPTIONS } from '@/constants/colors'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import AttachmentUploader from '@/Components/AttachmentUploader.vue'
@@ -16,21 +15,13 @@ import ItemDetailFields from '@/Components/inventory/ItemDetailFields.vue'
 import { useBusinessProfile } from '@/composables/useBusinessProfile'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
-import JsBarcode from 'jsbarcode'
-import { Info, RefreshCw, Trash2, AlertCircleIcon } from 'lucide-vue-next'
+import { Trash2, AlertCircleIcon } from 'lucide-vue-next'
 import { Checkbox } from '@/Components/ui/checkbox'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/Components/ui/popover'
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from '@/Components/ui/alert'
-const barcodeSvg = ref(null)
-const isBarcodePopoverOpen = ref(false)
 const nameInputRef = ref(null)
 const { t } = useI18n()
 // keep props reactive
@@ -39,7 +30,6 @@ const props = defineProps({
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
-    sizes: { type: [Array, Object], required: true },
     maxCode: { type: Number, required: true },
     user_preferences: { type: Object, required: true },
     itemTypes: { type: Object, required: true },
@@ -55,7 +45,6 @@ const warehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? 
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
-const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccounts?.data ?? props.otherCurrentAssetsAccounts ?? [])
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
 const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
@@ -94,8 +83,6 @@ const createOpeningRow = (warehouse = null) => ({
     quantity: 0,
     warehouse_id: warehouse?.id ?? null,
     selected_warehouse: warehouse,
-    color: null,
-    size_id: null,
     // Which variant this opening quantity belongs to — the row's index in
     // form.variants. Null for trades whose variants section is off.
     variant_index: null,
@@ -109,19 +96,12 @@ const form = useForm({
     remark: '',
     branch_id: null,
     warehouse_id: null,
-    colors: [],
-    size_id: null,
     item_type: null,
-    barcode: '',
     unit_measure_id: null,
     selected_unit_measure: '',
     selected_company: '',
     selected_category: '',
     selected_brand: '',
-    selected_size: '',
-    minimum_stock: '',
-    maximum_stock: '',
-    purchase_price: '',
     brand_id: null,
     category_id: null,
     asset_account_id: null,
@@ -130,9 +110,6 @@ const form = useForm({
     selected_income_account: null,
     cost_account_id: null,
     selected_cost_account: null,
-    cost: '',
-    sale_price: '',
-    margin_percentage: '',
     rate_a: '',
     rate_b: '',
     rate_c: '',
@@ -140,8 +117,6 @@ const form = useForm({
     photo: null, // file
     is_batch_tracked: false,
     is_expiry_tracked: false,
-    is_color_tracked: false,
-    is_size_tracked: false,
     is_serial_tracked: false,
     is_weighted: false,
     has_variants: false,
@@ -176,9 +151,11 @@ const form = useForm({
         name: '',
         sku: '',
         barcode: '',
+        margin: '',
         sale_price: '',
         purchase_price: '',
         minimum_stock: '',
+        maximum_stock: '',
         is_default: true,
         is_active: true,
         sort_order: 0,
@@ -192,13 +169,6 @@ const form = useForm({
 // expiry without the operator having to remember.
 applyDefaults(form)
 
-// Full color palette, translated, for the per-opening color picker.
-const itemColorOptions = computed(() => COLOR_OPTIONS.map(o => ({
-    id: o.value,
-    name: t(`colors.${o.value}`),
-    hex: o.hex,
-})))
-
 // Variant choices for the per-opening variant picker, labelled by their
 // attribute values ("16 GB / 1000 GB SSD"). The id is the row index as a
 // string — NextSelect treats a numeric 0 as "no selection".
@@ -208,6 +178,21 @@ const variantOptions = computed(() => form.variants.map((v, i) => ({
         || v.sku
         || t('item.default_variant'),
 })))
+
+// Picking a variant fills the opening's unit price with that variant's
+// purchase price — a suggestion the user can still override. Opening unit
+// price is what StockService costs the layer at and what avg_cost is built
+// from, so it stays a real editable field.
+const onOpeningVariantChange = (index, value) => {
+    form.openings[index].variant_index = value
+
+    if (value === null || value === undefined || value === '') return
+
+    const price = Number(form.variants[Number(value)]?.purchase_price)
+    if (Number.isFinite(price) && price > 0) {
+        form.openings[index].unit_price = price
+    }
+}
 
 const findBySlugOrName = (list, want) => {
     const w = String(want || '').trim().toLowerCase()
@@ -331,22 +316,6 @@ watch(
     }
 )
 
-let salePriceTimeout = null
-
-watch(
-    () => form.sale_price,
-    () => {
-        if (salePriceTimeout) clearTimeout(salePriceTimeout)
-        salePriceTimeout = setTimeout(() => {
-            if (form.sale_price && form.purchase_price && form.sale_price < form.purchase_price) {
-                toast.error(t('item.low_price_warning'), {
-                    description: t('item.sale_price_less_than_purchase_price') || 'Sale price cannot be less than purchase price.',
-                    class: 'bg-red-600',
-                });
-            }
-        }, 2000)
-    }
-)
 const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
@@ -378,7 +347,6 @@ const applyItemDefaults = ({ code = formatCode(props.maxCode) } = {}) => {
     assetAccountUserSet.value = false
     setAssetAccountId(preferredAssetAccountIdForItemType.value)
     form.openings = [createOpeningRow(defaultWarehouse)]
-    generateBarcode()
 }
 
 const resetFormForCreate = ({ code = formatCode(props.maxCode) } = {}) => {
@@ -413,12 +381,6 @@ const removeRow = (idx) => {
 // coerce numbers just before submit (optional but tidy)
 const normalize = () => {
     const toNum = (v) => (v === '' || v === null ? null : Number(v))
-    form.minimum_stock = toNum(form.minimum_stock)
-    form.maximum_stock = toNum(form.maximum_stock)
-    form.purchase_price = toNum(form.purchase_price)
-    form.cost = toNum(form.cost)
-    form.sale_price = toNum(form.sale_price)
-    form.margin_percentage = toNum(form.margin_percentage)
     form.rate_a = toNum(form.rate_a)
     form.rate_b = toNum(form.rate_b)
     form.rate_c = toNum(form.rate_c)
@@ -511,61 +473,9 @@ const handleOpeningSelectChange = (index, value) => {
     form.openings[index].warehouse_id = value ? value : null;
 };
 
-// render barcode
-const renderBarcode = async (retries = 4) => {
-    if (!form.barcode) return
-
-    await nextTick()
-
-    // Popover content is mounted lazily, so SVG may not exist immediately.
-    if (!barcodeSvg.value) {
-        if (retries > 0) {
-            requestAnimationFrame(() => {
-                renderBarcode(retries - 1)
-            })
-        }
-        return
-    }
-
-    JsBarcode(barcodeSvg.value, form.barcode, {
-        format: "CODE128",
-        width: 2,
-        height: 60,
-        displayValue: true,
-        margin: 0,
-    })
-}
-
-// redraw when barcode value changes
-watch(
-    () => form.barcode,
-    () => {
-        renderBarcode()
-    },
-    { immediate: true }
-)
-
-// redraw when popover opens (first open + subsequent opens)
-watch(
-    () => isBarcodePopoverOpen.value,
-    (open) => {
-        if (open) renderBarcode()
-    }
-)
-
 onMounted(() => {
     applyItemDefaults()
-    if (!form.barcode) {
-        generateBarcode()
-    }
 })
-
-const generateBarcode = () => {
-    const random = Math.floor(100000000 + Math.random() * 900000000)
-    form.barcode = `ITM${random}`
-}
-
-const isMarginPercentagePopoverOpen = ref(false)
 
 const focusNameField = () => {
     nameInputRef.value?.focus?.()
@@ -633,7 +543,6 @@ useFormGuard(form)
                     id="item_type"
                     :floating-text="t('item.item_type')"
                 />
-                <NextInput v-show="visibleFields.sku" :label="t('item.sku')" v-model="form.sku" :error="form.errors?.sku" :placeholder="t('general.enter', { text: t('item.sku') })" />
                 <NextSelect
                     v-show="visibleFields.category"
                     :options="categories"
@@ -703,82 +612,9 @@ useFormGuard(form)
                     :error="form.errors.cost_account_id"
                 />
                 <NextInput v-show="visibleFields.photo" :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
-                <NextInput v-show="visibleFields.minimum_stock" :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
-                <NextInput v-show="visibleFields.maximum_stock" :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
-                <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
-                <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
-                <div class="flex flex-row gap-4 w-full">
-                    <div class="flex-1">
-                        <NextInput
-                            :label="t('item.sale_price')"
-                            type="number"
-                            :placeholder="t('general.enter', { text: t('item.sale_price') })"
-                            v-model="form.sale_price"
-                            :error="form.errors?.sale_price"
-                        />
-                    </div>
-                    <div class="flex-1 flex items-center justify-between border rounded-md">
-                        <div>
-                            <NextInput
-                            :label="t('item.margin_percentage')"
-                            type="number"
-                            :placeholder="t('general.enter', { text: t('item.margin_percentage') })"
-                            v-model="form.margin_percentage"
-                            :error="form.errors?.margin_percentage"
-                        />
-                        </div>
-                    <div class="flex items-center justify-end px-2">
-                        <Popover v-model:open="isMarginPercentagePopoverOpen">
-                            <PopoverTrigger as-child>
-                              <Button variant="outline">
-                                <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent class="w-80">
-                              <div class="grid gap-4">
-                                <p>{{ t('item.margin_percentage_description') || 'Margin percentage is the percentage of the sale price that is profit.' }}</p>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                    </div>
-                    </div>
-                </div>
                 <NextInput v-show="visibleFields.rate_a" :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
                 <NextInput v-show="visibleFields.rate_b" :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
                 <NextInput v-show="visibleFields.rate_c" :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
-                <!-- <NextInput v-show="visibleFields.barcode" :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" /> -->
-
-                <div v-show="visibleFields.barcode" class="flex items-center justify-between border rounded-md">
-                    <div class="w-full">
-                        <NextInput
-                        :label="t('item.barcode')"
-                        v-model="form.barcode"
-                        :placeholder="t('general.enter', { text: t('item.barcode') })"
-                        :error="form.errors?.barcode"
-                    />
-                    </div>
-                    <div class="flex items-center justify-end px-2">
-                        <Popover v-model:open="isBarcodePopoverOpen">
-                            <PopoverTrigger as-child>
-                              <Button variant="outline">
-                                <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent class="w-80">
-                              <div class="grid gap-4">
-                                <svg ref="barcodeSvg" class="w-full h-[80px]"></svg>
-                                <button
-                                type="button"
-                                class="text-sm text-primary underline mt-2"
-                                @click="generateBarcode"
-                            >
-                                {{ t('item.generate_new_barcode') || 'Generate New Barcode' }}
-                            </button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                    </div>
-                </div>
                 <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
                 <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
                 <div class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3 rtl:text-right">
@@ -794,20 +630,6 @@ useFormGuard(form)
                         <div>
                             <p class="font-semibold text-sm">{{ t('item.is_expiry_tracked') }}</p>
                             <p class="text-sm text-muted-foreground">{{ t('item.expiry_warning') }}</p>
-                        </div>
-                    </label>
-                    <label v-show="visibleFields.is_color_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
-                        <Checkbox class="mt-0.5" :checked="form.is_color_tracked" @update:checked="(v) => form.is_color_tracked = v" />
-                        <div>
-                            <p class="font-semibold text-sm">{{ t('item.is_color_tracked') }}</p>
-                            <p class="text-sm text-muted-foreground">{{ t('item.color_warning') }}</p>
-                        </div>
-                    </label>
-                    <label v-show="visibleFields.is_size_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
-                        <Checkbox class="mt-0.5" :checked="form.is_size_tracked" @update:checked="(v) => form.is_size_tracked = v" />
-                        <div>
-                            <p class="font-semibold text-sm">{{ t('item.is_size_tracked') }}</p>
-                            <p class="text-sm text-muted-foreground">{{ t('item.size_warning') }}</p>
                         </div>
                     </label>
                     <label v-show="visibleFields.is_serial_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
@@ -851,10 +673,6 @@ useFormGuard(form)
                                     <li>{{ t('item.opening_key_points.2') }}</li>
                                     <li>{{ t('item.opening_key_points.3') }}</li>
                                     <li>{{ t('item.opening_key_points.4') }}</li>
-                                    <!-- <li v-show="form.is_batch_tracked">{{ t('item.batch_warning') }}</li>
-                                    <li v-show="form.is_expiry_tracked">{{ t('item.expiry_warning') }}</li>
-                                    <li v-show="form.is_color_tracked">{{ t('item.color_warning') }}</li>
-                                    <li v-show="form.is_size_tracked">{{ t('item.size_warning') }}</li> -->
                                 </ul>
                             </AlertDescription>
                         </Alert>
@@ -880,8 +698,6 @@ useFormGuard(form)
                                     <th v-show="showsSection('variants')" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.variant') }}</th>
                                     <th v-show="form.is_batch_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ specText || t('item.batch') }}</th>
                                     <th v-show="form.is_expiry_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.expire_date') }}</th>
-                                    <th v-show="form.is_color_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.color') }}</th>
-                                    <th v-show="form.is_size_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.size') }}</th>
                                     <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.quantity') }}</th>
                                     <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('general.unit_price') }}</th>
                                     <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
@@ -896,7 +712,8 @@ useFormGuard(form)
                                 >
                                     <td v-show="showsSection('variants')" class="p-2 min-w-[170px]">
                                         <NextSelect
-                                            v-model="opening.variant_index"
+                                            :model-value="opening.variant_index"
+                                            @update:modelValue="(value) => onOpeningVariantChange(index, value)"
                                             :options="variantOptions"
                                             label-key="name"
                                             value-key="id"
@@ -911,43 +728,6 @@ useFormGuard(form)
                                     </td>
                                     <td v-show="form.is_expiry_tracked" class="p-2 min-w-[160px]">
                                         <NextDate v-model="opening.expire_date" :lock-future-dates="false" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
-                                    </td>
-                                     <td v-show="form.is_color_tracked" class="p-2 min-w-[170px]">
-                                        <NextSelect
-                                            v-model="opening.color"
-                                            :options="itemColorOptions"
-                                            label-key="name"
-                                            value-key="id"
-                                            :reduce="o => o.id"
-                                            :id="`opening_color_${index}`"
-                                            :error="form.errors?.[`openings.${index}.color`]"
-                                            :append-to-body="true"
-                                        >
-                                            <template #option="{ name, hex }">
-                                                <span class="flex items-center gap-2">
-                                                    <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
-                                                    <span>{{ name }}</span>
-                                                </span>
-                                            </template>
-                                            <template #selected-option="{ name, hex }">
-                                                <span class="flex items-center gap-1.5">
-                                                    <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
-                                                    <span>{{ name }}</span>
-                                                </span>
-                                            </template>
-                                        </NextSelect>
-                                    </td>
-                                    <td v-show="form.is_size_tracked" class="p-2 min-w-[150px]">
-                                        <NextSelect
-                                            v-model="opening.size_id"
-                                            :options="sizes"
-                                            label-key="name"
-                                            value-key="id"
-                                            :reduce="o => o.id"
-                                            :id="`opening_size_${index}`"
-                                            :error="form.errors?.[`openings.${index}.size_id`]"
-                                            :append-to-body="true"
-                                        />
                                     </td>
                                     <td class="p-2 min-w-[110px]">
                                         <NextInput label="" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />

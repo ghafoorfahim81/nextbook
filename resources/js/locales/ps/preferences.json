@@ -203,8 +203,6 @@
         "code": "کوډ",
         "generic_name": "عمومي نوم",
         "packing": "بسته بندي",
-        "colors": "رنګونه",
-        "size": "اندازه",
         "brand": "برانډ",
         "minimum_stock": "لږترلږه موجودي",
         "maximum_stock": "ډیرترین موجودي",
@@ -216,9 +214,7 @@
         "rack_no": "د شیلف نمبر",
         "fast_search": "چټکه لټون",
         "is_batch_tracked": "بیچ لرونکی",
-        "is_expiry_tracked": "د پای نیټه لرونکی",
-        "is_color_tracked": "رنګ لرونکی",
-        "is_size_tracked": "اندازه لرونکی"
+        "is_expiry_tracked": "د پای نیټه لرونکی"
     },
     "sale": {
         "description": "Ø¯ Ù¾Ù„ÙˆØ±Ù†Û Ù…Ø¹Ø§Ù…Ù„Û ØªØ±ØªÛŒØ¨Ø§Øª ØªÙ†Ø¸ÛŒÙ… Ú©Ú“Ø¦",
