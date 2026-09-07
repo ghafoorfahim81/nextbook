@@ -89,6 +89,7 @@
     "reserved": "ساتل شوی",
     "available": "شته",
     "variants": "ډولونه",
+    "variant": "ډول",
     "variant_attributes": "ځانګړتیاوې",
     "add_variant": "ډول زیاتول",
     "add_attribute_placeholder": "لکه رنګ، رم",
@@ -102,7 +103,8 @@
         "duplicate_variant": "بل ډول له همدې ځانګړتیاوو سره شتون لري.",
         "duplicate_variant_field": "دا :field د بل ډول لخوا کارول شوی.",
         "opening_price_required": "د پرانیستې اندازې په ورکولو سره د واحد بیه اړینه ده.",
-        "opening_warehouse_required": "د پرانیستې اندازې په ورکولو سره ګودام اړین دی."
+        "opening_warehouse_required": "د پرانیستې اندازې په ورکولو سره ګودام اړین دی.",
+        "opening_variant_required": "وټاکئ چې دا د پرانیستې اندازه کوم ډول ته اړه لري."
     },
     "spec": {
         "batch": "بچ",

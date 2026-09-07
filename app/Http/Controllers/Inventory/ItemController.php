@@ -224,8 +224,9 @@ class ItemController extends Controller
             $item = Item::create($validated);
 
             // 2) Variants — always at least one, so variant_id is never null
-            // on anything downstream.
-            app(ItemVariantService::class)->sync($item, $variants);
+            // on anything downstream. The synced collection is ordered by
+            // sort_order, so an opening row's variant_index lines up with it.
+            $syncedVariants = app(ItemVariantService::class)->sync($item, $variants)->values();
 
             if ($request->hasFile('attachments')) {
                 $attachmentService->store($item, $request->file('attachments'));
@@ -237,12 +238,13 @@ class ItemController extends Controller
                 ->filter(function ($o) {
                     return !empty($o['warehouse_id']) && $o['quantity'] > 0;
                 })
-                ->each(function ($o) use ($item, $validated, $transactionService) {
+                ->each(function ($o) use ($item, $validated, $transactionService, $syncedVariants) {
                     // create stock
                     $stockService = app(\App\Services\StockService::class);
                     $branchId = auth()->user()->branch_id ?? app('active_branch_id');
                     $stock = $stockService->post([
                         'item_id'         => $item->id,
+                        'variant_id'      => $this->openingVariantId($syncedVariants, $o['variant_index'] ?? null),
                         'movement_type'   => StockMovementType::IN->value,
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
@@ -798,6 +800,21 @@ class ItemController extends Controller
 
             return redirect()->back()->with('error', __('general.failed_to_permanently_delete_try_again', ['resource' => __('general.resource.item')]));
         }
+    }
+
+    /**
+     * Resolve an opening row's variant_index (its position in the item's
+     * variant grid) to a concrete variant id. Null when the form sent no
+     * variant — the opening then lands in the item's single NULL bucket,
+     * exactly as before variants existed.
+     */
+    private function openingVariantId(\Illuminate\Support\Collection $variants, $index): ?string
+    {
+        if ($index === null || $index === '') {
+            return null;
+        }
+
+        return $variants->get((int) $index)?->id;
     }
 
     private function resolveOpeningBalanceId(StockMovement $opening): ?string

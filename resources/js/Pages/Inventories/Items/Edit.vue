@@ -65,10 +65,50 @@ const blankOpening = () => ({
     warehouse: null,
     color: null,
     size_id: null,
+    variant_index: null,
     status: 'draft',
     is_locked: false,
     lock_reason: null,
 })
+
+// Variants come back from ItemResource; fall back to a single default row
+// for items created before the variant migration ran.
+const initialVariants = props.item.data.variants?.length
+    ? props.item.data.variants.map((v, index) => ({
+        id: v.id,
+        attributes: { ...(v.attributes ?? {}) },
+        name: v.name ?? '',
+        sku: v.sku ?? '',
+        barcode: v.barcode ?? '',
+        sale_price: v.sale_price ?? '',
+        purchase_price: v.purchase_price ?? '',
+        minimum_stock: v.minimum_stock ?? '',
+        is_default: Boolean(v.is_default),
+        is_active: v.is_active !== false,
+        sort_order: v.sort_order ?? index,
+    }))
+    : [{
+        id: null,
+        attributes: {},
+        name: '',
+        sku: props.item.data.sku ?? '',
+        barcode: props.item.data.barcode ?? '',
+        sale_price: props.item.data.sale_price ?? '',
+        purchase_price: props.item.data.purchase_price ?? '',
+        minimum_stock: props.item.data.minimum_stock ?? '',
+        is_default: true,
+        is_active: true,
+        sort_order: 0,
+    }]
+
+// An existing opening carries variant_id; map it back to the variant's row
+// index so the picker shows it. -1 (not found) becomes null.
+const variantIndexFor = (variantId) => {
+    if (!variantId) return null
+    const idx = initialVariants.findIndex(v => v.id === variantId)
+    // String to match variantOptions ids (NextSelect treats numeric 0 as empty).
+    return idx === -1 ? null : String(idx)
+}
 
 const form = useForm({
     ...props.item.data,
@@ -90,41 +130,14 @@ const form = useForm({
             selected_warehouse: o.warehouse,
             color: o.color ?? null,
             size_id: o.size_id ?? null,
+            variant_index: variantIndexFor(o.variant_id),
             status: o.status,
             is_locked: o.is_locked,
             lock_reason: o.lock_reason,
         }))
         : [blankOpening()],
 
-    // Variants come back from ItemResource; fall back to a single default row
-    // for items created before the variant migration ran.
-    variants: props.item.data.variants?.length
-        ? props.item.data.variants.map((v, index) => ({
-            id: v.id,
-            attributes: { ...(v.attributes ?? {}) },
-            name: v.name ?? '',
-            sku: v.sku ?? '',
-            barcode: v.barcode ?? '',
-            sale_price: v.sale_price ?? '',
-            purchase_price: v.purchase_price ?? '',
-            minimum_stock: v.minimum_stock ?? '',
-            is_default: Boolean(v.is_default),
-            is_active: v.is_active !== false,
-            sort_order: v.sort_order ?? index,
-        }))
-        : [{
-            id: null,
-            attributes: {},
-            name: '',
-            sku: props.item.data.sku ?? '',
-            barcode: props.item.data.barcode ?? '',
-            sale_price: props.item.data.sale_price ?? '',
-            purchase_price: props.item.data.purchase_price ?? '',
-            minimum_stock: props.item.data.minimum_stock ?? '',
-            is_default: true,
-            is_active: true,
-            sort_order: 0,
-        }],
+    variants: initialVariants,
 
     attachments: [],
 })
@@ -134,6 +147,16 @@ const itemColorOptions = computed(() => COLOR_OPTIONS.map(o => ({
     id: o.value,
     name: t(`colors.${o.value}`),
     hex: o.hex,
+})))
+
+// Variant choices for the per-opening variant picker, labelled by their
+// attribute values. The id is the row index as a string — NextSelect treats
+// a numeric 0 as "no selection".
+const variantOptions = computed(() => form.variants.map((v, i) => ({
+    id: String(i),
+    name: Object.values(v.attributes ?? {}).filter(Boolean).join(' / ')
+        || v.sku
+        || t('item.default_variant'),
 })))
 
 const existingAttachments = ref(props.item.data.attachments || [])
@@ -183,6 +206,9 @@ const normalize = () => {
         expire_date: o.expire_date || null,
         batch: o.batch || null,
         warehouse_id: o.warehouse_id ?? (o.selected_warehouse ? o.selected_warehouse.id : null),
+        variant_index: (o.variant_index === null || o.variant_index === undefined || o.variant_index === '')
+            ? null
+            : Number(o.variant_index),
     }))
 }
 
@@ -220,17 +246,18 @@ watch(
 
 const disabled = ref(false);
 watch(
-    () => form.openings.map(o => [o.selected_warehouse, o.batch, o.expire_date].join('|')).join(';'),
+    () => form.openings.map(o => [o.selected_warehouse, o.batch, o.expire_date, o.variant_index].join('|')).join(';'),
     (newVal, oldVal) => {
         let foundDuplicate = false;
         form.openings.forEach((currentOpening, index) => {
-            const { selected_warehouse, batch, expire_date } = currentOpening;
+            const { selected_warehouse, batch, expire_date, variant_index } = currentOpening;
             if (selected_warehouse && batch && expire_date) {
                 const duplicate = form.openings.some((o, i) =>
                     i !== index &&
                     o.warehouse_id === selected_warehouse.id &&
                     o.batch === batch &&
                     o.expire_date === expire_date &&
+                    o.variant_index === variant_index &&
                     o.warehouse_id && o.batch && o.expire_date
                 );
                 if (duplicate && !foundDuplicate) {
@@ -599,6 +626,7 @@ useFormGuard(form)
                             <table class="w-full text-sm">
                                 <thead>
                                     <tr class="bg-primary text-white h-9">
+                                        <th v-show="showsSection('variants')" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.variant') }}</th>
                                         <th v-show="form.is_batch_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ specText || t('item.batch') }}</th>
                                         <th v-show="form.is_expiry_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.expire_date') }}</th>
                                         <th v-show="form.is_color_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.color') }}</th>
@@ -617,6 +645,19 @@ useFormGuard(form)
                                         :class="{ 'opacity-50': opening.is_locked }"
                                         :title="opening.is_locked ? t('item.opening_locked_cannot_update') : null"
                                     >
+                                        <td v-show="showsSection('variants')" class="p-2 min-w-[170px]">
+                                            <NextSelect
+                                                v-model="opening.variant_index"
+                                                :options="variantOptions"
+                                                label-key="name"
+                                                value-key="id"
+                                                :reduce="o => o.id"
+                                                :id="`opening_variant_${index}`"
+                                                :disabled="opening.is_locked"
+                                                :error="form.errors?.[`openings.${index}.variant_index`]"
+                                                :append-to-body="true"
+                                            />
+                                        </td>
                                         <td v-show="form.is_batch_tracked" class="p-2 min-w-[140px]">
                                             <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" :disabled="opening.is_locked" />
                                         </td>

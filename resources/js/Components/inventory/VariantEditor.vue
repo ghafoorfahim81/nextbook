@@ -140,7 +140,7 @@ const variantLabel = (variant) => {
         </legend>
 
         <!-- Simple trades: one row, no grid. -->
-        <div v-if="!enabled" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 pt-2">
+        <div v-if="!enabled" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 pt-2">
             <NextInput
                 :label="t('item.sku')"
                 :model-value="modelValue[0]?.sku ?? ''"
@@ -154,6 +154,14 @@ const variantLabel = (variant) => {
                 :disabled="disabled"
                 :error="errorFor(0, 'barcode')"
                 @update:modelValue="(v) => setField(0, 'barcode', v)"
+            />
+            <NextInput
+                :label="t('item.purchase_price')"
+                type="number"
+                :model-value="modelValue[0]?.purchase_price ?? ''"
+                :disabled="disabled"
+                :error="errorFor(0, 'purchase_price')"
+                @update:modelValue="(v) => setField(0, 'purchase_price', v)"
             />
             <NextInput
                 :label="t('item.sale_price')"
@@ -224,6 +232,7 @@ const variantLabel = (variant) => {
                             </th>
                             <th class="px-2 py-2 text-start font-medium">{{ t('item.sku') }}</th>
                             <th class="px-2 py-2 text-start font-medium">{{ t('item.barcode') }}</th>
+                            <th class="px-2 py-2 text-start font-medium">{{ t('item.purchase_price') }}</th>
                             <th class="px-2 py-2 text-start font-medium">{{ t('item.sale_price') }}</th>
                             <th class="px-2 py-2 text-start font-medium">{{ t('item.minimum_stock') }}</th>
                             <th class="px-2 py-2 text-center font-medium w-12">{{ t('general.active') }}</th>
@@ -278,6 +287,17 @@ const variantLabel = (variant) => {
                                     class="h-8 w-32 rounded border border-border bg-background px-2"
                                     :class="{ 'border-red-500': errorFor(index, 'barcode') }"
                                     @input="(e) => setField(index, 'barcode', e.target.value)"
+                                />
+                            </td>
+                            <td class="px-1 py-1">
+                                <input
+                                    :value="variant.purchase_price ?? ''"
+                                    type="number"
+                                    step="0.01"
+                                    :disabled="disabled"
+                                    class="h-8 w-24 rounded border border-border bg-background px-2 text-end"
+                                    :class="{ 'border-red-500': errorFor(index, 'purchase_price') }"
+                                    @input="(e) => setField(index, 'purchase_price', e.target.value)"
                                 />
                             </td>
                             <td class="px-1 py-1">

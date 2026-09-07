@@ -96,6 +96,9 @@ const createOpeningRow = (warehouse = null) => ({
     selected_warehouse: warehouse,
     color: null,
     size_id: null,
+    // Which variant this opening quantity belongs to — the row's index in
+    // form.variants. Null for trades whose variants section is off.
+    variant_index: null,
 })
 
 const form = useForm({
@@ -194,6 +197,16 @@ const itemColorOptions = computed(() => COLOR_OPTIONS.map(o => ({
     id: o.value,
     name: t(`colors.${o.value}`),
     hex: o.hex,
+})))
+
+// Variant choices for the per-opening variant picker, labelled by their
+// attribute values ("16 GB / 1000 GB SSD"). The id is the row index as a
+// string — NextSelect treats a numeric 0 as "no selection".
+const variantOptions = computed(() => form.variants.map((v, i) => ({
+    id: String(i),
+    name: Object.values(v.attributes ?? {}).filter(Boolean).join(' / ')
+        || v.sku
+        || t('item.default_variant'),
 })))
 
 const findBySlugOrName = (list, want) => {
@@ -416,6 +429,9 @@ const normalize = () => {
         expire_date: o.expire_date || null,
         batch: o.batch || null,
         warehouse_id: o.warehouse_id || null,
+        variant_index: (o.variant_index === null || o.variant_index === undefined || o.variant_index === '')
+            ? null
+            : Number(o.variant_index),
     }))
 }
 const handleSubmitAction = (createAndNew = false) => {
@@ -460,17 +476,18 @@ const handleSelectChange = (field, value) => {
 };
 const disabled = ref(false);
 watch(
-    () => form.openings.map(o => [o.selected_warehouse, o.batch, o.expire_date].join('|')).join(';'),
+    () => form.openings.map(o => [o.selected_warehouse, o.batch, o.expire_date, o.variant_index].join('|')).join(';'),
     (newVal, oldVal) => {
         let foundDuplicate = false;
         form.openings.forEach((currentOpening, index) => {
-            const { selected_warehouse, batch, expire_date } = currentOpening;
+            const { selected_warehouse, batch, expire_date, variant_index } = currentOpening;
             if (selected_warehouse && batch && expire_date) {
                 const duplicate = form.openings.some((o, i) =>
                     i !== index &&
                     o.warehouse_id === selected_warehouse &&
                     o.batch === batch &&
                     o.expire_date === expire_date &&
+                    o.variant_index === variant_index &&
                     o.warehouse_id && o.batch && o.expire_date
                 );
                 if (duplicate && !foundDuplicate) {
@@ -860,6 +877,7 @@ useFormGuard(form)
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="bg-primary text-white h-9">
+                                    <th v-show="showsSection('variants')" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.variant') }}</th>
                                     <th v-show="form.is_batch_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ specText || t('item.batch') }}</th>
                                     <th v-show="form.is_expiry_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.expire_date') }}</th>
                                     <th v-show="form.is_color_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.color') }}</th>
@@ -876,6 +894,18 @@ useFormGuard(form)
                                     :key="index"
                                     class="border-t border-border hover:bg-muted/50 align-top"
                                 >
+                                    <td v-show="showsSection('variants')" class="p-2 min-w-[170px]">
+                                        <NextSelect
+                                            v-model="opening.variant_index"
+                                            :options="variantOptions"
+                                            label-key="name"
+                                            value-key="id"
+                                            :reduce="o => o.id"
+                                            :id="`opening_variant_${index}`"
+                                            :error="form.errors?.[`openings.${index}.variant_index`]"
+                                            :append-to-body="true"
+                                        />
+                                    </td>
                                     <td v-show="form.is_batch_tracked" class="p-2 min-w-[140px]">
                                         <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
                                     </td>

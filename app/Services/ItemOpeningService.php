@@ -167,11 +167,11 @@ class ItemOpeningService
             $locked = $existing->filter(fn (StockMovement $o) => $this->isLocked($o));
             $submitted = collect($rows)->filter(fn ($row) => is_array($row));
 
-            $this->assertLockedRowsUntouched($locked, $submitted);
+            $this->assertLockedRowsUntouched($item, $locked, $submitted);
 
             // Nothing to do at all — leave the GL and the average cost alone
             // rather than churning a voucher on an unrelated item edit.
-            if (! $this->hasChanges($existing, $locked, $submitted)) {
+            if (! $this->hasChanges($item, $existing, $locked, $submitted)) {
                 return;
             }
 
@@ -198,7 +198,7 @@ class ItemOpeningService
      * @param  Collection<string, StockMovement>  $locked
      * @param  Collection<int, array<string, mixed>>  $submitted
      */
-    private function assertLockedRowsUntouched(Collection $locked, Collection $submitted): void
+    private function assertLockedRowsUntouched(Item $item, Collection $locked, Collection $submitted): void
     {
         if ($locked->isEmpty()) {
             return;
@@ -209,7 +209,7 @@ class ItemOpeningService
         foreach ($locked as $id => $opening) {
             $row = $byId->get($id);
 
-            if ($row === null || $this->differsFrom($opening, $row)) {
+            if ($row === null || $this->differsFrom($item, $opening, $row)) {
                 throw ValidationException::withMessages([
                     'openings' => __('general.opening_locked_cannot_update'),
                 ]);
@@ -220,7 +220,7 @@ class ItemOpeningService
     /**
      * @param  array<string, mixed>  $row
      */
-    private function differsFrom(StockMovement $opening, array $row): bool
+    private function differsFrom(Item $item, StockMovement $opening, array $row): bool
     {
         if ($this->differsNumerically($opening->quantity, $row['quantity'] ?? null)
             || $this->differsNumerically($opening->unit_cost, $row['unit_price'] ?? null)) {
@@ -228,6 +228,10 @@ class ItemOpeningService
         }
 
         if ((string) $opening->warehouse_id !== (string) ($row['warehouse_id'] ?? '')) {
+            return true;
+        }
+
+        if ((string) ($opening->variant_id ?? '') !== (string) ($this->resolveVariantId($item, $row) ?? '')) {
             return true;
         }
 
@@ -269,7 +273,7 @@ class ItemOpeningService
      * @param  Collection<string, StockMovement>  $locked
      * @param  Collection<int, array<string, mixed>>  $submitted
      */
-    private function hasChanges(Collection $existing, Collection $locked, Collection $submitted): bool
+    private function hasChanges(Item $item, Collection $existing, Collection $locked, Collection $submitted): bool
     {
         $editable = $existing->diffKeys($locked);
         $incoming = $submitted
@@ -283,7 +287,7 @@ class ItemOpeningService
         $unmatched = $editable;
 
         foreach ($incoming as $row) {
-            $match = $unmatched->first(fn (StockMovement $o) => ! $this->differsFrom($o, $row));
+            $match = $unmatched->first(fn (StockMovement $o) => ! $this->differsFrom($item, $o, $row));
 
             if ($match === null) {
                 return true;
@@ -353,6 +357,7 @@ class ItemOpeningService
     {
         $this->stock->post([
             'item_id'         => $item->id,
+            'variant_id'      => $this->resolveVariantId($item, $row),
             'movement_type'   => StockMovementType::IN->value,
             'unit_measure_id' => $item->unit_measure_id,
             'quantity'        => (float) $row['quantity'],
@@ -369,6 +374,27 @@ class ItemOpeningService
     }
 
     /**
+     * Map an opening row's variant_index (its position in the item's variant
+     * grid) to a concrete variant id. Returns null for items whose variants
+     * section is off, so the opening lands in the item's single NULL bucket
+     * exactly as before.
+     */
+    private function resolveVariantId(Item $item, array $row): ?string
+    {
+        $index = $row['variant_index'] ?? null;
+
+        if ($index === null || $index === '') {
+            return null;
+        }
+
+        return $item->variants()
+            ->orderBy('sort_order')
+            ->get()
+            ->values()
+            ->get((int) $index)?->id;
+    }
+
+    /**
      * Narrow a stock_movements / stock_balances query to one opening's bucket.
      *
      * Batch and expiry are matched with an explicit IS NULL on the empty side —
@@ -381,6 +407,11 @@ class ItemOpeningService
             ->where('branch_id', $opening->branch_id)
             ->where('item_id', $opening->item_id)
             ->where('warehouse_id', $opening->warehouse_id)
+            ->when(
+                filled($opening->variant_id),
+                fn ($q) => $q->where('variant_id', $opening->variant_id),
+                fn ($q) => $q->whereNull('variant_id')
+            )
             ->when(
                 filled($opening->batch),
                 fn ($q) => $q->where('batch', $opening->batch),
