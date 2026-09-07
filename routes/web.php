@@ -135,6 +135,7 @@ Route::middleware([
     Route::get('/chart-of-accounts/export', [\App\Http\Controllers\Account\AccountController::class, 'exportList'])->name('chart-of-accounts.export');
     Route::resource('chart-of-accounts', \App\Http\Controllers\Account\AccountController::class);
     Route::patch('/chart-of-accounts/{chart_of_account}/restore', [\App\Http\Controllers\Account\AccountController::class, 'restore'])->name('chart-of-accounts.restore')->withTrashed();
+    Route::patch('/chart-of-accounts/{chart_of_account}/toggle-active', [\App\Http\Controllers\Account\AccountController::class, 'toggleActive'])->name('chart-of-accounts.toggle-active');
     Route::get('/chart-of-accounts/{chart_of_account}/export-transactions', [\App\Http\Controllers\Account\AccountController::class, 'exportTransactions'])->name('chart-of-accounts.export-transactions');
     Route::delete('/chart-of-accounts/{chart_of_account}/force-delete', [\App\Http\Controllers\Account\AccountController::class, 'forceDelete'])
         ->name('chart-of-accounts.force-delete')
