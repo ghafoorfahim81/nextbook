@@ -217,7 +217,8 @@
         "records_per_page": "Records Per Page",
         "balance_nature_format": "Balance Nature Format",
         "without_nature": "Without Nature(+/-)",
-        "with_nature": "With Nature(Debit/Credit)"
+        "with_nature": "With Nature(Debit/Credit)",
+        "show_field_hints": "Show field hints"
     },
     "item_management": {
         "description": "Configure visible fields in item forms",

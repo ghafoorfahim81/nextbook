@@ -9,23 +9,44 @@ use Illuminate\Support\Facades\Cache;
 class OnboardingController extends Controller
 {
     /**
-     * Mark the one-time "check the user manual" prompt as handled — either the
-     * user opened the manual or dismissed the welcome dialog. Writes a single
-     * key onto the raw preferences JSON so it survives future default merges
-     * without bloating the stored value.
+     * The one-time hints the app can show and remember as dismissed. Each maps
+     * to `preferences.onboarding.{key}_dismissed_at` on the raw preferences JSON,
+     * so the flag survives future default merges without bloating the value.
+     */
+    private const HINTS = ['manual_prompt', 'item_form_help'];
+
+    /**
+     * Mark the app-wide "check the user manual" prompt as handled. Kept as its
+     * own route for the welcome dialog and the manual page.
      */
     public function dismissManualPrompt(Request $request)
+    {
+        return $this->markDismissed($request, 'manual_prompt');
+    }
+
+    /**
+     * Mark any one-time hint as handled — the item-form instruction modal, etc.
+     * Called fire-and-forget over XHR; nothing changes on the current screen.
+     */
+    public function dismissHint(Request $request)
+    {
+        $key = (string) $request->input('key');
+
+        abort_unless(in_array($key, self::HINTS, true), 422);
+
+        return $this->markDismissed($request, $key);
+    }
+
+    private function markDismissed(Request $request, string $key)
     {
         $user = $request->user();
 
         $preferences = $user->preferences ?? [];
-        data_set($preferences, 'onboarding.manual_prompt_dismissed_at', now()->toIso8601String());
+        data_set($preferences, "onboarding.{$key}_dismissed_at", now()->toIso8601String());
         $user->update(['preferences' => $preferences]);
 
         Cache::forget(CacheKey::forUser($request, 'preferences'));
 
-        // Called fire-and-forget over XHR from the welcome dialog and the
-        // manual page; nothing needs to change on the current screen.
         return response()->noContent();
     }
 }

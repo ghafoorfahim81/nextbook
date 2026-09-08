@@ -1,9 +1,11 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useFormGuard } from '@/composables/useFormGuard'
-import { computed, watch, ref, reactive, onMounted, nextTick } from 'vue'
+import { computed, watch, ref, reactive, onMounted, nextTick, toRef } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { useForm, router } from '@inertiajs/vue3'
+import axios from 'axios'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
@@ -38,6 +40,11 @@ const props = defineProps({
     costAccounts:{ type:Object, required: true},
     costingMethods: { type: [Array, Object], default: () => [] },
     pricingMethods: { type: [Array, Object], default: () => [] },
+    // Resolved fresh server-side from the company's business type, so a
+    // just-changed trade takes effect without waiting for the cached
+    // `business_profile` shared prop to expire.
+    businessProfile: { type: Object, default: null },
+    companyCostingMethod: { type: String, default: null },
 })
 
 // normalize lists whether they're paginated or not
@@ -64,6 +71,8 @@ const formatCode = (number) => {
 }
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
+// Inline hints follow the per-user appearance.show_field_hints preference.
+const showFieldHints = computed(() => user_preferences.value?.appearance?.show_field_hints !== false)
 // Single reactive copy of the item-management preferences so the panel and form stay in sync live.
 const itemPrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.item_management ?? {})))
 if (!itemPrefs.visible_fields || typeof itemPrefs.visible_fields !== 'object') itemPrefs.visible_fields = {}
@@ -71,10 +80,19 @@ if (!itemPrefs.visible_fields || typeof itemPrefs.visible_fields !== 'object') i
 // Which fields this trade uses, resolved server-side from the company's
 // business type. User preferences layer on top, so an owner can still switch
 // an individual field on or off without leaving the profile.
-const { fields: profileFields, showsSection, specLabel, applyDefaults } = useBusinessProfile()
+const { fields: profileFields, showsSection, specLabel, applyDefaults } = useBusinessProfile(toRef(props, 'businessProfile'))
 const visibleFields = computed(() => ({ ...profileFields.value, ...itemPrefs.visible_fields }))
 const specText = computed(() => itemPrefs.spec_text || t(`item.spec.${specLabel.value}`))
 const showPreferencesPanel = ref(false)
+
+// Open the instruction modal the first time a user reaches this form, then
+// remember it as seen (fire-and-forget, like the app-wide manual prompt).
+const showItemHelp = ref(false)
+onMounted(() => {
+    if (user_preferences.value?.onboarding?.item_form_help_dismissed_at) return
+    showItemHelp.value = true
+    axios.post(route('onboarding.hint.dismiss'), { key: 'item_form_help' }).catch(() => {})
+})
 
 const createOpeningRow = (warehouse = null) => ({
     batch: '',
@@ -93,7 +111,6 @@ const form = useForm({
     code: '',
     generic_name: '',
     packing: '',
-    remark: '',
     branch_id: null,
     warehouse_id: null,
     item_type: null,
@@ -114,7 +131,13 @@ const form = useForm({
     rate_b: '',
     rate_c: '',
     rack_no: '',
+    fast_search: '',
     photo: null, // file
+    costing_method: null,
+    pricing_method: null,
+    default_warehouse_id: null,
+    allow_negative_stock: false,
+    show_in_pos: true,
     is_batch_tracked: false,
     is_expiry_tracked: false,
     is_serial_tracked: false,
@@ -507,14 +530,15 @@ useFormGuard(form)
             :prefs="itemPrefs"
             :title="t('preferences.tabs.item_management')"
         />
+        <ModuleHelpButton module="inventory_item" triggerless v-model:open="showItemHelp" />
         <form @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('item.item') }) }}
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 mt-3 items-start">
                 <NextInput ref="nameInputRef" autofocus is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
-                <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
+                <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :hint="t('item.hint.code')" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                 <NextInput v-show="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                 <NextInput v-show="visibleFields.packing" :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
                 <NextInput v-show="visibleFields.description" :label="t('item.description')" v-model="form.description" :error="form.errors?.description" :placeholder="t('general.enter', { text: t('item.description') })" />
@@ -542,6 +566,7 @@ useFormGuard(form)
                     @update:modelValue="(value) => handleSelectChange('item_type', value)"
                     id="item_type"
                     :floating-text="t('item.item_type')"
+                    :hint="t('item.hint.item_type')"
                 />
                 <NextSelect
                     v-show="visibleFields.category"
@@ -571,6 +596,7 @@ useFormGuard(form)
                     :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
                     :error="form.errors.brand_id"
                 />
+                <NextInput v-show="visibleFields.photo" :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
                 <NextSelect
                     :options="otherCurrentAssetsAccounts"
                     v-model="form.asset_account_id"
@@ -583,6 +609,7 @@ useFormGuard(form)
                     resource-type="assets_accounts"
                     :search-fields="['name']"
                     :error="form.errors.asset_account_id"
+                    :hint="t('item.hint.asset_account')"
                 />
                 <NextSelect
                     :options="incomeAccounts"
@@ -597,6 +624,7 @@ useFormGuard(form)
                     resource-type="income_accounts"
                     :search-fields="['name']"
                     :error="form.errors.income_account_id"
+                    :hint="t('item.hint.income_account')"
                 />
                 <NextSelect
                     :options="costAccounts"
@@ -610,13 +638,13 @@ useFormGuard(form)
                     resource-type="cost_accounts"
                     :search-fields="['name']"
                     :error="form.errors.cost_account_id"
+                    :hint="t('item.hint.cost_account')"
                 />
-                <NextInput v-show="visibleFields.photo" :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
                 <NextInput v-show="visibleFields.rate_a" :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
                 <NextInput v-show="visibleFields.rate_b" :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
                 <NextInput v-show="visibleFields.rate_c" :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
                 <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
-                <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
+                <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" :hint="t('item.hint.fast_search')" />
                 <div class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3 rtl:text-right">
                     <label v-show="visibleFields.is_batch_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
                         <Checkbox class="mt-0.5" :checked="form.is_batch_tracked" @update:checked="(v) => form.is_batch_tracked = v" />
@@ -657,6 +685,7 @@ useFormGuard(form)
                     :warehouses="warehouses"
                     :costing-methods="costingMethods"
                     :pricing-methods="pricingMethods"
+                    :company-costing-method="companyCostingMethod"
                 />
             </div>
             <div class="mt-2">
@@ -765,6 +794,7 @@ useFormGuard(form)
                             </tbody>
                         </table>
                     </div>
+                    <p v-if="showFieldHints" class="mt-1.5 text-xs text-muted-foreground">{{ t('item.hint.opening_unit_price') }}</p>
                 </div>
             </div>
         </div>

@@ -77,6 +77,19 @@ class ItemCrudTest extends TestCase
         $this->assertSame('5000001', $variant->barcode);
     }
 
+    public function test_it_toggles_the_item_active_flag(): void
+    {
+        $this->post(route('items.store'), $this->payload())->assertRedirect();
+        $item = Item::where('code', '9001')->firstOrFail();
+        $this->assertTrue($item->is_active);
+
+        $this->patch(route('items.toggle-active', $item))->assertRedirect();
+        $this->assertFalse($item->fresh()->is_active);
+
+        $this->patch(route('items.toggle-active', $item))->assertRedirect();
+        $this->assertTrue($item->fresh()->is_active);
+    }
+
     public function test_ensure_default_gives_a_bare_item_its_single_variant(): void
     {
         // Fast entry / imports create the item row directly; the service still

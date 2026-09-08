@@ -35,6 +35,7 @@ class LocaleController extends Controller
         Cookie::queue(Cookie::make(SetLocale::COOKIE_KEY, $locale, 60 * 24 * 365 * 5));
 
         // Clear locale-dependent enum caches so labels refresh immediately after switching language.
+        \App\Support\Inertia\EnumOptions::forgetForLocales($request, [$previousLocale, $locale]);
         $this->forgetEnumCachesForLocales(array_unique(array_filter([$previousLocale, $locale])));
 
         // Inertia: after POST, redirect with 303 so the client performs a GET and refreshes props.

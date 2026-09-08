@@ -73,6 +73,9 @@ class User extends Authenticatable
             'decimal_places' => 2,
             'records_per_page' => 15,
             'balance_nature_format'=> 'with_nature',
+            // Inline one-line hints under form inputs. On by default; users who
+            // find the forms busy can switch every module's hints off here.
+            'show_field_hints' => true,
             'sidebar_menus' => [
                 'home',
                 'dashboard',

@@ -125,6 +125,9 @@ class ItemController extends Controller
             'pricingMethods' => collect(PricingMethod::cases())
                 ->map(fn ($c) => ['id' => $c->value, 'name' => $c->getLabel()])
                 ->values(),
+            // Shown as the fallback on the item form: a blank costing method
+            // means "use the company default".
+            'companyCostingMethod' => BranchContext::costingMethod(),
         ];
     }
     public function store(ItemStoreRequest $request, AttachmentService $attachmentService)
@@ -235,7 +238,7 @@ class ItemController extends Controller
     {
         $item->load(
             'assetAccount', 'incomeAccount', 'costAccount',
-            'createdBy', 'updatedBy', 'brand', 'size', 'stocks', 'attachments',
+            'createdBy', 'updatedBy', 'brand', 'stocks', 'attachments',
             'variants.stockBalances',
         );
 
@@ -415,9 +418,9 @@ class ItemController extends Controller
     public function edit(Request $request, Item $item)
     {
         $item = Item::with(
-            'unitMeasure', 'brand', 'category', 'size',
+            'unitMeasure', 'brand', 'category',
             'assetAccount', 'incomeAccount', 'costAccount',
-            'openings.warehouse', 'openings.size', 'attachments',
+            'openings.warehouse', 'attachments',
             'variants',
         )->find($item->id);
 
@@ -541,6 +544,22 @@ class ItemController extends Controller
             return redirect()->back()->with('error', __('general.failed_to_delete_try_again', ['resource' => __('general.resource.item')]));
         }
     }
+
+    /**
+     * Flip the item's active flag. Inactive items stay in reports and history
+     * but drop out of the item pickers on new documents.
+     */
+    public function toggleActive(Request $request, Item $item)
+    {
+        $this->authorize('update', $item);
+
+        $item->update(['is_active' => ! $item->is_active]);
+
+        return back()->with('success', __('general.status_updated_successfully', [
+            'resource' => __('general.resource.item'),
+        ]));
+    }
+
     public function restore(Request $request, Item $item)
     {
         $this->authorize('restore', $item);

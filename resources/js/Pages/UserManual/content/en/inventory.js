@@ -52,36 +52,79 @@ export default {
             title: 'Item field reference',
             blocks: [
                 {
+                    type: 'p',
+                    text: 'An item is the catalogue entry. It carries the code, type, unit, accounts and the fields the company’s business type switches on. What is actually sold, scanned and priced is a variant of it — see the next chapter.',
+                },
+                {
                     type: 'table',
                     headers: ['Field', 'Why it matters'],
                     rows: [
-                        ['Name and code (SKU)', 'A unique code for search, barcode, and preventing duplicates.'],
-                        ['Item type', 'Stockable or service. Cannot be changed after a transaction is posted.'],
-                        ['Asset account', 'The account that holds this item’s stock value.'],
-                        ['Income account', 'The account this item’s sales income is recorded in.'],
-                        ['Cost of goods account', 'The account the cost of sale is recorded in.'],
-                        ['Default sale price', 'The price that appears automatically on a sales invoice.'],
-                        ['Minimum / maximum stock', 'The basis for shortage and dead-stock reports.'],
-                        ['Batch / expiry tracking', 'For medicine and dated goods. Cannot be turned off once enabled and a transaction is posted.'],
-                        ['Costing method', 'Batch-tracked items use FIFO; the rest use weighted average.'],
+                        ['Code', 'Generated automatically. Identifies the item internally and never changes.'],
+                        ['Item type', 'Stockable item or service. Cannot be changed after a transaction is posted.'],
+                        ['Unit of measure', 'The base unit every quantity is counted in.'],
+                        ['Asset account', 'Holds this item’s stock value on the balance sheet.'],
+                        ['Income account', 'Where its sales revenue is booked.'],
+                        ['Cost of goods account', 'Where the cost is booked when it is sold.'],
+                        ['Batch / expiry tracking', 'Groups stock into delivery lots with their own batch number, expiry and landed cost. Permanent once a transaction is posted.'],
+                        ['Serial tracking', 'Records every unit individually with its own serial number and warranty.'],
+                        ['Costing method', 'Batch/expiry-tracked items use FIFO; the rest use weighted average.'],
                     ],
+                },
+                {
+                    type: 'note',
+                    label: 'The form adapts to your trade',
+                    text: 'The company business type decides which fields and sections appear. A pharmacy sees batch and expiry; a computer shop sees variants and serials; a bakery sees expiry only. Change it under Company settings.',
                 },
                 {
                     type: 'warn',
                     label: 'Batch tracking is a permanent decision',
-                    text: 'If you enable batch tracking for an item and a transaction is then posted, you can no longer turn it off. Enable it only for items that genuinely have an expiry date.',
+                    text: 'Once batch tracking is enabled for an item and a transaction is posted, it can no longer be turned off. Enable it only for goods that genuinely carry an expiry or lot code.',
+                },
+            ],
+        },
+        {
+            id: 'variants',
+            number: '4',
+            title: 'Variants — what is actually sold',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'Every item has at least one variant. The variant carries the SKU, barcode, sale price, purchase price and minimum/maximum stock — not the item.',
                 },
                 {
-                    type: 'figure',
-                    src: '/images/user-manual/inventory/item-fields.png',
-                    caption: 'The item form — general info, accounts, and stock tabs',
-                    hint: 'screenshot of the create item page',
+                    type: 'h4', text: 'Simple products',
+                },
+                {
+                    type: 'p',
+                    text: 'A bottle of water or a cake has one variant. Its single row on the item form holds the SKU, barcode and price. You never think of it as “a variant” — it is just where those fields live now.',
+                },
+                {
+                    type: 'h4', text: 'Products with choices',
+                },
+                {
+                    type: 'p',
+                    text: 'A laptop sold in several RAM/storage builds, or a shirt in several colours and sizes, gets one variant per combination. Add an attribute column (RAM, Colour, Size…) and one row per combination; each row has its own SKU, barcode and price.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Field', 'Meaning'],
+                    rows: [
+                        ['Default (star)', 'Used when no specific variant is chosen — barcode scans and price lookups fall back to it.'],
+                        ['Attributes', 'The choices that make a variant distinct: RAM, storage, colour, size.'],
+                        ['Margin %', 'A helper that fills the sale price from purchase price + margin. Not saved.'],
+                        ['Generate barcode', 'Fills the barcode field with a fresh unique code.'],
+                    ],
+                },
+                {
+                    type: 'note',
+                    label: 'Colour and size',
+                    text: 'These are ordinary variant attributes now — you type them as attribute columns, not as separate tracking switches on the item.',
                 },
             ],
         },
         {
             id: 'fast-entry-opening',
-            number: '4',
+            number: '5',
             title: 'Fast entry and fast opening',
             blocks: [
                 { type: 'h4', text: 'Fast item entry' },
@@ -103,7 +146,7 @@ export default {
         },
         {
             id: 'transfers',
-            number: '5',
+            number: '6',
             title: 'Transferring stock between warehouses',
             blocks: [
                 {
@@ -128,7 +171,7 @@ export default {
         },
         {
             id: 'adjustments',
-            number: '6',
+            number: '7',
             title: 'Stock adjustments',
             blocks: [
                 {
@@ -153,7 +196,7 @@ export default {
         },
         {
             id: 'pricing',
-            number: '7',
+            number: '8',
             title: 'Bulk pricing',
             blocks: [
                 {
@@ -170,7 +213,7 @@ export default {
         },
         {
             id: 'barcode',
-            number: '8',
+            number: '9',
             title: 'Barcode printing',
             blocks: [
                 {
@@ -181,26 +224,33 @@ export default {
         },
         {
             id: 'in-out-records',
-            number: '9',
-            title: 'Item in / out records',
+            number: '10',
+            title: 'Item in / out history',
             blocks: [
                 {
                     type: 'p',
-                    text: 'On each item’s view page there are two lists: “In records” (purchase, sales return, inbound transfer, inbound adjustment) and “Out records” (sale, purchase return, outbound transfer, outbound adjustment). These are the full movement history of that item and can be exported.',
+                    text: 'Each item’s view page has two tabs: In History (purchase, sales return, inbound transfer, inbound adjustment, opening) and Out History (sale, purchase return, outbound transfer, outbound adjustment). Together they are the item’s full movement history and can be exported.',
+                },
+                {
+                    type: 'p',
+                    text: 'Click any row to open the document it came from — the purchase, sale, transfer or adjustment. Opening rows have no document and are not clickable.',
                 },
             ],
         },
         {
             id: 'glossary',
-            number: '10',
+            number: '11',
             title: 'Glossary of confusing fields',
             blocks: [
                 {
                     type: 'table',
                     headers: ['Term', 'Meaning'],
                     rows: [
-                        ['SKU', 'The unique stock-keeping code of each item.'],
-                        ['Batch / lot', 'A specific consignment of an item with its own expiry and cost.'],
+                        ['Item', 'The catalogue entry — code, type, unit, accounts.'],
+                        ['Variant', 'What is actually sold and scanned. Holds the SKU, barcode and price. Every item has at least one.'],
+                        ['Default variant', 'The starred one, used when no specific variant is chosen.'],
+                        ['SKU', 'The unique stock-keeping code — on the variant.'],
+                        ['Batch / lot', 'A specific consignment of a variant with its own expiry and cost.'],
                         ['FIFO', 'First in, first out; the oldest batch is sold first.'],
                         ['Weighted average', 'A costing method that updates the average purchase price based on quantity.'],
                         ['Stock in transit', 'Goods that have left the source warehouse but are not yet recorded at the destination.'],
@@ -211,7 +261,7 @@ export default {
         },
         {
             id: 'reports',
-            number: '11',
+            number: '12',
             title: 'Inventory reports',
             blocks: [
                 {
@@ -230,7 +280,7 @@ export default {
         },
         {
             id: 'troubleshooting',
-            number: '12',
+            number: '13',
             title: 'Troubleshooting',
             blocks: [
                 {

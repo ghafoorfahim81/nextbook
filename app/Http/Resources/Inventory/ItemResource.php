@@ -13,7 +13,6 @@ use App\Enums\StockStatus;
 use App\Http\Resources\Inventory\StockMovementResource;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\BrandResource;
-use App\Http\Resources\Administration\SizeResource;
 use App\Http\Resources\AttachmentResource;
 class ItemResource extends JsonResource
 {
@@ -45,13 +44,8 @@ class ItemResource extends JsonResource
             'cost_account' => AccountResource::make($this->whenLoaded('costAccount')),
             'minimum_stock' => $this->minimum_stock,
             'maximum_stock' => $this->maximum_stock,
-            'colors' => $this->colors,
-            'size' => SizeResource::make($this->whenLoaded('size')),
-            'size_id' => $this->size_id,
             'purchase_price' => $this->purchase_price,
-            'cost' => $this->cost,
             'sale_price' => $this->sale_price,
-            'margin_percentage' => $this->margin_percentage,
             'rate_a' => $this->rate_a,
             'rate_b' => $this->rate_b,
             'rate_c' => $this->rate_c,
@@ -59,8 +53,6 @@ class ItemResource extends JsonResource
             'fast_search' => $this->fast_search,
             'is_batch_tracked' => $this->is_batch_tracked,
             'is_expiry_tracked' => $this->is_expiry_tracked,
-            'is_color_tracked' => $this->is_color_tracked,
-            'is_size_tracked' => $this->is_size_tracked,
             'sku' => $this->sku,
             'item_type' => $this->item_type ? $this->item_type?->getLabel() : null,
             'item_type_id' => $this->item_type,
@@ -74,11 +66,17 @@ class ItemResource extends JsonResource
             'is_weighted' => (bool) $this->is_weighted,
             'has_variants' => (bool) $this->has_variants,
             'allow_negative_stock' => (bool) $this->allow_negative_stock,
+            'show_in_pos' => (bool) $this->show_in_pos,
             'requires_prescription' => (bool) $this->requires_prescription,
             'is_controlled' => (bool) $this->is_controlled,
 
             'costing_method' => $this->costing_method?->value,
             'pricing_method' => $this->pricing_method?->value,
+            // Human labels for the show page (avoids duplicating the enum
+            // translations into the JS locale files). Costing falls back to the
+            // company default when the item leaves it blank.
+            'costing_method_label' => $this->effectiveCostingMethod()->getLabel(),
+            'pricing_method_label' => ($this->pricing_method ?? \App\Enums\PricingMethod::FIXED)->getLabel(),
 
             // --- Physical ---------------------------------------------------
             'description' => $this->description,

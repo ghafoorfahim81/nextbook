@@ -9,6 +9,23 @@ use UnitEnum;
 final class EnumOptions
 {
     /**
+     * Every `$cacheName` passed to forLocale(), so the whole set can be dropped
+     * on a language switch. Keep in sync with App\Support\Inertia\LookupShared.
+     */
+    public const CACHE_NAMES = [
+        'business_types',
+        'calendar_types',
+        'working_styles',
+        'locales',
+        'costing_methods',
+        'sale_purchase_types',
+        'discount_types',
+        'item_types',
+        'transaction_statuses',
+        'transaction_types',
+    ];
+
+    /**
      * @template TEnum of UnitEnum
      *
      * @param class-string<TEnum> $enumClass
@@ -27,5 +44,23 @@ final class EnumOptions
                     ->all();
             }
         );
+    }
+
+    /**
+     * Drop every cached enum-option list for the given locales, so the labels
+     * are rebuilt in the new language on the next request.
+     *
+     * @param  array<int, string>  $locales
+     */
+    public static function forgetForLocales(Request $request, array $locales): void
+    {
+        $companyId = CacheKey::companyId($request) ?? 'none';
+        $branchId = CacheKey::branchId($request) ?? 'none';
+
+        foreach (array_unique(array_filter($locales)) as $locale) {
+            foreach (self::CACHE_NAMES as $name) {
+                Cache::forget(CacheKey::build($companyId, $branchId, $locale, "enum:{$name}"));
+            }
+        }
     }
 }
