@@ -24,12 +24,17 @@ use App\Http\Controllers\QuickCreateController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\LegalController;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
 Route::post('/locale', LocaleController::class)->name('locale.update');
+
+// Public legal pages — linked from the sign-in footer, reachable while signed out.
+Route::get('/terms-of-service', [LegalController::class, 'terms'])->name('terms.show');
+Route::get('/privacy-policy', [LegalController::class, 'privacy'])->name('policy.show');
 
 // Public routes that don't require company check
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])

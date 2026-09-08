@@ -2,7 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
+import AuthShell from '@/Layouts/AuthShell.vue';
 import { useSoundPreferences } from '@/composables/useSoundPreferences';
 
 const { t } = useI18n();
@@ -20,7 +20,6 @@ const form = useForm({
 });
 
 const showPassword = ref(false);
-const currentYear = new Date().getFullYear();
 
 // Field-level validation happens client side (mirrors the design); anything the
 // server rejects — bad credentials, throttling — surfaces in the banner above.
@@ -69,32 +68,10 @@ const submit = () => {
         >
     </Head>
 
-    <div class="nb-login relative flex min-h-screen flex-col items-center justify-center px-6 pb-10 pt-[88px]">
-        <!-- Top bar: brand + language -->
-        <div class="absolute inset-x-0 top-0 flex h-16 items-center justify-between px-7">
-            <div class="flex items-center gap-[9px]">
-                <div class="nb-accent-bg flex h-[29px] w-[29px] items-center justify-center rounded-[8px] text-base font-semibold text-white nb-mono">
-                    N
-                </div>
-                <span class="text-base font-bold tracking-[-0.02em] text-zinc-900">Nextbook</span>
-                <span class="nb-mono ms-0.5 rounded-[5px] border border-zinc-200 px-[5px] py-[2px] text-[9.5px] font-medium tracking-[0.12em] text-zinc-400">
-                    ERP
-                </span>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
-                </svg>
-                <LanguageSwitcher />
-            </div>
-        </div>
-
-        <!-- Card -->
-        <div class="nb-card relative z-10 w-full max-w-[406px] rounded-[14px] border border-[#ececee] bg-white px-9 pb-[26px] pt-9">
+    <AuthShell>
+        <div class="nb-card relative z-10 w-full max-w-[430px] rounded-[16px] border px-9 pb-[26px] pt-9">
             <div class="nb-rise">
-                <h1 class="mb-1.5 text-[21px] font-bold tracking-[-0.025em] text-zinc-900">
+                <h1 class="mb-1.5 text-[22px] font-bold tracking-[-0.025em] text-zinc-900">
                     {{ t('auth.sign_in_title') }}
                 </h1>
                 <p class="mb-[22px] text-sm leading-normal text-zinc-500">
@@ -200,74 +177,28 @@ const submit = () => {
                     </Link>
                 </p>
             </div>
-
-            <div class="mt-6 flex items-center justify-between border-t border-zinc-100 pt-4">
-                <span class="nb-mono flex items-center gap-1.5 text-[10.5px] text-zinc-400">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2.2" aria-hidden="true">
-                        <rect x="4" y="10" width="16" height="11" rx="2" />
-                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                    </svg>
-                    {{ t('auth.secure_connection') }}
-                </span>
-                <span class="nb-mono text-[10.5px] text-zinc-400">Nextbook ERP</span>
-            </div>
         </div>
-
-        <p class="mt-[22px] text-[12.5px] text-zinc-400">
-            &copy; {{ currentYear }} Nextbook, Inc.
-        </p>
-    </div>
+    </AuthShell>
 </template>
 
 <style scoped>
-.nb-login {
-    /* Accent follows the app's active theme rather than hard-coding a brand hex. */
-    --nb-accent: hsl(var(--primary));
-    --nb-accent-strong: color-mix(in srgb, hsl(var(--primary)) 82%, #000);
-    --nb-accent-ring: color-mix(in srgb, hsl(var(--primary)) 14%, transparent);
-
-    box-sizing: border-box;
-    font-family: 'Public Sans', 'Poppins', system-ui, -apple-system, sans-serif;
-    color: #18181b;
-    background-color: #f5f6f6;
-    background-image: radial-gradient(circle, rgba(15, 23, 42, 0.045) 1px, transparent 1.4px);
-    background-size: 22px 22px;
-}
-
-.nb-mono {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
-}
-
-.nb-card {
-    box-shadow:
-        0 1px 2px rgba(16, 24, 40, 0.04),
-        0 18px 40px -18px rgba(16, 24, 40, 0.16);
-}
-
-.nb-accent-bg {
-    background: var(--nb-accent);
-}
-
-.nb-accent-text {
-    color: var(--nb-accent);
-}
-
+/* Form chrome only — the page shell, palette tokens and footer live in AuthShell. */
 .nb-input {
     width: 100%;
     box-sizing: border-box;
     padding: 11px 13px;
     font-size: 14px;
     font-family: inherit;
-    color: #18181b;
-    background: #fff;
-    border: 1px solid #d4d4d8;
+    color: var(--nb-input-text);
+    background: var(--nb-input-bg);
+    border: 1px solid var(--nb-input-border);
     border-radius: 9px;
     outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.25s ease, color 0.25s ease;
 }
 
 .nb-input::placeholder {
-    color: #a1a1aa;
+    color: var(--nb-input-placeholder);
 }
 
 .nb-input:focus {
@@ -277,6 +208,15 @@ const submit = () => {
 
 .nb-input-error {
     border-color: #dc2626;
+}
+
+/* Keep autofilled fields on-theme (WebKit paints them white regardless). */
+.nb-input:-webkit-autofill,
+.nb-input:-webkit-autofill:hover,
+.nb-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--nb-input-text);
+    -webkit-box-shadow: 0 0 0 1000px var(--nb-input-bg) inset;
+    caret-color: var(--nb-input-text);
 }
 
 .nb-checkbox {
@@ -325,21 +265,12 @@ const submit = () => {
     animation: nb-spin 0.6s linear infinite;
 }
 
-.nb-rise {
-    animation: nb-rise 0.35s ease;
-}
-
 .nb-shake {
     animation: nb-shake 0.4s ease;
 }
 
 @keyframes nb-spin {
     to { transform: rotate(360deg); }
-}
-
-@keyframes nb-rise {
-    from { transform: translateY(8px); }
-    to { transform: translateY(0); }
 }
 
 @keyframes nb-shake {
@@ -350,7 +281,6 @@ const submit = () => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .nb-rise,
     .nb-shake,
     .nb-spinner {
         animation: none;
