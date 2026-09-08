@@ -8,7 +8,7 @@ enum ItemType: string
     case NON_INVENTORY_MATERIALS = 'non_inventory_materials';
     case RAW_MATERIALS = 'raw_materials';
     case FINISHED_GOOD_ITEMS = 'finished_good_items';
-    case INVENTORY_SERVICES = 'inventory_services';
+    case SERVICES = 'Services';
 
     public function getLabel(): string
     {
@@ -17,7 +17,7 @@ enum ItemType: string
             self::NON_INVENTORY_MATERIALS => __('enums.item_type.non_inventory_materials'),
             self::RAW_MATERIALS => __('enums.item_type.raw_materials'),
             self::FINISHED_GOOD_ITEMS => __('enums.item_type.finished_good_items'),
-            self::INVENTORY_SERVICES => __('enums.item_type.inventory_services'),
+            self::SERVICES => __('enums.item_type.services'),
         };
     }
 
@@ -25,5 +25,5 @@ enum ItemType: string
     {
         return array_column(self::cases(), 'value');
     }
- 
+
 }

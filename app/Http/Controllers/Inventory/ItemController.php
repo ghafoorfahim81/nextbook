@@ -134,6 +134,9 @@ class ItemController extends Controller
     {
         $validated = $request->validated();
         $validated['item_type'] = $validated['item_type'] ?? ItemType::INVENTORY_MATERIALS->value;
+        // pricing_method is a non-null column with a 'fixed' default; an explicit
+        // null from the form would bypass that default and hit the constraint.
+        $validated['pricing_method'] = ($validated['pricing_method'] ?? null) ?: PricingMethod::FIXED->value;
 
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('items', 'public');
@@ -446,6 +449,7 @@ class ItemController extends Controller
     public function update(ItemUpdateRequest $request, Item $item, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
+        $validated['pricing_method'] = ($validated['pricing_method'] ?? null) ?: PricingMethod::FIXED->value;
 
         // The `photo` column did not exist until this refactor, so this
         // assignment used to throw as soon as anyone uploaded one.
