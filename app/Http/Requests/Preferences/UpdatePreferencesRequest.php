@@ -35,6 +35,7 @@ use Illuminate\Validation\Rule;
             'appearance.textarea_font_size' => 'sometimes|integer|min:10|max:24',
             'appearance.sidebar_menus' => 'sometimes|array',
             'appearance.balance_nature_format' => 'sometimes|in:without_nature,with_nature',
+            'appearance.show_field_hints' => 'sometimes|boolean',
 
             // Item Management
             'item_management' => 'sometimes|array',

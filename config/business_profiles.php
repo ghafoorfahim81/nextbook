@@ -102,12 +102,18 @@ return [
             'is_controlled'          => false,
 
             // --- Behaviour -----------------------------------------------------
+            // is_active / sellable / purchasable are universal — every trade
+            // may want to flag an item sale-only or purchase-only. The rest are
+            // trade-specific and stay opt-in via the Preferences panel.
             'is_active'            => true,
             'is_stockable'         => false,
-            'is_sellable'          => false,
-            'is_purchasable'       => false,
+            'is_sellable'          => true,
+            'is_purchasable'       => true,
             'is_weighted'          => false,
             'allow_negative_stock' => false,
+            // Whether the item is offered at the POS till. Shown only for
+            // trades that run a point of sale (supermarket, grocery, retail).
+            'show_in_pos'          => false,
 
             // --- Tracking toggles ------------------------------------------------
             'is_batch_tracked'  => false,
@@ -161,6 +167,7 @@ return [
                 'is_expiry_tracked'      => true,
                 'is_weighted'            => true,
                 'default_warehouse'      => true,
+                'show_in_pos'            => true,
             ],
         ],
 
@@ -175,6 +182,7 @@ return [
                 'reorder_quantity'  => true,
                 'is_expiry_tracked' => true,
                 'is_weighted'       => true,
+                'show_in_pos'       => true,
             ],
         ],
 
@@ -364,6 +372,7 @@ return [
                 'rack_no'          => true,
                 'rate_a'           => true,
                 'reorder_quantity' => true,
+                'show_in_pos'      => true,
             ],
         ],
 

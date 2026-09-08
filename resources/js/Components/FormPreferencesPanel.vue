@@ -111,24 +111,50 @@ const returnItemColumns = [
     { key: 'size', labelKey: 'preferences.fields.size' },
 ]
 
+// Every toggleable item field — mirrors config/business_profiles.php `base.fields`,
+// so an owner can switch on anything their trade's profile hid. `accounts` and
+// `is_active` are always shown and not listed here. Labels come from `item.*`.
 const itemManagementFields = [
-    { key: 'code', labelKey: 'preferences.item_fields.code' },
-    { key: 'generic_name', labelKey: 'preferences.item_fields.generic_name' },
-    { key: 'packing', labelKey: 'preferences.item_fields.packing' },
-    { key: 'brand', labelKey: 'preferences.item_fields.brand' },
-    { key: 'minimum_stock', labelKey: 'preferences.item_fields.minimum_stock' },
-    { key: 'maximum_stock', labelKey: 'preferences.item_fields.maximum_stock' },
-    { key: 'file_upload', labelKey: 'preferences.item_fields.file_upload' },
-    { key: 'rate_a', labelKey: 'preferences.item_fields.rate_a' },
-    { key: 'rate_b', labelKey: 'preferences.item_fields.rate_b' },
-    { key: 'rate_c', labelKey: 'preferences.item_fields.rate_c' },
-    { key: 'barcode', labelKey: 'preferences.item_fields.barcode' },
-    { key: 'rack_no', labelKey: 'preferences.item_fields.rack_no' },
-    { key: 'fast_search', labelKey: 'preferences.item_fields.fast_search' },
-    { key: 'item_type', labelKey: 'preferences.fields.item_type' },
-    { key: 'sku', labelKey: 'preferences.fields.sku' },
-    { key: 'is_batch_tracked', labelKey: 'preferences.item_fields.is_batch_tracked' },
-    { key: 'is_expiry_tracked', labelKey: 'preferences.item_fields.is_expiry_tracked' },
+    { key: 'code', labelKey: 'item.code' },
+    { key: 'generic_name', labelKey: 'item.generic_name' },
+    { key: 'packing', labelKey: 'item.packing' },
+    { key: 'description', labelKey: 'item.description' },
+    { key: 'photo', labelKey: 'item.photo' },
+    { key: 'item_type', labelKey: 'item.item_type' },
+    { key: 'category', labelKey: 'admin.category.category' },
+    { key: 'brand', labelKey: 'admin.brand.brand' },
+    { key: 'unit_measure', labelKey: 'admin.unit_measure.unit_measure' },
+    { key: 'model', labelKey: 'item.model' },
+    { key: 'rate_a', labelKey: 'item.rate_a' },
+    { key: 'rate_b', labelKey: 'item.rate_b' },
+    { key: 'rate_c', labelKey: 'item.rate_c' },
+    { key: 'pricing_method', labelKey: 'item.pricing_method' },
+    { key: 'costing_method', labelKey: 'item.costing_method' },
+    { key: 'reorder_quantity', labelKey: 'item.reorder_quantity' },
+    { key: 'lead_time_days', labelKey: 'item.lead_time_days' },
+    { key: 'default_warehouse', labelKey: 'item.default_warehouse' },
+    { key: 'rack_no', labelKey: 'item.rack_no' },
+    { key: 'fast_search', labelKey: 'item.fast_search' },
+    { key: 'weight', labelKey: 'item.weight' },
+    { key: 'dimensions', labelKey: 'item.dimensions' },
+    { key: 'manufacturer', labelKey: 'item.manufacturer' },
+    { key: 'country_of_origin', labelKey: 'item.country_of_origin' },
+    { key: 'hs_code', labelKey: 'item.hs_code' },
+    { key: 'warranty_months', labelKey: 'item.warranty_months' },
+    { key: 'shelf_life_days', labelKey: 'item.shelf_life_days' },
+    { key: 'min_shelf_life_percent', labelKey: 'item.min_shelf_life_percent' },
+    { key: 'storage_zone', labelKey: 'item.storage_zone' },
+    { key: 'requires_prescription', labelKey: 'item.requires_prescription' },
+    { key: 'is_controlled', labelKey: 'item.is_controlled' },
+    { key: 'is_batch_tracked', labelKey: 'item.is_batch_tracked' },
+    { key: 'is_expiry_tracked', labelKey: 'item.is_expiry_tracked' },
+    { key: 'is_serial_tracked', labelKey: 'item.is_serial_tracked' },
+    { key: 'is_stockable', labelKey: 'item.is_stockable' },
+    { key: 'is_sellable', labelKey: 'item.is_sellable' },
+    { key: 'is_purchasable', labelKey: 'item.is_purchasable' },
+    { key: 'is_weighted', labelKey: 'item.is_weighted' },
+    { key: 'allow_negative_stock', labelKey: 'item.allow_negative_stock' },
+    { key: 'show_in_pos', labelKey: 'item.show_in_pos' },
 ]
 
 const receiptPaymentFields = [
@@ -261,7 +287,22 @@ const headerTitle = computed(() => props.title || t('general.settings'))
 /* ----------------------------------------------------------------------------
  * Reading / writing values against the parent's reactive prefs object.
  * -------------------------------------------------------------------------- */
-const groupValue = (group, key) => props.prefs?.[group]?.[key] ?? false
+// Item-field visibility is driven by the company's business profile first, then
+// the owner's per-field overrides. So a toggle with no explicit override should
+// reflect what the trade already switched on — otherwise the panel shows OFF for
+// a field the form is actually rendering.
+const profileFields = computed(
+    () => (props.prefGroup === 'item_management' && page.props?.business_profile?.fields) || {}
+)
+
+const groupValue = (group, key) => {
+    const override = props.prefs?.[group]?.[key]
+    if (override !== undefined && override !== null) return override
+    if (group === 'visible_fields' && key in profileFields.value) {
+        return Boolean(profileFields.value[key])
+    }
+    return false
+}
 const fieldValue = (key) => props.prefs?.[key]
 
 const persist = () => {
@@ -305,6 +346,26 @@ const setConfirmOnSave = (value) => {
         confirmations: { [props.module]: value },
     }).catch((e) => console.error('Failed to save confirmation preference', e))
 }
+
+/* ----------------------------------------------------------------------------
+ * "Show field hints" — the inline one-line descriptions under form inputs.
+ * A single app-wide toggle (appearance.show_field_hints), surfaced on every
+ * module's panel so it can be turned off from wherever the clutter is noticed.
+ * -------------------------------------------------------------------------- */
+const showFieldHints = computed(
+    () => page.props?.user_preferences?.appearance?.show_field_hints ?? true
+)
+
+const setShowFieldHints = (value) => {
+    if (!page.props.user_preferences) page.props.user_preferences = {}
+    page.props.user_preferences.appearance = {
+        ...(page.props.user_preferences.appearance || {}),
+        show_field_hints: value,
+    }
+    axios.put(route('preferences.update'), {
+        appearance: { show_field_hints: value },
+    }).catch((e) => console.error('Failed to save field-hints preference', e))
+}
 </script>
 
 <template>
@@ -337,16 +398,23 @@ const setConfirmOnSave = (value) => {
 
             <!-- Body -->
             <div class="flex-1 overflow-y-auto p-4 space-y-5">
-                <!-- Confirm before save (per-module) -->
-                <div v-if="module" class="space-y-2">
+                <!-- Confirm before save (per-module) + field hints (app-wide) -->
+                <div class="space-y-2">
                     <div class="text-xs font-semibold uppercase tracking-wide text-primary/80">
                         {{ t('general.general') }}
                     </div>
-                    <div class="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                    <div v-if="module" class="flex items-center justify-between rounded-lg border border-border px-3 py-2">
                         <Label class="text-sm font-normal">{{ t('general.confirm_before_save') }}</Label>
                         <Switch
                             :model-value="confirmOnSave"
                             @update:model-value="setConfirmOnSave"
+                        />
+                    </div>
+                    <div class="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                        <Label class="text-sm font-normal">{{ t('preferences.appearance.show_field_hints') }}</Label>
+                        <Switch
+                            :model-value="showFieldHints"
+                            @update:model-value="setShowFieldHints"
                         />
                     </div>
                 </div>

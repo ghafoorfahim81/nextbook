@@ -85,23 +85,23 @@ class CompanyController extends Controller
             'currencies' => CurrencyResource::collection(Currency::query()->orderBy('name')->get()),
             'businessTypes' => collect(BusinessType::cases())->map(fn (BusinessType $type) => [
                 'id' => $type->value,
-                'name' => $type->name,
+                'name' => $type->getLabel(),
             ])->values(),
             'calendarTypes' => collect(CalendarType::cases())->map(fn (CalendarType $type) => [
                 'id' => $type->value,
-                'name' => $type->name,
+                'name' => $type->getLabel(),
             ])->values(),
             'workingStyles' => collect(WorkingStyle::cases())->map(fn (WorkingStyle $style) => [
                 'id' => $style->value,
-                'name' => $style->name,
+                'name' => $style->getLabel(),
             ])->values(),
             'locales' => collect(Locale::cases())->map(fn (Locale $locale) => [
                 'id' => $locale->value,
-                'name' => $locale->name,
+                'name' => $locale->getLabel(),
             ])->values(),
             'costingMethods' => collect(CostingMethod::cases())->map(fn (CostingMethod $method) => [
                 'id' => $method->value,
-                'name' => $method->name,
+                'name' => $method->getLabel(),
             ])->values(),
         ]);
     }
@@ -151,7 +151,12 @@ class CompanyController extends Controller
 
         Cache::forget('user_'.Auth::id());
 
-        // $company->update($validated);
+        // The trade shapes which item fields, sections and tracking defaults
+        // every user in the company sees, and that is cached per user. Drop it
+        // for the whole company so the new profile takes effect on next load.
+        if ($company->wasChanged(['business_type', 'currency_id', 'calendar_type'])) {
+            \App\Jobs\RefreshCompanyProfileCache::dispatch($company->id);
+        }
 
         return redirect()->back()
             ->with('success', __('general.updated_successfully', ['resource' => __('general.resource.company')]));

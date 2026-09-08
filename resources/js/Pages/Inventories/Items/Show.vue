@@ -4,18 +4,23 @@ import AttachmentList from '@/Components/AttachmentList.vue';
 import TimeSeriesChart from '@/Components/charts/TimeSeriesChart.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+import { toast } from 'vue-sonner';
 import { Button } from '@/Components/ui/button';
+import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue';
 import {
     Package, Hash, Pill, Box, Tag, Layers, TrendingUp, TrendingDown,
-    DollarSign, Ruler, MapPin, Search,
-    Building, Target, User, Download, ArrowLeft, SquarePen, HandCoins
+    DollarSign, Ruler, MapPin, Search, ShieldCheck, PackageSearch,
+    SlidersHorizontal, Globe, Factory, CalendarClock, Scale, Boxes,
+    Building, Target, User, Download, ArrowLeft, SquarePen, HandCoins,
+    Power, PowerOff, Loader2
 } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useBusinessProfile } from '@/composables/useBusinessProfile';
 
 const { t } = useI18n();
+const page = usePage();
 const { showsSection } = useBusinessProfile();
 const { can } = useAuth();
 
@@ -59,6 +64,107 @@ const itemDetails = computed(() => [
     { label: t('general.created_by'), value: itemData.value?.created_by?.name || '—', icon: User },
     { label: t('general.updated_by'), value: itemData.value?.updated_by?.name || '—', icon: User },
 ]);
+
+// Only render a row when the item actually carries the value.
+const filled = (value) => value !== null && value !== undefined && value !== '' && value !== 0;
+
+const dimensions = computed(() => {
+    const { length, width, height } = itemData.value || {};
+    return [length, width, height].some(filled) ? `${length ?? '—'} × ${width ?? '—'} × ${height ?? '—'}` : null;
+});
+
+const sourcingDetails = computed(() => [
+    { label: t('item.manufacturer'), value: itemData.value?.manufacturer, icon: Factory },
+    { label: t('item.model'), value: itemData.value?.model, icon: Tag },
+    { label: t('item.country_of_origin'), value: itemData.value?.country_of_origin, icon: Globe },
+    { label: t('item.hs_code'), value: itemData.value?.hs_code, icon: Hash },
+    { label: t('item.warranty_months'), value: itemData.value?.warranty_months, icon: ShieldCheck },
+    { label: t('item.shelf_life_days'), value: itemData.value?.shelf_life_days, icon: CalendarClock },
+    { label: t('item.min_shelf_life_percent'), value: itemData.value?.min_shelf_life_percent, icon: CalendarClock },
+    { label: t('item.storage_zone'), value: itemData.value?.storage_zone ? t(`item.storage_zones.${itemData.value.storage_zone}`) : null, icon: Boxes },
+    { label: t('item.weight'), value: itemData.value?.weight, icon: Scale },
+    { label: t('item.dimensions'), value: dimensions.value, icon: Ruler },
+].filter((row) => filled(row.value)));
+
+const planningDetails = computed(() => [
+    { label: t('item.reorder_quantity'), value: itemData.value?.reorder_quantity, icon: PackageSearch },
+    { label: t('item.lead_time_days'), value: itemData.value?.lead_time_days, icon: CalendarClock },
+    { label: t('item.costing_method'), value: itemData.value?.costing_method_label, icon: DollarSign },
+    { label: t('item.pricing_method'), value: itemData.value?.pricing_method_label, icon: DollarSign },
+].filter((row) => filled(row.value)));
+
+const behaviourFlags = computed(() => [
+    { key: 'is_stockable', label: t('item.is_stockable') },
+    { key: 'is_sellable', label: t('item.is_sellable') },
+    { key: 'is_purchasable', label: t('item.is_purchasable') },
+    { key: 'is_weighted', label: t('item.is_weighted') },
+    { key: 'allow_negative_stock', label: t('item.allow_negative_stock') },
+    { key: 'show_in_pos', label: t('item.show_in_pos') },
+    { key: 'requires_prescription', label: t('item.requires_prescription') },
+    { key: 'is_controlled', label: t('item.is_controlled') },
+].filter((flag) => itemData.value?.[flag.key]));
+
+const photoUrl = computed(() => {
+    const path = itemData.value?.photo;
+    if (!path) return null;
+    return /^https?:\/\//.test(path) ? path : `/storage/${path}`;
+});
+
+// Records link back to the document that moved the stock. Openings have none.
+const RECORD_ROUTES = {
+    purchase: 'purchases.show',
+    sale: 'sales.show',
+    purchase_return: 'purchase-returns.show',
+    sale_return: 'sale-returns.show',
+    item_transfer: 'item-transfers.show',
+    stock_adjustment: 'stock-adjustments.show',
+    adjustment: 'stock-adjustments.show',
+};
+
+const recordLink = (row) => {
+    const name = RECORD_ROUTES[row?.source_type];
+    if (!name || !row?.reference_id) return null;
+    try {
+        return route(name, row.reference_id);
+    } catch {
+        return null;
+    }
+};
+
+const openRecord = (row) => {
+    const href = recordLink(row);
+    if (href) router.visit(href);
+};
+
+// Activate / deactivate — inactive items drop out of the pickers on new
+// documents but stay in reports and history.
+const isActive = computed(() => itemData.value?.is_active !== false);
+const confirmToggleOpen = ref(false);
+const togglingActive = ref(false);
+
+const performToggleActive = () => {
+    confirmToggleOpen.value = false;
+    if (!itemData.value?.id || togglingActive.value) return;
+
+    const activating = !isActive.value;
+    togglingActive.value = true;
+    router.patch(route('items.toggle-active', itemData.value.id), {}, {
+        preserveScroll: true,
+        headers: { 'X-DataTable-Refresh': '1' },
+        onSuccess: () => {
+            const flashError = page.props.flash?.error;
+            if (flashError) {
+                toast.error(flashError, { class: 'bg-pink-600 text-white' });
+                return;
+            }
+            toast.success(t('general.success'), {
+                description: activating ? t('item.item_activated') : t('item.item_deactivated'),
+                class: 'bg-green-600',
+            });
+        },
+        onFinish: () => { togglingActive.value = false; },
+    });
+};
 
 // Reorder signal: compare on-hand against the item's configured minimum stock.
 // `on_hand` arrives pre-formatted (e.g. "1,234.00"), so strip separators first.
@@ -203,16 +309,34 @@ onMounted(() => {
                 <ArrowLeft class="h-4 w-4 rtl:rotate-180 text-primary" />
                 {{ t('general.back') }}
             </Button>
-                <Button
-                    v-if="can('items.update') && itemData.id"
-                    variant="default"
-                    size="sm"
-                    class="gap-1.5 bg-primary text-primary-foreground"
-                    @click="router.visit(route('items.edit', itemData.id))"
-                >
-                    <SquarePen class="h-4 w-4" />
-                    {{ t('datatable.edit') }}
-                </Button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <Button
+                        v-if="can('items.update') && itemData.id"
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        :disabled="togglingActive"
+                        class="h-8 gap-1.5"
+                        :class="isActive
+                            ? 'border-amber-500/50 text-amber-600 hover:bg-amber-500/10 dark:text-amber-400'
+                            : 'border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400'"
+                        @click="confirmToggleOpen = true"
+                    >
+                        <Loader2 v-if="togglingActive" class="h-4 w-4 animate-spin" />
+                        <component :is="isActive ? PowerOff : Power" v-else class="h-4 w-4" />
+                        {{ isActive ? t('item.deactivate') : t('item.activate') }}
+                    </Button>
+                    <Button
+                        v-if="can('items.update') && itemData.id"
+                        variant="default"
+                        size="sm"
+                        class="gap-1.5 bg-primary text-primary-foreground"
+                        @click="router.visit(route('items.edit', itemData.id))"
+                    >
+                        <SquarePen class="h-4 w-4" />
+                        {{ t('datatable.edit') }}
+                    </Button>
+                </div>
             </div>
 
             <!-- Info section -->
@@ -223,6 +347,13 @@ onMounted(() => {
                         <Layers class="w-4 h-4" />
                     </div>
                     <h3 class="text-sm font-semibold text-foreground">{{ t('general.details') }}</h3>
+
+                    <span
+                        v-if="!isActive"
+                        class="ms-1 rounded-full border border-muted-foreground/30 bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                    >
+                        {{ t('general.inactive') }}
+                    </span>
 
                     <!-- Reorder signal -->
                     <span
@@ -241,6 +372,19 @@ onMounted(() => {
                         {{ flag.label }}
                     </span>
                 </div>
+
+                <div v-if="photoUrl || itemData.description" class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start">
+                    <img
+                        v-if="photoUrl"
+                        :src="photoUrl"
+                        :alt="itemData.name"
+                        class="h-28 w-28 shrink-0 rounded-lg border border-border object-cover bg-muted"
+                    />
+                    <p v-if="itemData.description" class="text-sm text-muted-foreground leading-relaxed">
+                        {{ itemData.description }}
+                    </p>
+                </div>
+
                 <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                     <div v-for="detail in itemDetails" :key="detail.label" class="flex items-start gap-2">
                         <component :is="detail.icon" class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
@@ -271,6 +415,60 @@ onMounted(() => {
                         <div><p class="text-xs text-muted-foreground">{{ t('item.stock_value') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_value ?? '—' }}</p></div>
                     </div>
                 </div>
+
+                <!-- Sourcing, compliance & physical -->
+                <template v-if="sourcingDetails.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><ShieldCheck class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.section.compliance') }}</h3>
+                    </div>
+                    <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                        <div v-for="detail in sourcingDetails" :key="detail.label" class="flex items-start gap-2">
+                            <component :is="detail.icon" class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs text-muted-foreground">{{ detail.label }}</p>
+                                <p class="text-sm font-medium text-foreground truncate">{{ detail.value ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Planning -->
+                <template v-if="planningDetails.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><PackageSearch class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.section.stock_control') }}</h3>
+                    </div>
+                    <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                        <div v-for="detail in planningDetails" :key="detail.label" class="flex items-start gap-2">
+                            <component :is="detail.icon" class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs text-muted-foreground">{{ detail.label }}</p>
+                                <p class="text-sm font-medium text-foreground truncate">{{ detail.value ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Behaviour flags -->
+                <template v-if="behaviourFlags.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><SlidersHorizontal class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.section.behaviour') }}</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span
+                            v-for="flag in behaviourFlags"
+                            :key="flag.key"
+                            class="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-300"
+                        >
+                            {{ flag.label }}
+                        </span>
+                    </div>
+                </template>
 
                 <!-- Variants: only meaningful when the trade uses them -->
                 <template v-if="showsSection('variants') && variantRows.length">
@@ -417,10 +615,15 @@ onMounted(() => {
                         </thead>
                         <tbody>
                             <tr v-for="(row, index) in currentRecords" :key="row.id || index"
-                                class="border-b border-border/60 hover:bg-muted/40 transition ">
+                                class="border-b border-border/60 hover:bg-muted/40 transition"
+                                :class="recordLink(row) ? 'cursor-pointer hover:bg-violet-500/10' : ''"
+                                @click="openRecord(row)">
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ index + 1 }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap font-medium rtl:text-right">{{ row.ledger_name || '—' }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap font-semibold rtl:text-right">{{ row.bill_number || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap font-semibold rtl:text-right"
+                                    :class="recordLink(row) ? 'text-violet-600 dark:text-violet-400 underline-offset-2 hover:underline' : ''">
+                                    {{ row.bill_number || '—' }}
+                                </td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.date }}</td>
                                 <td class="py-3 px-3 text-center whitespace-nowrap font-semibold rtl:text-right">{{ row.quantity }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_price }}</td>
@@ -447,5 +650,16 @@ onMounted(() => {
                 <AttachmentList :items="itemData.attachments || []" :label="t('general.attachments')" />
             </div>
         </div>
+
+        <ConfirmDeleteDialog
+            :open="confirmToggleOpen"
+            :title="isActive ? t('item.deactivate_confirm_title') : t('item.activate_confirm_title')"
+            :description="isActive ? t('item.deactivate_confirm_desc') : t('item.activate_confirm_desc')"
+            :cancel-text="t('general.cancel')"
+            :continue-text="isActive ? t('item.deactivate') : t('item.activate')"
+            @update:open="value => (confirmToggleOpen = value)"
+            @confirm="performToggleActive"
+        />
     </AppLayout>
 </template>
+

@@ -66,7 +66,6 @@ trait ValidatesItemPayload
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'brand_id' => ['nullable', 'string', 'exists:brands,id'],
             'category_id' => ['nullable', 'string', 'exists:categories,id'],
-            'size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'default_warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
 
             'asset_account_id' => ['required', 'string', 'exists:accounts,id'],
@@ -77,8 +76,6 @@ trait ValidatesItemPayload
             'is_batch_tracked' => ['nullable', 'boolean'],
             'is_expiry_tracked' => ['nullable', 'boolean'],
             'is_serial_tracked' => ['nullable', 'boolean'],
-            'is_color_tracked' => ['nullable', 'boolean'],
-            'is_size_tracked' => ['nullable', 'boolean'],
 
             // --- Behaviour ------------------------------------------------
             'is_active' => ['nullable', 'boolean'],
@@ -88,6 +85,7 @@ trait ValidatesItemPayload
             'is_weighted' => ['nullable', 'boolean'],
             'has_variants' => ['nullable', 'boolean'],
             'allow_negative_stock' => ['nullable', 'boolean'],
+            'show_in_pos' => ['nullable', 'boolean'],
             'requires_prescription' => ['nullable', 'boolean'],
             'is_controlled' => ['nullable', 'boolean'],
 
@@ -95,10 +93,10 @@ trait ValidatesItemPayload
             'pricing_method' => ['nullable', Rule::in(PricingMethod::values())],
 
             // --- Pricing --------------------------------------------------
+            // purchase_price / sale_price stay only for the mirror shim; they
+            // are written from the default variant, not entered on the item.
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
-            'cost' => ['nullable', 'numeric', 'min:0'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],
-            'margin_percentage' => ['nullable', 'numeric'],
             'rate_a' => ['nullable', 'numeric', 'min:0'],
             'rate_b' => ['nullable', 'numeric', 'min:0'],
             'rate_c' => ['nullable', 'numeric', 'min:0'],
@@ -129,7 +127,6 @@ trait ValidatesItemPayload
             'min_shelf_life_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
             'storage_zone' => ['nullable', 'string', 'max:50'],
 
-            'colors' => ['nullable', 'array'],
             'attributes' => ['nullable', 'array'],
             'photo' => ['nullable', 'file', 'image', 'max:5120'],
 

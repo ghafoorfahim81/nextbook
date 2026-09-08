@@ -1200,7 +1200,7 @@ function logout() {
             <SidebarRail />
         </Sidebar>
         <SidebarInset class="flex h-svh min-h-0 flex-col overflow-hidden">
-            <header class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-[hsl(var(--app-chrome-background))] text-[hsl(var(--app-chrome-foreground))] px-3 py-2 transition-[width,height] ease-linear sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <header class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b bg-[hsl(var(--app-chrome-background))] text-[hsl(var(--app-chrome-foreground))] px-3 py-2 transition-[width,height] ease-linear lg:h-16 lg:flex-nowrap sm:px-4 lg:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:lg:h-12">
                 <!-- Left: Sidebar trigger -->
                 <div class="flex shrink-0 items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
@@ -1209,7 +1209,7 @@ function logout() {
                 </div>
 
                 <!-- Center: connection status + global search side by side (no overlap) -->
-                <div class="flex min-w-0 flex-1 items-center justify-center gap-2 px-2 sm:gap-3">
+                <div class="flex min-w-0 flex-1 items-center justify-center gap-2 px-1 sm:gap-3 md:order-last md:basis-full md:flex-none lg:order-none lg:basis-auto lg:flex-1 lg:px-2">
                     <div
                         v-show="connectionState !== 'online'"
                         class="hidden shrink-0 items-center md:inline-flex rtl:flex-row-reverse"

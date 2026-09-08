@@ -76,10 +76,11 @@
         class="pointer-events-none z-20"
       />
 
-      <!-- Error Display -->
+      <!-- Error / hint display -->
       <span v-if="error" class="mt-1 block text-red-500 text-sm">
         {{ error }}
       </span>
+      <p v-else-if="hint && showHints" class="mt-1 text-xs text-muted-foreground">{{ hint }}</p>
     </div>
   </template>
 
@@ -93,6 +94,7 @@
   // otherwise paint a stray white background/border on the wrapper.
   defineOptions({ inheritAttrs: false })
   import { useI18n } from 'vue-i18n'
+  import { usePage } from '@inertiajs/vue3'
   import FloatingLabel from '@/Components/next/FloatingLabel.vue'
   import { Spinner } from '@/Components/ui/spinner'
   import { useSearchResources } from '@/composables/useSearchResources.js'
@@ -101,6 +103,15 @@
   import { shouldAutoFocusElement } from '@/lib/autofocus'
 
   const { t } = useI18n()
+
+  // Inline hints follow the per-user appearance.show_field_hints preference.
+  const showHints = computed(() => {
+    try {
+      return usePage().props.user_preferences?.appearance?.show_field_hints !== false
+    } catch (e) {
+      return true
+    }
+  })
 
   /* ---------------- PROPS ---------------- */
 
@@ -114,6 +125,7 @@
     floatingText: { type: String, default: '' },
     isRequired: { type: Boolean, default: false },
     error: { type: String, default: '' },
+    hint: { type: String, default: '' },
     placeholder: { type: String, default: '' },
     autofocus: { type: Boolean, default: false },
     // External loading state (e.g. options still being fetched via a lazy prop reload)

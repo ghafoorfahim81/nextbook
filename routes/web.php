@@ -72,6 +72,7 @@ Route::middleware([
     Route::get('/whats-new', fn () => Inertia::render('WhatsNew'))->name('whats-new');
     Route::get('/user-manual', fn () => Inertia::render('UserManual/Index'))->name('user-manual');
     Route::post('/onboarding/manual-prompt/dismiss', [\App\Http\Controllers\OnboardingController::class, 'dismissManualPrompt'])->name('onboarding.manual-prompt.dismiss');
+    Route::post('/onboarding/hint/dismiss', [\App\Http\Controllers\OnboardingController::class, 'dismissHint'])->name('onboarding.hint.dismiss');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.unread');
     Route::post('/notifications/{notification}/favorite', [NotificationController::class, 'toggleFavorite'])->name('notifications.favorite');
@@ -160,6 +161,7 @@ Route::middleware([
 
     Route::get('/items/export', [\App\Http\Controllers\Inventory\ItemController::class, 'export'])->name('items.export');
     Route::resource('/items', \App\Http\Controllers\Inventory\ItemController::class);
+    Route::patch('/items/{item}/toggle-active', [\App\Http\Controllers\Inventory\ItemController::class, 'toggleActive'])->name('items.toggle-active');
     Route::patch('/items/{item}/restore', [\App\Http\Controllers\Inventory\ItemController::class, 'restore'])->name('items.restore')->withTrashed();
     Route::get('/item-pricing', [\App\Http\Controllers\Inventory\ItemPricingController::class, 'index'])->name('item-pricing.index');
     Route::patch('/item-pricing/{item}', [\App\Http\Controllers\Inventory\ItemPricingController::class, 'update'])->name('item-pricing.update');

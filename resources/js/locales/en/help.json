@@ -1,5 +1,6 @@
 {
   "no_tips_available": "No tips available yet for this screen.",
+  "open_full_guide": "Open full guide",
   "modules": {
     "employees": {
       "title": "Employees — Tips",
@@ -43,15 +44,52 @@
     },
     "inventory_item": {
       "title": "Inventory Item — Tips",
-      "description": "Define items with the right type, codes, accounts, and opening stock.",
-      "items": [
-        "Item Type controls behavior: inventory/stock items affect on-hand quantity; non-inventory items are used for services/charges.",
-        "SKU: use a unique Stock Keeping Unit for fast search, barcode integration, and avoiding duplicates.",
-        "Account assignments matter: Asset account is used for stock value, Income account for sales, Cost account for cost of goods sold.",
-        "Min/Max stock levels help you detect under-stock and over-stock; set them for reorder alerts and planning.",
-        "Opening stock: use it only for your starting balance. Prefer entering it per store with correct batch/expiry when applicable.",
-        "Batch/Expiry Tracking: enable it for items that need batch/expiry tracking. This will allow you to track stock by batch/expiry.Once it is enabled, you will be able to track stock by batch/expiry and you can not deselect it.",
-        "Costing Method: if you are using batch/expiry tracking, by default the costing method is FIFO. This will affect the cost of the item when you sell it."
+      "description": "An item is the catalogue entry. What a customer actually picks, scans and pays for is a variant of it — every item has at least one.",
+      "sections": [
+        {
+          "heading": "Identity",
+          "items": [
+            "The code is generated automatically and identifies the item internally — it never changes.",
+            "Item type decides behaviour: a stocked item moves on-hand quantity; a service or charge does not. It cannot be changed once a transaction is posted.",
+            "Name, category, brand and unit describe the catalogue entry. Unit is the base unit everything is counted in."
+          ]
+        },
+        {
+          "heading": "Variants — the thing that is sold",
+          "items": [
+            "SKU, barcode and price live on the variant, not the item. A simple product (a bottle of water) still has one variant — a single row holding its SKU, barcode and price.",
+            "For a product with choices (RAM, storage, colour, size), add an attribute column and one row per combination. Each row gets its own SKU, barcode and price.",
+            "Star one variant as the default — barcode scans and price lookups fall back to it when no specific variant is chosen.",
+            "The Margin % field is a helper: it fills the sale price from purchase price + margin. It is not saved."
+          ]
+        },
+        {
+          "heading": "Stock tracking",
+          "items": [
+            "Batch / expiry tracking groups stock into delivery lots, each with its own batch number, expiry and landed cost. Permanent once a transaction is posted.",
+            "Serial tracking records every unit individually with its own serial number, cost and warranty.",
+            "Colour and size are ordinary variant attributes now — not separate tracking switches.",
+            "Which of these you see depends on the company's business type."
+          ]
+        },
+        {
+          "heading": "Opening stock",
+          "items": [
+            "Use opening stock only for the starting balance at go-live. After that, every change goes through purchase, sale, transfer or adjustment.",
+            "Enter it per warehouse, and per variant when the item has more than one.",
+            "The opening unit price is the cost per unit — it drives the item's average cost and is written onto the stock movement.",
+            "Selecting a variant pre-fills the unit price with that variant's purchase price; adjust it if the real cost differs."
+          ]
+        },
+        {
+          "heading": "Accounts",
+          "items": [
+            "Asset account holds the item's stock value on the balance sheet.",
+            "Income account is where its sales revenue is booked.",
+            "Cost of goods sold account is where the cost is booked when it is sold.",
+            "Costing method: batch/expiry-tracked items use FIFO; the rest use weighted average."
+          ]
+        }
       ]
     },
     "fast_entry": {

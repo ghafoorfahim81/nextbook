@@ -26,7 +26,15 @@ const props = defineProps({
     warehouses: { type: Array, default: () => [] },
     costingMethods: { type: Array, default: () => [] },
     pricingMethods: { type: Array, default: () => [] },
+    // The company-wide costing method — used as the fallback label when the
+    // item leaves its own costing method blank.
+    companyCostingMethod: { type: String, default: null },
     disabled: { type: Boolean, default: false },
+})
+
+const companyCostingMethodLabel = computed(() => {
+    const match = props.costingMethods.find((m) => m.id === props.companyCostingMethod)
+    return match?.name || props.companyCostingMethod
 })
 
 const shows = (field) => Boolean(props.visibleFields?.[field])
@@ -49,7 +57,7 @@ const showPlanning = computed(() => anyOf([
 
 const showBehaviour = computed(() => anyOf([
     'is_active', 'is_stockable', 'is_sellable', 'is_purchasable',
-    'is_weighted', 'allow_negative_stock',
+    'is_weighted', 'allow_negative_stock', 'show_in_pos',
 ]))
 
 const storageZoneOptions = computed(() => ['ambient', 'chilled', 'frozen'].map((zone) => ({
@@ -65,6 +73,7 @@ const behaviourFlags = computed(() => ([
     { key: 'is_purchasable', hint: 'is_purchasable' },
     { key: 'is_weighted', hint: 'is_weighted' },
     { key: 'allow_negative_stock', hint: 'allow_negative_stock' },
+    { key: 'show_in_pos', hint: 'show_in_pos' },
 ].filter((flag) => shows(flag.key))))
 </script>
 
@@ -76,7 +85,7 @@ const behaviourFlags = computed(() => ([
                 <Ruler class="h-4 w-4" />
                 {{ t('item.section.physical') }}
             </legend>
-            <div class="grid gap-3 pt-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-3 gap-y-5 pt-2 items-start sm:grid-cols-2 lg:grid-cols-4">
                 <NextInput
                     v-if="shows('weight')"
                     :label="t('item.weight')"
@@ -85,6 +94,7 @@ const behaviourFlags = computed(() => ([
                     v-model="form.weight"
                     :disabled="disabled"
                     :error="form.errors?.weight"
+                    :hint="t('item.hint.weight')"
                 />
                 <template v-if="shows('dimensions')">
                     <NextInput
@@ -121,7 +131,7 @@ const behaviourFlags = computed(() => ([
                 <ShieldCheck class="h-4 w-4" />
                 {{ t('item.section.compliance') }}
             </legend>
-            <div class="grid gap-3 pt-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-3 gap-y-5 pt-2 items-start sm:grid-cols-2 lg:grid-cols-3">
                 <NextInput
                     v-if="shows('manufacturer')"
                     :label="t('item.manufacturer')"
@@ -224,7 +234,7 @@ const behaviourFlags = computed(() => ([
                 <PackageSearch class="h-4 w-4" />
                 {{ t('item.section.stock_control') }}
             </legend>
-            <div class="grid gap-3 pt-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-3 gap-y-5 pt-2 items-start sm:grid-cols-2 lg:grid-cols-3">
                 <NextInput
                     v-if="shows('reorder_quantity')"
                     :label="t('item.reorder_quantity')"
@@ -260,6 +270,7 @@ const behaviourFlags = computed(() => ([
                     :floatingText="t('item.costing_method')"
                     :placeholder="t('item.costing_method')"
                     :error="form.errors?.costing_method"
+                    :hint="companyCostingMethod ? t('item.hint.costing_method_fallback', { method: companyCostingMethodLabel }) : ''"
                 />
                 <NextSelect
                     v-if="shows('pricing_method')"
@@ -279,7 +290,7 @@ const behaviourFlags = computed(() => ([
                 <SlidersHorizontal class="h-4 w-4" />
                 {{ t('item.section.behaviour') }}
             </legend>
-            <div class="grid gap-3 pt-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-3 gap-y-5 pt-2 items-start sm:grid-cols-2 lg:grid-cols-3">
                 <label
                     v-for="flag in behaviourFlags"
                     :key="flag.key"

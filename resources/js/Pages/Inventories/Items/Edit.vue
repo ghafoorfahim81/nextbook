@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useFormGuard } from '@/composables/useFormGuard'
-import { ref, computed, watch, reactive } from 'vue'
+import { ref, computed, watch, reactive, toRef } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { useForm, router } from '@inertiajs/vue3'
 import AttachmentUploader from '@/Components/AttachmentUploader.vue'
@@ -34,6 +34,8 @@ const props = defineProps({
     costAccounts:{ type:Object, required: true},
     costingMethods: { type: [Array, Object], default: () => [] },
     pricingMethods: { type: [Array, Object], default: () => [] },
+    businessProfile: { type: Object, default: null },
+    companyCostingMethod: { type: String, default: null },
 })
 
 const { t } = useI18n()
@@ -266,7 +268,7 @@ const itemPrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.ite
 if (!itemPrefs.visible_fields || typeof itemPrefs.visible_fields !== 'object') itemPrefs.visible_fields = {}
 
 // Trade profile first, then the owner's per-field overrides on top.
-const { fields: profileFields, showsSection, specLabel } = useBusinessProfile()
+const { fields: profileFields, showsSection, specLabel } = useBusinessProfile(toRef(props, 'businessProfile'))
 const visibleFields = computed(() => ({ ...profileFields.value, ...itemPrefs.visible_fields }))
 const specText = computed(() => itemPrefs.spec_text || t(`item.spec.${specLabel.value}`))
 const showPreferencesPanel = ref(false)
@@ -297,7 +299,7 @@ useFormGuard(form)
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('item.item') }) }}
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 mt-3 items-start">
                     <NextInput is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
                     <NextInput is-required :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                     <NextInput v-if="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
@@ -327,6 +329,34 @@ useFormGuard(form)
                         value-key="id"
                         id="item_type"
                         :floating-text="t('item.item_type')"
+                    />
+                    <NextSelect
+                        v-show="visibleFields.category"
+                        v-model="form.selected_category"
+                        @update:modelValue="(value) => handleSelectChange('category_id', value)"
+                        :options="categories"
+                        label-key="name"
+                        value-key="id"
+                        id="category"
+                        :floating-text="t('admin.category.category')"
+                        :searchable="true"
+                        resource-type="categories"
+                        :search-fields="['name']"
+                        :error="form.errors.category_id"
+                    />
+                     <NextSelect
+                        v-if="visibleFields.brand"
+                        v-model="form.selected_brand"
+                        @update:modelValue="(value) => handleSelectChange('brand_id', value)"
+                        :options="brands"
+                        label-key="name"
+                        value-key="id"
+                        id="brand"
+                        :floating-text="t('admin.brand.brand')"
+                        :searchable="true"
+                        resource-type="brands"
+                        :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
+                        :error="form.errors.brand_id"
                     />
                     <NextSelect
                         :options="otherCurrentAssetsAccounts"
@@ -367,34 +397,7 @@ useFormGuard(form)
                         :search-fields="['name']"
                         :error="form.errors.cost_account_id"
                     />
-                    <NextSelect
-                        v-show="visibleFields.category"
-                        v-model="form.selected_category"
-                        @update:modelValue="(value) => handleSelectChange('category_id', value)"
-                        :options="categories"
-                        label-key="name"
-                        value-key="id"
-                        id="category"
-                        :floating-text="t('admin.category.category')"
-                        :searchable="true"
-                        resource-type="categories"
-                        :search-fields="['name']"
-                        :error="form.errors.category_id"
-                    />
-                    <NextSelect
-                        v-if="visibleFields.brand"
-                        v-model="form.selected_brand"
-                        @update:modelValue="(value) => handleSelectChange('brand_id', value)"
-                        :options="brands"
-                        label-key="name"
-                        value-key="id"
-                        id="brand"
-                        :floating-text="t('admin.brand.brand')"
-                        :searchable="true"
-                        resource-type="brands"
-                        :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
-                        :error="form.errors.brand_id"
-                    />
+
                     <NextInput v-show="visibleFields.rate_a" :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
                     <NextInput v-show="visibleFields.rate_b" :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
                     <NextInput v-show="visibleFields.rate_c" :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
@@ -440,6 +443,7 @@ useFormGuard(form)
                         :warehouses="warehouses"
                         :costing-methods="costingMethods"
                         :pricing-methods="pricingMethods"
+                        :company-costing-method="companyCostingMethod"
                     />
                 </div>
                 <div class="mt-2" v-if="showOpeningWarning">

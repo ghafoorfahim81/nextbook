@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { ref, computed, watch } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
+import { useForm, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useColorMode } from '@vueuse/core'
 import { Button } from '@/Components/ui/button'
@@ -622,24 +622,58 @@ const itemColumns = [
 
 ]
 
+// A field with no explicit override inherits its visibility from the company's
+// business profile, so the checkbox matches what the item form actually shows.
+const _page = usePage()
+const itemFieldChecked = (key) => {
+    const stored = form.item_management?.visible_fields?.[key]
+    if (stored !== undefined && stored !== null) return stored
+    return Boolean(_page.props?.business_profile?.fields?.[key])
+}
+
+// Mirrors config/business_profiles.php `base.fields` — every field a trade
+// profile can hide, so the owner can switch it back on. Labels from `item.*`.
 const itemManagementFields = [
-    { key: 'code', label: 'preferences.item_fields.code' },
-    { key: 'generic_name', label: 'preferences.item_fields.generic_name' },
-    { key: 'packing', label: 'preferences.item_fields.packing' },
-    { key: 'brand', label: 'preferences.item_fields.brand' },
-    { key: 'minimum_stock', label: 'preferences.item_fields.minimum_stock' },
-    { key: 'maximum_stock', label: 'preferences.item_fields.maximum_stock' },
-    { key: 'file_upload', label: 'preferences.item_fields.file_upload' },
-    { key: 'rate_a', label: 'preferences.item_fields.rate_a' },
-    { key: 'rate_b', label: 'preferences.item_fields.rate_b' },
-    { key: 'rate_c', label: 'preferences.item_fields.rate_c' },
-    { key: 'barcode', label: 'preferences.item_fields.barcode' },
-    { key: 'rack_no', label: 'preferences.item_fields.rack_no' },
-    { key: 'fast_search', label: 'preferences.item_fields.fast_search' },
-    { key: 'item_type', label: 'preferences.fields.item_type' },
-    { key: 'sku', label: 'preferences.fields.sku' },
-    { key: 'is_batch_tracked', label: 'preferences.item_fields.is_batch_tracked' },
-    { key: 'is_expiry_tracked', label: 'preferences.item_fields.is_expiry_tracked' },
+    { key: 'code', label: 'item.code' },
+    { key: 'generic_name', label: 'item.generic_name' },
+    { key: 'packing', label: 'item.packing' },
+    { key: 'description', label: 'item.description' },
+    { key: 'photo', label: 'item.photo' },
+    { key: 'item_type', label: 'item.item_type' },
+    { key: 'category', label: 'admin.category.category' },
+    { key: 'brand', label: 'admin.brand.brand' },
+    { key: 'unit_measure', label: 'admin.unit_measure.unit_measure' },
+    { key: 'model', label: 'item.model' },
+    { key: 'rate_a', label: 'item.rate_a' },
+    { key: 'rate_b', label: 'item.rate_b' },
+    { key: 'rate_c', label: 'item.rate_c' },
+    { key: 'pricing_method', label: 'item.pricing_method' },
+    { key: 'costing_method', label: 'item.costing_method' },
+    { key: 'reorder_quantity', label: 'item.reorder_quantity' },
+    { key: 'lead_time_days', label: 'item.lead_time_days' },
+    { key: 'default_warehouse', label: 'item.default_warehouse' },
+    { key: 'rack_no', label: 'item.rack_no' },
+    { key: 'fast_search', label: 'item.fast_search' },
+    { key: 'weight', label: 'item.weight' },
+    { key: 'dimensions', label: 'item.dimensions' },
+    { key: 'manufacturer', label: 'item.manufacturer' },
+    { key: 'country_of_origin', label: 'item.country_of_origin' },
+    { key: 'hs_code', label: 'item.hs_code' },
+    { key: 'warranty_months', label: 'item.warranty_months' },
+    { key: 'shelf_life_days', label: 'item.shelf_life_days' },
+    { key: 'min_shelf_life_percent', label: 'item.min_shelf_life_percent' },
+    { key: 'storage_zone', label: 'item.storage_zone' },
+    { key: 'requires_prescription', label: 'item.requires_prescription' },
+    { key: 'is_controlled', label: 'item.is_controlled' },
+    { key: 'is_batch_tracked', label: 'item.is_batch_tracked' },
+    { key: 'is_expiry_tracked', label: 'item.is_expiry_tracked' },
+    { key: 'is_serial_tracked', label: 'item.is_serial_tracked' },
+    { key: 'is_stockable', label: 'item.is_stockable' },
+    { key: 'is_sellable', label: 'item.is_sellable' },
+    { key: 'is_purchasable', label: 'item.is_purchasable' },
+    { key: 'is_weighted', label: 'item.is_weighted' },
+    { key: 'allow_negative_stock', label: 'item.allow_negative_stock' },
+    { key: 'show_in_pos', label: 'item.show_in_pos' },
     ]
 
 const receiptPaymentFields = [
@@ -1070,6 +1104,13 @@ watch(normalizedMenuSearch, (query) => {
                                     <Label>{{ t('preferences.appearance.records_per_page') }}</Label>
                                     <Input v-model.number="form.appearance.records_per_page" type="number" min="1" max="100" />
                                 </div>
+                                <div class="flex items-center justify-between rounded-lg border px-3 py-2">
+                                    <Label class="font-normal">{{ t('preferences.appearance.show_field_hints') }}</Label>
+                                    <Switch
+                                        :model-value="form.appearance.show_field_hints ?? true"
+                                        @update:model-value="(v) => form.appearance.show_field_hints = v"
+                                    />
+                                </div>
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.sidebar_font_size') }}</Label>
                                     <Input v-model.number="form.appearance.sidebar_font_size" type="number" min="10" max="24" />
@@ -1160,7 +1201,7 @@ watch(normalizedMenuSearch, (query) => {
                                     <div v-for="field in itemManagementFields" :key="field.key" class="flex items-center gap-2">
                                         <Checkbox
                                             :id="`item-${field.key}`"
-                                            :checked="form.item_management.visible_fields[field.key]"
+                                            :checked="itemFieldChecked(field.key)"
                                             @update:checked="(checked) => form.item_management.visible_fields[field.key] = checked"
                                         />
                                         <Label :for="`item-${field.key}`" class="font-normal cursor-pointer">{{ t(field.label) }}</Label>

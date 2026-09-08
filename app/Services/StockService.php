@@ -179,7 +179,7 @@ class StockService
     protected function handleOut(Item $item, array $movementData, array $balanceData, float $conversionFactor, ?float $unitCostOverride = null): array
     {
         $this->validateStockAvailability($balanceData);
-        $method = $this->getCostingMethod($movementData['branch_id']);
+        $method = $this->getCostingMethod($item);
 
         if ($method === CostingMethod::FIFO->value) {
             $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor);
@@ -574,11 +574,14 @@ class StockService
     }
 
     /**
-     * Get Costing Method
+     * The costing method for an item's stock-out valuation.
+     *
+     * The item's own `costing_method` wins; a blank one falls back to the
+     * company default — see App\Models\Inventory\Item::effectiveCostingMethod().
      */
-    protected function getCostingMethod(string $branchId): string
+    protected function getCostingMethod(Item $item): string
     {
-        return \App\Support\BranchContext::costingMethod();
+        return $item->effectiveCostingMethod()->value;
     }
 
     public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null, ?string $color = null, ?string $sizeId = null): array

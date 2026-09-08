@@ -182,26 +182,24 @@ const variantLabel = (variant) => {
                 :error="errorFor(0, 'sku')"
                 @update:modelValue="(v) => setField(0, 'sku', v)"
             />
-            <div class="flex items-start gap-1">
+            <div class="flex items-start gap-1.5">
                 <NextInput
-                    class="flex-1"
+                    class="min-w-0 flex-1"
                     :label="t('item.barcode')"
                     :model-value="modelValue[0]?.barcode ?? ''"
                     :disabled="disabled"
                     :error="errorFor(0, 'barcode')"
                     @update:modelValue="(v) => setField(0, 'barcode', v)"
                 />
-                <Button
+                <button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    class="mt-6 shrink-0"
                     :disabled="disabled"
                     :title="t('item.generate_new_barcode')"
+                    class="flex h-[46px] w-10 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-violet-600 disabled:opacity-30"
                     @click="generateBarcode(0)"
                 >
                     <RefreshCw class="h-4 w-4" />
-                </Button>
+                </button>
             </div>
             <NextInput
                 :label="t('item.purchase_price')"
@@ -245,6 +243,8 @@ const variantLabel = (variant) => {
         </div>
 
         <template v-else>
+            <p class="pt-3 text-xs text-muted-foreground">{{ t('item.hint.variant_attributes') }}</p>
+
             <!-- Attribute columns -->
             <div class="flex flex-wrap items-center gap-2 py-3">
                 <span class="text-xs text-muted-foreground">{{ t('item.variant_attributes') }}:</span>

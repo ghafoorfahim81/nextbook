@@ -20,6 +20,10 @@ class StockMovementResource extends JsonResource
             'id' => $this->id,
             'item_id' => $this->item_id,
             'variant_id' => $this->variant_id,
+            // Where this movement came from, so the item's in/out list can link
+            // each row to the document that created it (opening has none).
+            'source_type' => $this->source?->value,
+            'reference_id' => $this->reference_id,
             'warehouse' => WarehouseResource::make($this->whenLoaded('warehouse')),
             'warehouse_name' => $this->warehouse?->name ?? null,
             'warehouse_id' => $this->warehouse_id,

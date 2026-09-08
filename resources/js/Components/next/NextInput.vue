@@ -36,13 +36,24 @@
 
         <!-- error text -->
         <p v-if="error" class="mt-1 text-xs text-red-500">{{ error }}</p>
-        <p v-else-if="hint" class="mt-1 text-xs text-muted-foreground">{{ hint }}</p>
+        <p v-else-if="hint && showHints" class="mt-1 text-xs text-muted-foreground">{{ hint }}</p>
     </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 import Input from '@/Components/ui/input/Input.vue'
+
+// Inline hints are a per-user preference (appearance.show_field_hints), on
+// unless the user turns them off. Errors are never suppressed.
+const showHints = computed(() => {
+    try {
+        return usePage().props.user_preferences?.appearance?.show_field_hints !== false
+    } catch (e) {
+        return true
+    }
+})
 
 const props = defineProps({
     modelValue: [String, Number],

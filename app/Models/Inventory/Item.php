@@ -84,6 +84,7 @@ class Item extends Model
         'is_weighted',
         'has_variants',
         'allow_negative_stock',
+        'show_in_pos',
 
         'costing_method',
         'pricing_method',
@@ -151,6 +152,7 @@ class Item extends Model
             'is_weighted' => 'boolean',
             'has_variants' => 'boolean',
             'allow_negative_stock' => 'boolean',
+            'show_in_pos' => 'boolean',
             'requires_prescription' => 'boolean',
             'is_controlled' => 'boolean',
 
