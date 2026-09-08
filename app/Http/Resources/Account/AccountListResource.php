@@ -29,9 +29,11 @@ class AccountListResource extends JsonResource
             'total_debit' => $this->statement['total_debit'],
             'total_credit' => $this->statement['total_credit'],
             'net_balance' => $this->statement['net_balance'],
-            'account_type' => $this->accountType,   
-            'parent'    => $this->whenLoaded('parent', fn() => new AccountResource($this->parent)),  
-            'remark' => $this->remark,  
+            'account_type' => $this->accountType,
+            'parent'    => $this->whenLoaded('parent', fn() => new AccountResource($this->parent)),
+            'remark' => $this->remark,
+            'activity_count' => isset($this->activity_count) ? (int) $this->activity_count : 0,
+            'last_activity_at' => $this->last_activity_at ?? null,
         ];
     }
 }

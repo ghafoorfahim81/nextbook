@@ -15,7 +15,7 @@ import {
 import {
     Search, CircleX, ChevronDown, ChevronLeft, ChevronRight, Ellipsis,
     SquarePen, Trash2, Eye, FileDown, FileX, ChevronsDownUp, ChevronsUpDown,
-    CheckCircle2, AlertTriangle,
+    CheckCircle2, AlertTriangle, Plus, FileSpreadsheet, FileText,
 } from 'lucide-vue-next';
 import AddNewButton from '@/Components/next/AddNewButton.vue';
 import { useAuth } from '@/composables/useAuth';
@@ -67,10 +67,23 @@ const balanceToneClass = (nature) => {
 
 const groupSummary = (nature) => props.summary?.groups?.[nature] ?? null;
 
+// Quick category filter chips.
+const activeNature = ref('all');
+const selectNature = (nature) => {
+    activeNature.value = activeNature.value === nature ? 'all' : nature;
+    // Jumping to a category is only useful if it is open.
+    if (activeNature.value !== 'all' && collapsed.value.has(activeNature.value)) {
+        const next = new Set(collapsed.value);
+        next.delete(activeNature.value);
+        collapsed.value = next;
+        persist();
+    }
+};
+
 // The trial-balance strip is only meaningful over the whole chart; a filtered
-// subset will not balance, so it is hidden while searching.
+// subset (search or an active chip) will not balance, so it is hidden then.
 const equation = computed(() => {
-    if (props.summary?.is_filtered) return null;
+    if (props.summary?.is_filtered || activeNature.value !== 'all') return null;
     return props.summary?.equation ?? null;
 });
 
@@ -133,6 +146,10 @@ const groups = computed(() => {
     }));
 });
 
+const visibleGroups = computed(() => (activeNature.value === 'all'
+    ? groups.value
+    : groups.value.filter((g) => g.nature === activeNature.value)));
+
 // Collapsed groups, remembered per browser.
 const STORAGE_KEY = 'chart-of-accounts:collapsed-groups';
 const collapsed = ref(new Set());
@@ -181,6 +198,12 @@ const clearSearch = () => { search.value = ''; runSearch(); };
 const editItem = (item) => router.visit(route('chart-of-accounts.edit', item.id));
 const showItem = (id) => router.visit(route('chart-of-accounts.show', id));
 
+// Opens the create form scoped to a category — the type picker lands filtered
+// to that nature (and preselected when the nature has a single type).
+const createInCategory = (nature) => router.visit(route('chart-of-accounts.create', { nature }));
+
+const shortDate = (value) => String(value ?? '').slice(0, 10);
+
 const deleteItem = (item) => {
     if (item.is_main) {
         play('warning');
@@ -199,8 +222,11 @@ const deleteItem = (item) => {
     });
 };
 
-const exportToExcel = () => {
-    window.location.href = route('chart-of-accounts.export', { search: search.value || undefined });
+const exportList = (format) => {
+    window.location.href = route('chart-of-accounts.export', {
+        search: search.value || undefined,
+        format,
+    });
 };
 
 const natureBadgeClass = (nature) => ({
@@ -260,15 +286,27 @@ const secondaryName = (account) => {
                         <component :is="allExpanded ? ChevronsDownUp : ChevronsUpDown" class="h-4 w-4" />
                         <span class="ms-1">{{ allExpanded ? t('account.collapse_all') : t('account.expand_all') }}</span>
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        @click="exportToExcel"
-                        class="h-9 shrink-0 whitespace-nowrap border-green-800 text-green-600 hover:bg-green-700 hover:text-white"
-                    >
-                        <FileDown class="h-4 w-4" />
-                        <span class="ms-1">{{ t('general.excel') }}</span>
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger as-child>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                class="h-9 shrink-0 whitespace-nowrap border-green-800 text-green-600 hover:bg-green-700 hover:text-white"
+                            >
+                                <FileDown class="h-4 w-4" />
+                                <span class="ms-1">{{ t('general.export') }}</span>
+                                <ChevronDown class="h-3 w-3 ms-1 opacity-70" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent :align="isRTL ? 'end' : 'start'" class="w-40 rtl:text-right">
+                            <DropdownMenuItem class="gap-2 text-xs" @click="exportList('xlsx')">
+                                <FileSpreadsheet class="h-3.5 w-3.5" /> {{ t('general.excel') }}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem class="gap-2 text-xs" @click="exportList('pdf')">
+                                <FileText class="h-3.5 w-3.5" /> {{ t('general.pdf') }}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <AddNewButton
                         v-if="can('accounts.create')"
                         :title="t('account.account')"
@@ -308,6 +346,34 @@ const secondaryName = (account) => {
                 </div>
             </div>
 
+            <!-- Category filter chips -->
+            <div v-if="groups.length > 1" class="shrink-0 flex flex-wrap items-center gap-1.5">
+                <button
+                    type="button"
+                    class="rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+                    :class="activeNature === 'all'
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border text-muted-foreground hover:border-primary/60 hover:text-foreground'"
+                    @click="activeNature = 'all'"
+                >
+                    {{ t('general.all') }}
+                    <span class="ms-1 opacity-70">{{ totalCount }}</span>
+                </button>
+                <button
+                    v-for="group in groups"
+                    :key="group.nature"
+                    type="button"
+                    class="rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+                    :class="activeNature === group.nature
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border text-muted-foreground hover:border-primary/60 hover:text-foreground'"
+                    @click="selectNature(group.nature)"
+                >
+                    {{ group.label }}
+                    <span class="ms-1 opacity-70">{{ group.accounts.length }}</span>
+                </button>
+            </div>
+
             <!-- Grouped table -->
             <div
                 class="min-h-0 flex-1 rounded-md border border-primary overflow-hidden [&>div]:h-full [&>div]:overflow-auto transition-opacity"
@@ -342,7 +408,7 @@ const secondaryName = (account) => {
                             </TableCell>
                         </TableRow>
 
-                        <template v-for="group in groups" :key="group.nature">
+                        <template v-for="group in visibleGroups" :key="group.nature">
                             <!-- Category header -->
                             <TableRow
                                 class="bg-muted/60 hover:bg-muted cursor-pointer border-y border-primary/20"
@@ -359,6 +425,15 @@ const secondaryName = (account) => {
                                         <span class="ms-1 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium px-2 py-0.5">
                                             {{ group.accounts.length }}
                                         </span>
+                                        <button
+                                            v-if="can('accounts.create')"
+                                            type="button"
+                                            class="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                                            :title="t('account.new_in_category', { category: group.label })"
+                                            @click.stop="createInCategory(group.nature)"
+                                        >
+                                            <Plus class="h-3.5 w-3.5" />
+                                        </button>
                                         <span
                                             v-if="groupSummary(group.nature) && groupSummary(group.nature).net"
                                             class="ms-auto text-xs font-semibold tabular-nums"
@@ -386,6 +461,18 @@ const secondaryName = (account) => {
                                             <span class="truncate">{{ account.name }}</span>
                                             <span v-if="secondaryName(account)" class="truncate text-xs text-muted-foreground">
                                                 {{ secondaryName(account) }}
+                                            </span>
+                                            <span
+                                                v-if="!account.activity_count"
+                                                class="text-[11px] text-amber-600/80 dark:text-amber-500/80"
+                                            >
+                                                {{ t('account.unused') }}
+                                            </span>
+                                            <span
+                                                v-else-if="account.last_activity_at"
+                                                class="text-[11px] text-muted-foreground/70"
+                                            >
+                                                {{ t('account.last_activity', { date: shortDate(account.last_activity_at) }) }}
                                             </span>
                                         </div>
                                     </TableCell>
