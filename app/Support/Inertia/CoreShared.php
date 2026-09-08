@@ -70,6 +70,11 @@ final class CoreShared
         return [
             'locale' => $locale,
             'direction' => $direction,
+            // Shown in the guest footer so users can quote their build.
+            'app' => [
+                'name' => config('app.name'),
+                'version' => config('app.version'),
+            ],
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,
