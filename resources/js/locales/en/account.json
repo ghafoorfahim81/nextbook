@@ -29,6 +29,9 @@
     "deactivate_confirm_title": "Deactivate this account?",
     "activate_confirm_desc": "The account will be selectable again on new transactions. Existing balances and history are unaffected.",
     "deactivate_confirm_desc": "The account stays in all reports and past transactions but can no longer be picked on new ones. You can reactivate it any time.",
+    "unused": "Unused",
+    "last_activity": "Last activity {date}",
+    "new_in_category": "New {category} account",
     "natures": {
         "asset": "Asset",
         "liability": "Liability",

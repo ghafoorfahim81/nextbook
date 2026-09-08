@@ -18,7 +18,23 @@ const accountTypes = computed(() => page.props.accountTypes?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const homeCurrency = computed(() => page.props.homeCurrency || {})
 const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
-  
+
+// When opened from a chart-of-accounts category header (?nature=…), narrow the
+// account-type picker to that nature and preselect the type when it is the only
+// one of its kind.
+const preselect = computed(() => page.props.preselect || {});
+const preselectType = computed(() => {
+    const pre = preselect.value?.account_type;
+    const id = pre?.data?.id ?? pre?.id ?? null;
+    return id ? (accountTypes.value.find((tpe) => tpe.id === id) || null) : null;
+});
+const accountTypeOptions = computed(() => {
+    const nature = preselect.value?.nature;
+    if (!nature) return accountTypes.value;
+    const scoped = accountTypes.value.filter((tpe) => tpe.nature === nature);
+    return scoped.length ? scoped : accountTypes.value;
+});
+
 const form = useForm({
     name: '',
     local_name: '',
@@ -30,8 +46,8 @@ const form = useForm({
     currency_id: null,
     rate: 1,
     amount: 0,
-    selected_account_type: null,
-    account_type_id: null,
+    selected_account_type: preselectType.value,
+    account_type_id: preselectType.value?.id ?? null,
 });
 watch(homeCurrency, (list) => {
     if (homeCurrency.value && !form.currency_id) {
@@ -145,7 +161,7 @@ useFormGuard(form)
                     />
 
                     <NextSelect
-                        :options="accountTypes"
+                        :options="accountTypeOptions"
                         v-model="form.selected_account_type"
                         label-key="name"
                         value-key="id"

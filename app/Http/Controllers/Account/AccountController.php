@@ -25,7 +25,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Models\Transaction\TransactionLine;
 use App\Models\Transaction\Transaction;
+use App\Services\PdfExportService;
 use App\Services\SpreadsheetExportService;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use App\Support\BranchContext;
 class AccountController extends Controller
@@ -43,9 +45,23 @@ class AccountController extends Controller
         // equity, income, expense, non-posting), so the whole chart is returned
         // in one go and the grouping/collapsing happens on the client. Charts run
         // to a few dozen accounts, so there is nothing to paginate.
+        $postedLines = DB::table('transaction_lines')
+            ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+            ->whereColumn('transaction_lines.account_id', 'accounts.id')
+            ->whereIn('transactions.status', ['posted', 'reversed'])
+            ->whereNull('transaction_lines.deleted_at');
+
         $accounts = Account::query()
             ->with(['accountType'])
             ->withStatementTotals()
+            ->selectSub(
+                (clone $postedLines)->selectRaw('COUNT(DISTINCT transaction_lines.transaction_id)'),
+                'activity_count'
+            )
+            ->selectSub(
+                (clone $postedLines)->selectRaw('MAX(transactions.date)'),
+                'last_activity_at'
+            )
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy('number')
@@ -131,12 +147,31 @@ class AccountController extends Controller
         ];
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $accountTypes = AccountType::orderBy('created_at', 'asc')->get();
+
+        // Opened from a category header on the chart: narrow the type picker to
+        // that nature, and preselect the type outright when the nature has only
+        // one. An explicit account_type_id (future callers) wins over nature.
+        $nature = $request->query('nature');
+        $preselectType = null;
+
+        if ($request->filled('account_type_id')) {
+            $preselectType = $accountTypes->firstWhere('id', $request->query('account_type_id'));
+        } elseif ($nature) {
+            $ofNature = $accountTypes->where('nature', $nature);
+            $preselectType = $ofNature->count() === 1 ? $ofNature->first() : null;
+        }
+
         return inertia('Accounts/Accounts/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
-            'accountTypes' => AccountTypeResource::collection(AccountType::orderBy('created_at','asc')->get()),
+            'accountTypes' => AccountTypeResource::collection($accountTypes),
+            'preselect' => [
+                'nature' => $nature,
+                'account_type' => $preselectType ? new AccountTypeResource($preselectType) : null,
+            ],
         ]);
     }
 
@@ -622,26 +657,44 @@ class AccountController extends Controller
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.account')]));
     }
 
-    public function exportList(Request $request, SpreadsheetExportService $exporter)
-    {
+    public function exportList(
+        Request $request,
+        SpreadsheetExportService $exporter,
+        PdfExportService $pdfExporter,
+    ) {
         $this->authorize('viewAny', Account::class);
 
-        $sortField = $request->input('sortField', 'created_at');
-        $sortDirection = $request->input('sortDirection', 'desc');
+        $format = $request->validate([
+            'format' => ['nullable', 'string', Rule::in(['xlsx', 'pdf'])],
+        ])['format'] ?? 'xlsx';
+
         $filters = (array) $request->input('filters', []);
 
+        // Rank by the accounting equation so the export reads top to bottom the
+        // same way the on-screen list groups.
+        $natureRank = ['asset' => 0, 'liability' => 1, 'equity' => 2, 'income' => 3, 'expense' => 4, 'non-posting' => 5];
+
         $accounts = Account::with(['accountType', 'parent'])
-            ->withSum('transactionLines as total_debit', 'debit')
-            ->withSum('transactionLines as total_credit', 'credit')
+            ->withStatementTotals()
             ->search($request->query('search'))
             ->filter($filters)
-            ->orderBy($sortField, $sortDirection)
-            ->get();
+            ->orderBy('number')
+            ->get()
+            ->sortBy(fn ($a) => [
+                $natureRank[$a->accountType?->nature] ?? 9,
+                $a->number,
+            ])
+            ->values();
 
         $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
         $label = $t('account', 'chart_of_accounts', 'Chart of Accounts');
 
+        $natureLabel = fn (?string $nature) => $nature
+            ? $this->exportNatureLabel($nature)
+            : '-';
+
         $rows = $accounts->map(fn ($a) => [
+            'category'     => $natureLabel($a->accountType?->nature),
             'number'       => $a->number,
             'name'         => $a->name,
             'local_name'   => $a->local_name ?? '-',
@@ -650,7 +703,20 @@ class AccountController extends Controller
             'balance'      => $a->statement['balance'],
         ])->all();
 
-        return $exporter->download([
+        $summary = $this->chartSummary($accounts, false);
+        $summaryFields = [];
+        foreach (['asset', 'liability', 'equity', 'income', 'expense'] as $nature) {
+            $group = $summary['groups'][$nature] ?? null;
+            if (! $group || ! $group['net']) {
+                continue;
+            }
+            $summaryFields[] = [
+                'label' => $natureLabel($nature),
+                'value' => number_format($group['net'], 2) . ' ' . strtoupper((string) $group['nature']),
+            ];
+        }
+
+        $payload = [
             'filename'           => 'chart-of-accounts-' . now()->format('Ymd-His') . '.xlsx',
             'sheet_name'         => $label,
             'sheet_title'        => $label,
@@ -661,14 +727,50 @@ class AccountController extends Controller
             'include_row_number' => true,
             'row_number_label'   => $t('report', 'columns.no', 'No.'),
             'columns' => [
-                ['key' => 'number',       'label' => $t('general', 'number', 'Number'), 'width' => 10],
-                ['key' => 'name',         'label' => $t('general', 'name', 'Name'), 'width' => 22],
-                ['key' => 'local_name',   'label' => $t('account', 'local_name', 'Local Name'), 'width' => 22],
-                ['key' => 'account_type', 'label' => $t('account', 'account_type', 'Account Type'), 'width' => 18],
-                ['key' => 'parent',       'label' => $t('account', 'parent', 'Parent'), 'width' => 22],
-                ['key' => 'balance',      'label' => $t('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right', 'width' => 16],
+                ['key' => 'category',     'label' => $t('account', 'account_type', 'Account Type'), 'width' => 16],
+                ['key' => 'number',       'label' => $t('general', 'number', 'Number'), 'width' => 9],
+                ['key' => 'name',         'label' => $t('general', 'name', 'Name'), 'width' => 20],
+                ['key' => 'local_name',   'label' => $t('account', 'local_name', 'Local Name'), 'width' => 20],
+                ['key' => 'account_type', 'label' => $t('account', 'account_type', 'Account Type'), 'width' => 16],
+                ['key' => 'parent',       'label' => $t('account', 'parent', 'Parent'), 'width' => 18],
+                ['key' => 'balance',      'label' => $t('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right', 'width' => 14],
             ],
             'rows' => $rows,
-        ]);
+            'summary_fields' => $summaryFields,
+        ];
+
+        return $format === 'pdf'
+            ? $pdfExporter->download($payload)
+            : $exporter->download($payload);
+    }
+
+    /**
+     * Localised label for an account-type nature, read straight from the
+     * frontend JSON locale so the export chrome matches the screen.
+     */
+    protected function exportNatureLabel(string $nature): string
+    {
+        $fallbacks = [
+            'asset' => 'Asset',
+            'liability' => 'Liability',
+            'equity' => 'Equity',
+            'income' => 'Income',
+            'expense' => 'Expense',
+            'non-posting' => 'Non-Posting',
+        ];
+
+        foreach ([app()->getLocale(), 'en'] as $locale) {
+            $path = resource_path("js/locales/{$locale}/account.json");
+            if (! is_file($path)) {
+                continue;
+            }
+            $content = str_replace("\xEF\xBB\xBF", '', (string) file_get_contents($path));
+            $value = data_get(json_decode($content, true) ?: [], "natures.{$nature}");
+            if (filled($value)) {
+                return (string) $value;
+            }
+        }
+
+        return $fallbacks[$nature] ?? ucfirst($nature);
     }
 }
