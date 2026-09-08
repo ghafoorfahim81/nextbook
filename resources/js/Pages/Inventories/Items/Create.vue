@@ -134,7 +134,7 @@ const form = useForm({
     fast_search: '',
     photo: null, // file
     costing_method: null,
-    pricing_method: null,
+    pricing_method: 'fixed',
     default_warehouse_id: null,
     allow_negative_stock: false,
     show_in_pos: true,

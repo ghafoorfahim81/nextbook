@@ -153,7 +153,7 @@ return [
         // Expiry with no batch code is the norm — milk, bread, yoghurt.
         BusinessType::SUPERMARKET->value => [
             'spec_label' => 'expiry',
-            'sections' => ['lots' => true],
+            'sections' => ['variants' => true,'lots' => true],
             'defaults' => ['is_expiry_tracked' => true],
             'fields' => [
                 'shelf_life_days'        => true,

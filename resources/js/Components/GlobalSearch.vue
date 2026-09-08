@@ -229,12 +229,12 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
     <!-- ── Header trigger button ──────────────────────────────────────────── -->
     <button
         @click="openSearch"
-        class="hidden md:flex items-center gap-2 h-9 w-full min-w-0 max-w-[320px] lg:max-w-[400px] rounded-md border border-primary bg-background/60 px-3 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
+        class="hidden md:flex items-center gap-2 h-9 w-[320px] lg:w-[400px] min-w-0 max-w-full rounded-md border border-primary bg-background/60 px-3 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors"
         :aria-label="t('global_search.open_aria')"
     >
         <Search class="size-3.5 shrink-0 opacity-60 text-primary" />
         <span class="min-w-0 flex-1 truncate text-start">{{ t('global_search.trigger') }}</span>
-        <kbd dir="ltr" class="hidden lg:inline-flex h-5 shrink-0 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] opacity-60">
+        <kbd dir="ltr" class="hidden sm:inline-flex h-5 shrink-0 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] opacity-60">
             <span class="text-xs">⌘</span>K
         </kbd>
     </button>
