@@ -104,6 +104,8 @@ class RolePermissionSeeder extends Seeder
             'formulas',
             'manufacturers',
 
+            'financial_periods',
+
             'backup',
         ];
 
@@ -125,6 +127,16 @@ class RolePermissionSeeder extends Seeder
         $landedCostActions = array_merge($baseActions, [
             'allocate',
             'post',
+        ]);
+
+        // Closing the books, reopening them, and posting into a month that is
+        // already shut are three separate authorities. The last one especially:
+        // it is the named exception to the period lock, and bundling it with
+        // "can edit a period" would hand it to everyone who can rename one.
+        $financialPeriodActions = array_merge($baseActions, [
+            'close',
+            'reopen',
+            'post_to_closed',
         ]);
 
         $transactionActions = array_merge($baseActions, [
@@ -165,11 +177,12 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         foreach ($resources as $resource) {
-            $actions = $resource === 'landed_costs'
-                ? $landedCostActions
-                : (in_array($resource, $transactionResources, true)
-                ? $transactionActions
-                : $baseActions);
+            $actions = match (true) {
+                $resource === 'landed_costs' => $landedCostActions,
+                $resource === 'financial_periods' => $financialPeriodActions,
+                in_array($resource, $transactionResources, true) => $transactionActions,
+                default => $baseActions,
+            };
 
             foreach ($actions as $action) {
                 $this->ensurePermission("{$resource}.{$action}");
@@ -264,6 +277,13 @@ class RolePermissionSeeder extends Seeder
             'landed_costs.update',
             'landed_costs.allocate',
             'landed_costs.post',
+
+            // Closing the month is the accountant's job. Reopening a closed one
+            // and posting into it are deliberately NOT — those are the controls
+            // that make a close mean anything, and they stay with the admin.
+            'financial_periods.view_any',
+            'financial_periods.view',
+            'financial_periods.close',
         ])->get();
 
         $accountant->syncPermissions($accountantPermissions);

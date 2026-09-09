@@ -2,8 +2,6 @@
 
 namespace App\Exceptions\Accounting;
 
-use Exception;
-
 /**
  * A settlement that cannot be applied as asked.
  *
@@ -11,7 +9,7 @@ use Exception;
  * malformed, this one means the allocation is wrong — over-applying an invoice,
  * mixing target currencies in one voucher, settling a line that is not a claim.
  */
-class SettlementException extends Exception
+class SettlementException extends AccountingException
 {
     /** @var array<int, array<string, mixed>> */
     protected array $context = [];

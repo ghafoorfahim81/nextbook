@@ -2,15 +2,13 @@
 
 namespace App\Exceptions\Accounting;
 
-use RuntimeException;
-
 /**
  * Raised when an entry fails one of the posting invariants.
  *
  * Carries the offending lines so the caller (and the log) can see which line
  * broke which rule, rather than just "transaction is not balanced".
  */
-class InvalidPostingException extends RuntimeException
+class InvalidPostingException extends AccountingException
 {
     /** @var array<int, array<string, mixed>> */
     protected array $violations = [];

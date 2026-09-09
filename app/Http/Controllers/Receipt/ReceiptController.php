@@ -306,13 +306,13 @@ class ReceiptController extends Controller
             $oldTransaction = $receipt->transaction()->first();
 
             if ($oldTransaction) {
-                $affected = app(PaymentStatusService::class)->documentsSettledBy($oldTransaction->id);
-
-                Settlement::withoutGlobalScopes()->where('transaction_id', $oldTransaction->id)->forceDelete();
-                TransactionLine::where('transaction_id', $oldTransaction->id)->forceDelete();
-                Transaction::where('id', $oldTransaction->id)->forceDelete();
-
-                app(PaymentStatusService::class)->recalculateSales($affected['sales']);
+                // Voided rather than force-deleted. Force-deleting raised a
+                // foreign-key violation the moment another voucher had settled
+                // one of these lines, and erased the superseded entry from the
+                // audit trail either way; void() refuses the first case with a
+                // message naming the blocking voucher, and soft-deletes in the
+                // second so the replaced voucher stays recoverable.
+                app(TransactionService::class)->void($oldTransaction);
             }
 
             $transaction = app(SettlementService::class)->settle(
@@ -388,21 +388,16 @@ class ReceiptController extends Controller
 
         DB::transaction(function () use ($receipt) {
             $transaction = $receipt->transaction()->first();
-            $affected = ['sales' => []];
 
             if ($transaction) {
-                // Note which invoices this receipt was holding closed BEFORE
-                // the settlements go, so their badges can be re-derived after.
-                $affected = app(PaymentStatusService::class)->documentsSettledBy($transaction->id);
-
-                Settlement::withoutGlobalScopes()->where('transaction_id', $transaction->id)->delete();
-                $transaction->lines()->delete();
-                $transaction->delete();
+                // One unposting boundary: it checks the period is still open,
+                // refuses if another voucher has settled these lines, removes
+                // the settlements this receipt wrote, and re-derives the badges
+                // on whatever it was holding closed.
+                app(TransactionService::class)->void($transaction);
             }
 
             $receipt->delete();
-
-            app(PaymentStatusService::class)->recalculateSales($affected['sales']);
         });
 
         $activityLogService->logDelete(

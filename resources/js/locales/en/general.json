@@ -238,5 +238,11 @@
   "attachment_invalid_type": "Invalid file type. Supported types are: {extensions}.",
   "attachment_max_size": "Max file size: {size} MB",
   "attachment_supported_files": "Supported files: {extensions}",
-  "attachment_too_large": "File is too large. Maximum size is {size} MB."
+  "attachment_too_large": "File is too large. Maximum size is {size} MB.",
+  "fiscal_years": "Financial Years",
+  "fiscal_year": "Financial Year",
+  "financial_period": "Financial Period",
+  "reopen": "Reopen",
+  "no_records_found": "No records found",
+  "generate_next_year": "Generate next year"
 }

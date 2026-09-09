@@ -308,13 +308,13 @@ class PaymentController extends Controller
             $oldTransaction = $payment->transaction()->first();
 
             if ($oldTransaction) {
-                $affected = app(PaymentStatusService::class)->documentsSettledBy($oldTransaction->id);
-
-                Settlement::withoutGlobalScopes()->where('transaction_id', $oldTransaction->id)->forceDelete();
-                TransactionLine::where('transaction_id', $oldTransaction->id)->forceDelete();
-                Transaction::where('id', $oldTransaction->id)->forceDelete();
-
-                app(PaymentStatusService::class)->recalculatePurchases($affected['purchases']);
+                // Voided rather than force-deleted. Force-deleting raised a
+                // foreign-key violation the moment another voucher had settled
+                // one of these lines, and erased the superseded entry from the
+                // audit trail either way; void() refuses the first case with a
+                // message naming the blocking voucher, and soft-deletes in the
+                // second so the replaced voucher stays recoverable.
+                app(TransactionService::class)->void($oldTransaction);
             }
 
             $transaction = app(SettlementService::class)->settle(
@@ -388,21 +388,16 @@ class PaymentController extends Controller
 
         DB::transaction(function () use ($payment) {
             $transaction = $payment->transaction()->first();
-            $affected = ['purchases' => []];
 
             if ($transaction) {
-                // Note which bills this payment was holding closed before the
-                // settlements go, so their badges can be re-derived after.
-                $affected = app(PaymentStatusService::class)->documentsSettledBy($transaction->id);
-
-                Settlement::withoutGlobalScopes()->where('transaction_id', $transaction->id)->delete();
-                $transaction->lines()->delete();
-                $transaction->delete();
+                // One unposting boundary: it checks the period is still open,
+                // refuses if another voucher has settled these lines, removes
+                // the settlements this payment wrote, and re-derives the badges
+                // on whatever it was holding closed.
+                app(TransactionService::class)->void($transaction);
             }
 
             $payment->delete();
-
-            app(PaymentStatusService::class)->recalculatePurchases($affected['purchases']);
         });
 
         $activityLogService->logDelete(

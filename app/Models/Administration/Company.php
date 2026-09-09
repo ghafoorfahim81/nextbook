@@ -41,6 +41,10 @@ class Company extends Model
         'city',
         'logo',
         'calendar_type',
+        // Read in the company's own calendar: month 10 is Jadi for a Jalali
+        // company, October for a Gregorian one.
+        'fiscal_year_start_month',
+        'fiscal_year_start_day',
         'working_style',
         'business_type',
         'locale',
@@ -64,6 +68,8 @@ class Company extends Model
             'created_by' => 'string',
             'updated_by' => 'string',
             'calendar_type' => CalendarType::class,
+            'fiscal_year_start_month' => 'integer',
+            'fiscal_year_start_day' => 'integer',
             'working_style' => WorkingStyle::class,
             'business_type' => BusinessType::class,
             'locale' => Locale::class,

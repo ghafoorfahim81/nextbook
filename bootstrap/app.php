@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Accounting\AccountingException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,6 +26,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // Accounting refusals are things the user did, not things that broke:
+        // a voucher dated into a closed month, an over-applied receipt, a
+        // journal whose sides do not agree. They belong back on the form with a
+        // message, and without this they render as a 500 error page.
+        $exceptions->render(function (AccountingException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            return back()->withInput()->withErrors(['accounting' => $e->getMessage()]);
+        });
+
         $exceptions->render(function (AuthorizationException $e, $request) {
             if ($request->expectsJson()) {
                 return response()->json([

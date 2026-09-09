@@ -241,5 +241,11 @@
   "attachment_invalid_type": "نوع فایل نامعتبر است. انواع پشتیبانی شده عبارتند از: {extensions}.",
   "attachment_max_size": "حداکثر حجم فایل: {size} مگابایت",
   "attachment_supported_files": "فایل‌های پشتیبانی شده: {extensions}",
-  "attachment_too_large": "حجم فایل بیش از حد است. حداکثر حجم مجاز {size} مگابایت است."
+  "attachment_too_large": "حجم فایل بیش از حد است. حداکثر حجم مجاز {size} مگابایت است.",
+  "fiscal_years": "سال‌های مالی",
+  "fiscal_year": "سال مالی",
+  "financial_period": "دوره مالی",
+  "reopen": "باز کردن دوباره",
+  "no_records_found": "رکوردی یافت نشد",
+  "generate_next_year": "ایجاد سال بعدی"
 }

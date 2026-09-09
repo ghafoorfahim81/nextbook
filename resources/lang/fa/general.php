@@ -104,4 +104,17 @@ return [
     'active' => 'فعال',
     'inactive' => 'غیرفعال',
     'invalid_phone_number' => 'یک شماره تلفن بین‌المللی معتبر وارد کنید (۶ تا ۱۵ رقم، شامل کود کشور).',
+
+    // Fiscal year / period locking
+    'period_closed' => 'دوره مالی :period بسته است، بنابراین در تاریخ :date چیزی ثبت شده نمی‌تواند. دوره را باز کنید یا از کسی که اجازه ثبت در دوره بسته را دارد کمک بخواهید.',
+    'fiscal_year_closed' => 'سال مالی :year بسته است. پیش از باز کردن یک ماه، سال را باز کنید.',
+    'fiscal_year' => 'سال مالی',
+    'fiscal_years' => 'سال‌های مالی',
+    'financial_period' => 'دوره مالی',
+    'financial_periods' => 'دوره‌های مالی',
+    'fiscal_year_already_exists' => 'یک سال مالی از قبل این تاریخ را پوشش می‌دهد.',
+    'fiscal_year_closed_successfully' => 'سال مالی بسته شد.',
+    'fiscal_year_reopened_successfully' => 'سال مالی باز شد.',
+    'period_closed_successfully' => 'دوره مالی بسته شد.',
+    'period_reopened_successfully' => 'دوره مالی باز شد.',
 ];

@@ -334,6 +334,16 @@ Route::middleware([
         ->withTrashed();
     Route::patch('/item-transfers/{itemTransfer}/complete', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'complete'])->name('item-transfers.complete');
     Route::patch('/item-transfers/{itemTransfer}/cancel', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'cancel'])->name('item-transfers.cancel');
+    // Financial years and the periods inside them. A year is generated from the
+    // company's fiscal-year start rather than typed in, so there is no create
+    // form here — only generate, close and reopen.
+    Route::get('/fiscal-years', [\App\Http\Controllers\Accounting\FiscalYearController::class, 'index'])->name('fiscal-years.index');
+    Route::post('/fiscal-years', [\App\Http\Controllers\Accounting\FiscalYearController::class, 'store'])->name('fiscal-years.store');
+    Route::patch('/fiscal-years/{fiscalYear}/close', [\App\Http\Controllers\Accounting\FiscalYearController::class, 'closeYear'])->name('fiscal-years.close');
+    Route::patch('/fiscal-years/{fiscalYear}/reopen', [\App\Http\Controllers\Accounting\FiscalYearController::class, 'reopenYear'])->name('fiscal-years.reopen');
+    Route::patch('/financial-periods/{financialPeriod}/close', [\App\Http\Controllers\Accounting\FiscalYearController::class, 'closePeriod'])->name('financial-periods.close');
+    Route::patch('/financial-periods/{financialPeriod}/reopen', [\App\Http\Controllers\Accounting\FiscalYearController::class, 'reopenPeriod'])->name('financial-periods.reopen');
+
     // Journal Entries
     Route::get('/journal-entries/export', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'export'])->name('journal-entries.export');
     Route::resource('/journal-entries', \App\Http\Controllers\JournalEntry\JournalEntryController::class);

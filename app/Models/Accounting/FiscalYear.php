@@ -5,6 +5,8 @@ namespace App\Models\Accounting;
 use App\Enums\FinancialPeriodStatus;
 use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasSearch;
+use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,16 +15,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class FinancialPeriod extends Model
+class FiscalYear extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
 
-    protected $table = 'financial_periods';
+    protected $table = 'fiscal_years';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
-        'fiscal_year_id',
         'name',
         'start_date',
         'end_date',
@@ -32,12 +35,12 @@ class FinancialPeriod extends Model
         'branch_id',
         'created_by',
         'updated_by',
+        'deleted_by',
     ];
 
     protected function casts(): array
     {
         return [
-            'fiscal_year_id' => 'string',
             'start_date' => 'date',
             'end_date' => 'date',
             'status' => FinancialPeriodStatus::class,
@@ -49,31 +52,28 @@ class FinancialPeriod extends Model
         ];
     }
 
-    public function fiscalYear(): BelongsTo
+    protected static function searchableColumns(): array
     {
-        return $this->belongsTo(FiscalYear::class, 'fiscal_year_id');
+        return ['name'];
     }
 
-    /**
-     * A period is postable only while BOTH it and its year are open.
-     *
-     * Closing a year closes its months, but the year is also the backstop: a
-     * month reopened for an adjustment still cannot take a posting once the year
-     * around it has been signed off.
-     */
+    public function periods(): HasMany
+    {
+        return $this->hasMany(FinancialPeriod::class, 'fiscal_year_id')->orderBy('start_date');
+    }
+
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'closed_by');
+    }
+
     public function isClosed(): bool
     {
-        return $this->status === FinancialPeriodStatus::Closed
-            || (bool) $this->fiscalYear?->isClosed();
+        return $this->status === FinancialPeriodStatus::Closed;
     }
 
-    public function journalEntries(): HasMany
+    public function isOpen(): bool
     {
-        return $this->hasMany(JournalEntry::class, 'financial_period_id');
-    }
-
-    public function accountBalances(): HasMany
-    {
-        return $this->hasMany(AccountBalance::class, 'financial_period_id');
+        return ! $this->isClosed();
     }
 }

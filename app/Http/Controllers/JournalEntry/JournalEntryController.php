@@ -209,10 +209,11 @@ class JournalEntryController extends Controller
             ]);
 
             // Remove existing transaction + lines (hard delete), then recreate with store logic
-            $transaction = $journalEntry->transaction()->withTrashed()->first();
+            $transaction = $journalEntry->transaction()->first();
             if ($transaction) {
-                $transaction->lines()->withTrashed()->forceDelete();
-                $transaction->forceDelete();
+                // See destroy(): force-deleting a settled line raised a foreign
+                // key violation, so the superseded entry is voided instead.
+                app(TransactionService::class)->void($transaction);
             }
             $lines = [];
 
@@ -287,8 +288,10 @@ class JournalEntryController extends Controller
         DB::transaction(function () use ($journalEntry, $oldValues, $activityLogService) {
             $transaction = $journalEntry->transaction()->first();
             if ($transaction) {
-                $transaction->lines()->delete();
-                $transaction->delete();
+                // A manual journal can debit a customer's receivable, which a
+                // receipt may then have settled. void() refuses in that case
+                // instead of stranding the receipt against a line that is gone.
+                app(TransactionService::class)->void($transaction);
             }
             $journalEntry->delete();
 

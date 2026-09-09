@@ -107,4 +107,17 @@ return [
     'active' => 'Active',
     'inactive' => 'Inactive',
     'invalid_phone_number' => 'Enter a valid international phone number (6 to 15 digits, country code included).',
+
+    // Fiscal year / period locking
+    'period_closed' => 'The financial period :period is closed, so nothing can be posted on :date. Reopen the period, or ask someone with permission to post into a closed period.',
+    'fiscal_year_closed' => 'The financial year :year is closed. Reopen the year before reopening a month inside it.',
+    'fiscal_year' => 'Financial Year',
+    'fiscal_years' => 'Financial Years',
+    'financial_period' => 'Financial Period',
+    'financial_periods' => 'Financial Periods',
+    'fiscal_year_already_exists' => 'A financial year already covers that date.',
+    'fiscal_year_closed_successfully' => 'Financial year closed.',
+    'fiscal_year_reopened_successfully' => 'Financial year reopened.',
+    'period_closed_successfully' => 'Financial period closed.',
+    'period_reopened_successfully' => 'Financial period reopened.',
 ];

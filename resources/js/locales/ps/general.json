@@ -182,5 +182,11 @@
   "payment_mode": "د تادیې طریقه",
   "bank_account": "د بانک/نقدي حساب",
   "cheque_no": "د چک شمېره",
-  "narration": "یادونه"
+  "narration": "یادونه",
+  "fiscal_years": "مالي کالونه",
+  "fiscal_year": "مالي کال",
+  "financial_period": "مالي دوره",
+  "reopen": "بیا پرانیستل",
+  "no_records_found": "هیڅ ریکارډ ونه موندل شو",
+  "generate_next_year": "راتلونکی کال جوړ کړئ"
 }

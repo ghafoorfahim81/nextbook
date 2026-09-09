@@ -3,9 +3,13 @@
 namespace App\Services;
 
 use App\Exceptions\Accounting\InvalidPostingException;
+use App\Exceptions\Accounting\SettlementException;
+use App\Models\Accounting\Settlement;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Currency;
 use App\Models\Transaction\Transaction;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\PeriodGuard;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -42,9 +46,12 @@ class TransactionService
 
     private $dateConversionService;
 
-    public function __construct(DateConversionService $dateConversionService)
+    private PeriodGuard $periods;
+
+    public function __construct(DateConversionService $dateConversionService, PeriodGuard $periods)
     {
         $this->dateConversionService = $dateConversionService;
+        $this->periods = $periods;
     }
 
     /**
@@ -62,6 +69,11 @@ class TransactionService
 
             $branchId = $this->resolveBranchId($header);
             $baseCurrencyId = $this->resolveBaseCurrencyId($branchId);
+
+            // Before anything is written. Every financial event in the system
+            // reaches this line, which is why the period lock lives here and
+            // not in ten controllers that would each have to remember it.
+            $this->periods->assertOpen($this->dateKey($header['date']), $branchId);
 
             // Normalise and validate everything BEFORE a single row is written,
             // so a rejected entry never leaves a half-posted voucher behind.
@@ -426,9 +438,18 @@ class TransactionService
     // REVERSAL (AUDIT-SAFE)
     // ======================================================
 
-    public function reverse(Transaction $original, ?string $reason = null): Transaction
+    /**
+     * @param  string|null  $date  When the reversal is posted. Defaults to today.
+     *                             An original sitting in a closed year is still
+     *                             reversible — into an OPEN period, which is the
+     *                             correct accounting treatment anyway: you do not
+     *                             reach back into signed-off books to undo
+     *                             something, you post the correction where the
+     *                             books are still open.
+     */
+    public function reverse(Transaction $original, ?string $reason = null, ?string $date = null): Transaction
     {
-        return DB::transaction(function () use ($original, $reason) {
+        return DB::transaction(function () use ($original, $reason, $date) {
 
             if ($original->status !== 'posted') {
                 throw new Exception('Only posted transactions can be reversed');
@@ -456,25 +477,152 @@ class TransactionService
                 header: [
                     'currency_id'    => $original->currency_id,
                     'rate'           => $original->rate,
-                    'date'           => now()->toDateString(),
+                    'date'           => $date ?? now()->toDateString(),
                     'reference_type' => 'reversal',
                     'reference_id'   => $original->id,
                     'remark'         => $reason ?? 'Reversal of transaction ' . $original->id,
                     'status'         => 'posted',
                     'branch_id'      => $original->branch_id,
+                    // A cross-currency original mirrors to a cross-currency
+                    // reversal. Without this the mirrored lines fail the
+                    // per-currency balance check that the original was
+                    // explicitly exempted from, and the undo is impossible.
+                    'cross_currency' => (bool) $original->is_cross_currency,
                 ],
                 lines: $lines,
             );
 
-            $original->update(['status' => 'reversed']);
+            $original->update([
+                'status' => 'reversed',
+                'updated_by' => Auth::id(),
+            ]);
 
             return $reversal;
         });
     }
 
     // ======================================================
+    // UNPOSTING
+    // ======================================================
+
+    /**
+     * Withdraw a voucher from the ledger.
+     *
+     * The counterpart to post(), and the reason it exists: unposting was being
+     * done by hand in a dozen controllers as
+     *
+     *     $transaction->lines()->delete(); $transaction->delete();
+     *
+     * which knows nothing about periods and nothing about settlement. Two
+     * consequences followed from that, and both are closed here.
+     *
+     * First, a line another voucher has SETTLED cannot simply be removed. The
+     * settlements row keeps a foreign key to it, so a force-delete raises a
+     * constraint violation, and a soft-delete is worse: the claim disappears
+     * from open items while the receipt that paid it stays on the books, and
+     * the money is stranded where no screen will show it. Voiding refuses, and
+     * says which voucher is holding the line.
+     *
+     * Second, the settlements the voucher itself WROTE have to go with it, or
+     * the invoices it paid stay closed against an entry that no longer exists.
+     *
+     * @return array{sales: array<int, string>, purchases: array<int, string>}
+     *         The documents whose paid/unpaid badge was affected.
+     */
+    public function void(Transaction $transaction, ?string $reason = null): array
+    {
+        return DB::transaction(function () use ($transaction, $reason) {
+            $this->periods->assertOpen(
+                $this->dateKey($transaction->date),
+                $transaction->branch_id
+            );
+
+            $lineIds = $transaction->lines()->pluck('id')->all();
+
+            $this->assertNothingSettledAgainst($transaction, $lineIds);
+
+            // Noted BEFORE the settlements go, so the badges can be re-derived
+            // once they have.
+            $affected = app(PaymentStatusService::class)->documentsSettledBy($transaction->id);
+
+            Settlement::withoutGlobalScopes()
+                ->where('transaction_id', $transaction->id)
+                ->delete();
+
+            $transaction->lines()->delete();
+
+            $transaction->update([
+                'updated_by' => Auth::id(),
+                'deleted_by' => Auth::id(),
+                'remark' => $reason ?? $transaction->remark,
+            ]);
+
+            $transaction->delete();
+
+            $statuses = app(PaymentStatusService::class);
+            $statuses->recalculateSales($affected['sales']);
+            $statuses->recalculatePurchases($affected['purchases']);
+
+            return $affected;
+        });
+    }
+
+    /**
+     * Refuse to void a voucher whose lines another voucher is relying on.
+     *
+     * @param  array<int, string>  $lineIds
+     */
+    protected function assertNothingSettledAgainst(Transaction $transaction, array $lineIds): void
+    {
+        if ($lineIds === []) {
+            return;
+        }
+
+        $blocking = Settlement::withoutGlobalScopes()
+            ->whereIn('target_line_id', $lineIds)
+            ->where('transaction_id', '!=', $transaction->id)
+            ->whereNull('deleted_at')
+            ->with('transaction:id,voucher_number,date')
+            ->get();
+
+        if ($blocking->isEmpty()) {
+            return;
+        }
+
+        throw SettlementException::make(
+            'This entry has been settled by another voucher and cannot be removed. '
+            . 'Delete or edit that voucher first.',
+            $blocking->map(fn (Settlement $settlement) => [
+                'line' => $settlement->target_line_id,
+                'settled_by_transaction' => $settlement->transaction_id,
+                'voucher_number' => $settlement->transaction?->voucher_number,
+                'amount_applied' => $settlement->amount_applied,
+            ])->all()
+        );
+    }
+
+    // ======================================================
     // HELPERS
     // ======================================================
+
+    /**
+     * Normalise whatever a caller passed as a date to a plain Y-m-d string.
+     *
+     * Headers arrive with strings from controllers and Carbon instances from
+     * models, and the period lookup compares against date columns.
+     */
+    protected function dateKey(mixed $date): ?string
+    {
+        if ($date === null || $date === '') {
+            return null;
+        }
+
+        if ($date instanceof \DateTimeInterface) {
+            return $date->format('Y-m-d');
+        }
+
+        return \Illuminate\Support\Carbon::parse((string) $date)->toDateString();
+    }
 
     protected function resolveBranchId(array $header): ?string
     {

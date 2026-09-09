@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use App\Enums\FinancialPeriodStatus;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
-use App\Models\Accounting\FinancialPeriod;
+use App\Models\Accounting\FiscalYear;
+use App\Services\Accounting\FiscalYearService;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Category;
+use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Department;
 use App\Models\Administration\Quantity;
@@ -26,11 +27,9 @@ use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
 use App\Support\BranchContext;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Morilog\Jalali\Jalalian;
 use Symfony\Component\Uid\Ulid;
 
 /**
@@ -710,11 +709,19 @@ class BranchProvisioningService
     }
 
     /**
-     * One open financial period covering the current year in the company calendar.
+     * The current financial year, with its twelve months, both open.
+     *
+     * This used to build a single year-long period inline, starting the Jalali
+     * year at Hamal 1. That is Nowruz — Afghanistan's PRE-1391 fiscal year — and
+     * it was hardcoded, so a company on the current 1 Jadi year, or on a donor's
+     * Gregorian calendar, had no way to say so. The bounds now come from the
+     * company's own fiscal_year_start_month / _day via FiscalYearService, which
+     * is also what the posting guard resolves periods through, so provisioning
+     * and enforcement cannot disagree about where a year starts.
      */
     private function financialPeriod(Branch $branch, ?string $actorId): int
     {
-        $exists = FinancialPeriod::withoutGlobalScopes()
+        $exists = FiscalYear::withoutGlobalScopes()
             ->where('branch_id', $branch->id)
             ->exists();
 
@@ -722,41 +729,20 @@ class BranchProvisioningService
             return 0;
         }
 
-        [$name, $start, $end] = $this->currentYearBounds();
-
-        $this->insert(FinancialPeriod::class, [
-            'name' => $name,
-            'start_date' => $start->toDateString(),
-            'end_date' => $end->toDateString(),
-            'status' => FinancialPeriodStatus::Open->value,
-            'branch_id' => $branch->id,
-            'created_by' => $actorId,
-        ]);
-
-        return 1;
-    }
-
-    /**
-     * @return array{0: string, 1: Carbon, 2: Carbon}
-     */
-    private function currentYearBounds(): array
-    {
-        $calendar = Auth::user()?->company?->calendar_type?->value;
-
-        if ($calendar === 'jalali') {
-            $today = Jalalian::now();
-            $start = (new Jalalian($today->getYear(), 1, 1))->toCarbon()->startOfDay();
-
-            return [
-                (string) $today->getYear(),
-                $start,
-                $start->copy()->addYear()->subDay(),
-            ];
+        // Where the year starts is a COMPANY setting, and provisioning can run
+        // before any company exists — during a fresh seed it does. Guessing
+        // then bakes in a calendar the company may not use, and years cannot
+        // overlap, so the wrong guess has to be deleted before a right one can
+        // be created. Skipping is free instead: the posting guard generates the
+        // year on the first voucher, by which point the company is there to
+        // answer the question.
+        if (Company::query()->withoutGlobalScopes()->doesntExist()) {
+            return 0;
         }
 
-        $start = Carbon::now()->startOfYear();
+        app(FiscalYearService::class)->generate(now()->toDateString(), $branch->id);
 
-        return [(string) $start->year, $start, $start->copy()->endOfYear()];
+        return 1;
     }
 
     /**

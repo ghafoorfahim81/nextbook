@@ -84,4 +84,17 @@ return [
     'landed_cost_allocation_must_match_total_cost' => 'Allocated amount must equal the total additional cost before posting.',
     'landed_cost_purchase_already_allocated' => 'د پیرود امر :number لپاره لا دمخه راوړل شوی لګښت شتون لري.',
     'opening_locked_cannot_update' => 'دا پرانیستل شوی بیلانس نشي بدلېدلی ځکه چې په معاملاتو کې کارول شوی دی.',
+
+    // Fiscal year / period locking
+    'period_closed' => 'د :period مالي دوره تړل شوې ده، نو په :date نېټه هیڅ شی ثبتېدلی نه شي. دوره بېرته پرانیزئ یا له هغه چا مرسته وغواړئ چې د تړل شوې دورې اجازه لري.',
+    'fiscal_year_closed' => 'د :year مالي کال تړل شوی دی. د یوې میاشتې له پرانیستلو مخکې کال پرانیزئ.',
+    'fiscal_year' => 'مالي کال',
+    'fiscal_years' => 'مالي کالونه',
+    'financial_period' => 'مالي دوره',
+    'financial_periods' => 'مالي دورې',
+    'fiscal_year_already_exists' => 'یو مالي کال دمخه دا نېټه پوښي.',
+    'fiscal_year_closed_successfully' => 'مالي کال وتړل شو.',
+    'fiscal_year_reopened_successfully' => 'مالي کال بېرته پرانیستل شو.',
+    'period_closed_successfully' => 'مالي دوره وتړل شوه.',
+    'period_reopened_successfully' => 'مالي دوره بېرته پرانیستل شوه.',
 ];

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
+use App\Models\Accounting\FiscalYear;
 use App\Models\AccountTransfer\AccountTransfer;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Brand;
@@ -42,6 +43,7 @@ use App\Models\User;
 use App\Policies\AccountPolicy;
 use App\Policies\AccountTransferPolicy;
 use App\Policies\AccountTypePolicy;
+use App\Policies\FiscalYearPolicy;
 use App\Policies\BranchPolicy;
 use App\Policies\BrandPolicy;
 use App\Policies\CategoryPolicy;
@@ -103,6 +105,7 @@ class AuthServiceProvider extends ServiceProvider
         // Accounts
         Account::class => AccountPolicy::class,
         AccountType::class => AccountTypePolicy::class,
+        FiscalYear::class => FiscalYearPolicy::class,
 
         // Inventory
         Item::class => ItemPolicy::class,
