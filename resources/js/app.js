@@ -14,6 +14,36 @@ import { applyAppearanceTheme } from './lib/theme'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Nextbook';
 
+// Guard against `DataCloneError: ... could not be cloned` from
+// history.pushState/replaceState. Inertia calls these synchronously as part
+// of every router.visit() (e.g. saveScrollPositions() runs before a form's
+// .post() even sends its request), so if the current page's state ever picks
+// up a value the structured-clone algorithm can't serialize, the error is
+// thrown inside the click handler and the visit — including a plain form
+// submit — never happens. Losing scroll-position/history state is harmless;
+// silently failing to submit a form is not, so this degrades instead of
+// throwing: retry with a JSON-safe copy of the state (drops whatever wasn't
+// serializable), and if even that fails, skip the history write and warn.
+;['pushState', 'replaceState'].forEach((method) => {
+    const original = window.history[method].bind(window.history)
+    window.history[method] = function (state, title, url) {
+        try {
+            return original(state, title, url)
+        } catch (error) {
+            if (!(error instanceof DOMException) || error.name !== 'DataCloneError') throw error
+            console.warn(`[history.${method}] page state contained a non-serializable value; retrying with a sanitized copy.`, error)
+            let safeState = null
+            try { safeState = JSON.parse(JSON.stringify(state)) } catch { /* leave null */ }
+            if (safeState === null) return
+            try {
+                return original(safeState, title, url)
+            } catch {
+                // Sanitized copy still failed — proceed without updating history state.
+            }
+        }
+    }
+})
+
 function applyDocumentLocale(locale, direction) {
     if (!locale) return
     document.documentElement.setAttribute('lang', locale)
