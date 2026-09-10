@@ -235,7 +235,7 @@ useFormGuard(form)
                         <NextSelect
                             :options="currencies.data"
                             v-model="form.selected_currency"
-                            label-key="code"
+                            label-key="display_name"
                             value-key="id"
                             :clearable="false"
                             @update:modelValue="(value) => handleSelectChange('currency_id', value)"

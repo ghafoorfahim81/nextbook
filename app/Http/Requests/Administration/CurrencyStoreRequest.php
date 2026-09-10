@@ -39,6 +39,7 @@ class CurrencyStoreRequest extends FormRequest
         return [
             'currency_code' => ['required', 'string', Rule::in(array_keys(Currency::currencyList()))],
             'name' => ['required', 'string', $this->uniqueInBranch('currencies')],
+            'local_name' => ['nullable', 'string'],
             'code' => ['required', 'string', $this->uniqueInBranch('currencies')],
             'symbol' => ['required', 'string'],
             'format' => ['required', 'string'],

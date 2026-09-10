@@ -21,6 +21,7 @@
         "rate_updates_history_description": "Review previous exchange rate changes and the date each rate was recorded.",
         "exchange_rate": "Exchange Rate",
         "code": "Code",
+        "local_name": "Local Name",
         "format": "Format",
         "flag": "Flag",
         "is_active": "Is Active",

@@ -148,7 +148,7 @@ class JobOpeningController extends Controller
         return [
             'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
             'designations' => Designation::query()->orderBy('name')->get(['id', 'name']),
-            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
+            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name', 'local_name']),
             'employmentTypes' => array_map(
                 fn (EmploymentType $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                 EmploymentType::cases()

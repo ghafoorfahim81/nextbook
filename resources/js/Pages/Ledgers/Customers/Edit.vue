@@ -113,7 +113,7 @@ const handleCancel = () => {
                     <NextSelect
                         :options="currencies.data"
                         v-model="form.currency_id"
-                        label-key="name"
+                        label-key="display_name"
                         value-key="id"
                         id="currency"
                         :floating-text="t('admin.currency.currency')"

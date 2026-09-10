@@ -307,7 +307,7 @@ class EmployeeController extends Controller
             'genders' => $this->enumOptions(Gender::cases()),
             'maritalStatuses' => $this->enumOptions(MaritalStatus::cases()),
             'paymentModes' => $this->enumOptions(PaymentMode::cases()),
-            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
+            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name', 'local_name']),
             'countries' => Country::query()
                 ->orderBy('name_en')
                 ->get(['id', 'name_en', 'name_fa'])

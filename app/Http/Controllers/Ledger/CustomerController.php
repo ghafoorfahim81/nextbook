@@ -76,7 +76,7 @@ class CustomerController extends Controller
         return inertia('Ledgers/Customers/Index', [
             'customers' => LedgerResource::collection($customers),
             'filterOptions' => [
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'groups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
                 'countries' => Country::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
                 'provinces' => Province::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa', 'country_id']),

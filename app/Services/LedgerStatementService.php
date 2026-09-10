@@ -140,11 +140,11 @@ class LedgerStatementService
         return $this->baseQuery($ledger)
             ->distinct()
             ->orderBy('c.code')
-            ->get(['c.id as id', 'c.code as code', 'c.name as name', 'c.symbol as symbol'])
+            ->get(['c.id as id', 'c.code as code', 'c.name as name', 'c.local_name as local_name', 'c.symbol as symbol'])
             ->map(fn ($row) => [
                 'id' => $row->id,
                 'code' => $row->code,
-                'name' => $row->name,
+                'name' => app()->getLocale() === 'en' ? $row->name : ($row->local_name ?? $row->name),
                 'symbol' => $row->symbol,
             ])
             ->all();

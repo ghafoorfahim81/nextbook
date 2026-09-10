@@ -271,7 +271,7 @@ useFormGuard(form)
                             :options="currencies.data || currencies"
                             v-model="form.selected_currency"
                             @update:modelValue="handleCurrencyChange"
-                            label-key="code"
+                            label-key="display_name"
                             value-key="id"
                             :reduce="cur => cur"
                             :floating-text="t('admin.currency.currency')"

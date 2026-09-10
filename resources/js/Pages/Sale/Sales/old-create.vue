@@ -689,7 +689,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     v-if="general_fields.currency"
                     :options="currencies.data"
                     v-model="form.selected_currency"
-                    label-key="code"
+                    label-key="display_name"
                     value-key="id"
                     :clearable="false"
                     @update:modelValue="(value) => handleSelectChange('currency_id', value)"

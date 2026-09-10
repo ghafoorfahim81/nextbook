@@ -213,7 +213,7 @@ const handleSelectChange = (field, value) => {
                                     <NextSelect
                                         :options="currencies.data"
                                         v-model="form.selected_currency"
-                                        label-key="name"
+                                        label-key="display_name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                         :reduce="currency => currency.id"
