@@ -265,6 +265,7 @@ class BranchProvisioningService
 
             $this->insert(Currency::class, [
                 'name' => $currency['name'],
+                'local_name' => $currency['local_name'] ?? null,
                 'code' => $currency['code'],
                 'symbol' => $currency['symbol'],
                 'format' => $currency['format'],

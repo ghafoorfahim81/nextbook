@@ -4365,8 +4365,12 @@ class ReportService
             'currencies' => DB::table('currencies')
                 ->whereNull('deleted_at')
                 ->orderBy('code')
-                ->get(['id', 'code', 'name'])
-                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->code.' - '.$row->name])
+                ->get(['id', 'code', 'name', 'local_name'])
+                ->map(function ($row) {
+                    $name = app()->getLocale() === 'en' ? $row->name : ($row->local_name ?? $row->name);
+
+                    return ['id' => $row->id, 'name' => $row->code.' - '.$name];
+                })
                 ->all(),
             'warehouses' => DB::table('warehouses')
                 ->where('branch_id', $branchId)

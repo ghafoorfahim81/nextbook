@@ -63,7 +63,7 @@ class PurchaseController extends Controller
             'purchases' => PurchaseResource::collection($purchases),
             'filterOptions' => [
                 'suppliers' => Ledger::query()->where('type', 'supplier')->orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'types' => [
                     ['id' => 'cash', 'name' => 'Cash'],

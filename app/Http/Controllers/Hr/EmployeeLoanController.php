@@ -278,7 +278,7 @@ class EmployeeLoanController extends Controller
                 fn (LoanStatus $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                 LoanStatus::cases()
             ),
-            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
+            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name', 'local_name']),
             'bankAccounts' => Account::query()
                 ->whereHas('accountType', fn ($query) => $query->where('slug', 'cash-or-bank'))
                 ->orderBy('name')

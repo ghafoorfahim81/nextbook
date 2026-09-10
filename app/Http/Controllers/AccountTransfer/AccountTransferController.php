@@ -56,7 +56,7 @@ class AccountTransferController extends Controller
                 'accounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
             )->get()),
-                'currencies' => CurrencyResource::collection(Currency::orderBy('code')->get(['id', 'code', 'name'])),
+                'currencies' => CurrencyResource::collection(Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name'])),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [

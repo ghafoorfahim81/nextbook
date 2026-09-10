@@ -753,17 +753,22 @@ class SearchController extends Controller
     private function searchCurrencies(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
         $query = Currency::query()
-            ->select('id', 'name', 'code', 'symbol', 'exchange_rate')
+            ->select('id', 'name', 'local_name', 'code', 'symbol', 'exchange_rate', 'is_base_currency')
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
-                    if (in_array($field, ['name', 'code', 'symbol'])) {
+                    if (in_array($field, ['name', 'local_name', 'code', 'symbol'])) {
                         $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
 
-        return $query->limit($limit)->get()->toArray();
+        return $query->limit($limit)->get()->map(function (Currency $currency) {
+            return array_merge($currency->toArray(), [
+                'localized_name' => $currency->localized_name,
+                'display_name' => $currency->display_name,
+            ]);
+        })->all();
     }
 
     /**

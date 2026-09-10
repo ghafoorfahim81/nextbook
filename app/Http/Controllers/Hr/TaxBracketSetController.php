@@ -50,7 +50,7 @@ class TaxBracketSetController extends Controller
                     fn (TaxPeriod $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                     TaxPeriod::cases()
                 ),
-                'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name', 'local_name']),
             ],
             // Offered as a starting point for a new table, so a user correcting
             // a rate edits real figures rather than typing four bands blind.

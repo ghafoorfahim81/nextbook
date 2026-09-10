@@ -277,7 +277,7 @@ class LandedCostController extends Controller
     {
         return Currency::query()
             ->orderBy('code')
-            ->get(['id', 'code', 'name', 'exchange_rate', 'is_base_currency']);
+            ->get(['id', 'code', 'name', 'local_name', 'exchange_rate', 'is_base_currency']);
     }
 
     /**

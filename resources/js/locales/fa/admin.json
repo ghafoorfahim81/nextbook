@@ -22,6 +22,7 @@
         "rate_updates_history_description": "تغییرات گذشته نرخ تبدیل و تاریخ ثبت هر نرخ را مشاهده کنید.",
         "exchange_rate": "نرخ تبدیل",
         "code": "کد",
+        "local_name": "نام محلی",
         "format": "فرمت",
         "flag": "پرچم",
         "is_active": "فعال",

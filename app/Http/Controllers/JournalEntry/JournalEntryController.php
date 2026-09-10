@@ -53,7 +53,7 @@ class JournalEntryController extends Controller
         return inertia('JournalEntry/JournalEntries/Index', [
             'journalEntries' => JournalEntryResource::collection($journalEntries),
             'filterOptions' => [
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'journalClasses' => JournalClass::orderBy('name')->get(['id', 'name']),
                 'ledgers' => Ledger::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),

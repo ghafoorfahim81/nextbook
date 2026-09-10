@@ -152,7 +152,7 @@ class PaymentController extends Controller
             'payments' => PaymentResource::collection($payments),
             'filterOptions' => [
                 'suppliers' => Ledger::query()->where('type', 'supplier')->orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'bankAccounts' => $this->cashBankAccountOptions(),
                 'paymentModes' => $this->paymentModeOptions(),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),

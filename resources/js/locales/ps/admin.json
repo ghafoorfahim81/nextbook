@@ -22,6 +22,7 @@
         "rate_updates_history_description": "پخواني تبادلې نرخونه او د ثبت نېټه یې وګورئ.",
         "exchange_rate": "نرخ تبدیل",
         "code": "کد",
+        "local_name": "سیمه‌ییز نوم",
         "format": "فرمت",
         "flag": "پرچم",
         "is_active": "فعال",

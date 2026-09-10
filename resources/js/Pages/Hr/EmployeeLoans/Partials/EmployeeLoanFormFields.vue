@@ -59,7 +59,7 @@ const suggestInstalment = () => {
             <NextSelect
                 :options="currencies" v-model="form.selected_currency"
                 @update:modelValue="(v) => { form.currency_id = v?.id ?? null }"
-                label-key="code" value-key="id" :reduce="(x) => x"
+                label-key="display_name" value-key="id" :reduce="(x) => x"
                 :floating-text="t('general.currency')" :error="form.errors?.currency_id"
             />
 

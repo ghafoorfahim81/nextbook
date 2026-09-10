@@ -153,7 +153,7 @@ class ReceiptController extends Controller
             'receipts' => ReceiptResource::collection($receipts),
             'filterOptions' => [
                 'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'bankAccounts' => $this->cashBankAccountOptions(),
                 'paymentModes' => $this->paymentModeOptions(),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),

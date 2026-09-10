@@ -282,6 +282,7 @@ class PerformanceLoadSeeder extends Seeder
                 $currencyRows[] = [
                     'id' => (string) Str::ulid(),
                     'name' => $currency['name'],
+                    'local_name' => $currency['local_name'] ?? null,
                     'code' => $currency['code'],
                     'symbol' => $currency['symbol'],
                     'format' => $currency['format'],

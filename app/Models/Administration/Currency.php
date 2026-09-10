@@ -31,6 +31,7 @@ class Currency extends Model
 
     protected $fillable = [
         'name',
+        'local_name',
         'code',
         'symbol',
         'format',
@@ -66,10 +67,20 @@ class Currency extends Model
         'updated_by' => 'string',
     ];
 
+    /**
+     * Computed labels every currency payload should carry so pickers can show
+     * "USD - US Dollar" (localized) without each endpoint opting in.
+     */
+    protected $appends = [
+        'localized_name',
+        'display_name',
+    ];
+
     protected static function searchableColumns(): array
     {
         return [
             'name',
+            'local_name',
             'code',
             'symbol',
             'format',
@@ -78,11 +89,33 @@ class Currency extends Model
         ];
     }
 
+    /**
+     * The localized currency name for the active locale, falling back to the
+     * English name when no local name is stored or the UI is in English.
+     */
+    public function getLocalizedNameAttribute(): string
+    {
+        $useLocal = in_array(app()->getLocale(), ['fa', 'ps', 'pa'], true);
+
+        return $useLocal && filled($this->local_name)
+            ? $this->local_name
+            : (string) $this->name;
+    }
+
+    /**
+     * Label for currency pickers: "USD - US Dollar" (or the localized name).
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return trim("{$this->code} - {$this->localized_name}");
+    }
+
     public static function defaultCurrencies(): array
     {
         return [
             'AFN' => [
                 'name' => 'Afghanistan, Afghani',
+                'local_name' => 'افغانی',
                 'code' => 'AFN',
                 'symbol' => '؋',
                 'format' => '؋1,0.00',
@@ -93,6 +126,7 @@ class Currency extends Model
             ],
             'USD' => [
                 'name' => 'US Dollar',
+                'local_name' => 'دالر امریکایی',
                 'code' => 'USD',
                 'symbol' => '$',
                 'format' => '$1,0.00',
@@ -103,6 +137,7 @@ class Currency extends Model
             ],
             'IRR' => [
                 'name' => 'Iranian Rial',
+                'local_name' => 'ریال ایران',
                 'code' => 'IRR',
                 'symbol' => '﷼',
                 'format' => '﷼ 1,0/00',
@@ -113,6 +148,7 @@ class Currency extends Model
             ],
             'INR' => [
                 'name' => 'Indian Rupee',
+                'local_name' => 'روپیه هند',
                 'code' => 'INR',
                 'symbol' => '₹',
                 'format' => '1,0.00₹',
@@ -1229,11 +1265,16 @@ class Currency extends Model
     public static function currencySelectionOptions(): array
     {
         return collect(static::currencyList())
-            ->map(fn (array $currency, string $code) => [
-                'id' => $code,
-                'name' => "{$code} - {$currency['name']}",
-                'code' => $code,
-            ])
+            ->map(function (array $currency, string $code) {
+                $label = "{$code} - {$currency['name']}";
+
+                return [
+                    'id' => $code,
+                    'name' => $label,
+                    'display_name' => $label,
+                    'code' => $code,
+                ];
+            })
             ->values()
             ->all();
     }
@@ -1241,9 +1282,11 @@ class Currency extends Model
     public static function attributesFromListCode(string $code): array
     {
         $currency = static::currencyList()[$code] ?? [];
+        $localName = static::defaultCurrencies()[$code]['local_name'] ?? null;
 
         return [
             'name' => $currency['name'] ?? null,
+            'local_name' => $localName,
             'code' => $code,
             'symbol' => $currency['symbol'] ?? null,
             'format' => $currency['format'] ?? null,

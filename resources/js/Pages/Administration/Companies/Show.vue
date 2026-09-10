@@ -267,7 +267,7 @@ const getDisplayValue = (field) => {
     }
     if (field === 'currency_id') {
         const option = props.currencies.data.find(currency => currency.id === value);
-        return props.company.currency?.name || value;
+        return props.company.currency?.display_name || option?.display_name || props.company.currency?.name || value;
     }
     if (field === 'costing_method') {
         const option = props.costingMethods.find(method => method.id === value);
@@ -629,7 +629,7 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         :options="currencies.data"
                                         v-model="form.selected_currency"
-                                        label-key="name"
+                                        label-key="display_name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                         :reduce="currency => currency.id"

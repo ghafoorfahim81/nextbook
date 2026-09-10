@@ -106,7 +106,7 @@ class SaleController extends Controller
             'sales' => SaleListResource::collection($sales),
             'filterOptions' => [
                 'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'types' => [
                     ['id' => 'cash', 'name' => 'Cash'],

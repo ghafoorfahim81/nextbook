@@ -19,6 +19,7 @@ const { t } = useI18n()
 
 const columns = computed(() => ([ 
     { key: 'name', label: t('general.name'), sortable: true },
+    { key: 'local_name', label: t('admin.currency.local_name'), sortable: true, render: (row) => row.local_name || '-' },
     { key: 'code', label: t('admin.currency.code'), sortable: true },
     { key: 'exchange_rate', label: t('admin.currency.exchange_rate'), sortable: true },
     {
