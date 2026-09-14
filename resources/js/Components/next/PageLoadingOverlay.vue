@@ -56,8 +56,27 @@ function isPreferencesMutation(event) {
     }
 }
 
+// The overlay is a *navigation* affordance — it tells the operator the page is
+// being replaced. A screen that saves in place (the fast entry / fast opening
+// grids) stays exactly where it is, so covering it with a full-screen book
+// loader just hides the work. Those requests opt out with this header and show
+// their own in-button progress instead.
+function isSilentVisit(event) {
+    try {
+        const headers = event?.detail?.visit?.headers ?? {}
+        return headers['X-Silent-Loader'] === '1'
+    } catch {
+        return false
+    }
+}
+
 function handleStart(event) {
-    if (isSamePageReportsRefresh(event) || isDataTableRefresh(event) || isPreferencesMutation(event)) return
+    if (
+        isSamePageReportsRefresh(event)
+        || isDataTableRefresh(event)
+        || isPreferencesMutation(event)
+        || isSilentVisit(event)
+    ) return
 
     clearTimeout(hideTimer)
     clearTimeout(showTimer)

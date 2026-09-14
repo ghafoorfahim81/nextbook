@@ -420,14 +420,16 @@
         "weekly_financial_summary_desc": "اونیز مالي کتنه ترلاسه کړئ",
         "sound": {
             "title": "غږونه",
-            "description": "د خبرتیا، خبرداری او ننوتلو لپاره غږ وټاکئ، یا خپل غږ اپلوډ کړئ",
+            "description": "وټاکئ چې د خبرتیا، خبرداري، بریالي ثبت او ننوتلو لپاره کوم غږ وغږېږي، یا خپل غږ پورته کړئ",
             "categories": {
                 "notification": "د خبرتیا غږ",
                 "notification_desc": "کله چې نوې خبرتیا راشي غږیږي",
                 "warning": "د خبرداری غږ",
                 "warning_desc": "د خبرداریو لپاره غږیږي",
                 "login": "د ننوتلو غږ",
-                "login_desc": "د بریالي ننوتلو وروسته غږیږي"
+                "login_desc": "د بریالي ننوتلو وروسته غږیږي",
+                "success": "د بریا غږ",
+                "success_desc": "کله چې یو څه بریالي ثبت شي غږېږي"
             },
             "choose_sound": "یو غږ وټاکئ",
             "preview": "مخکتنه",
@@ -443,7 +445,12 @@
                 "warning1": "Alert",
                 "windowsxp_warning2": "Classic Warning",
                 "login1": "Welcome",
-                "login2": "Greeting"
+                "login2": "Greeting",
+                "glass-breaking-warning": "د ښیښې ماتېدل",
+                "filling-your-inbox-success": "د صندوق زنګ",
+                "freesound_community-success-1-6297": "روښانه بریا",
+                "universfield-level-up-success-03-199576": "کچه لوړېدل",
+                "universfield-success-notification-037-485898": "نرمه بریا"
             }
         }
     },

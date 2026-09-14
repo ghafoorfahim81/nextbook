@@ -4,7 +4,7 @@ namespace App\Support\Preferences;
 
 final class SoundOptions
 {
-    public const CATEGORIES = ['notification', 'warning', 'login'];
+    public const CATEGORIES = ['notification', 'warning', 'success', 'login'];
 
     private const SOUNDS = [
         'notification' => [
@@ -15,6 +15,13 @@ final class SoundOptions
         'warning' => [
             ['id' => 'warning1', 'name' => 'preferences.notifications.sound.options.warning1', 'filename' => 'warning1.mp3'],
             ['id' => 'windowsxp_warning2', 'name' => 'preferences.notifications.sound.options.windowsxp_warning2', 'filename' => 'windowsxp_warning2.mp3'],
+            ['id' => 'glass-breaking-warning', 'name' => 'preferences.notifications.sound.options.glass-breaking-warning', 'filename' => 'glass-breaking-warning.mp3'],
+        ],
+        'success' => [
+            ['id' => 'filling-your-inbox-success', 'name' => 'preferences.notifications.sound.options.filling-your-inbox-success', 'filename' => 'filling-your-inbox-success.mp3'],
+            ['id' => 'freesound_community-success-1-6297', 'name' => 'preferences.notifications.sound.options.freesound_community-success-1-6297', 'filename' => 'freesound_community-success-1-6297.mp3'],
+            ['id' => 'universfield-level-up-success-03-199576', 'name' => 'preferences.notifications.sound.options.universfield-level-up-success-03-199576', 'filename' => 'universfield-level-up-success-03-199576.mp3'],
+            ['id' => 'universfield-success-notification-037-485898', 'name' => 'preferences.notifications.sound.options.universfield-success-notification-037-485898', 'filename' => 'universfield-success-notification-037-485898.mp3'],
         ],
         'login' => [
             ['id' => 'login1', 'name' => 'preferences.notifications.sound.options.login1', 'filename' => 'login1.mp3'],
@@ -25,6 +32,7 @@ final class SoundOptions
     private const DEFAULTS = [
         'notification' => 'notification1',
         'warning' => 'warning1',
+        'success' => 'filling-your-inbox-success',
         'login' => 'login1',
     ];
 

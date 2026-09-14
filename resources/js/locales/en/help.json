@@ -140,11 +140,42 @@
     },
     "fast_opening": {
       "title": "Fast Opening (Items) — Tips",
-      "description": "Enter opening quantities for many items quickly.",
-      "items": [
-        "Use Fast Opening only for the first-time opening/migration; after go-live, use purchases, transfers, and adjustments.",
-        "Always select the correct Store; openings are store-specific.",
-        "For batch/expiry managed items, fill Batch + Expiry consistently to avoid duplicate/merged stock lines."
+      "description": "Record the stock you already hold, for every item that has no opening balance yet. An item leaves this list the moment its opening is posted.",
+      "sections": [
+        {
+          "heading": "What this screen is for",
+          "items": [
+            "Opening stock is a one-time, go-live figure: what is physically on your shelves on the day you start using the system.",
+            "After this, stock only moves through purchase, sale, transfer and adjustment — never come back here to correct a quantity.",
+            "Only items with no opening yet are listed, so an item cannot be opened twice.",
+            "Leave the opening amount empty on anything you are not counting. Those rows are skipped, so you never have to delete them."
+          ]
+        },
+        {
+          "heading": "Filling it in",
+          "items": [
+            "Arrow keys move between cells, Enter jumps to the next row, and Tab to the next column. On the expiry cell, Enter opens the calendar.",
+            "Typing an opening amount selects the main warehouse for that row; change it when the stock sits somewhere else.",
+            "Batch and expiry only accept typing on items that are tracked that way. On the rest they stay closed.",
+            "Use the search box to find one item in a long list — it filters the rows without losing anything you have already typed."
+          ]
+        },
+        {
+          "heading": "Cost",
+          "items": [
+            "Final cost is what one unit really costs you — the purchase price plus freight, duty and clearing.",
+            "It is what the stock is valued at, and what the accounting entry is worth, so it drives the item average cost from day one.",
+            "A counted row needs a cost. Stock booked at zero shows a profit on the first sale that never existed."
+          ]
+        },
+        {
+          "heading": "What posting does",
+          "items": [
+            "Each counted row creates a stock movement into the warehouse you chose, and a balanced opening-balance voucher: inventory is debited, opening-balance equity is credited.",
+            "Only the rows on the page you are looking at are saved. Finish a page, save it, then move to the next.",
+            "Batch and expiry are part of what identifies a stock lot, so enter them consistently — the same lot typed two ways becomes two separate stock lines."
+          ]
+        }
       ]
     },
     "transfer": {

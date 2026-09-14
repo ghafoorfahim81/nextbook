@@ -256,5 +256,20 @@
     "with_opening_stock": "With opening stock",
     "opening_value": "Opening value",
     "expiry_placeholder": "Pick a date",
-    "expiry_open_hint": "Press Enter or click to open the calendar"
+    "expiry_open_hint": "Press Enter or click to open the calendar",
+    "fast_opening_tips_title": "Before you start",
+    "fast_opening_tip_scope": "This screen sets the stock you already hold, for items that have no opening yet. An item disappears from the list once its opening is posted.",
+    "fast_opening_tip_once": "Opening stock is a one-time, go-live figure. After this, stock only moves through purchase, sale, transfer and adjustment.",
+    "fast_opening_tip_skip": "Leave the opening amount empty on anything you are not counting — those rows are skipped, so you never have to delete them.",
+    "fast_opening_tip_cost": "Final cost is what one unit really costs you — the purchase price plus freight, duty and clearing. It values the stock and the accounting entry it creates.",
+    "fast_opening_tip_keyboard": "Arrow keys move between cells, Enter jumps to the next row, and Tab to the next column. On the expiry cell, Enter opens the calendar.",
+    "fast_opening_tip_locked": "Batch and expiry only accept typing on items that are tracked that way; on the rest they stay closed.",
+    "fast_opening_tip_page": "Only the rows on this page are saved. Finish a page, save it, then move on to the next.",
+    "confirm_opening_title": "Post these opening balances?",
+    "confirm_opening_description": "You are about to post opening stock for {items} item(s), worth {value}. This creates stock movements and a balanced opening-balance voucher, and it cannot be undone from this screen.",
+    "items_to_post": "Items to post",
+    "counted_rows": "Counted",
+    "cost_required_in_row": "Row {row}: enter the final cost for the opening amount.",
+    "no_opening_to_save": "Enter an opening amount on at least one item.",
+    "fast_opening_done": "Every item already has an opening balance. There is nothing left to enter here."
 }

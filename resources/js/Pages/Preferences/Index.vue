@@ -438,7 +438,7 @@ const savePlugins = () => {
     })
 }
 
-const soundCategories = ['notification', 'warning', 'login']
+const soundCategories = ['notification', 'warning', 'success', 'login']
 const soundUploading = ref('')
 const soundRemoving = ref('')
 const soundFileInputs = {}

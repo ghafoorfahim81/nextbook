@@ -15,6 +15,7 @@ import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import VariantEditor from '@/Components/inventory/VariantEditor.vue'
 import ItemDetailFields from '@/Components/inventory/ItemDetailFields.vue'
 import { useBusinessProfile } from '@/composables/useBusinessProfile'
+import { useSoundPreferences } from '@/composables/useSoundPreferences'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import { Trash2, AlertCircleIcon } from 'lucide-vue-next'
@@ -26,6 +27,7 @@ import {
 } from '@/Components/ui/alert'
 const nameInputRef = ref(null)
 const { t } = useI18n()
+const { play } = useSoundPreferences()
 // keep props reactive
 const props = defineProps({
     warehouses: { type: [Array, Object], required: true },
@@ -426,6 +428,9 @@ const handleSubmitAction = (createAndNew = false) => {
     // Always show toast on success, regardless of which button is used
     const postOptions = {
         onSuccess: () => {
+            // Follows preferences → notifications → sound → success, and stays
+            // silent when the operator has switched that slot off.
+            play('success')
             toast.success(t('general.success'), {
                 description: t('general.create_success', { name: t('item.item') }),
                 class: 'bg-green-600',

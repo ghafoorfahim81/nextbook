@@ -420,14 +420,16 @@
         "weekly_financial_summary_desc": "Receive weekly financial overview",
         "sound": {
             "title": "Sounds",
-            "description": "Choose which sound plays for notifications, warnings and sign-in, or upload your own",
+            "description": "Choose which sound plays for notifications, warnings, successful saves and sign-in, or upload your own",
             "categories": {
                 "notification": "Notification Sound",
                 "notification_desc": "Plays when a new notification arrives",
                 "warning": "Warning Sound",
                 "warning_desc": "Plays for warning alerts",
                 "login": "Sign-in Sound",
-                "login_desc": "Plays after you sign in successfully"
+                "login_desc": "Plays after you sign in successfully",
+                "success": "Success Sound",
+                "success_desc": "Plays when something you saved goes through"
             },
             "choose_sound": "Choose a sound",
             "preview": "Preview",
@@ -443,7 +445,12 @@
                 "warning1": "Alert",
                 "windowsxp_warning2": "Classic Warning",
                 "login1": "Welcome",
-                "login2": "Greeting"
+                "login2": "Greeting",
+                "glass-breaking-warning": "Shattered Glass",
+                "filling-your-inbox-success": "Inbox Chime",
+                "freesound_community-success-1-6297": "Bright Success",
+                "universfield-level-up-success-03-199576": "Level Up",
+                "universfield-success-notification-037-485898": "Gentle Success"
             }
         }
     },
