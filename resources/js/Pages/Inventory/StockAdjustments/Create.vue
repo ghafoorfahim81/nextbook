@@ -4,7 +4,6 @@ import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { h, ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useColors } from '@/composables/useColors';
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { ToastAction } from '@/Components/ui/toast'
 import axios from 'axios'
@@ -20,7 +19,6 @@ import { useSidebar } from '@/Components/ui/sidebar/utils'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 
 const { t } = useI18n()
-const { colorOptions } = useColors()
 const { toast } = useToast()
 
 const props = defineProps({
@@ -31,7 +29,6 @@ const page = usePage()
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
-const sizeOptions = computed(() => page.props.sizes?.data || page.props.sizes || [])
 const userPreferences = computed(() => page.props.user_preferences || {})
 const allowInCostOverride = computed(
   () => userPreferences.value?.stock_adjustment?.allow_in_cost_override ?? true
@@ -48,9 +45,11 @@ const createEmptyRow = () => ({
   selected_measure: null,
   batch: '',
   selected_batch: null,
-  color: null,
-  size_id: null,
-  selected_size: null,
+  // Which sellable variant this line moved. Every item has at least one, so
+  // item_variants always has a row to default to once an item is picked.
+  variant_id: null,
+  selected_variant: null,
+  item_variants: [],
   expire_date: '',
   unit_cost: '',
   base_unit_cost: '',
@@ -152,6 +151,17 @@ const applyUnitCost = (row) => {
   row.unit_cost = (baseCost / baseUnit) * selectedUnit
 }
 
+// A variant priced on its own (item_variants.avg_cost / purchase_price) wins;
+// otherwise this is the item's own cost — the same "total" figure shown
+// before a variant existed to pick.
+const resolveBaseUnitCost = (item, variant) => {
+  const variantCost = variant?.avg_cost ?? variant?.purchase_price
+  if (variantCost !== null && variantCost !== undefined && Number(variantCost) > 0) {
+    return Number(variantCost)
+  }
+  return item?.avg_cost ?? item?.purchase_price ?? 0
+}
+
 const handleItemChange = (index, selectedItem) => {
   const row = form.items[index]
   if (!row) return
@@ -163,11 +173,14 @@ const handleItemChange = (index, selectedItem) => {
   row.selected_measure = selectedItem.unitMeasure || null
   row.unit_measure_id = selectedItem.unitMeasure?.id || ''
   row.item_id = selectedItem.id
-  row.base_unit_cost = selectedItem.avg_cost ?? selectedItem.purchase_price ?? 0
   row.selected_batch = null
   row.batch = ''
   row.expire_date = ''
   row.quantity = 1
+  row.item_variants = selectedItem.item_variants || []
+  row.selected_variant = row.item_variants.find(v => v.is_default) || row.item_variants[0] || null
+  row.variant_id = row.selected_variant?.id || null
+  row.base_unit_cost = resolveBaseUnitCost(selectedItem, row.selected_variant)
   applyUnitCost(row)
 
   // Add a new empty row only when selecting into the last row
@@ -186,6 +199,16 @@ function handleBatchChange(index, batch) {
   notifyIfDuplicate(index)
 }
 
+function handleVariantChange(index, variant) {
+  const row = form.items[index]
+  if (!row) return
+  row.selected_variant = variant ?? null
+  row.variant_id = variant?.id || null
+  row.base_unit_cost = resolveBaseUnitCost(row.selected_item, row.selected_variant)
+  applyUnitCost(row)
+  notifyIfDuplicate(index)
+}
+
 // Duplicate line detection (same item + batch + expiry + unit), mirroring the
 // sale create table: a persistent toast with an "unselect" action, and the
 // submit buttons stay disabled while a duplicate exists.
@@ -195,6 +218,7 @@ const buildRowKey = (r) => {
     || ''
   return [
     (r.item_id || r.selected_item?.id || '').toString(),
+    (r.variant_id || r.selected_variant?.id || '').toString(),
     (r.batch || '').toString().trim().toLowerCase(),
     (r.expire_date || '').toString().trim(),
     measureId.toString(),
@@ -255,10 +279,21 @@ const notifyIfDuplicate = (index) => {
   }
 }
 
+// A batch pick is the most specific figure and wins when present. Otherwise,
+// a variant with stock actually recorded against it shows that; everything
+// else (no variant, or one nothing has been received against yet) falls back
+// to the item's total on-hand.
+const rowOnHandBase = (row) => {
+  const variantOnHand = (!row.selected_batch && row.selected_variant?.has_stock)
+    ? row.selected_variant.on_hand
+    : null
+  return Number(variantOnHand ?? row?.selected_batch?.on_hand ?? row.selected_item?.on_hand) || 0
+}
+
 function onhand(index) {
   const row = form.items[index]
   if (!row || !row.selected_item) return ''
-  const onHand = Number(row?.selected_batch?.on_hand ?? row.selected_item.on_hand) || 0
+  const onHand = rowOnHandBase(row)
   const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
   const converted = (onHand * baseUnit) / selectedUnit
@@ -303,7 +338,7 @@ const outQuantityError = computed(() => {
   if (!isOut.value) return false
   return form.items.some((row) => {
     if (!row.selected_item || !row.quantity) return false
-    const onHand = Number(row?.selected_batch?.on_hand ?? row.selected_item.on_hand) || 0
+    const onHand = rowOnHandBase(row)
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
     return toNum(row.quantity, 0) > (onHand * baseUnit) / selectedUnit
@@ -335,11 +370,13 @@ function handleSubmit(createAndNew = false) {
     .filter(row => row.item_id)
     .map(row => ({
       item_id: row.item_id,
+      // Which sellable variant this line moved — defaults to the item's own
+      // default variant once it's picked, so this is only null for a row the
+      // user never touched (the server fills in the default in that case).
+      variant_id: row.variant_id || row.selected_variant?.id || null,
       quantity: row.quantity,
       unit_measure_id: row.selected_measure?.id || row.unit_measure_id,
       batch: row.batch || '',
-      color: row.color || null,
-      size_id: row.selected_size?.id || row.size_id || null,
       expire_date: row.expire_date || null,
       // OUT cost always comes from the costing engine on the server.
       unit_cost: costEditable.value ? (row.unit_cost || null) : null,
@@ -466,8 +503,7 @@ useFormGuard(form)
               <th class="px-1 py-1 w-5 min-w-5">#</th>
               <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
-              <th class="px-1 py-1 w-32">{{ t('item.color') }}</th>
-              <th class="px-1 py-1 w-28">{{ t('item.size') }}</th>
+              <th class="px-1 py-1 w-36">{{ t('item.variant') }}</th>
               <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
               <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
@@ -516,46 +552,22 @@ useFormGuard(form)
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
-                  v-model="item.color"
-                  :options="colorOptions"
-                  label-key="name"
+                  v-if="(item.item_variants?.length || 0) > 1"
+                  :model-value="item.selected_variant"
+                  :options="item.item_variants"
+                  label-key="display_name"
                   value-key="id"
-                  :reduce="o => o.id"
+                  :reduce="v => v"
                   :disabled="!item.selected_item"
-                  :id="`adj_color_${index}`"
+                  :id="`adj_variant_${index}`"
                   :placeholder="t('general.select')"
                   :show-arrow="false"
                   :append-to-body="true"
-                  :error="form.errors?.[`items.${index}.color`]"
-                >
-                  <template #option="{ name, hex }">
-                    <span class="flex items-center gap-2">
-                      <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
-                      <span>{{ name }}</span>
-                    </span>
-                  </template>
-                  <template #selected-option="{ name, hex }">
-                    <span class="flex items-center gap-1.5">
-                      <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
-                      <span>{{ name }}</span>
-                    </span>
-                  </template>
-                </NextSelect>
-              </td>
-              <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                <NextSelect
-                  v-model="item.selected_size"
-                  :options="sizeOptions"
-                  label-key="name"
-                  value-key="id"
-                  :reduce="s => s"
-                  :disabled="!item.selected_item"
-                  :id="`adj_size_${index}`"
-                  :placeholder="t('general.select')"
-                  :show-arrow="false"
-                  :append-to-body="true"
-                  :error="form.errors?.[`items.${index}.size_id`]"
+                  :error="form.errors?.[`items.${index}.variant_id`]"
+                  @update:modelValue="value => handleVariantChange(index, value)"
                 />
+                <!-- A plain product has one variant — nothing to choose. -->
+                <span v-else-if="item.selected_item" class="text-sm text-muted-foreground">—</span>
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextDate
@@ -619,9 +631,10 @@ useFormGuard(form)
               <td class="text-center">{{ totalRows }}</td>
               <td></td>
               <td></td>
+              <td></td>
               <td class="text-center">{{ totalQuantity || 0 }}</td>
               <td></td>
-              <td class="text-center"></td>
+              <td></td>
               <td></td>
               <td class="text-center">{{ totalAmount.toFixed(2) }}</td>
               <td></td>

@@ -19,6 +19,7 @@ class StockAdjustmentItem extends Model
     protected $fillable = [
         'stock_adjustment_id',
         'item_id',
+        'variant_id',
         'unit_measure_id',
         'quantity',
         'unit_cost',
@@ -37,6 +38,7 @@ class StockAdjustmentItem extends Model
         return [
             'stock_adjustment_id' => 'string',
             'item_id' => 'string',
+            'variant_id' => 'string',
             'unit_measure_id' => 'string',
             'quantity' => 'float',
             'unit_cost' => 'float',
@@ -57,6 +59,12 @@ class StockAdjustmentItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /** Which sellable variant this line moved — every item has at least one. */
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ItemVariant::class, 'variant_id');
     }
 
     public function unitMeasure(): BelongsTo

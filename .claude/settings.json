@@ -9,7 +9,8 @@
       "PowerShell(php artisan test tests/Feature/Inventory 2>&1)",
       "PowerShell(php artisan test --% tests/Feature/Inventory/BarcodePrintTest.php --filter=search_returns_variants 2>&1 | Select-String -Pattern \"Exception|Error|\\\\.php:\" | Select-Object -First 12)",
       "PowerShell(php artisan test tests/Feature/Inventory/BarcodePrintTest.php 2>&1)",
-      "Bash(node -p \"require\\('./node_modules/jsbarcode/package.json'\\).version\")"
+      "Bash(node -p \"require\\('./node_modules/jsbarcode/package.json'\\).version\")",
+      "PowerShell(php artisan test tests/Feature/Inventory/StockAdjustmentVariantTest.php 2>&1)"
     ],
     "defaultMode": "acceptEdits"
   }

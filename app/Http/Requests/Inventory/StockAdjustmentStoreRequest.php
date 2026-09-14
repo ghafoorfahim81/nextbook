@@ -30,6 +30,9 @@ class StockAdjustmentStoreRequest extends FormRequest
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', 'string', 'exists:items,id'],
+            // Every item carries at least one variant; a caller that does not resolve
+            // one gets the item's default filled in server-side.
+            'items.*.variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
             'items.*.unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'items.*.unit_cost' => ['nullable', 'numeric', 'min:0'],

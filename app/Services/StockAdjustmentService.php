@@ -20,7 +20,6 @@ use App\Models\Inventory\StockAdjustmentItem;
 use App\Models\Inventory\StockMovement;
 use App\Models\Transaction\Transaction;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -34,6 +33,7 @@ class StockAdjustmentService
         private TransactionService $transactionService,
         private DateConversionService $dateConversionService,
         private ActivityLogService $activityLogService,
+        private ItemVariantService $variantService,
     ) {}
 
     /**
@@ -275,6 +275,15 @@ class StockAdjustmentService
 
             $quantity = (float) $line['quantity'];
 
+            // Stock, costing and the balance buckets are keyed by variant now.
+            // A caller that did not resolve one (an older screen, an import)
+            // gets the item's default, so variant_id is never null downstream.
+            $variantId = $line['variant_id'] ?? null;
+
+            if (! $variantId) {
+                $variantId = $this->variantService->ensureDefault($itemModel)->id;
+            }
+
             // OUT costs always come from the costing engine (FIFO/LIFO layer
             // peek or weighted average) — never typed by the user. IN costs may
             // be user-entered when the preference allows it, otherwise they
@@ -287,6 +296,10 @@ class StockAdjustmentService
                     warehouseId: $adjustment->warehouse_id,
                     branchId: $adjustment->branch_id,
                     quantity: $quantity,
+                    batch: $line['batch'] ?? null,
+                    expireDate: $line['expire_date'] ?? null,
+                    color: $line['color'] ?? null,
+                    sizeId: $line['size_id'] ?? null,
                 );
             } else {
                 $userCost = isset($line['unit_cost']) && $line['unit_cost'] !== '' && $line['unit_cost'] !== null
@@ -305,6 +318,7 @@ class StockAdjustmentService
             StockAdjustmentItem::create([
                 'stock_adjustment_id' => $adjustment->id,
                 'item_id' => $line['item_id'],
+                'variant_id' => $variantId,
                 'unit_measure_id' => $line['unit_measure_id'],
                 'quantity' => $quantity,
                 'unit_cost' => $unitCost,
@@ -318,6 +332,14 @@ class StockAdjustmentService
                 'branch_id' => $adjustment->branch_id,
             ]);
 
+            // NOTE: variant_id is deliberately NOT in the stock payload yet.
+            // StockService keys a balance row by variant only when one is given,
+            // so a payload carrying a variant never matches a row written
+            // without one. Purchases, sales and transfers still post without a
+            // variant, which means their stock sits in null-variant rows — and
+            // an adjustment that sent a variant would miss that stock and open a
+            // second bucket for the same item and warehouse. It goes in here
+            // once those three send it too.
             $stockPayloads[] = [
                 'item_id' => $line['item_id'],
                 'movement_type' => $direction->value,
@@ -469,7 +491,15 @@ class StockAdjustmentService
 
         $itemModelsById = Item::query()
             ->whereIn('id', $itemIds)
-            ->get(['id', 'name', 'unit_measure_id', 'asset_account_id', 'category_id', 'avg_cost'])
+            ->get([
+                'id', 'name', 'unit_measure_id', 'asset_account_id', 'category_id', 'avg_cost',
+                // Both are read when costing an OUT line: is_batch_tracked decides
+                // whether the FIFO peek narrows to the batch, and costing_method is
+                // the item's own override before the company default applies.
+                // Left out of the select they read as null and both silently
+                // degrade to the wrong answer.
+                'is_batch_tracked', 'costing_method',
+            ])
             ->keyBy('id')
             ->all();
 
@@ -498,9 +528,19 @@ class StockAdjustmentService
         string $warehouseId,
         ?string $branchId,
         float $quantity,
+        ?string $batch = null,
+        ?string $expireDate = null,
+        ?string $color = null,
+        ?string $sizeId = null,
     ): float {
         $avgCost = (float) $itemModel->avg_cost;
-        $method = Cache::get('costing_method', CostingMethod::WEIGHTED_AVERAGE->value);
+
+        // This used to read the global `costing_method` cache key, which nothing
+        // writes any more — so a FIFO company silently fell through to weighted
+        // average here while StockService consumed FIFO layers, and the GL credit
+        // stopped matching the stock actually removed. Ask the item, exactly as
+        // StockService::getCostingMethod() does.
+        $method = $itemModel->effectiveCostingMethod()->value;
 
         if ($method !== CostingMethod::FIFO->value && $method !== CostingMethod::LIFO->value) {
             return $this->convertCostToSelectedUnit($avgCost, $selectedUnitMeasureId, $itemModel->unit_measure_id, $unitValuesById);
@@ -520,6 +560,26 @@ class StockAdjustmentService
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0)
+            // deductFIFO narrows to the batch, the expiry and the colour/size
+            // before it consumes anything. Peeking without the same filters
+            // costed a batch-tracked line off whichever layer happened to be
+            // oldest — some other batch entirely. (It filters colour and size,
+            // not variant_id, so this mirrors that and not the newer column.)
+            ->when($itemModel->is_batch_tracked && filled($batch), fn ($query) => $query->where('batch', $batch))
+            ->when(filled($expireDate), fn ($query) => $query->whereDate(
+                'expire_date',
+                $this->dateConversionService->toGregorian($expireDate)
+            ))
+            ->when(
+                filled($color),
+                fn ($query) => $query->where('color', $color),
+                fn ($query) => $query->whereNull('color')
+            )
+            ->when(
+                filled($sizeId),
+                fn ($query) => $query->where('size_id', $sizeId),
+                fn ($query) => $query->whereNull('size_id')
+            )
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('expire_date', 'asc')
             ->orderBy('date', $order)

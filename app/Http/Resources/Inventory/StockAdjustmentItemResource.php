@@ -26,7 +26,33 @@ class StockAdjustmentItemResource extends JsonResource
                 'name' => $this->item->name,
                 'code' => $this->item->code,
                 'unit_measure_id' => $this->item->unit_measure_id,
+                // The item's full variant list, so the edit form can offer a
+                // different variant on this line without re-searching for the
+                // item first. Requires `items.item.variants` to be eager loaded.
+                'variants' => $this->item->relationLoaded('variants')
+                    ? $this->item->variants->map(fn ($v) => [
+                        'id' => $v->id,
+                        'sku' => $v->sku,
+                        'barcode' => $v->barcode,
+                        'display_name' => $v->displayName(),
+                        'is_default' => (bool) $v->is_default,
+                    ])->values()
+                    : [],
             ]),
+            'variant_id' => $this->variant_id,
+            'variant' => $this->whenLoaded('variant', fn () => [
+                'id' => $this->variant->id,
+                'display_name' => $this->variant->displayName(),
+                'sku' => $this->variant->sku,
+                'barcode' => $this->variant->barcode,
+            ]),
+            // Blank for a plain product, whose lone default variant is the item
+            // itself and needs no second label on the line.
+            'variant_label' => $this->whenLoaded('variant', function () {
+                $label = (string) $this->variant->displayName();
+
+                return $label === (string) $this->item?->name ? '' : $label;
+            }),
             'unit_measure_id' => $this->unit_measure_id,
             'unit_measure' => $this->whenLoaded('unitMeasure', fn () => [
                 'id' => $this->unitMeasure->id,
