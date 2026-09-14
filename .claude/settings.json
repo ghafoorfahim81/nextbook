@@ -1,12 +1,13 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
       "Bash(php artisan *)",
       "Bash(curl localhost:*)",
       "Bash(curl 127.0.0.1:*)",
       "Bash(npm *)",
-      "Bash(git *)"
-    ]
+      "Bash(git *)",
+      "PowerShell(php artisan test tests/Feature/Inventory 2>&1)"
+    ],
+    "defaultMode": "acceptEdits"
   }
 }

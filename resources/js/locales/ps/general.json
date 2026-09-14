@@ -224,5 +224,7 @@
   "payment_mode": "د تادیې طریقه",
   "bank_account": "د بانک/نقدي حساب",
   "cheque_no": "د چک شمېره",
-  "narration": "یادونه"
+  "narration": "یادونه",
+  "saving": "خوندي کېږي...",
+  "required_field": "دا ساحه اړینه ده."
 }

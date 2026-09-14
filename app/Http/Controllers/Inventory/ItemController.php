@@ -93,10 +93,7 @@ class ItemController extends Controller
 
     public function create()
     {
-        // Get the maximum code as integer (cast to handle mixed formats like "3" and "004")
-        $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')->whereNull('deleted_at')
-        ->value('max_code');
-        $maxCode = $maxCode ? intval($maxCode) + 1 : 1;
+        $maxCode = Item::nextCodeNumber();
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
