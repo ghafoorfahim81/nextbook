@@ -119,6 +119,7 @@ class StockAdjustmentController extends Controller
         $stockAdjustment->load([
             'warehouse',
             'items.item',
+            'items.variant',
             'items.unitMeasure',
             'branch',
             'transaction.currency',
@@ -154,6 +155,8 @@ class StockAdjustmentController extends Controller
         $stockAdjustment->load([
             'warehouse',
             'items.item.unitMeasure',
+            'items.item.variants',
+            'items.variant',
             'items.unitMeasure',
             'attachments',
         ]);

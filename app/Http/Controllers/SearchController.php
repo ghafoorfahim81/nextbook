@@ -391,7 +391,14 @@ class SearchController extends Controller
                 'purchase_price', 'sale_price', 'margin_percentage', 'rate_a', 'rate_b', 'rate_c', 'rack_no', 'fast_search',
                 'avg_cost',
             ])
-            ->with(['unitMeasure', 'brand', 'category', 'size'])
+            ->with([
+                'unitMeasure', 'brand', 'category', 'size',
+                // The real item_variants rows — what a stock adjustment line now
+                // records instead of a colour/size pair. Kept separate from the
+                // `variants` key below, which is the legacy colour/size stock
+                // summary other callers of this endpoint still read.
+                'variants' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order'),
+            ])
             ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
                 $term = '%' . strtolower($searchTerm) . '%';
                 $query->where(function ($builder) use ($searchableFields, $term) {
@@ -437,7 +444,7 @@ class SearchController extends Controller
         $itemIds = $items->pluck('id')->all();
 
         $stockBalances = StockBalance::query()
-            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity', 'reserved_out', 'reserved_in', 'color', 'size_id'])
+            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity', 'reserved_out', 'reserved_in', 'color', 'size_id', 'variant_id'])
             ->with('size:id,name')
             ->where('warehouse_id', $warehouseId)
             ->whereIn('item_id', $itemIds)
@@ -453,6 +460,11 @@ class SearchController extends Controller
         $batchSummaries = [];
         $expirySummaries = [];
         $variantSummaries = [];
+        // Real item_variants balances — independent of the colour/size bucket
+        // above. Populated only once purchase/sale/transfer start writing
+        // variant_id onto stock movements; until then every entry is empty and
+        // the picker falls back to the item's total on-hand.
+        $variantIdSummaries = [];
         $nonBatchOnHand = 0;
         $nonBatchReservedOut = 0;
         $nonBatchReservedIn = 0;
@@ -485,6 +497,18 @@ class SearchController extends Controller
                 $variant['reserved_out'] += $reservedOut;
                 $variant['reserved_in'] += $reservedIn;
                 $variantSummaries[$variantKey] = $variant;
+            }
+
+            if ($balance->variant_id !== null) {
+                $variantIdSummary = $variantIdSummaries[$balance->variant_id] ?? [
+                    'on_hand' => 0,
+                    'reserved_out' => 0,
+                    'reserved_in' => 0,
+                ];
+                $variantIdSummary['on_hand'] += $onHand;
+                $variantIdSummary['reserved_out'] += $reservedOut;
+                $variantIdSummary['reserved_in'] += $reservedIn;
+                $variantIdSummaries[$balance->variant_id] = $variantIdSummary;
             }
 
             $batchKey = trim((string) ($balance->batch ?? ''));
@@ -616,6 +640,39 @@ class SearchController extends Controller
             'expiry_batches' => array_values($expiryBatches ?? []),
             'variants' => array_values($variants ?? []),
             'has_variants' => count($variants ?? []) > 0,
+            // The real item_variants rows — every item has at least one.
+            // Built without ItemVariant::displayName() to avoid an N+1: that
+            // method falls back to $this->item->name, which is already this row.
+            'item_variants' => $item->variants->map(function (\App\Models\Inventory\ItemVariant $v) use ($item, $variantIdSummaries, $availableFor) {
+                $label = filled($v->name)
+                    ? $v->name
+                    : collect($v->attributes ?? [])->filter()->values()->implode(' / ');
+
+                $stock = $variantIdSummaries[$v->id] ?? null;
+
+                return [
+                    'id' => $v->id,
+                    'sku' => $v->sku,
+                    'barcode' => $v->barcode,
+                    'display_name' => $label !== '' ? $label : $item->name,
+                    'is_default' => (bool) $v->is_default,
+                    'attributes' => $v->attributes,
+                    // The variant's own cost, when it has been priced separately
+                    // from the item — falls back to the item's cost otherwise.
+                    'avg_cost' => $v->avg_cost !== null && (float) $v->avg_cost > 0 ? (float) $v->avg_cost : null,
+                    'purchase_price' => $v->purchase_price !== null && (float) $v->purchase_price > 0 ? (float) $v->purchase_price : null,
+                    // Only set once stock has actually been recorded against this
+                    // variant specifically; null tells the picker to fall back to
+                    // the item's total on-hand rather than show a false zero.
+                    'on_hand' => $stock ? round($stock['on_hand'], 2) : null,
+                    'reserved_out' => $stock ? round($stock['reserved_out'], 2) : null,
+                    'available' => $stock ? $availableFor((float) $stock['on_hand'], (float) $stock['reserved_out']) : null,
+                    'has_stock' => (bool) $stock,
+                ];
+            })->values(),
+            'default_variant_id' => optional(
+                $item->variants->firstWhere('is_default', true) ?? $item->variants->first()
+            )->id,
             'on_hand' => $totalOnHand,
             'reserved_out' => $totalReservedOut,
             'reserved_in' => $totalReservedIn,
