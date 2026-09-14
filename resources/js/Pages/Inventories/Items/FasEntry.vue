@@ -21,12 +21,14 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert'
 import { useBusinessProfile } from '@/composables/useBusinessProfile'
 import { useFormGuard } from '@/composables/useFormGuard'
+import { useSoundPreferences } from '@/composables/useSoundPreferences'
 import { formatMoney } from '@/utils/money'
 import { Info, ListOrdered, Settings2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 import { useI18n } from 'vue-i18n'
 const { t, locale } = useI18n()
+const { play } = useSoundPreferences()
 import { useSidebar } from '@/Components/ui/sidebar/utils'
 import { ref, reactive, watch, onMounted, onUnmounted, computed, nextTick, toRef } from 'vue'
 
@@ -561,15 +563,10 @@ const rowOpeningValue = (row) => {
 const openingRows = computed(() => filledRows.value.filter((row) => Number(row.quantity) > 0))
 const openingValue = computed(() => filledRows.value.reduce((total, row) => total + rowOpeningValue(row), 0))
 
-const notifySound = (type) => {
-    const file = type === 'success' ? 'filling-your-inbox' : 'glass-breaking'
-    try {
-        const sound = new Audio(`/notify_sounds/${file}.mp3`)
-        sound.play().catch(() => {})
-    } catch (e) {
-        // Sound is a nicety; never let it break the save.
-    }
-}
+// Both sounds are the operator's own: they follow preferences → notifications →
+// sound, use whichever file they picked there, and stay silent when they have
+// switched that slot off.
+const notifySound = (type) => play(type === 'success' ? 'success' : 'warning')
 
 const confirmOpen = ref(false)
 
@@ -634,6 +631,9 @@ const submit = () => {
 
     form.post(route('item.fast.store'), {
         preserveScroll: true,
+        // The grid saves in place, so the full-screen navigation loader would
+        // only hide the rows being saved. The button shows the progress instead.
+        headers: { 'X-Silent-Loader': '1' },
         onSuccess: () => {
             const highestCode = rows.reduce((max, row) => {
                 const codeNum = Number(row.code) || 0

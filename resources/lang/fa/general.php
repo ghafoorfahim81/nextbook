@@ -58,6 +58,7 @@ return [
     'cancelled_successfully' => ':resource با موفقیت لغو شد.',
     'saved_successfully' => ':resource با موفقیت ذخیره شد.',
     'items_created_successfully' => 'آیتم‌ها با موفقیت ایجاد شدند.',
+    'nothing_to_save' => 'چیزی برای ذخیره نیست — حداقل برای یک جنس مقدار موجودی وارد کنید.',
     'items_saved_successfully' => 'آیتم‌ها با موفقیت ذخیره شدند.',
 
     // Field labels used as :attribute in validation messages (item fast entry).

@@ -203,6 +203,8 @@ use Illuminate\Validation\Rule;
             'notifications.sound.notification_choice' => ['sometimes', Rule::in([...SoundOptions::ids('notification'), 'custom'])],
             'notifications.sound.warning_enabled' => 'sometimes|boolean',
             'notifications.sound.warning_choice' => ['sometimes', Rule::in([...SoundOptions::ids('warning'), 'custom'])],
+            'notifications.sound.success_enabled' => 'sometimes|boolean',
+            'notifications.sound.success_choice' => ['sometimes', Rule::in([...SoundOptions::ids('success'), 'custom'])],
             'notifications.sound.login_enabled' => 'sometimes|boolean',
             'notifications.sound.login_choice' => ['sometimes', Rule::in([...SoundOptions::ids('login'), 'custom'])],
 
