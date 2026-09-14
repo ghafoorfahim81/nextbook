@@ -58,6 +58,7 @@ return [
     'cancelled_successfully' => ':resource cancelled successfully.',
     'saved_successfully' => ':resource saved successfully.',
     'items_created_successfully' => 'Items created successfully.',
+    'prices_updated' => ':count price(s) updated.',
     'nothing_to_save' => 'Nothing to save — enter an opening amount on at least one item.',
     'items_saved_successfully' => 'Items saved successfully.',
 

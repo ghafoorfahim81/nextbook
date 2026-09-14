@@ -385,6 +385,47 @@
           ]
         }
       ]
+    },
+    "item_pricing": {
+      "title": "Item Pricing — Tips",
+      "description": "Set sale prices across many products at once. Price lives on the variant, so a product with choices has one price per variant.",
+      "sections": [
+        {
+          "heading": "What is listed",
+          "items": [
+            "The ten newest variants are shown to start with — the things most likely to still need a price. Change the page size or search to reach anything else.",
+            "A product with real choices shows one row per variant, each with its own sale price. A plain product shows a single row with no variant label.",
+            "On hand, cost and purchase price are shown for context; only the sale price and margin can be typed."
+          ]
+        },
+        {
+          "heading": "Setting a price",
+          "items": [
+            "Type in the Sale Price box, or type a Margin % and the price is worked out from the cost.",
+            "Margin is measured against the average cost once stock has moved, and against the purchase price before that. A product with neither cannot take a margin.",
+            "A price below cost is flagged on the row. It is allowed — clearance happens — but it is never silent.",
+            "Arrow keys move between the price and margin boxes and up and down the rows."
+          ]
+        },
+        {
+          "heading": "Repricing a shelf at once",
+          "items": [
+            "Tick the rows you want, pick a bulk action and press Apply.",
+            "Pick Increase or Decrease, then Change by % to move the current price by a percentage, or Change by amount to shift it by a fixed sum. Enter the figure as a positive number — the direction decides which way it goes.",
+            "Set margin % recalculates each price from that row own cost, so a mixed shelf ends up at one consistent margin.",
+            "Round to nearest snaps prices to a step — 5 or 10 — which is how shelf prices are usually set."
+          ]
+        },
+        {
+          "heading": "Saving",
+          "items": [
+            "Nothing reaches the database until you press Save. Changed rows are highlighted and show old → new.",
+            "Save sends every change in one request and asks you to confirm the list first.",
+            "Revert throws away everything typed and puts the saved prices back.",
+            "Documents already posted keep the price they were saved with — repricing only affects what is sold from now on."
+          ]
+        }
+      ]
     }
   }
 }

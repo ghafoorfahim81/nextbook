@@ -58,6 +58,7 @@ return [
     'cancelled_successfully' => ':resource cancelled successfully.',
     'saved_successfully' => ':resource saved successfully.',
     'items_created_successfully' => 'Items created successfully.',
+    'prices_updated' => 'د :count قلم بیه تازه شوه.',
     'nothing_to_save' => 'د خوندي کولو لپاره څه نشته — لږ تر لږه د یوه جنس لپاره د پرانیستلو اندازه ولیکئ.',
     'items_saved_successfully' => 'Items saved successfully.',
 
