@@ -169,7 +169,7 @@ Route::middleware([
     Route::patch('/items/{item}/toggle-active', [\App\Http\Controllers\Inventory\ItemController::class, 'toggleActive'])->name('items.toggle-active');
     Route::patch('/items/{item}/restore', [\App\Http\Controllers\Inventory\ItemController::class, 'restore'])->name('items.restore')->withTrashed();
     Route::get('/item-pricing', [\App\Http\Controllers\Inventory\ItemPricingController::class, 'index'])->name('item-pricing.index');
-    Route::patch('/item-pricing/{item}', [\App\Http\Controllers\Inventory\ItemPricingController::class, 'update'])->name('item-pricing.update');
+    Route::patch('/item-pricing', [\App\Http\Controllers\Inventory\ItemPricingController::class, 'bulkUpdate'])->name('item-pricing.bulk-update');
     Route::delete('/items/{item}/force-delete', [\App\Http\Controllers\Inventory\ItemController::class, 'forceDelete'])
         ->name('items.force-delete')
         ->withTrashed();
