@@ -283,5 +283,7 @@
   "select_ledger_first": "ابتدا مشتری یا تأمین‌کننده را انتخاب کنید",
   "error_creating_sale_quotation": "ایجاد پیش‌فاکتور فروش ناموفق بود",
   "error_creating_purchase_quotation": "ایجاد پیش‌فاکتور خرید ناموفق بود",
-  "attachment": "ضمیمه"
+  "attachment": "ضمیمه",
+  "create_error_message": "هنگام ذخیره کردن مشکلی پیش آمد.",
+  "required_field": "این فیلد الزامی است."
 }

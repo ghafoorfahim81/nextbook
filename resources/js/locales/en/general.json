@@ -280,5 +280,7 @@
   "select_ledger_first": "Select a customer or supplier first",
   "error_creating_sale_quotation": "Failed to create sale quotation",
   "error_creating_purchase_quotation": "Failed to create purchase quotation",
-  "attachment": "Attachment"
+  "attachment": "Attachment",
+  "create_error_message": "Something went wrong while saving.",
+  "required_field": "This field is required."
 }

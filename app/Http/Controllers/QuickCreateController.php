@@ -456,11 +456,7 @@ class QuickCreateController extends Controller
 
     private function generateNextItemCode(): string
     {
-        $maxCode = Item::query()
-            ->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')
-            ->value('max_code');
-
-        return $this->formatItemCode($maxCode ? intval($maxCode) + 1 : 1);
+        return $this->formatItemCode(Item::nextCodeNumber());
     }
 
     private function formatItemCode(int $number): string

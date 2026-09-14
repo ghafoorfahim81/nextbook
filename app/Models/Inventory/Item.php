@@ -173,6 +173,23 @@ class Item extends Model
         ];
     }
 
+    /**
+     * The next number in the running catalogue-code sequence.
+     *
+     * `code` is text and is not guaranteed to be numeric — an imported or
+     * hand-typed "ITEM-001" is a legal code. Casting the whole column to
+     * integer makes PostgreSQL throw on the first such row and takes down every
+     * form that needs the next code, so only the numeric ones are counted.
+     */
+    public static function nextCodeNumber(): int
+    {
+        $maxCode = static::query()
+            ->selectRaw("MAX(CASE WHEN code ~ '^[0-9]+\$' THEN CAST(code AS INTEGER) END) as max_code")
+            ->value('max_code');
+
+        return $maxCode ? intval($maxCode) + 1 : 1;
+    }
+
     protected static function searchableColumns(): array
     {
         return [

@@ -60,6 +60,21 @@ return [
     'items_created_successfully' => 'آیتم‌ها با موفقیت ایجاد شدند.',
     'items_saved_successfully' => 'آیتم‌ها با موفقیت ذخیره شدند.',
 
+    // Field labels used as :attribute in validation messages (item fast entry).
+    'name' => 'نام',
+    'code' => 'کد',
+    'barcode' => 'بارکد',
+    'category' => 'دسته بندی',
+    'unit_measure' => 'واحد اندازه گیری',
+    'brand' => 'برند',
+    'purchase_price' => 'قیمت خرید',
+    'sale_price' => 'قیمت فروش',
+    'final_cost' => 'هزنیه تمام شد',
+    'batch' => 'بچ',
+    'expire_date' => 'تاریخ انقضا',
+    'opening_amount' => 'مقدار موجودی',
+    'warehouse' => 'گدام',
+
     'cannot_delete_main_warehouse' => 'شما نمی‌توانید انبار اصلی را حذف کنید.',
     'main_warehouse' => 'گدام مرکزی',
     'cash_customer' => 'مشتری نقدی',

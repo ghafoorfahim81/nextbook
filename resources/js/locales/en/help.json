@@ -94,11 +94,48 @@
     },
     "fast_entry": {
       "title": "Fast Entry (Items) — Tips",
-      "description": "Quickly create many items in one screen.",
-      "items": [
-        "Codes are auto-generated; fill the Name and Measure first for fastest workflow.",
-        "Leave completely empty rows blank—only filled rows are saved.",
-        "Use Store + Quantity + Batch/Expiry when you want to create items and set initial stock in one go."
+      "description": "Create many items on one screen. It asks only for the fields you need to start trading — everything else can be filled in later from the item edit form.",
+      "sections": [
+        {
+          "heading": "What this screen is for",
+          "items": [
+            "Use it to load a catalogue quickly: name, unit, prices and — if you want — the opening stock you already hold.",
+            "It does not replace the full item form. Accounts, photo, variants, reorder levels, tracking flags and attachments are all edited there afterwards.",
+            "Rows left completely empty are skipped, so you never have to clear the spare ones before saving."
+          ]
+        },
+        {
+          "heading": "Typing fast",
+          "items": [
+            "Arrow keys move between cells, Enter jumps to the next row, Tab to the next column.",
+            "A new row is added automatically as soon as you type in the last one.",
+            "The code and the barcode are generated for you — you never type them.",
+            "Typing a name selects the default unit; typing an opening amount selects the main warehouse. Change either whenever the row needs something else."
+          ]
+        },
+        {
+          "heading": "Prices and cost",
+          "items": [
+            "Purchase price is what you pay the supplier; sale price is what you charge.",
+            "Final cost is what one unit really costs you once it reaches your shelf — the purchase price plus freight, duty and clearing. The opening stock and its accounting entry are valued at it.",
+            "Leave Final cost blank and the purchase price is used instead."
+          ]
+        },
+        {
+          "heading": "Opening stock",
+          "items": [
+            "An opening amount needs a warehouse, and creates a stock movement plus a balanced opening-balance voucher.",
+            "Use it only for what you hold on the day you go live. After that, stock moves through purchase, sale, transfer and adjustment.",
+            "Batch and expiry columns appear when your business type tracks them. You can also switch them on from Column settings."
+          ]
+        },
+        {
+          "heading": "Column settings",
+          "items": [
+            "Hide the columns you do not use — opening amount, batch, expiry, category, warehouse, prices and cost can all be turned off.",
+            "The choice is remembered in this browser only; it is never saved to the company."
+          ]
+        }
       ]
     },
     "fast_opening": {

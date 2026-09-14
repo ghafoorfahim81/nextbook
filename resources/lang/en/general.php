@@ -60,6 +60,21 @@ return [
     'items_created_successfully' => 'Items created successfully.',
     'items_saved_successfully' => 'Items saved successfully.',
 
+    // Field labels used as :attribute in validation messages (item fast entry).
+    'name' => 'Name',
+    'code' => 'Code',
+    'barcode' => 'Barcode',
+    'category' => 'Category',
+    'unit_measure' => 'Unit Measure',
+    'brand' => 'Brand',
+    'purchase_price' => 'Purchase Price',
+    'sale_price' => 'Sale Price',
+    'final_cost' => 'Final Cost',
+    'batch' => 'Batch',
+    'expire_date' => 'Expire Date',
+    'opening_amount' => 'Opening Amount',
+    'warehouse' => 'Warehouse',
+
     'cannot_delete_main_warehouse' => 'You cannot delete the main warehouse.',
     'main_warehouse' => 'Main Warehouse',
     'cash_customer' => 'Cash customer',

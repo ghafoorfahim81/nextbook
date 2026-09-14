@@ -60,6 +60,21 @@ return [
     'items_created_successfully' => 'Items created successfully.',
     'items_saved_successfully' => 'Items saved successfully.',
 
+    // Field labels used as :attribute in validation messages (item fast entry).
+    'name' => 'نوم',
+    'code' => 'کد',
+    'barcode' => 'بارکوډ',
+    'category' => 'کټګوري',
+    'unit_measure' => 'د اندازې واحد',
+    'brand' => 'برنډ',
+    'purchase_price' => 'د پیر بیه',
+    'sale_price' => 'د پلور بیه',
+    'final_cost' => 'وروستی لګښت',
+    'batch' => 'بچ',
+    'expire_date' => 'د پای نېټه',
+    'opening_amount' => 'د پرانیستلو اندازه',
+    'warehouse' => 'ګدام',
+
     'cannot_delete_main_warehouse' => 'You cannot delete the main warehouse.',
     'main_warehouse' => 'مرکزي ګدام',
     'cash_customer' => 'نغدي پیرودونکی',
