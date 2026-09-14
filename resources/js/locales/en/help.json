@@ -342,6 +342,49 @@
         "Effective dates decide which structure a payroll run uses, so raise a new structure rather than editing history.",
         "A structure with no components is valid — it simply pays the basic salary."
       ]
+    },
+    "barcode_print": {
+      "title": "Print Barcode — Tips",
+      "description": "Lay out a sheet of barcode labels and print it. The barcode and the price come from the variant, so a product with choices prints one label per variant.",
+      "sections": [
+        {
+          "heading": "Choosing the paper",
+          "items": [
+            "A4 and A5 tile as many labels as fit across the page; the count per row is shown under the options.",
+            "The Label kinds are for a sticker roll and are defined by their column count instead — the stock itself is that wide.",
+            "Label width and height are the sticker, not the gap. Horizontal and vertical spacing are the gaps between them.",
+            "Margins are the blank edge of the sheet. Reset puts them back to 10 mm on every side."
+          ]
+        },
+        {
+          "heading": "Symbology — what each one accepts",
+          "items": [
+            "CODE128 is the safe default: letters, digits and symbols, any length. It encodes the codes this system generates as-is.",
+            "CODE128A drops lowercase; CODE128B takes both cases; CODE128C takes digits only, in pairs (an even count).",
+            "CODE39 takes uppercase letters, digits and - . $ / + % and space.",
+            "MSI takes digits only, any length. Codabar must start and end with A, B, C or D with only digits and - $ : . + / between.",
+            "EAN-13 (13 digits), EAN-8 (8), UPC-A (12) and ITF-14 (14) are GS1 retail standards. The last digit must be a computed check digit, and the number itself is assigned to a company by GS1 — it is not one you invent.",
+            "That is why an auto-generated code like ITM681421515 prints under CODE128 but is refused by EAN-13: it has letters, the wrong length, and no check digit. Use CODE128 for your own shelf labels, and the GS1 types only for codes printed on the manufacturer packaging."
+          ]
+        },
+        {
+          "heading": "Choosing products",
+          "items": [
+            "The ten newest items are listed to start with. Use the search box above the table to add anything else.",
+            "Tick the rows you want, set a quantity per row, or use Number of Barcodes to set the same quantity on everything ticked.",
+            "A product with no barcode cannot be ticked — give it one on the item form first.",
+            "The filter box narrows the table without losing your ticks or quantities."
+          ]
+        },
+        {
+          "heading": "What prints",
+          "items": [
+            "Draw Code, Name, Variant, Barcode, Price and Border each control one line of the sticker; the heading prints once at the top of the sheet.",
+            "The preview is the sheet: what you see laid out is what comes out of the printer.",
+            "Check the preview before printing a full roll — label stock is expensive to waste."
+          ]
+        }
+      ]
     }
   }
 }

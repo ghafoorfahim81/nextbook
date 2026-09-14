@@ -262,14 +262,42 @@ class SearchController extends Controller
      */
     private function searchItems(string $searchTerm, array $fields, int $limit, array $additionalParams): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
+        // SKU, barcode and price live on the variant now, so a caller that needs
+        // them (barcode printing) asks for them explicitly. The rest of the
+        // pickers — sales, purchases — keep the lighter payload they had.
+        $withVariants = filter_var(
+            $additionalParams['with_variants'] ?? false,
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        // `stockOut` is deliberately absent: Item::stockOut() still points at
+        // App\Models\Inventory\StockOut, which no longer exists, so eager-loading
+        // it made every item search die with a "failed to open stream" 500.
+        // ItemResource derives stock_out_count from `stocks` anyway.
+        $relations = ['unitMeasure', 'brand', 'category', 'stocks', 'openings'];
+
+        if ($withVariants) {
+            $relations['variants'] = fn ($q) => $q->where('is_active', true)->orderBy('sort_order');
+        }
+
         // Use Eloquent so ItemResource receives models (not stdClass) and can access relations
         $query = Item::query()
-            ->with(['unitMeasure', 'brand', 'category', 'stocks', 'openings', 'stockOut'])
-            ->where(function ($q) use ($searchTerm, $fields) {
+            ->with($relations)
+            ->where(function ($q) use ($searchTerm, $fields, $withVariants) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'])) {
                         $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
+                }
+
+                // Scanning a variant's own barcode has to find its item, which
+                // the item-column search alone cannot do.
+                if ($withVariants) {
+                    $q->orWhereHas('variants', function ($variantQuery) use ($searchTerm) {
+                        $variantQuery->whereRaw('LOWER(sku) iLike ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(barcode) iLike ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(name) iLike ?', [$searchTerm]);
+                    });
                 }
             });
 
