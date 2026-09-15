@@ -39,6 +39,12 @@ return [
         'credit' => 'قرض/اعتباری',
         'on_loan' => 'قرض',
     ],
+    'discount_scope' => [
+        'all' => 'همه کالاها',
+        'brand' => 'برند',
+        'category' => 'دسته',
+        'item' => 'کالا',
+    ],
     'discount_type' => [
         'percentage' => 'فیصدی',
         'currency' => 'مبلغی',

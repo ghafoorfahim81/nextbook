@@ -1,0 +1,20 @@
+{
+    "discount_rule": "Discount Rule",
+    "discount_rules": "Discount Rules",
+    "new": "New Discount Rule",
+    "edit": "Edit Discount Rule",
+    "applies_to": "Applies To",
+    "target": "Target",
+    "all_items": "All items",
+    "customer_group": "Customer Group",
+    "customer_group_hint": "Leave empty to apply to every customer. A rule tied to a group beats the same rule without one.",
+    "min_quantity": "Minimum Qty",
+    "starts_at": "Starts",
+    "ends_at": "Ends",
+    "active_period": "Active Period",
+    "always": "Always",
+    "priority": "Priority",
+    "priority_hint": "Higher wins when two rules are equally specific.",
+    "show_on_invoice": "Show on invoice",
+    "name_hint": "A label you will recognise later, e.g. Ramadan Promo."
+}

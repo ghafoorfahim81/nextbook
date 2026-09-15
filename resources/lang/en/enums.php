@@ -43,6 +43,12 @@ return [
         'credit' => 'Credit',
         'on_loan' => 'On Loan',
     ],
+    'discount_scope' => [
+        'all' => 'All items',
+        'brand' => 'Brand',
+        'category' => 'Category',
+        'item' => 'Item',
+    ],
     'discount_type' => [
         'percentage' => 'Percentage',
         'currency' => 'Currency',

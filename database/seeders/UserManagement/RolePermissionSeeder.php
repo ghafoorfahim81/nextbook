@@ -48,6 +48,7 @@ class RolePermissionSeeder extends Seeder
             'interviews',
 
             'items',
+            'discount_rules',
             'landed_costs',
             'landed_cost_categories',
             'categories',

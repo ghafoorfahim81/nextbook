@@ -173,6 +173,9 @@ Route::middleware([
     Route::delete('/items/{item}/force-delete', [\App\Http\Controllers\Inventory\ItemController::class, 'forceDelete'])
         ->name('items.force-delete')
         ->withTrashed();
+    Route::resource('/discount-rules', \App\Http\Controllers\Inventory\DiscountRuleController::class)
+        ->parameters(['discount-rules' => 'discount_rule'])
+        ->except(['create', 'edit', 'show']);
     Route::resource('/landed-costs', \App\Http\Controllers\Inventory\LandedCostController::class);
     Route::get('/stock-adjustments/export', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'export'])->name('stock-adjustments.export');
     Route::resource('/stock-adjustments', \App\Http\Controllers\Inventory\StockAdjustmentController::class)
