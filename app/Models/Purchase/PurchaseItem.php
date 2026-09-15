@@ -30,13 +30,12 @@ class PurchaseItem extends Model
     protected $fillable = [
         'purchase_id',
         'item_id',
+        'variant_id',
         'batch',
-        'color',
         'expire_date',
         'quantity',
         'unit_measure_id',
         'warehouse_id',
-        'size_id',
         'unit_price',
         'discount',
         'free',
@@ -56,6 +55,7 @@ class PurchaseItem extends Model
         return [
             'purchase_id' => 'string',
             'item_id' => 'string',
+            'variant_id' => 'string',
             'batch' => 'string',
             'expire_date' => 'date',
             'quantity' => 'decimal:2',
@@ -97,6 +97,12 @@ class PurchaseItem extends Model
     {
         return $this->belongsTo(\App\Models\Inventory\Item::class);
     }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Inventory\ItemVariant::class, 'variant_id');
+    }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'warehouse_id');
@@ -105,11 +111,6 @@ class PurchaseItem extends Model
     public function unitMeasure(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
-    }
-
-    public function size(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Administration\Size::class);
     }
 
     public function returnItems(): HasMany

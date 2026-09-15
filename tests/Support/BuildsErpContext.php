@@ -128,7 +128,6 @@ trait BuildsErpContext
         $item = Item::factory()->create([
             'branch_id' => $branch->id,
             'unit_measure_id' => $unitMeasure->id,
-            'size_id' => $size->id,
             'cost_account_id' => $accounts['cost-of-goods-sold']->id,
             'income_account_id' => $accounts['product-income']->id,
             'asset_account_id' => $accounts['inventory-stock']->id,

@@ -48,7 +48,6 @@ class ItemTransferFeatureTest extends TestCase
             'batch' => 'LOT-1',
             'date' => '2026-03-10',
             'expire_date' => '2027-03-10',
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'seed-transfer-stock',

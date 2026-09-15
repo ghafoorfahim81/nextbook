@@ -34,13 +34,9 @@ return [
             'accounts' => true,
         ],
 
-        // Initial values for the tracking flags on a new item.
-        //
-        // Colour and size are no longer tracking flags — they are ordinary
-        // variant attributes now, typed straight into the variant grid. The
-        // is_color_tracked / is_size_tracked columns and the sale/purchase
-        // pickers that still read them are retired with the rest of the
-        // transaction refactor.
+        // Initial values for the tracking flags on a new item. Anything that
+        // varies per sellable unit is an ordinary variant attribute now, typed
+        // straight into the variant grid — not a tracking flag.
         'defaults' => [
             'is_batch_tracked'  => false,
             'is_expiry_tracked' => false,

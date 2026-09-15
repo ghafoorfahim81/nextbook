@@ -2,7 +2,6 @@
 import { computed, onMounted } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
-import { useColors } from '@/composables/useColors'
 import '../../../../css/print/invoice.css'
 
 const props = defineProps({
@@ -12,7 +11,6 @@ const props = defineProps({
 
 const page = usePage()
 const { t, locale } = useI18n()
-const { resolveColor } = useColors()
 
 const data = computed(() => props.quotation?.data ?? props.quotation ?? {})
 const isRTL = computed(() => ['fa', 'ps', 'pa', 'ar', 'ur'].includes(locale.value))
@@ -90,8 +88,7 @@ onMounted(() => {
                     <tr>
                         <th class="q-num">#</th>
                         <th class="q-left">{{ t('item.item') }}</th>
-                        <th class="q-left">{{ t('item.color') }}</th>
-                        <th class="q-left">{{ t('item.size') }}</th>
+                        <th class="q-left">{{ t('item.variant') }}</th>
                         <th class="q-right">{{ t('general.qty') }}</th>
                         <th class="q-left">{{ t('general.unit') }}</th>
                         <th class="q-right">{{ t('general.price') }}</th>
@@ -105,8 +102,7 @@ onMounted(() => {
                             <div class="q-strong">{{ item.item_name }}</div>
                             <div class="q-muted q-small">{{ item.item_code }}</div>
                         </td>
-                        <td class="q-left">{{ resolveColor(item.color)?.name || '-' }}</td>
-                        <td class="q-left">{{ item.size_name || '-' }}</td>
+                        <td class="q-left">{{ item.variant?.display_name || '-' }}</td>
                         <td class="q-right">{{ item.quantity }}</td>
                         <td class="q-left">{{ item.unit_measure_name || '-' }}</td>
                         <td class="q-right">{{ fmt(item.unit_price) }}</td>

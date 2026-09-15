@@ -30,14 +30,13 @@ class SaleItem extends Model
     protected $fillable = [
         'sale_id',
         'item_id',
+        'variant_id',
         'batch',
-        'color',
         'expire_date',
         'quantity',
         'unit_measure_id',
         'unit_price',
         'discount',
-        'size_id',
         'net_unit_cost',
         'free',
         'tax',
@@ -57,6 +56,7 @@ class SaleItem extends Model
         return [
             'sale_id' => 'string',
             'item_id' => 'string',
+            'variant_id' => 'string',
             'batch' => 'string',
             'expire_date' => 'date',
             'quantity' => 'decimal:2',
@@ -99,6 +99,11 @@ class SaleItem extends Model
         return $this->belongsTo(\App\Models\Inventory\Item::class);
     }
 
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Inventory\ItemVariant::class, 'variant_id');
+    }
+
     public function unitMeasure(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
@@ -136,8 +141,4 @@ class SaleItem extends Model
         return max((float) $this->quantity - $this->returnedQuantity($excludingSaleReturnId), 0.0);
     }
 
-    public function size(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Administration\Size::class);
-    }
 }

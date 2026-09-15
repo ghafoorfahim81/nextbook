@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Sale;
 
+use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sale\SaleQuotationStoreRequest;
 use App\Http\Requests\Sale\SaleQuotationUpdateRequest;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\DB;
 
 class SaleQuotationController extends Controller
 {
+    use ResolvesLineVariant;
+
     private $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -124,6 +127,10 @@ class SaleQuotationController extends Controller
                 'status' => $documentStatus,
             ]);
 
+            $validated['item_list'] = array_map(
+                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
+                $validated['item_list']
+            );
             $saleQuotation->items()->createMany($validated['item_list']);
 
             $activityLogService->logCreate(
@@ -162,8 +169,8 @@ class SaleQuotationController extends Controller
     {
         $saleQuotation->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
-            'items.size',
             'items.category',
             'customer',
             'currency',
@@ -189,7 +196,7 @@ class SaleQuotationController extends Controller
             return back()->with('error', 'Only draft documents can be edited.');
         }
 
-        $saleQuotation->load(['items.item', 'items.unitMeasure', 'items.size', 'items.category', 'customer', 'currency', 'warehouse']);
+        $saleQuotation->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'customer', 'currency', 'warehouse']);
 
         return inertia('Sale/SaleQuotations/Edit', [
             'saleQuotation' => new SaleQuotationResource($saleQuotation),
@@ -227,6 +234,10 @@ class SaleQuotationController extends Controller
             ]);
 
             $saleQuotation->items()->forceDelete();
+            $validated['item_list'] = array_map(
+                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
+                $validated['item_list']
+            );
             $saleQuotation->items()->createMany($validated['item_list']);
 
             $activityLogService->logUpdate(
@@ -308,8 +319,8 @@ class SaleQuotationController extends Controller
 
         $saleQuotation->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
-            'items.size',
             'customer',
             'currency',
             'warehouse',

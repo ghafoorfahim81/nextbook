@@ -85,7 +85,6 @@ class LandedCostFeatureTest extends TestCase
         $secondItem = Item::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
-            'size_id' => $this->ctx['size']->id,
             'cost_account_id' => $this->ctx['accounts']['cost-of-goods-sold']->id,
             'income_account_id' => $this->ctx['accounts']['product-income']->id,
             'asset_account_id' => $this->ctx['accounts']['inventory-stock']->id,

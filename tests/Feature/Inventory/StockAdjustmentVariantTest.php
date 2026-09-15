@@ -55,10 +55,11 @@ class StockAdjustmentVariantTest extends TestCase
     }
 
     /** Put stock on the shelf at a known cost, the way a receipt would. */
-    private function receive(Item $item, float $quantity, float $unitCost, ?string $batch = null): void
+    private function receive(Item $item, float $quantity, float $unitCost, ?string $batch = null, ?string $variantId = null): void
     {
         app(StockService::class)->post([
             'item_id' => $item->id,
+            'variant_id' => $variantId,
             'movement_type' => StockMovementType::IN->value,
             'unit_measure_id' => $item->unit_measure_id,
             'quantity' => $quantity,
@@ -118,7 +119,7 @@ class StockAdjustmentVariantTest extends TestCase
         ]);
 
         $large = $variants->firstWhere('sku', 'ADJ-L');
-        $this->receive($item, 10, 20);
+        $this->receive($item, 10, 20, variantId: $large->id);
 
         $adjustment = $this->adjust($item, [
             'items' => [[

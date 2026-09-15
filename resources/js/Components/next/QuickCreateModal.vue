@@ -35,7 +35,6 @@ const currencyOptions = computed(() => page.props?.currencies?.data || page.prop
 const currencyDefinitionOptions = computed(() => page.props?.currencyDefinitions || [])
 const categoryOptions = computed(() => page.props?.categories?.data || page.props?.categories || [])
 const brandOptions = computed(() => page.props?.brands?.data || page.props?.brands || [])
-const sizeOptions = computed(() => page.props?.sizes?.data || page.props?.sizes || [])
 const unitMeasureOptions = computed(() => page.props?.unitMeasures?.data || page.props?.unitMeasures || [])
 const accountTypeOptions = computed(() => page.props?.accountTypes?.data || page.props?.accountTypes || []) 
 const transactionTypeOptions = computed(() => page.props?.transactionTypes?.data || page.props?.transactionTypes || [
@@ -105,7 +104,6 @@ const resolveFieldOptions = (fieldKey) => {
   if (fieldKey === 'currency_id') return currencyOptions.value
   if (fieldKey === 'parent_id' || fieldKey === 'category_id') return categoryOptions.value
   if (fieldKey === 'brand_id') return brandOptions.value
-  if (fieldKey === 'size_id') return sizeOptions.value
   if (fieldKey === 'unit_measure_id') return unitMeasureOptions.value
   if (fieldKey === 'account_type_id') return accountTypeOptions.value
   if (fieldKey === 'transaction_type') return transactionTypeOptions.value

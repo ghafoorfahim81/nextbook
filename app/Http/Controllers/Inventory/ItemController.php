@@ -20,7 +20,6 @@ use App\Enums\ItemType;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Category;
 use App\Models\Administration\Brand;
-use App\Models\Administration\Size;
 use App\Models\Administration\Warehouse;
 use App\Models\User;
 use App\Enums\StockSourceType;
@@ -76,7 +75,6 @@ class ItemController extends Controller
                 ])->values(),
                 'unitMeasures' => UnitMeasure::orderBy('name')->get(['id', 'name']),
                 'categories' => Category::orderBy('name')->get(['id', 'name']),
-                'sizes' => Size::orderBy('name')->get(['id', 'name']),
                 'brands' => Brand::orderBy('name')->get(['id', 'name']),
                 'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
@@ -420,7 +418,7 @@ class ItemController extends Controller
         $item = Item::with(
             'unitMeasure', 'brand', 'category',
             'assetAccount', 'incomeAccount', 'costAccount',
-            'openings.warehouse', 'attachments',
+            'openings.warehouse', 'openings.variant', 'attachments',
             'variants',
         )->find($item->id);
 
@@ -672,8 +670,7 @@ class ItemController extends Controller
                     'unit_measure_name' => $row['unit_measure_name'] ?? '-',
                     'date' => $row['date'] ?? '-',
                     'batch' => $row['batch'] ?? '-',
-                    'color' => $row['color'] ? ucfirst((string) $row['color']) : '-',
-                    'size_name' => $row['size_name'] ?? '-',
+                    'variant' => $row['variant']['display_name'] ?? '-',
                     'expire_date' => $row['expire_date'] ?? '-',
                     'unit_cost' => $row['unit_cost'] ?? 0,
                     'warehouse_name' => $row['warehouse_name'] ?? '-',
@@ -701,8 +698,7 @@ class ItemController extends Controller
                 ['key' => 'unit_measure_name', 'label' => $spreadsheetExportService->localeTranslation('admin', 'unit_measure.unit_measure', 'Unit Measure'), 'width' => 14],
                 ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date'), 'width' => 14],
                 ['key' => 'batch', 'label' => $spreadsheetExportService->localeTranslation('item', 'batch', 'Batch'), 'width' => 12],
-                ['key' => 'color', 'label' => $spreadsheetExportService->localeTranslation('item', 'color', 'Color'), 'width' => 12],
-                ['key' => 'size_name', 'label' => $spreadsheetExportService->localeTranslation('item', 'size', 'Size'), 'width' => 12],
+                ['key' => 'variant', 'label' => $spreadsheetExportService->localeTranslation('item', 'variant', 'Variant'), 'width' => 14],
                 ['key' => 'expire_date', 'label' => $spreadsheetExportService->localeTranslation('item', 'expire_date', 'Expire Date'), 'width' => 16],
                 ['key' => 'unit_cost', 'label' => $spreadsheetExportService->localeTranslation('general', 'unit_price', 'Unit Price'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'warehouse_name', 'label' => $spreadsheetExportService->localeTranslation('admin', 'warehouse.warehouse', 'Warehouse'), 'width' => 18],
@@ -716,7 +712,7 @@ class ItemController extends Controller
         return StockMovement::with([
                 'warehouse',
                 'unitMeasure',
-                'size',
+                'variant',
                 'reference' => function (MorphTo $morphTo) {
                     $morphTo->morphWith([
                         Purchase::class => ['supplier'],

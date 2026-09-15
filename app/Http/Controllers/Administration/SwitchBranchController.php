@@ -34,7 +34,6 @@ class SwitchBranchController extends Controller
         cache()->forget('accountTypes');
         cache()->forget('unitMeasures');
         cache()->forget('sizes');
-        cache()->forget('colors');
         cache()->forget('brands');
         cache()->forget('items');
         cache()->forget('stocks');

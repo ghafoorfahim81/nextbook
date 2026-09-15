@@ -16,12 +16,12 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { useColors } from '@/composables/useColors'
 import { Trash2 } from 'lucide-vue-next';
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import { pickDefaultVariant } from '@/composables/useVariantLine'
+import VariantCell from '@/Components/inventory/VariantCell.vue'
 
 const { t } = useI18n();
-const { colorOptions, resolveColor } = useColors();
 const { toast } = useToast()
 const page = usePage()
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
@@ -34,7 +34,6 @@ const props = defineProps({
 const currencies = computed(() => page.props.currencies ?? { data: [] })
 const warehouses = computed(() => page.props.warehouses ?? { data: [] })
 const unitMeasures = computed(() => page.props.unitMeasures ?? { data: [] })
-const sizes = computed(() => page.props.sizes ?? { data: [] })
 const categories = computed(() => page.props.categories ?? { data: [] })
 const decimalPlaces = Number(page.props.auth?.user?.preferences?.appearance?.decimal_places ?? 2)
 
@@ -56,14 +55,14 @@ const buildEmptyRow = () => ({
     available_measures: [],
     batch: '',
     selected_batch: null,
-    color: null,
     expire_date: '',
     unit_price: '',
     base_unit_price: '',
     free: '',
     discount: '',
-    size_id: '',
-    selected_size: '',
+    variant_id: null,
+    selected_variant: null,
+    item_variants: [],
     category_id: '',
     selected_category: '',
 })
@@ -211,8 +210,7 @@ function handleSubmit({ createAndNew = false } = {}) {
         .map((item) => ({
             ...item,
             unit_measure_id: item.selected_measure?.id,
-            color: item.color || null,
-            size_id: item.selected_size?.id ?? null,
+            variant_id: item.selected_variant?.id ?? item.variant_id ?? null,
             category_id: item.selected_category?.id ?? null,
         }));
 
@@ -281,6 +279,9 @@ const handleItemChange = (index, selected_item) => {
         row.expire_date = ''
         row.free = ''
         row.discount = ''
+        row.item_variants = []
+        row.selected_variant = null
+        row.variant_id = null
         return
     }
 
@@ -299,7 +300,11 @@ const handleItemChange = (index, selected_item) => {
     row.batch = ''
     row.expire_date = ''
 
-    row.base_unit_price = selected_item.purchase_price ?? selected_item.avg_cost ?? 0
+    row.item_variants = selected_item.item_variants || []
+    row.selected_variant = pickDefaultVariant(row.item_variants)
+    row.variant_id = row.selected_variant?.id || null
+
+    row.base_unit_price = row.selected_variant?.purchase_price ?? selected_item.purchase_price ?? selected_item.avg_cost ?? 0
 
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
     row.unit_price = Number(((row.base_unit_price * Number(row.selected_measure.unit) * form.rate) / baseUnit).toFixed(2));
@@ -309,6 +314,13 @@ const handleItemChange = (index, selected_item) => {
     }
 
     notifyIfDuplicate(index)
+}
+
+const handleVariantChange = (index, variant) => {
+    const row = form.items[index]
+    if (!row) return
+    row.selected_variant = variant || null
+    row.variant_id = variant?.id || null
 }
 
 const isRowEnabled = (index) => {
@@ -521,8 +533,7 @@ useFormGuard(form)
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }} <span class="text-red-500">*</span></th>
-                            <th class="px-1 py-1 w-28" v-if="localColumns.size">{{ t('admin.size.size') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('item.color') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('item.variant') }}</th>
                             <th class="px-1 py-1 w-28" v-if="localColumns.category">{{ t('admin.category.category') }}</th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.discount">{{ t('general.discount') }}</th>
                             <th class="px-1 py-1 w-16" v-if="localColumns.free">{{ t('general.free') }}</th>
@@ -593,44 +604,15 @@ useFormGuard(form)
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput v-model="item.unit_price" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
                             </td>
-                            <td v-if="localColumns.size" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextSelect
-                                    :options="sizes.data"
-                                    v-model="item.selected_size"
-                                    label-key="name"
-                                    value-key="id"
-                                    :show-arrow="false"
-                                    :reduce="size => size"
-                                    :error="form.errors?.[`item_list.${index}.size_id`]"
-                                />
-                            </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextSelect
-                                    v-model="item.color"
-                                    :options="colorOptions"
-                                    label-key="name"
-                                    value-key="id"
-                                    :reduce="o => o.id"
+                                <VariantCell
+                                    :model-value="item.selected_variant"
+                                    :item-variants="item.item_variants"
                                     :disabled="!item?.selected_item"
-                                    :id="`order_color_${index}`"
-                                    :placeholder="t('general.select')"
-                                    :show-arrow="false"
-                                    :append-to-body="true"
-                                    :error="form.errors?.[`item_list.${index}.color`]"
-                                >
-                                    <template #option="{ name, hex }">
-                                        <span class="flex items-center gap-2">
-                                            <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
-                                            <span>{{ name }}</span>
-                                        </span>
-                                    </template>
-                                    <template #selected-option="{ name, hex }">
-                                        <span class="flex items-center gap-1.5">
-                                            <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
-                                            <span>{{ name }}</span>
-                                        </span>
-                                    </template>
-                                </NextSelect>
+                                    :error="form.errors?.[`item_list.${index}.variant_id`]"
+                                    :id="`order_variant_${index}`"
+                                    @update:modelValue="value => handleVariantChange(index, value)"
+                                />
                             </td>
                             <td v-if="localColumns.category" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
@@ -666,7 +648,6 @@ useFormGuard(form)
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="localColumns.measure"></td>
                             <td class="text-center">{{ goodsTotal || 0 }}</td>
-                            <td v-if="localColumns.size"></td>
                             <td v-if="localColumns.category"></td>
                             <td class="text-center" v-if="localColumns.discount">{{ totalItemDiscount || 0 }}</td>
                             <td class="text-center" v-if="localColumns.free">{{ totalFree || 0 }}</td>

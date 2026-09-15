@@ -30,9 +30,28 @@ class StockService
 
     private $dateConversionService;
 
-    public function __construct(DateConversionService $dateConversionService)
-    {
+    public function __construct(
+        DateConversionService $dateConversionService,
+        private ItemVariantService $variantService,
+    ) {
         $this->dateConversionService = $dateConversionService;
+    }
+
+    /**
+     * Resolve the variant a stock payload moves, so every write has a real
+     * bucketing key regardless of whether the caller's screen has a variant
+     * picker yet.
+     *
+     * An explicit variant_id wins. A caller that omits it falls back to the
+     * item's one default variant, exactly as before variants existed.
+     */
+    protected function resolveVariantId(Item $item, array $data): string
+    {
+        if (! empty($data['variant_id'])) {
+            return $data['variant_id'];
+        }
+
+        return $this->variantService->ensureDefault($item)->id;
     }
 
     /**
@@ -42,6 +61,7 @@ class StockService
     {
         return DB::transaction(function () use ($data) {
             $item = Item::lockForUpdate()->findOrFail($data['item_id']);
+            $data['variant_id'] = $this->resolveVariantId($item, $data);
             [$movementData, $balanceData, $conversionFactor, $unitCostOverride] = $this->prepareStockPayloads($item, $data);
 
             if ($data['movement_type'] === StockMovementType::IN->value) {
@@ -133,9 +153,8 @@ class StockService
             'branch_id' => $data['branch_id'],
             'item_id' => $data['item_id'],
             'warehouse_id' => $data['warehouse_id'],
+            'variant_id' => $this->resolveVariantId($item, $data),
             'batch' => $data['batch'] ?? null,
-            'color' => $data['color'] ?? null,
-            'size_id' => $data['size_id'] ?? null,
             'expire_date' => ! empty($data['expire_date']) ? $this->normalizeDate($data['expire_date']) : null,
         ];
 
@@ -219,8 +238,8 @@ class StockService
             $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date']));
         }
 
-        // Only consume incoming stock of the same colour/size variant.
-        $this->applyVariantFilter($query, $balanceData['color'] ?? null, $balanceData['size_id'] ?? null);
+        // Only consume incoming stock of the same variant.
+        $this->applyVariantFilter($query, $balanceData['variant_id'] ?? null);
 
         $inMovements = $query
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
@@ -255,8 +274,7 @@ class StockService
             $allocations[] = [
                 'quantity' => $deductQty,
                 'batch' => $movement->batch,
-                'color' => $movement->color,
-                'size_id' => $movement->size_id,
+                'variant_id' => $movement->variant_id,
                 'expire_date' => ($movement->expire_date?->toDateString()),
                 'status' => $this->stockStatusValue($movement->status),
                 'movement_id' => $movement->id,
@@ -294,8 +312,8 @@ class StockService
             $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date']));
         }
 
-        // Only consume incoming stock of the same colour/size variant.
-        $this->applyVariantFilter($query, $balanceData['color'] ?? null, $balanceData['size_id'] ?? null);
+        // Only consume incoming stock of the same variant.
+        $this->applyVariantFilter($query, $balanceData['variant_id'] ?? null);
 
         $inMovements = $query
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
@@ -329,8 +347,7 @@ class StockService
             $allocations[] = [
                 'quantity'       => $deductQty,
                 'batch'          => $movement->batch,
-                'color'          => $movement->color,
-                'size_id'        => $movement->size_id,
+                'variant_id'     => $movement->variant_id,
                 'expire_date'    => $movement->expire_date?->toDateString(),
                 'status'         => $this->stockStatusValue($movement->status),
                 'movement_id'    => $movement->id,
@@ -378,20 +395,10 @@ class StockService
             'branch_id' => $data['branch_id'],
             'item_id' => $data['item_id'],
             'warehouse_id' => $data['warehouse_id'],
+            'variant_id' => $data['variant_id'],
             'batch' => $data['batch'] ?? null,
-            'color' => $data['color'] ?? null,
-            'size_id' => $data['size_id'] ?? null,
             'expire_date' => $data['expire_date'] ? $this->normalizeDate($data['expire_date']) : null,
         ];
-
-        // Only a caller that actually resolved a variant (an item with the
-        // variants section on) narrows the bucket by it. Everything else —
-        // purchases, plain-item openings — leaves the key out, so the row it
-        // matches and the row it creates both keep variant_id NULL exactly as
-        // before.
-        if (! empty($data['variant_id'])) {
-            $keys['variant_id'] = $data['variant_id'];
-        }
 
         $balance = StockBalance::firstOrCreate(
             $keys,
@@ -402,16 +409,21 @@ class StockService
         );
         $newQty = $balance->quantity + $data['quantity'];
 
-        $totalQty = (float) StockBalance::where('item_id', $item->id)->sum('quantity');
+        // A reversal restores stock the business already owned — it is not a
+        // new receipt at a market price, so it must not shift the average the
+        // way a real purchase would. See TransactionService::voidStockMovementsFor().
+        if (empty($data['skip_average_recost'])) {
+            $totalQty = (float) StockBalance::where('item_id', $item->id)->sum('quantity');
 
-       $newAvg = $this->calculateNewAverage(
-            $totalQty,           // total qty before this receipt
-            (float) $item->avg_cost,
-            $data['quantity'],
-            $data['unit_cost']
-        );
-        $item->avg_cost = $newAvg;
-        $item->save();
+            $newAvg = $this->calculateNewAverage(
+                $totalQty,           // total qty before this receipt
+                (float) $item->avg_cost,
+                $data['quantity'],
+                $data['unit_cost']
+            );
+            $item->avg_cost = $newAvg;
+            $item->save();
+        }
 
         $balance->update([
             'quantity' => $newQty,
@@ -459,11 +471,7 @@ class StockService
                     }, function ($query) {
                         return $query->whereNull('expire_date');
                     })
-                    ->tap(fn ($query) => $this->applyVariantFilter(
-                        $query,
-                        $allocation['color'] ?? null,
-                        $allocation['size_id'] ?? null
-                    ))
+                    ->tap(fn ($query) => $this->applyVariantFilter($query, $allocation['variant_id'] ?? null))
                     ->lockForUpdate()
                     ->orderBy('created_at')
                     ->orderBy('id')
@@ -488,11 +496,7 @@ class StockService
             ->when(!empty($data['expire_date']), function ($query) use ($data) {
                 return $query->whereDate('expire_date', $this->normalizeDate($data['expire_date']));
             })
-            ->tap(fn ($query) => $this->applyVariantFilter(
-                $query,
-                $data['color'] ?? null,
-                $data['size_id'] ?? null
-            ))
+            ->tap(fn ($query) => $this->applyVariantFilter($query, $data['variant_id'] ?? null))
             ->lockForUpdate()
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('expire_date')
@@ -505,25 +509,20 @@ class StockService
     }
 
     /**
-     * Constrain a stock balance / movement query to one colour+size variant.
+     * Constrain a stock balance / movement query to one variant.
      *
-     * A NULL colour is a distinct variant from any named colour, so NULL must
-     * match NULL exactly rather than matching everything. Items that track
-     * neither dimension always pass nulls here and so keep their single row.
+     * A NULL variant_id is its own distinct bucket, not a wildcard, so it must
+     * match NULL exactly rather than matching everything — though in practice
+     * every write now resolves a real variant_id (see resolveVariantId()), so
+     * this only matters for rows written before that was true.
      */
-    protected function applyVariantFilter($query, ?string $color, ?string $sizeId)
+    protected function applyVariantFilter($query, ?string $variantId)
     {
-        return $query
-            ->when(
-                $color !== null && $color !== '',
-                fn ($q) => $q->where('color', $color),
-                fn ($q) => $q->whereNull('color')
-            )
-            ->when(
-                $sizeId !== null && $sizeId !== '',
-                fn ($q) => $q->where('size_id', $sizeId),
-                fn ($q) => $q->whereNull('size_id')
-            );
+        return $query->when(
+            $variantId !== null && $variantId !== '',
+            fn ($q) => $q->where('variant_id', $variantId),
+            fn ($q) => $q->whereNull('variant_id')
+        );
     }
 
     /**
@@ -557,11 +556,7 @@ class StockService
             ->when(!empty($data['expire_date']), function($query) use ($data) {
                 return $query->whereDate('expire_date', $this->normalizeDate($data['expire_date']));
             })
-            ->tap(fn ($query) => $this->applyVariantFilter(
-                $query,
-                $data['color'] ?? null,
-                $data['size_id'] ?? null
-            ))
+            ->tap(fn ($query) => $this->applyVariantFilter($query, $data['variant_id'] ?? null))
             ->lockForUpdate()
             ->get()
             ->sum(fn ($balance) => (float) $balance->quantity);
@@ -584,7 +579,7 @@ class StockService
         return $item->effectiveCostingMethod()->value;
     }
 
-    public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null, ?string $color = null, ?string $sizeId = null): array
+    public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null): array
     {
         $totalStock = StockBalance::where('item_id', $itemId)
             ->where('warehouse_id', $warehouseId)
@@ -593,12 +588,6 @@ class StockService
             })
             ->when($expireDate, function($query) use ($expireDate) {
                 return $query->whereDate('expire_date', $this->normalizeDate($expireDate));
-            })
-            ->when($color, function($query) use ($color) {
-                return $query->where('color', $color);
-            })
-            ->when($sizeId, function($query) use ($sizeId) {
-                return $query->where('size_id', $sizeId);
             })
             ->sum('quantity');
 
@@ -660,6 +649,10 @@ class StockService
         // Strip caller-only keys so they never reach StockMovement::create.
         $movementData = array_diff_key($data, ['unit_cost_override' => null]);
         $balanceData  = $movementData;
+
+        // skip_average_recost is read by increaseBalance() below; StockMovement
+        // has no such column, so it is not stripped from $movementData here —
+        // it is simply ignored by mass assignment like any other unknown key.
 
         $conversionFactor = $this->resolveConversionFactor($item->unit_measure_id, $data['unit_measure_id']);
 

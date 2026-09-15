@@ -9,15 +9,15 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { useColors } from '@/composables/useColors'
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
+import { pickDefaultVariant } from '@/composables/useVariantLine'
+import VariantCell from '@/Components/inventory/VariantCell.vue'
 
 const { t } = useI18n();
-const { colorOptions } = useColors();
 const page = usePage()
 
 const props = defineProps({
@@ -29,7 +29,6 @@ const saleQuotationData = computed(() => props.saleQuotation?.data ?? props.sale
 const currencies = computed(() => page.props.currencies ?? { data: [] })
 const warehouses = computed(() => page.props.warehouses ?? { data: [] })
 const unitMeasures = computed(() => page.props.unitMeasures ?? { data: [] })
-const sizes = computed(() => page.props.sizes ?? { data: [] })
 const categories = computed(() => page.props.categories ?? { data: [] })
 const decimalPlaces = Number(page.props.auth?.user?.preferences?.appearance?.decimal_places ?? 2)
 
@@ -51,14 +50,14 @@ const buildInitialRows = () => (saleQuotationData.value.item_list || []).map((it
     selected_measure: findById(unitMeasures.value?.data, item.unit_measure_id) || { id: item.unit_measure_id, name: '' },
     available_measures: [],
     batch: item.batch || '',
-    color: item.color || null,
     expire_date: item.expire_date || '',
     unit_price: item.unit_price,
     base_unit_price: item.unit_price,
     free: item.free || '',
     discount: item.discount || '',
-    size_id: item.size_id || '',
-    selected_size: findById(sizes.value?.data, item.size_id),
+    variant_id: item.variant_id || null,
+    selected_variant: item.variant || null,
+    item_variants: item.item?.item_variants || [],
     category_id: item.category_id || '',
     selected_category: findById(categories.value?.data, item.category_id),
 }))
@@ -135,10 +134,22 @@ const handleItemChange = (index, selected_item) => {
     row.expire_date = ''
     row.quantity = row.quantity || 1
 
+    row.item_variants = selected_item.item_variants || []
+    row.selected_variant = pickDefaultVariant(row.item_variants)
+    row.variant_id = row.selected_variant?.id || null
+
     const marginPercentage = toNum(selected_item.margin_percentage, 0).toFixed(decimalPlaces);
-    row.base_unit_price = selected_item.sale_price ?? selected_item.avg_cost * (1 + marginPercentage / 100) ?? 0
+    const variantPrice = row.selected_variant?.avg_cost ?? row.selected_variant?.purchase_price
+    row.base_unit_price = variantPrice ?? selected_item.sale_price ?? selected_item.avg_cost * (1 + marginPercentage / 100) ?? 0
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
     row.unit_price = Number(((row.base_unit_price * Number(row.selected_measure.unit) * form.rate) / baseUnit).toFixed(2));
+}
+
+const handleVariantChange = (index, variant) => {
+    const row = form.items[index]
+    if (!row) return
+    row.selected_variant = variant || null
+    row.variant_id = variant?.id || null
 }
 
 const rowTotal = (index) => {
@@ -158,8 +169,9 @@ const deleteRow = (index) => {
 const addRow = () => {
     form.items.push({
         item_id: '', selected_item: '', quantity: '', unit_measure_id: '', selected_measure: '',
-        available_measures: [], batch: '', color: null, expire_date: '', unit_price: '', base_unit_price: '',
-        free: '', discount: '', size_id: '', selected_size: '', category_id: '', selected_category: '',
+        available_measures: [], batch: '', expire_date: '', unit_price: '', base_unit_price: '',
+        free: '', discount: '', variant_id: null, selected_variant: null, item_variants: [],
+        category_id: '', selected_category: '',
     })
 }
 
@@ -182,8 +194,7 @@ const handleSubmit = () => {
         .map((item) => ({
             ...item,
             unit_measure_id: item.selected_measure?.id,
-            color: item.color || null,
-            size_id: item.selected_size?.id ?? null,
+            variant_id: item.selected_variant?.id ?? item.variant_id ?? null,
             category_id: item.selected_category?.id ?? null,
         }));
 
@@ -272,8 +283,7 @@ useFormGuard(form)
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }} <span class="text-red-500">*</span></th>
-                            <th class="px-1 py-1 w-28" v-if="localColumns.size">{{ t('admin.size.size') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('item.color') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('item.variant') }}</th>
                             <th class="px-1 py-1 w-28" v-if="localColumns.category">{{ t('admin.category.category') }}</th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.discount">{{ t('general.discount') }}</th>
                             <th class="px-1 py-1 w-16" v-if="localColumns.free">{{ t('general.free') }}</th>
@@ -327,14 +337,15 @@ useFormGuard(form)
                             <td>
                                 <NextInput v-model="item.unit_price" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
                             </td>
-                            <td v-if="localColumns.size">
-                                <NextSelect :options="sizes.data" v-model="item.selected_size" label-key="name" value-key="id" :show-arrow="false" :reduce="size => size" />
-                            </td>
                             <td>
-                                <NextSelect v-model="item.color" :options="colorOptions" label-key="name" value-key="id" :reduce="o => o.id" :disabled="!item?.selected_item" :id="`quotation_color_${index}`" :placeholder="t('general.select')" :show-arrow="false" :append-to-body="true" :error="form.errors?.[`item_list.${index}.color`]">
-                                    <template #option="{ name, hex }"><span class="flex items-center gap-2"><span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" /><span>{{ name }}</span></span></template>
-                                    <template #selected-option="{ name, hex }"><span class="flex items-center gap-1.5"><span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" /><span>{{ name }}</span></span></template>
-                                </NextSelect>
+                                <VariantCell
+                                    :model-value="item.selected_variant"
+                                    :item-variants="item.item_variants"
+                                    :disabled="!item?.selected_item"
+                                    :error="form.errors?.[`item_list.${index}.variant_id`]"
+                                    :id="`quotation_variant_${index}`"
+                                    @update:modelValue="value => handleVariantChange(index, value)"
+                                />
                             </td>
                             <td v-if="localColumns.category">
                                 <NextSelect :options="categories.data" v-model="item.selected_category" label-key="name" value-key="id" :show-arrow="false" :reduce="category => category" />
@@ -360,7 +371,6 @@ useFormGuard(form)
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="localColumns.measure"></td>
                             <td class="text-center">{{ goodsTotal || 0 }}</td>
-                            <td v-if="localColumns.size"></td>
                             <td></td>
                             <td v-if="localColumns.category"></td>
                             <td class="text-center" v-if="localColumns.discount">{{ totalItemDiscount || 0 }}</td>

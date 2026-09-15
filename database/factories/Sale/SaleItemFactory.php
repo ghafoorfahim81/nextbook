@@ -24,7 +24,6 @@ class SaleItemFactory extends Factory
             'quantity' => fake()->randomFloat(2, 1, 50),
             'unit_measure_id' => UnitMeasure::factory(),
             'warehouse_id' => Warehouse::factory(),
-            'size_id' => null,
             'unit_price' => fake()->randomFloat(4, 10, 500),
             'net_unit_cost' => null,
             'discount' => fake()->randomFloat(2, 0, 10),

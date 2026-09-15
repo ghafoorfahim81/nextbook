@@ -14,6 +14,8 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { Trash2 } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
 import { useLazyProps } from '@/composables/useLazyProps'
+import { pickDefaultVariant } from '@/composables/useVariantLine'
+import VariantCell from '@/Components/inventory/VariantCell.vue'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -42,6 +44,9 @@ const createEmptyRow = () => ({
   unit_price: '',
   base_unit_price: '',
   available_measures: [],
+  variant_id: null,
+  selected_variant: null,
+  item_variants: [],
 })
 
 const form = useForm({
@@ -63,6 +68,9 @@ const form = useForm({
     unit_price: item.unit_price || '',
     base_unit_price: item.unit_price || 0,
     available_measures: [],
+    variant_id: item.variant_id || null,
+    selected_variant: item.variant || null,
+    item_variants: item.item?.item_variants || [],
   })),
   attachments: [],
 })
@@ -116,13 +124,19 @@ const handleItemChange = (index, selectedItem) => {
     row.expire_date = ''
     row.unit_price = ''
     row.base_unit_price = ''
+    row.item_variants = []
+    row.selected_variant = null
+    row.variant_id = null
     return
   }
 
   row.available_measures = buildAvailableMeasures(selectedItem)
   row.selected_measure = selectedItem.unitMeasure || null
   row.item_id = selectedItem.id
-  row.base_unit_price = selectedItem.purchase_price ?? selectedItem.unit_price ?? 0
+  row.item_variants = selectedItem.item_variants || []
+  row.selected_variant = pickDefaultVariant(row.item_variants)
+  row.variant_id = row.selected_variant?.id || null
+  row.base_unit_price = row.selected_variant?.purchase_price ?? selectedItem.purchase_price ?? selectedItem.unit_price ?? 0
 
   const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
@@ -131,6 +145,13 @@ const handleItemChange = (index, selectedItem) => {
   if (index === form.items.length - 1) {
     addRow()
   }
+}
+
+const handleVariantChange = (index, variant) => {
+  const row = form.items[index]
+  if (!row) return
+  row.selected_variant = variant || null
+  row.variant_id = variant?.id || null
 }
 
 const isRowEnabled = (index) => {
@@ -185,6 +206,7 @@ function handleSubmit() {
       batch: item.batch || '',
       expire_date: item.expire_date || null,
       unit_price: item.unit_price || 0,
+      variant_id: item.selected_variant?.id ?? item.variant_id ?? null,
     }))
 
   if (!payloadItems.length) {
@@ -312,6 +334,7 @@ useFormGuard(form)
             <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
               <th class="px-1 py-1 w-5 min-w-5">#</th>
               <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
+              <th class="px-1 py-1 w-32">{{ t('item.variant') }}</th>
               <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
               <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
               <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
@@ -342,6 +365,16 @@ useFormGuard(form)
                   value-key="id"
                   :reduce="itemValue => itemValue"
                   @update:modelValue="value => { handleItemChange(index, value) }"
+                />
+              </td>
+              <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                <VariantCell
+                  :model-value="item.selected_variant"
+                  :item-variants="item.item_variants"
+                  :disabled="!item?.selected_item"
+                  :error="form.errors?.[`items.${index}.variant_id`]"
+                  :id="`transfer_variant_${index}`"
+                  @update:modelValue="value => handleVariantChange(index, value)"
                 />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -408,6 +441,7 @@ useFormGuard(form)
             <tr class="bg-violet-500/10 hover:bg-violet-500/30 transition-colors">
               <td></td>
               <td class="text-center">{{ totalRows }}</td>
+              <td></td>
               <td></td>
               <td></td>
               <td class="text-center">{{ totalQuantity || 0 }}</td>

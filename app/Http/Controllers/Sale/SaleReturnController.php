@@ -130,7 +130,7 @@ class SaleReturnController extends Controller
     {
         $this->authorize('create', SaleReturn::class);
 
-        $sale = Sale::with(['items.item', 'items.unitMeasure', 'items.warehouse', 'transaction', 'customer:id,name'])
+        $sale = Sale::with(['items.item', 'items.variant', 'items.unitMeasure', 'items.warehouse', 'transaction', 'customer:id,name'])
             ->findOrFail($request->query('sale_id'));
 
         abort_unless($sale->status === TransactionStatus::POSTED->value, 422, 'Only posted sales can be returned against.');
@@ -151,9 +151,8 @@ class SaleReturnController extends Controller
                 'item_id' => $item->item_id,
                 'item_name' => $item->item?->name,
                 'batch' => $item->batch,
-                'color' => $item->color,
-                'size_id' => $item->size_id,
-                'size_name' => $item->size?->name,
+                'variant_id' => $item->variant_id,
+                'variant_name' => $item->variant?->displayName(),
                 'expire_date' => $item->expire_date?->toDateString(),
                 'unit_measure_id' => $item->unit_measure_id,
                 'unit_measure_name' => $item->unitMeasure?->name,
@@ -266,6 +265,7 @@ class SaleReturnController extends Controller
     {
         $saleReturn->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
             'items.warehouse',
             'sale:id,number,customer_id',
@@ -295,6 +295,7 @@ class SaleReturnController extends Controller
 
         $saleReturn->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
             'items.warehouse',
             'sale:id,number,customer_id',
@@ -462,14 +463,13 @@ class SaleReturnController extends Controller
                 'sale_return_id' => $saleReturn->id,
                 'sale_item_id' => $saleItem->id,
                 'item_id' => $saleItem->item_id,
+                'variant_id' => $saleItem->variant_id,
                 'batch' => $saleItem->batch,
-                'color' => $saleItem->color,
                 'expire_date' => $saleItem->expire_date,
                 'quantity' => $quantity,
                 'unit_measure_id' => $saleItem->unit_measure_id,
                 'unit_price' => $saleItem->unit_price,
                 'net_unit_cost' => $saleItem->net_unit_cost,
-                'size_id' => $saleItem->size_id,
                 'warehouse_id' => $saleItem->warehouse_id,
             ]);
 
@@ -493,10 +493,9 @@ class SaleReturnController extends Controller
                 'unit_cost_override' => $unitCost,
                 'status' => $postImmediately ? StockStatus::POSTED->value : StockStatus::DRAFT->value,
                 'batch' => $saleItem->batch,
-                'color' => $saleItem->color,
                 'date' => $date,
                 'expire_date' => $saleItem->expire_date,
-                'size_id' => $saleItem->size_id,
+                'variant_id' => $saleItem->variant_id,
                 'warehouse_id' => $saleItem->warehouse_id,
                 'branch_id' => $saleReturn->branch_id,
                 'reference_type' => SaleReturn::class,

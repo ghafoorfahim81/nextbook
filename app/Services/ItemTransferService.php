@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Enums\TransferStatus;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Models\ItemTransfer\ItemTransferItem;
@@ -18,6 +19,8 @@ use App\Support\BranchContext;
 
 class ItemTransferService
 {
+    use ResolvesLineVariant;
+
     public function __construct(
         private StockService $stockService,
         private ActivityLogService $activityLogService,
@@ -48,6 +51,7 @@ class ItemTransferService
                 ItemTransferItem::create([
                     'item_transfer_id' => $transfer->id,
                     'item_id' => $itemData['item_id'],
+                    'variant_id' => $this->resolveLineVariantId($itemData),
                     'batch' => $itemData['batch'] ?? null,
                     'expire_date' => $itemData['expire_date'] ?? null,
                     'quantity' => $itemData['quantity'],
@@ -123,6 +127,7 @@ class ItemTransferService
                     ItemTransferItem::create([
                         'item_transfer_id' => $transfer->id,
                         'item_id' => $itemData['item_id'],
+                        'variant_id' => $this->resolveLineVariantId($itemData),
                         'batch' => $itemData['batch'] ?? null,
                         'expire_date' => $itemData['expire_date'] ?? null,
                         'quantity' => $itemData['quantity'],
@@ -222,7 +227,7 @@ class ItemTransferService
                     'batch'           => $item->batch ?? null,
                     'date'            => $this->dateConversionService->toGregorian($transfer->date),
                     'expire_date'     => $item->expire_date ?? null,
-                    'size_id'         => $item->size_id ?? null,
+                    'variant_id'      => $item->variant_id ?? null,
                     'warehouse_id'    => $transfer->from_warehouse_id,
                     'branch_id'       => $transfer->branch_id,
                     'reference_type'  => ItemTransfer::class,
@@ -240,7 +245,7 @@ class ItemTransferService
                     'batch'           => $item->batch ?? null,
                     'date'            => $transfer->date,
                     'expire_date'     => $item->expire_date ?? null,
-                    'size_id'         => $item->size_id ?? null,
+                    'variant_id'      => $item->variant_id ?? null,
                     'warehouse_id'    => $transfer->to_warehouse_id,
                     'branch_id'       => $transfer->branch_id,
                     'reference_type'  => ItemTransfer::class,
@@ -317,7 +322,7 @@ class ItemTransferService
                             'batch' => $movement->batch,
                             'date' => now()->toDateString(),
                             'expire_date' => $movement->expire_date,
-                            'size_id' => $movement->size_id,
+                            'variant_id' => $movement->variant_id,
                             'warehouse_id' => $movement->warehouse_id,
                             'branch_id' => $transfer->branch_id,
                             'reference_type' => ItemTransfer::class,

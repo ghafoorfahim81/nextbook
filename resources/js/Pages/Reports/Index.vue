@@ -83,8 +83,6 @@ function normalizeFilters(filters) {
     account_id: filters.account_id || '',
     currency_id: filters.currency_id || '',
     warehouse_id: filters.warehouse_id || '',
-    color: filters.color || '',
-    size_id: filters.size_id || '',
     type: filters.type || '',
     reason: filters.reason || '',
     balance_type: filters.balance_type || 'all',
@@ -635,7 +633,7 @@ const reportDefinitions = computed(() => ({
   variant_wise_report: {
     label: t('report.reports.variant_wise_report.label'),
     description: t('report.reports.variant_wise_report.description'),
-    filters: ['item_id', 'warehouse_id', 'color', 'size_id'],
+    filters: ['item_id', 'warehouse_id'],
     snapshot: true,
     group: 'inventory',
     icon: Palette,
@@ -648,8 +646,7 @@ const reportDefinitions = computed(() => ({
     columns: [
       { key: 'item_code', label: t('report.columns.item_code') },
       { key: 'item_name', label: t('report.columns.item_name') },
-      { key: 'color', label: t('report.columns.color') },
-      { key: 'size', label: t('report.columns.size') },
+      { key: 'variant', label: t('item.variant') },
       { key: 'in_quantity', label: t('report.columns.in_quantity'), type: 'quantity', align: 'right' },
       { key: 'out_quantity', label: t('report.columns.out_quantity'), type: 'quantity', align: 'right' },
       { key: 'on_hand', label: t('report.columns.on_hand'), type: 'quantity', align: 'right' },

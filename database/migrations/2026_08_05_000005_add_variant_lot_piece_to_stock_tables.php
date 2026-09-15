@@ -7,14 +7,10 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Point the stock ledger at the new identity tables.
  *
- * The ledger must never know what a "colour" is — the moment it does, it
- * belongs to the clothing business and every other trade needs a new column.
- * variant_id is opaque: a garment shop resolves it to size/colour, a computer
- * shop to RAM/storage, and the ledger cannot tell the difference.
- *
- * The legacy batch / expire_date / color / size_id columns stay for now so
- * nothing breaks mid-migration; they are dropped once the backfill has run and
- * been verified.
+ * The ledger must never know what a garment attribute is — the moment it does,
+ * it belongs to the clothing business and every other trade needs a new column.
+ * variant_id is opaque: a garment shop resolves it one way, a computer shop to
+ * RAM/storage, and the ledger cannot tell the difference.
  *
  * stock_balances deliberately gets no piece_id. It is an aggregate, and a piece
  * is always quantity 1 — adding it would turn 500 phones into 500 balance rows

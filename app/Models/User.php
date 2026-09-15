@@ -125,8 +125,7 @@ class User extends Authenticatable
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'warehouse' => true, 'description' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => true,
-                'size' => true,
+                'variant' => true,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -161,8 +160,7 @@ class User extends Authenticatable
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => false,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -185,8 +183,7 @@ class User extends Authenticatable
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => true,
-                'size' => true,
+                'variant' => true,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -208,8 +205,7 @@ class User extends Authenticatable
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => false,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -230,8 +226,7 @@ class User extends Authenticatable
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'warehouse' => true, 'description' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => true,
-                'size' => true,
+                'variant' => true,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -327,8 +322,7 @@ class User extends Authenticatable
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => false,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -349,8 +343,7 @@ class User extends Authenticatable
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => true,
-                'size' => true,
+                'variant' => true,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -371,8 +364,7 @@ class User extends Authenticatable
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => false,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,

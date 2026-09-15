@@ -1005,7 +1005,7 @@ function logout() {
                                         @mouseenter="openFlyout(getFlyoutKey(item))"
                                         @mouseleave="closeFlyout()"
                                     >
-                                        <DropdownMenuLabel class="text-xs text-muted-foreground">
+                                        <DropdownMenuLabel class="text-sm font-medium">
                                             {{ item.title }}
                                         </DropdownMenuLabel>
                                         <DropdownMenuSeparator />
@@ -1014,7 +1014,7 @@ function logout() {
                                             :key="subItem.title"
                                             as-child
                                         >
-                                            <Link :href="subItem.url" prefetch cache-for="1m" class="w-full">
+                                            <Link :href="subItem.url" prefetch cache-for="1m" class="w-full text-sm text-muted-foreground">
                                                 <span>{{ subItem.title }}</span>
                                             </Link>
                                         </DropdownMenuItem>
@@ -1036,9 +1036,7 @@ function logout() {
                                                 :isActive="shouldExpandParent(item.items)"
                                             >
                                                 <component :is="item.icon" />
-                                                <span
-                                                    class="hover:text-primary focus:text-primary focus:outline-none focus:ring-ring"
-                                                >
+                                                <span class="font-medium hover:text-primary">
                                                     {{ item.title }}
                                                 </span>
                                                 <component
@@ -1056,7 +1054,7 @@ function logout() {
                                                     <SidebarMenuSubButton
                                                         :isActive="isMenuItemActive(subItem.url)"
                                                         as-child
-                                                        class="hover:text-primary focus:text-primary focus:outline-none focus:ring-ring data-[active=true]:bg-transparent data-[active=true]:text-primary"
+                                                        class="hover:text-primary focus:text-primary focus:outline-none focus:ring-ring data-[active=true]:bg-transparent data-[active=true]:font-medium data-[active=true]:text-primary"
                                                     >
                                                         <Link :href="subItem.url" prefetch cache-for="1m">
                                                             <span>{{ subItem.title }}</span>

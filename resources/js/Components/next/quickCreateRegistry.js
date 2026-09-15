@@ -110,7 +110,6 @@ export const quickCreateRegistry = {
       { key: 'sale_price', labelKey: 'item.sale_price', type: 'number', required: true },
       { key: 'brand_id', labelKey: 'admin.brand.brand', type: 'select' },
       { key: 'category_id', labelKey: 'admin.category.category', type: 'select' },
-      { key: 'size_id', labelKey: 'item.size', type: 'select' },
     ],
   },
 
@@ -124,7 +123,6 @@ export const quickCreateRegistry = {
       { key: 'sale_price', labelKey: 'item.sale_price', type: 'number', required: true },
       { key: 'brand_id', labelKey: 'admin.brand.brand', type: 'select' },
       { key: 'category_id', labelKey: 'admin.category.category', type: 'select' },
-      { key: 'size_id', labelKey: 'item.size', type: 'select' },
     ],
   },
 

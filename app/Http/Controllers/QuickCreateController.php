@@ -303,7 +303,6 @@ class QuickCreateController extends Controller
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'brand_id' => ['nullable', 'string', 'exists:brands,id'],
             'category_id' => ['nullable', 'string', 'exists:categories,id'],
-            'size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'sale_price' => ['required', 'numeric'],
         ]);
 

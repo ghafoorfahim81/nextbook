@@ -20,7 +20,8 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { useColors } from '@/composables/useColors';
+import { pickDefaultVariant, resolveVariantUnitCost } from '@/composables/useVariantLine'
+import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import PurchaseOrderPickerDialog from '@/Components/next/PurchaseOrderPickerDialog.vue'
@@ -54,10 +55,6 @@ const props = defineProps({
     preselectedLedger: {type: Object, default: null},
 })
 
-// Purchases bring new stock in, so any colour/size may be received.
-const { colorOptions } = useColors();
-const sizeOptions = computed(() => props.sizes?.data ?? props.sizes ?? [])
-
 const { fetchLazyProps, loading: lazyLoading } = useLazyProps(props, ['ledgers', 'accounts'])
 
 const buildEmptyRow = () => ({
@@ -66,9 +63,9 @@ const buildEmptyRow = () => ({
     quantity: '',
     unit_measure_id: '',
     batch: '',
-    color: null,
-    size_id: null,
-    selected_size: null,
+    variant_id: null,
+    selected_variant: null,
+    item_variants: [],
     expire_date: '',
     unit_price: '',
     base_unit_price: '',
@@ -360,10 +357,10 @@ const applyPurchaseOrderToForm = (purchaseOrderId, payload) => {
         available_measures: [],
         batch: item.batch || '',
         selected_batch: null,
-        // Carry the ordered colour/size straight onto the purchase line.
-        color: item.color || null,
-        size_id: item.size_id || null,
-        selected_size: item.size_id ? { id: item.size_id, name: item.size_name } : null,
+        // Carry the ordered variant straight onto the purchase line.
+        variant_id: item.variant_id || null,
+        selected_variant: item.variant || null,
+        item_variants: [],
         expire_date: item.expire_date || '',
         unit_price: item.unit_price,
         base_unit_price: item.unit_price,
@@ -432,12 +429,11 @@ function handleSubmit(createAndNew = false) {
         const FormItems = form.items.filter(item => item.selected_item && item.item_id);
         form.item_list = FormItems.map(item => ({
             item_id: item.item_id,
+            variant_id: item.variant_id || item.selected_variant?.id || null,
             quantity: item.quantity,
             unit_price: item.unit_price,
             unit_measure_id: item.selected_measure?.id || item.unit_measure_id,
             batch: item.batch || '',
-            color: item.color || null,
-            size_id: item.selected_size?.id || item.size_id || null,
             expire_date: item.expire_date || null,
             item_discount: item.item_discount || 0,
             free: item.free || 0,
@@ -603,8 +599,12 @@ const handleItemChange = async (index, selected_item) => {
     row.reserved_in = selected_item.reserved_in
     row.available = selected_item.available
 
+    row.item_variants = selected_item.item_variants || []
+    row.selected_variant = pickDefaultVariant(row.item_variants)
+    row.variant_id = row.selected_variant?.id || null
+
     // Set the base unit price - this is the price per base unit
-    row.base_unit_price = selected_item.purchase_price ?? selected_item.avg_cost ?? 0
+    row.base_unit_price = resolveVariantUnitCost(selected_item, row.selected_variant, 'purchase_price')
 
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
@@ -615,6 +615,14 @@ const handleItemChange = async (index, selected_item) => {
         addRow()
     }
 
+    notifyIfDuplicate(index)
+}
+
+const handleVariantChange = (index, variant) => {
+    const row = form.items[index]
+    if (!row) return
+    row.selected_variant = variant ?? null
+    row.variant_id = variant?.id || null
     notifyIfDuplicate(index)
 }
 const isRowEnabled = (index) => {
@@ -631,6 +639,7 @@ const buildRowKey = (r) => {
         || ''
     return [
         (r.item_id || r.selected_item?.id || '').toString(),
+        (r.variant_id || r.selected_variant?.id || '').toString(),
         (r.batch || '').toString().trim().toLowerCase(),
         (r.expire_date || '').toString().trim(),
         measureId.toString()
@@ -865,8 +874,8 @@ const focusBarcode = () => barcodeRef.value?.focus?.()
 
 const handleScannedItem = async (item) => {
     if (!item) return
-    // A plain (non-variant) line for the same item just increments.
-    const existing = form.items.find(r => r.selected_item && r.item_id === item.id && !r.color && !r.selected_size)
+    // A plain (single-variant) line for the same item just increments.
+    const existing = form.items.find(r => r.selected_item && r.item_id === item.id && (r.item_variants?.length || 0) <= 1)
     if (existing) {
         existing.quantity = toNum(existing.quantity, 0) + 1
     } else {
@@ -915,9 +924,7 @@ const purchasePrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?
 if (!purchasePrefs.general_fields || typeof purchasePrefs.general_fields !== 'object') purchasePrefs.general_fields = {}
 if (!purchasePrefs.item_columns || typeof purchasePrefs.item_columns !== 'object') purchasePrefs.item_columns = {}
 if (purchasePrefs.item_columns.reserved_in === undefined) purchasePrefs.item_columns.reserved_in = true
-// Colour, size and header description are shown by default for backward compatibility.
-if (purchasePrefs.item_columns.colors === undefined) purchasePrefs.item_columns.colors = true
-if (purchasePrefs.item_columns.size === undefined) purchasePrefs.item_columns.size = true
+// Header description is shown by default for backward compatibility.
 if (purchasePrefs.general_fields.description === undefined) purchasePrefs.general_fields.description = true
 const general_fields = purchasePrefs.general_fields
 const localColumns = purchasePrefs.item_columns
@@ -1070,10 +1077,9 @@ useFormGuard(form)
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-36">{{ t('item.variant') }}</th>
                             <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t(spec_text) }}</th>
                             <th class="px-1 py-1 w-36" v-if="localColumns.expiry">{{ t('general.expire_date') }}</th>
-                            <th class="px-1 py-1 w-32" v-if="localColumns.colors">{{ t('item.color') }}</th>
-                            <th class="px-1 py-1 w-28" v-if="localColumns.size">{{ t('item.size') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.on_hand">{{ t('general.on_hand') }}</th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.reserved_in">{{ t('general.reserved_in') }}</th>
@@ -1109,6 +1115,16 @@ useFormGuard(form)
                                     @update:modelValue="value => { handleItemChange(index, value) }"
                                     />
                             </td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                                <VariantCell
+                                    v-model="item.selected_variant"
+                                    :item-variants="item.item_variants"
+                                    :disabled="!item.selected_item"
+                                    :id="`purchase_variant_${index}`"
+                                    :error="form.errors?.[`item_list.${index}.variant_id`]"
+                                    @update:modelValue="value => handleVariantChange(index, value)"
+                                />
+                            </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="localColumns.batch">
                                 <NextInput
                                     v-model="item.batch"
@@ -1122,52 +1138,6 @@ useFormGuard(form)
                                 :lock-future-dates="false"
                                 popover="top-left"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
-                            </td>
-                            <td v-if="localColumns.colors" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextSelect
-                                    v-model="item.color"
-                                    :options="colorOptions"
-                                    label-key="name"
-                                    value-key="id"
-                                    :reduce="o => o.id"
-                                    :disabled="!item.selected_item"
-                                    :id="`purchase_color_${index}`"
-                                    :placeholder="t('general.select')"
-                                    :show-arrow="false"
-                                    :append-to-body="true"
-                                    :error="form.errors?.[`item_list.${index}.color`]"
-                                >
-                                    <template #option="{ name, hex }">
-                                        <span class="flex items-center gap-2">
-                                            <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
-                                            <span>{{ name }}</span>
-                                        </span>
-                                    </template>
-                                    <template #selected-option="{ name, hex }">
-                                        <span class="flex items-center gap-1.5">
-                                            <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
-                                            <span>{{ name }}</span>
-                                        </span>
-                                    </template>
-                                </NextSelect>
-                            </td>
-                            <td v-if="localColumns.size" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextSelect
-                                    v-model="item.selected_size"
-                                    :options="sizeOptions"
-                                    label-key="name"
-                                    value-key="id"
-                                    :reduce="s => s"
-                                    :disabled="!item.selected_item"
-                                    :id="`purchase_size_${index}`"
-                                    :placeholder="t('general.select')"
-                                    :show-arrow="false"
-                                    :append-to-body="true"
-                                    :searchable="true"
-                                    resource-type="sizes"
-                                    :search-fields="['name','code']"
-                                    :error="form.errors?.[`item_list.${index}.size_id`]"
-                                />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
@@ -1254,11 +1224,11 @@ useFormGuard(form)
                             <td></td>
                             <!-- Item total centered across item column -->
                             <td class="text-center">{{ totalRows }}</td>
-                            <!-- Batch, Expiry, Colour, Size blank -->
+                            <!-- Variant blank -->
+                            <td></td>
+                            <!-- Batch, Expiry blank -->
                             <td v-if="localColumns.batch"></td>
                             <td v-if="localColumns.expiry"></td>
-                            <td v-if="localColumns.colors"></td>
-                            <td v-if="localColumns.size"></td>
                             <!-- Qty total centered -->
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <!-- On hand blank -->

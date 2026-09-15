@@ -1222,6 +1222,7 @@
 :root {
   --app-font-size: 14px;
   --app-sidebar-font-size: 14px;
+  --app-sidebar-sub-font-size: max(12px, calc(var(--app-sidebar-font-size) - 1px));
   --app-heading-font-size: 14px;
   --app-table-header-font-size: 16px;
   --app-table-content-font-size: 14px;
@@ -1247,6 +1248,20 @@ h6 {
 
 [data-sidebar='sidebar'] :is(a, button, [role='button'], [data-sidebar='group-label']) {
   font-size: var(--app-sidebar-font-size) !important;
+}
+
+[data-sidebar='sidebar'] [data-sidebar='menu-button'] {
+  font-weight: 500;
+}
+
+[data-sidebar='sidebar'] [data-sidebar='group-label'] {
+  font-size: max(10px, calc(var(--app-sidebar-font-size) * 0.75)) !important;
+  font-weight: 500;
+}
+
+[data-sidebar='sidebar'] [data-sidebar='menu-sub-button'] {
+  font-size: var(--app-sidebar-sub-font-size) !important;
+  font-weight: 400;
 }
 
 th {

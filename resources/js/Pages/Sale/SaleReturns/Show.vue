@@ -2,7 +2,6 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useColors } from '@/composables/useColors';
 import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Package2, FileText, User, Calendar, DollarSign, FileCheck } from 'lucide-vue-next';
@@ -11,7 +10,6 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
-const { resolveColor } = useColors();
 const { toast } = useToast();
 const page = usePage();
 
@@ -177,8 +175,7 @@ const reverseSaleReturn = (reason) => {
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.item') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.batch') }}</th>
-                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.color') }}</th>
-                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.size') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.variant') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.qty') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.unit') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.price') }}</th>
@@ -194,8 +191,7 @@ const reverseSaleReturn = (reason) => {
                                     <div class="text-xs text-muted-foreground">{{ item.item_code }}</div>
                                 </td>
                                 <td class="px-3 py-3 text-foreground">{{ item.batch || '-' }}</td>
-                                <td class="px-3 py-3 text-foreground"><span v-if="resolveColor(item.color)" class="flex items-center gap-1.5"><span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: resolveColor(item.color).hex }" />{{ resolveColor(item.color).name }}</span><span v-else>-</span></td>
-                                <td class="px-3 py-3 text-foreground">{{ item.size_name || '-' }}</td>
+                                <td class="px-3 py-3 text-foreground">{{ item.variant?.display_name || '-' }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.quantity }}</td>
                                 <td class="px-3 py-3 text-foreground">{{ item.unit_measure_name }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ formatLineValue(item.unit_price) }}</td>

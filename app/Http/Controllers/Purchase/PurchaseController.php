@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchase;
 
+use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\PurchaseStoreRequest;
 use App\Http\Requests\Purchase\PurchaseUpdateRequest;
@@ -39,6 +40,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use App\Support\BranchContext;
 class PurchaseController extends Controller
 {
+    use ResolvesLineVariant;
+
     private $dateConversionService;
     public function __construct(DateConversionService $dateConversionService)
     {
@@ -179,6 +182,7 @@ class PurchaseController extends Controller
             $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
+                $item['variant_id'] = $this->resolveLineVariantId($item);
                 return $item;
             }, $validated['item_list']);
             $purchase->items()->createMany($validated['item_list']);
@@ -213,10 +217,9 @@ class PurchaseController extends Controller
                     'unit_cost'       => $unitPrice * $rate,
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
-                    'color'           => $item['color'] ?? null,
                     'date'            => $validated['date'],
                     'expire_date'     => $item['expire_date'],
-                    'size_id'         => $item['size_id'] ?? null,
+                    'variant_id'      => $item['variant_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
                     'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,
@@ -377,6 +380,7 @@ class PurchaseController extends Controller
     {
         $purchase->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
             'supplier',
             'purchaseOrder:id,number',
@@ -413,6 +417,8 @@ class PurchaseController extends Controller
         return inertia('Purchase/Purchases/Edit', [
             'purchase' => new PurchaseResource($purchase->load([
                 'items.item.unitMeasure',
+                'items.item.variants',
+                'items.variant',
                 'items.unitMeasure',
                 'items.warehouse',
                 'supplier',
@@ -477,6 +483,7 @@ class PurchaseController extends Controller
             $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
+                $item['variant_id'] = $this->resolveLineVariantId($item);
 
                 return $item;
             }, $validated['item_list']);
@@ -522,10 +529,9 @@ class PurchaseController extends Controller
                     'unit_cost'       => $unitPrice * $rate,
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
-                    'color'           => $item['color'] ?? null,
                     'date'            => $validated['date'],
                     'expire_date'     => $item['expire_date'] ?? null,
-                    'size_id'         => $item['size_id'] ?? null,
+                    'variant_id'      => $item['variant_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
                     'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,

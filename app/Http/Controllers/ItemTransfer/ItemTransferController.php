@@ -101,7 +101,7 @@ class ItemTransferController extends Controller
      */
     public function show(Request $request, ItemTransfer $itemTransfer)
     {
-        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure', 'branch', 'createdBy', 'updatedBy', 'attachments']);
+        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.variant', 'items.unitMeasure', 'branch', 'createdBy', 'updatedBy', 'attachments']);
 
         return response()->json([
             'data' => new ItemTransferResource($itemTransfer),
@@ -116,7 +116,7 @@ class ItemTransferController extends Controller
         if ($itemTransfer->status === TransferStatus::COMPLETED || $itemTransfer->status === TransferStatus::CANCELLED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_edit_completed_or_cancelled_transfer')]);
         }
-        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure', 'attachments']);
+        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'attachments']);
 
         return inertia('ItemTransfer/ItemTransfers/Edit', [
             'transfer' => new ItemTransferResource($itemTransfer),

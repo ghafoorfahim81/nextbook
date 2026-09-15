@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchase;
 
+use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\PurchaseQuotationStoreRequest;
 use App\Http\Requests\Purchase\PurchaseQuotationUpdateRequest;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseQuotationController extends Controller
 {
+    use ResolvesLineVariant;
+
     private $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -124,6 +127,10 @@ class PurchaseQuotationController extends Controller
                 'status' => $documentStatus,
             ]);
 
+            $validated['item_list'] = array_map(
+                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
+                $validated['item_list']
+            );
             $purchaseQuotation->items()->createMany($validated['item_list']);
 
             $activityLogService->logCreate(
@@ -162,8 +169,8 @@ class PurchaseQuotationController extends Controller
     {
         $purchaseQuotation->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
-            'items.size',
             'items.category',
             'supplier',
             'currency',
@@ -189,7 +196,7 @@ class PurchaseQuotationController extends Controller
             return back()->with('error', 'Only draft documents can be edited.');
         }
 
-        $purchaseQuotation->load(['items.item', 'items.unitMeasure', 'items.size', 'items.category', 'supplier', 'currency', 'warehouse']);
+        $purchaseQuotation->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'supplier', 'currency', 'warehouse']);
 
         return inertia('Purchase/PurchaseQuotations/Edit', [
             'purchaseQuotation' => new PurchaseQuotationResource($purchaseQuotation),
@@ -227,6 +234,10 @@ class PurchaseQuotationController extends Controller
             ]);
 
             $purchaseQuotation->items()->forceDelete();
+            $validated['item_list'] = array_map(
+                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
+                $validated['item_list']
+            );
             $purchaseQuotation->items()->createMany($validated['item_list']);
 
             $activityLogService->logUpdate(
@@ -308,8 +319,8 @@ class PurchaseQuotationController extends Controller
 
         $purchaseQuotation->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
-            'items.size',
             'supplier',
             'currency',
             'warehouse',

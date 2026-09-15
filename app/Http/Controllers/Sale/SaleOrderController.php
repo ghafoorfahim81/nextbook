@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Sale;
 
+use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sale\SaleOrderStoreRequest;
 use App\Http\Requests\Sale\SaleOrderUpdateRequest;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\DB;
 
 class SaleOrderController extends Controller
 {
+    use ResolvesLineVariant;
+
     private $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -124,6 +127,10 @@ class SaleOrderController extends Controller
                 'status' => $documentStatus,
             ]);
 
+            $validated['item_list'] = array_map(
+                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
+                $validated['item_list']
+            );
             $saleOrder->items()->createMany($validated['item_list']);
 
             $activityLogService->logCreate(
@@ -162,8 +169,8 @@ class SaleOrderController extends Controller
     {
         $saleOrder->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
-            'items.size',
             'items.category',
             'customer',
             'currency',
@@ -190,7 +197,7 @@ class SaleOrderController extends Controller
             return back()->with('error', 'Only draft documents can be edited.');
         }
 
-        $saleOrder->load(['items.item', 'items.unitMeasure', 'items.size', 'items.category', 'customer', 'currency', 'warehouse']);
+        $saleOrder->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'customer', 'currency', 'warehouse']);
 
         return inertia('Sale/SaleOrders/Edit', [
             'saleOrder' => new SaleOrderResource($saleOrder),
@@ -228,6 +235,10 @@ class SaleOrderController extends Controller
             ]);
 
             $saleOrder->items()->forceDelete();
+            $validated['item_list'] = array_map(
+                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
+                $validated['item_list']
+            );
             $saleOrder->items()->createMany($validated['item_list']);
 
             $activityLogService->logUpdate(
@@ -410,7 +421,7 @@ class SaleOrderController extends Controller
 
         abort_unless($saleOrder->status === SaleOrderStatus::POSTED->value, 422, 'Only posted sale orders can be converted.');
 
-        $saleOrder->load(['items.item', 'items.unitMeasure', 'customer:id,name']);
+        $saleOrder->load(['items.item', 'items.variant', 'items.unitMeasure', 'customer:id,name']);
 
         return response()->json([
             'sale_order' => [
@@ -434,10 +445,12 @@ class SaleOrderController extends Controller
                 'unit_measure_id' => $item->unit_measure_id,
                 'unit_measure_name' => $item->unitMeasure?->name,
                 'batch' => $item->batch,
-                'color' => $item->color,
+                'variant_id' => $item->variant_id,
+                'variant' => $item->variant ? [
+                    'id' => $item->variant->id,
+                    'display_name' => $item->variant->displayName(),
+                ] : null,
                 'expire_date' => $item->expire_date?->toDateString(),
-                'size_id' => $item->size_id,
-                'size_name' => $item->size?->name,
                 'category_id' => $item->category_id,
                 'discount' => (float) ($item->discount ?? 0),
             ])->values(),
