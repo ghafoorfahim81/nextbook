@@ -122,6 +122,7 @@ class AuthServiceProvider extends ServiceProvider
         Item::class => ItemPolicy::class,
         LandedCost::class => LandedCostPolicy::class,
         StockAdjustment::class => StockAdjustmentPolicy::class,
+        \App\Models\Inventory\DiscountRule::class => \App\Policies\DiscountRulePolicy::class,
 
         // Ledgers (customers & suppliers)
         Ledger::class => CustomerSupplierPolicy::class,

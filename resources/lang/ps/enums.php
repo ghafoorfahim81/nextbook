@@ -51,6 +51,12 @@ return [
         'credit' => 'Credit',
         'on_loan' => 'On Loan',
     ],
+    'discount_scope' => [
+        'all' => 'ټول توکي',
+        'brand' => 'برانډ',
+        'category' => 'ډله',
+        'item' => 'توکی',
+    ],
     'discount_type' => [
         'percentage' => 'Percentage',
         'currency' => 'Currency',

@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Services\StockService;
+use App\Services\DiscountRuleResolver;
 use App\Services\AttachmentService;
 use App\Models\Transaction\Transaction;
 use App\Enums\TransactionStatus;
@@ -256,7 +257,7 @@ class SaleController extends Controller
                 // `discount`. Without this the value is dropped on create, so the GL
                 // records the discount (it is folded into discount_total) while the
                 // sale_items row stores 0 and the sales report cannot subtract it.
-                $item['discount'] = $item['item_discount'] ?? 0;
+                $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->branch_id);
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 $item['variant_id'] = $this->resolveLineVariantId($item);
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
@@ -657,8 +658,8 @@ class SaleController extends Controller
 
             // $oldItemIds = collect($affectedCombos)->pluck('item_id')->unique()->values()->all();
 
-            $validated['item_list'] = array_map(function ($item) use ($validated) {
-                $item['discount'] = $item['item_discount'] ?? 0;
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale) {
+                $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->branch_id);
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 $item['variant_id'] = $this->resolveLineVariantId($item);
 
@@ -1211,6 +1212,32 @@ class SaleController extends Controller
         $rate = (float) ($validated['rate'] ?? 1);
 
         return $rate > 0 ? $rate : 1.0;
+    }
+
+    /**
+     * The discount stored on a sale line.
+     *
+     * A figure typed on the line always wins — the salesperson standing in
+     * front of the customer overrules any rule. Only an untouched line asks the
+     * resolver whether an item / category / brand discount applies. The
+     * bill-level discount is a separate concept and is not consulted here.
+     */
+    private function resolveLineDiscount(array $item, array $validated, ?string $branchId): float
+    {
+        $typed = $item['item_discount'] ?? null;
+
+        if ($typed !== null && $typed !== '' && (float) $typed != 0.0) {
+            return (float) $typed;
+        }
+
+        return app(DiscountRuleResolver::class)->discountFor(
+            itemId: $item['item_id'],
+            quantity: (float) ($item['quantity'] ?? 0),
+            unitPrice: (float) ($item['unit_price'] ?? 0),
+            ledgerId: $validated['customer_id'] ?? null,
+            branchId: $branchId,
+            onDate: $validated['date'] ?? null,
+        );
     }
 
     private function buildSaleItemCostLookup(array $items): array
