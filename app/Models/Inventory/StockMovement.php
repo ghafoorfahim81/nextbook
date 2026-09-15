@@ -29,7 +29,6 @@ class StockMovement extends Model
         'item_id' => 'string',
         'warehouse_id' => 'string',
         'unit_measure_id' => 'string',
-        'size_id' => 'string',
         'movement_type' => StockMovementType::class,
         'source' => StockSourceType::class,
         'reference_id' => 'string',
@@ -54,7 +53,6 @@ class StockMovement extends Model
         'piece_id',
         'warehouse_id',
         'unit_measure_id',
-        'size_id',
         'movement_type',
         'source',
         'reference_id',
@@ -63,7 +61,6 @@ class StockMovement extends Model
         'unit_cost',
         'qty_remaining',
         'batch',
-        'color',
         'expire_date',
         'date',
         'created_by',
@@ -75,6 +72,11 @@ class StockMovement extends Model
     public function item()
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ItemVariant::class, 'variant_id');
     }
 
     public function branch()
@@ -95,11 +97,6 @@ class StockMovement extends Model
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class, 'warehouse_id');
-    }
-
-    public function size()
-    {
-        return $this->belongsTo(\App\Models\Administration\Size::class, 'size_id');
     }
 
     public function opening()

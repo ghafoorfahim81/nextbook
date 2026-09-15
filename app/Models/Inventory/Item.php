@@ -50,8 +50,6 @@ class Item extends Model
         'unit_measure_id',
         'is_batch_tracked',
         'is_expiry_tracked',
-        'is_color_tracked',
-        'is_size_tracked',
         'brand_id',
         'category_id',
         'cost_account_id',
@@ -60,8 +58,6 @@ class Item extends Model
         'minimum_stock',
         'maximum_stock',
         'avg_cost',
-        'colors',
-        'size_id',
         'photo',
         'purchase_price',
         'cost',
@@ -123,7 +119,6 @@ class Item extends Model
             'unit_measure_id' => 'string',
             'brand_id' => 'string',
             'category_id' => 'string',
-            'size_id' => 'string',
             'margin_percentage' => 'decimal:4',
             'avg_cost' => 'decimal:4',
             'item_type' => ItemType::class,
@@ -138,11 +133,8 @@ class Item extends Model
             'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
-            'colors' => 'array',
             'is_batch_tracked' => 'boolean',
             'is_expiry_tracked' => 'boolean',
-            'is_color_tracked' => 'boolean',
-            'is_size_tracked' => 'boolean',
 
             'is_active' => 'boolean',
             'is_stockable' => 'boolean',
@@ -222,7 +214,6 @@ class Item extends Model
         'item_type',
         'unit_measure_id',
         'category_id',
-        'size_id',
         'brand_id',
         'warehouse_id',
         'purchase_price',
@@ -264,11 +255,6 @@ class Item extends Model
     {
         return $this->belongsTo(\App\Models\Administration\Category::class);
     }
-
-    public function size(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Administration\Size::class);
-     }
 
     public function branch(): BelongsTo
     {

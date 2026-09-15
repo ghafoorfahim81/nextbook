@@ -30,14 +30,13 @@ class SaleReturnItem extends Model
         'sale_return_id',
         'sale_item_id',
         'item_id',
+        'variant_id',
         'batch',
-        'color',
         'expire_date',
         'quantity',
         'unit_measure_id',
         'unit_price',
         'net_unit_cost',
-        'size_id',
         'warehouse_id',
         'created_by',
         'updated_by',
@@ -55,6 +54,7 @@ class SaleReturnItem extends Model
             'sale_return_id' => 'string',
             'sale_item_id' => 'string',
             'item_id' => 'string',
+            'variant_id' => 'string',
             'batch' => 'string',
             'expire_date' => 'date',
             'quantity' => 'decimal:2',
@@ -97,6 +97,11 @@ class SaleReturnItem extends Model
         return $this->belongsTo(\App\Models\Inventory\Item::class);
     }
 
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Inventory\ItemVariant::class, 'variant_id');
+    }
+
     public function unitMeasure(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
@@ -107,8 +112,4 @@ class SaleReturnItem extends Model
         return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'warehouse_id');
     }
 
-    public function size(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Administration\Size::class);
-    }
 }

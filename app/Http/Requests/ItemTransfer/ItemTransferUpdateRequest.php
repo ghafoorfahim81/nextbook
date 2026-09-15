@@ -32,6 +32,7 @@ class ItemTransferUpdateRequest extends FormRequest
             'remarks' => ['sometimes', 'nullable', 'string'],
             'items' => ['sometimes', 'required', 'array', 'min:1'],
             'items.*.item_id' => ['required', 'string', 'exists:items,id'],
+            'items.*.variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
             'items.*.batch' => ['nullable', 'string'],
             'items.*.expire_date' => ['nullable', 'date'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.0001'],

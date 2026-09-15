@@ -50,7 +50,6 @@ class SaleListCurrencyTest extends TestCase
             'batch' => null,
             'date' => '2026-03-10',
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'seed-sale-stock',

@@ -11,10 +11,8 @@ import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
-import { useColors } from '@/composables/useColors';
 
 const { t } = useI18n();
-const { resolveColor } = useColors();
 const { can } = useAuth();
 const { toast } = useToast();
 const page = usePage();
@@ -322,8 +320,7 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
                             <div><div class="text-xs text-muted-foreground">{{ t('general.batch') }}</div><div class="font-medium text-foreground">{{ item.batch || '-' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.expire_date') }}</div><div class="font-medium text-foreground">{{ item.expire_date || '-' }}</div></div>
-                            <div><div class="text-xs text-muted-foreground">{{ t('item.color') }}</div><div class="font-medium text-foreground"><span v-if="resolveColor(item.color)" class="flex items-center gap-1.5"><span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: resolveColor(item.color).hex }" />{{ resolveColor(item.color).name }}</span><span v-else>-</span></div></div>
-                            <div><div class="text-xs text-muted-foreground">{{ t('item.size') }}</div><div class="font-medium text-foreground">{{ item.size_name || '-' }}</div></div>
+                            <div><div class="text-xs text-muted-foreground">{{ t('item.variant') }}</div><div class="font-medium text-foreground">{{ item.variant?.display_name || '-' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.qty') }}</div><div class="font-medium text-foreground">{{ item.quantity }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.unit') }}</div><div class="font-medium text-foreground">{{ item.unit_measure_name || '-' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.price') }}</div><div class="font-medium text-foreground">{{ formatLineValue(item.unit_price) }}</div></div>
@@ -369,8 +366,7 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.item') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.batch') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.expire_date') }}</th>
-                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.color') }}</th>
-                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.size') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.variant') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.qty') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.unit') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.price') }}</th>
@@ -392,8 +388,7 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                                 </td>
                                 <td class="px-3 py-3 text-foreground">{{ item.batch || '-' }}</td>
                                 <td class="px-3 py-3 text-foreground">{{ item.expire_date || '-' }}</td>
-                                <td class="px-3 py-3 text-foreground"><span v-if="resolveColor(item.color)" class="flex items-center gap-1.5"><span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: resolveColor(item.color).hex }" />{{ resolveColor(item.color).name }}</span><span v-else>-</span></td>
-                                <td class="px-3 py-3 text-foreground">{{ item.size_name || '-' }}</td>
+                                <td class="px-3 py-3 text-foreground">{{ item.variant?.display_name || '-' }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.quantity }}</td>
                                 <td class="px-3 py-3 text-foreground">{{ item.unit_measure_name }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.unit_price }}</td>

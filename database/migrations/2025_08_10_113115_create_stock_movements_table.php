@@ -21,7 +21,6 @@ return new class extends Migration
             $table->ulid('item_id')->index();
             $table->ulid('warehouse_id')->index();
             $table->ulid('unit_measure_id')->index();
-            $table->ulid('size_id')->nullable()->index();
 
             $table->enum('movement_type', allowed: StockMovementType::values()); // IN / OUT
             $table->enum('source', StockSourceType::values());     // purchase, sale, adjustment, transfer...
@@ -55,7 +54,6 @@ return new class extends Migration
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
-            $table->foreign('size_id')->references('id')->on('sizes');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('set null');
         });
     }

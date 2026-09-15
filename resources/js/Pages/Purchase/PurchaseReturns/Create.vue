@@ -12,10 +12,8 @@ import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useI18n } from 'vue-i18n';
-import { useColors } from '@/composables/useColors';
 
 const { t } = useI18n();
-const { resolveColor } = useColors();
 const page = usePage();
 
 // Reactive copy of the purchase_return preferences so the settings panel and form stay in sync.
@@ -183,8 +181,7 @@ useFormGuard(form)
                             <th class="px-2 py-2 w-8 text-center">#</th>
                             <th class="px-2 py-2 w-56 text-left">{{ t('item.item') }}</th>
                             <th class="px-2 py-2 w-28" v-if="localColumns.batch">{{ t('general.batch') }}</th>
-                            <th class="px-2 py-2 w-28" v-if="localColumns.colors">{{ t('item.color') }}</th>
-                            <th class="px-2 py-2 w-24" v-if="localColumns.size">{{ t('item.size') }}</th>
+                            <th class="px-2 py-2 w-28" v-if="localColumns.variant">{{ t('item.variant') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('purchase_return.original_quantity') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('purchase_return.returned_quantity') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('purchase_return.remaining_quantity') }}</th>
@@ -202,8 +199,7 @@ useFormGuard(form)
                                 <div class="text-xs text-muted-foreground">{{ row.warehouse_name }}</div>
                             </td>
                             <td class="px-2 py-2" v-if="localColumns.batch">{{ row.batch || '-' }}</td>
-                            <td class="px-2 py-2" v-if="localColumns.colors"><span v-if="resolveColor(row.color)" class="flex items-center gap-1.5"><span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: resolveColor(row.color).hex }" />{{ resolveColor(row.color).name }}</span><span v-else>-</span></td>
-                            <td class="px-2 py-2" v-if="localColumns.size">{{ row.size_name || '-' }}</td>
+                            <td class="px-2 py-2" v-if="localColumns.variant">{{ row.variant_name || '-' }}</td>
                             <td class="px-2 py-2 text-right">{{ row.original_quantity }}</td>
                             <td class="px-2 py-2 text-right">{{ row.returned_quantity }}</td>
                             <td class="px-2 py-2 text-right">{{ row.remaining_quantity }}</td>

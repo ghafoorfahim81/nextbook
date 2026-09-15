@@ -10,7 +10,6 @@ use App\Models\Administration\Category;
 use App\Models\Administration\Brand;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
-use App\Models\Administration\Size;
 
 class ItemFactory extends Factory
 {
@@ -46,8 +45,6 @@ class ItemFactory extends Factory
             'asset_account_id' => $assetAccount,
             'minimum_stock' => fake()->randomFloat(2, 1, 20),
             'maximum_stock' => fake()->randomFloat(2, 21, 200),
-            'colors' => [],
-            'size_id' => Size::factory(),
             'margin_percentage' => fake()->randomFloat(2, 0, 50),
             'purchase_price' => fake()->randomFloat(2, 10, 500),
             'cost' => fake()->randomFloat(2, 10, 500),

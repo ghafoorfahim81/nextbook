@@ -106,8 +106,6 @@ class NextController extends Controller
                 'unit_measure_id' => $item->unit_measure_id,
                 'unitMeasure'  => $item->unitMeasure,
                 'brand' => $item->brand,
-                'colors' => $item->colors,
-                'size' => $item->size,
                 'purchase_price' => $item->purchase_price,
                 'unit_price' => $item->stocks->where('warehouse_id', $warehouseId)->avg('unit_price'),
                 'cost' => $item->cost,

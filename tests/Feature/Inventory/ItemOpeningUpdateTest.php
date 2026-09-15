@@ -179,7 +179,6 @@ class ItemOpeningUpdateTest extends TestCase
             'batch' => null,
             'date' => '2026-01-01',
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
         ]);
@@ -198,7 +197,6 @@ class ItemOpeningUpdateTest extends TestCase
             'batch' => null,
             'date' => '2026-02-01',
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
         ]);
@@ -221,7 +219,6 @@ class ItemOpeningUpdateTest extends TestCase
             'asset_account_id' => $item->asset_account_id,
             'income_account_id' => $item->income_account_id,
             'cost_account_id' => $item->cost_account_id,
-            'size_id' => $item->size_id,
             'openings' => [$opening],
         ];
     }

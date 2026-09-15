@@ -26,7 +26,6 @@ class SaleReturnItemFactory extends Factory
             'quantity' => fake()->randomFloat(2, 1, 5),
             'unit_measure_id' => UnitMeasure::factory(),
             'warehouse_id' => Warehouse::factory(),
-            'size_id' => null,
             'unit_price' => fake()->randomFloat(4, 10, 500),
             'net_unit_cost' => fake()->randomFloat(4, 5, 300),
             'branch_id' => Branch::factory(),

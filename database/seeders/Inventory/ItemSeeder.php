@@ -3932,8 +3932,6 @@ class ItemSeeder extends Seeder
             'category_id' => null,
             'minimum_stock' => null,
             'maximum_stock' => null,
-            'colors' => null,
-            'size_id' => null,
             'purchase_price' => null,
             'cost' => null,
             'sale_price' => null,

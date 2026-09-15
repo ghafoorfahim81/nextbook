@@ -7,14 +7,8 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Every transaction line gets variant / lot / piece.
  *
- * Six of these carry size_id today but no colour — stock_outs,
- * purchase_return_items, purchase_order_items, purchase_quotation_items,
- * sale_quotation_items and item_transfer_items — so a purchase order can
- * currently record "Large" but not "Red". They are deliberately not given a
- * colour column here: they go straight to variant_id instead.
- *
  * Nullable for now. variant_id becomes NOT NULL once every item has its
- * default variant and the backfill has run.
+ * default variant.
  */
 return new class extends Migration
 {

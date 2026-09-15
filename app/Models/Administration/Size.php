@@ -53,12 +53,7 @@ class Size extends Model
      */
     protected function getRelationships(): array
     {
-        return [
-            'items' => [
-                'model' => 'items',
-                'message' => 'This size is used in items'
-            ]
-        ];
+        return [];
     }
 
     public static function defaultSizes(): array
@@ -85,11 +80,4 @@ class Size extends Model
         ];
     }
 
-    /**
-     * Relationship to items that use this size
-     */
-    public function items()
-    {
-        return $this->hasMany(\App\Models\Inventory\Item::class, 'size_id');
-    }
 }

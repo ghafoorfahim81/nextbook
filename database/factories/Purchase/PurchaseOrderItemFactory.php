@@ -24,7 +24,6 @@ class PurchaseOrderItemFactory extends Factory
             'unit_measure_id' => UnitMeasure::factory(),
             'batch' => null,
             'expire_date' => null,
-            'size_id' => null,
             'category_id' => null,
             'discount' => 0,
             'branch_id' => Branch::factory(),

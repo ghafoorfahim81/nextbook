@@ -24,9 +24,7 @@ class StockAdjustmentItem extends Model
         'quantity',
         'unit_cost',
         'batch',
-        'color',
         'expire_date',
-        'size_id',
         'category_id',
         'branch_id',
         'created_by',
@@ -43,7 +41,6 @@ class StockAdjustmentItem extends Model
             'quantity' => 'float',
             'unit_cost' => 'float',
             'expire_date' => 'date',
-            'size_id' => 'string',
             'category_id' => 'string',
             'branch_id' => 'string',
             'created_by' => 'string',
@@ -70,11 +67,6 @@ class StockAdjustmentItem extends Model
     public function unitMeasure(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
-    }
-
-    public function size(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Administration\Size::class);
     }
 
     public function category(): BelongsTo

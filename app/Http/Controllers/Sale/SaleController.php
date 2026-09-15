@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Sale;
 
+use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sale\SaleStoreRequest;
 use App\Http\Requests\Sale\SaleUpdateRequest;
@@ -46,6 +47,8 @@ use App\Support\BranchContext;
 
 class SaleController extends Controller
 {
+    use ResolvesLineVariant;
+
     private $dateConversionService;
     public function __construct(DateConversionService $dateConversionService)
     {
@@ -255,6 +258,7 @@ class SaleController extends Controller
                 // sale_items row stores 0 and the sales report cannot subtract it.
                 $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
+                $item['variant_id'] = $this->resolveLineVariantId($item);
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
                 $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
                 $item['net_unit_cost'] = $itemModel ? $this->resolveItemCostByMethod(
@@ -295,7 +299,7 @@ class SaleController extends Controller
                 $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
                 $totalCostInTransactionCurrency = $totalCost / $rate;
-                $stockService->post([
+                $stockPayloads[] = [
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
@@ -305,15 +309,14 @@ class SaleController extends Controller
                     'unit_cost_override'   => $unitCost,
                     'status'               => StockStatus::POSTED->value,
                     'batch'                => $item['batch'] ?? null,
-                    'color'                => $item['color'] ?? null,
                     'date'                 => $validated['date'],
                     'expire_date'          => $item['expire_date'] ?? null,
-                    'size_id'              => $item['size_id'] ?? null,
+                    'variant_id'           => $item['variant_id'] ?? null,
                     'warehouse_id'         => $validated['warehouse_id'],
                     'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
-                ]);
+                ];
 
                 if ($postImmediately) {
                     $stockService->post($stockPayloads[array_key_last($stockPayloads)]);
@@ -517,6 +520,7 @@ class SaleController extends Controller
         // from the customer ledger lines of this sale's transaction.
         $sale->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
             'customer',
             'saleOrder:id,number',
@@ -557,6 +561,8 @@ class SaleController extends Controller
         // triggered because we don't access it here.
         $sale->load([
             'items.item.unitMeasure',
+            'items.item.variants',
+            'items.variant',
             'items.unitMeasure',
             'items.warehouse',
             'customer:id,name,type',
@@ -654,6 +660,7 @@ class SaleController extends Controller
             $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
+                $item['variant_id'] = $this->resolveLineVariantId($item);
 
                 // $affectedCombos[] = [
                 //     'item_id' => $item['item_id'],
@@ -774,7 +781,10 @@ class SaleController extends Controller
                 $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
                 $totalCostInTransactionCurrency = $totalCost / $rate;
-                $stockService->post([
+                // update() only ever edits a draft (posted/reversed sales are
+                // immutable), so this reserves like a fresh draft rather than
+                // posting a real deduction — see the reserve loop below.
+                $stockPayloads[] = [
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
@@ -782,17 +792,16 @@ class SaleController extends Controller
                     'source'               => StockSourceType::SALE->value,
                     'unit_cost'            => $unitCost,
                     'unit_cost_override'   => $unitCost,
-                    'status'               => StockStatus::POSTED->value,
+                    'status'               => StockStatus::DRAFT->value,
                     'batch'                => $item['batch'] ?? null,
-                    'color'                => $item['color'] ?? null,
                     'date'                 => $date,
                     'expire_date'          => $item['expire_date'] ?? null,
-                    'size_id'              => $item['size_id'] ?? null,
+                    'variant_id'           => $item['variant_id'] ?? null,
                     'warehouse_id'         => $validated['warehouse_id'],
                     'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
-                ]);
+                ];
 
                 $lines[] = [
                     'account_id' => $itemModel->income_account_id,
@@ -939,6 +948,12 @@ class SaleController extends Controller
                 ],
                 lines: $lines
             );
+
+            // The edited sale stays a draft, so re-hold the outgoing stock as reserved_out.
+            foreach ($stockPayloads as $payload) {
+                $stockService->reserve($payload);
+            }
+
             $afterState = [
                 'number' => $sale->number,
                 'customer_id' => $sale->customer_id,

@@ -23,7 +23,6 @@ return new class extends Migration
             $table->decimal('quantity', 10, 2);
             $table->ulid('unit_measure_id')->nullable()->index();
             $table->ulid('warehouse_id')->index();
-            $table->ulid('size_id')->nullable()->index();
             $table->decimal('unit_price', 18, 4);
             $table->decimal('net_unit_cost', 18, 4)->nullable();
             $table->ulid('branch_id')->index();

@@ -130,7 +130,7 @@ class PurchaseReturnController extends Controller
     {
         $this->authorize('create', PurchaseReturn::class);
 
-        $purchase = Purchase::with(['items.item', 'items.unitMeasure', 'items.warehouse', 'items.size', 'transaction', 'supplier:id,name'])
+        $purchase = Purchase::with(['items.item', 'items.variant', 'items.unitMeasure', 'items.warehouse', 'transaction', 'supplier:id,name'])
             ->findOrFail($request->query('purchase_id'));
 
         abort_unless($purchase->status === TransactionStatus::POSTED->value, 422, 'Only posted purchases can be returned against.');
@@ -151,9 +151,8 @@ class PurchaseReturnController extends Controller
                 'item_id' => $item->item_id,
                 'item_name' => $item->item?->name,
                 'batch' => $item->batch,
-                'color' => $item->color,
-                'size_id' => $item->size_id,
-                'size_name' => $item->size?->name,
+                'variant_id' => $item->variant_id,
+                'variant_name' => $item->variant?->displayName(),
                 'expire_date' => $item->expire_date?->toDateString(),
                 'unit_measure_id' => $item->unit_measure_id,
                 'unit_measure_name' => $item->unitMeasure?->name,
@@ -265,6 +264,7 @@ class PurchaseReturnController extends Controller
     {
         $purchaseReturn->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
             'items.warehouse',
             'purchase:id,number,supplier_id',
@@ -294,6 +294,7 @@ class PurchaseReturnController extends Controller
 
         $purchaseReturn->load([
             'items.item',
+            'items.variant',
             'items.unitMeasure',
             'items.warehouse',
             'purchase:id,number,supplier_id',
@@ -461,13 +462,12 @@ class PurchaseReturnController extends Controller
                 'purchase_return_id' => $purchaseReturn->id,
                 'purchase_item_id' => $purchaseItem->id,
                 'item_id' => $purchaseItem->item_id,
+                'variant_id' => $purchaseItem->variant_id,
                 'batch' => $purchaseItem->batch,
-                'color' => $purchaseItem->color,
                 'expire_date' => $purchaseItem->expire_date,
                 'quantity' => $quantity,
                 'unit_measure_id' => $purchaseItem->unit_measure_id,
                 'unit_price' => $purchaseItem->unit_price,
-                'size_id' => $purchaseItem->size_id,
                 'warehouse_id' => $purchaseItem->warehouse_id,
             ]);
 
@@ -490,10 +490,9 @@ class PurchaseReturnController extends Controller
                 'unit_cost_override' => $unitPrice,
                 'status' => $postImmediately ? StockStatus::POSTED->value : StockStatus::DRAFT->value,
                 'batch' => $purchaseItem->batch,
-                'color' => $purchaseItem->color,
                 'date' => $date,
                 'expire_date' => $purchaseItem->expire_date,
-                'size_id' => $purchaseItem->size_id,
+                'variant_id' => $purchaseItem->variant_id,
                 'warehouse_id' => $purchaseItem->warehouse_id,
                 'branch_id' => $purchaseReturn->branch_id,
                 'reference_type' => PurchaseReturn::class,

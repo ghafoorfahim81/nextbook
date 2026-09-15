@@ -27,8 +27,6 @@ class StockBalance extends Model
         'warehouse_id',
         'status',
         'batch',
-        'color',
-        'size_id',
         'expire_date',
         'created_by',
         'updated_by',
@@ -42,8 +40,6 @@ class StockBalance extends Model
         'reserved_in' => 'decimal:4',
         'warehouse_id' => 'string',
         'batch' => 'string',
-        'color' => 'string',
-        'size_id' => 'string',
         'expire_date' => 'date',
         'status' => StockStatus::class,
         'created_by' => 'string',
@@ -64,9 +60,5 @@ class StockBalance extends Model
     public function warehouse()
     {
         return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'warehouse_id');
-    }
-    public function size()
-    {
-        return $this->belongsTo(\App\Models\Administration\Size::class, 'size_id');
     }
 }

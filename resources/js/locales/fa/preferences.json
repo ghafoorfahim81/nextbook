@@ -250,8 +250,7 @@
         "warehouse": "انبار",
         "description": "توضیحات",
         "packing": "بسته‌بندی",
-        "colors": "رنگ‌ها",
-        "size": "سایز",
+        "variant": "مشخصه",
         "brand": "برند",
         "rack_no": "شماره قفسه",
         "category": "دسته",
@@ -266,9 +265,7 @@
         "item_type": "نوع کالا",
         "sku": "کد واحد نگهداری موجودی",
         "is_batch_tracked": "دارای بچ",
-        "is_expiry_tracked": "دارای انقضا",
-        "is_color_tracked": "دارای رنگ",
-        "is_size_tracked": "دارای سایز"
+        "is_expiry_tracked": "دارای انقضا"
     },
     "sale": {
         "description": "پیکربندی تنظیمات تراکنش‌های فروش",

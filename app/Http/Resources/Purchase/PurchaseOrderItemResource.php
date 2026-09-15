@@ -20,15 +20,32 @@ class PurchaseOrderItemResource extends JsonResource
             'item_id' => $this->item_id,
             'item_name' => $this->item?->name,
             'item_code' => $this->item?->code,
+            'item' => $this->whenLoaded('item', function () {
+                return [
+                    'id' => $this->item?->id,
+                    'name' => $this->item?->name,
+                    'item_variants' => $this->item?->relationLoaded('variants')
+                        ? $this->item->variants->map(fn ($v) => [
+                            'id' => $v->id,
+                            'sku' => $v->sku,
+                            'barcode' => $v->barcode,
+                            'display_name' => $v->displayName(),
+                            'is_default' => (bool) $v->is_default,
+                        ])->values()
+                        : [],
+                ];
+            }),
+            'variant_id' => $this->variant_id,
+            'variant' => $this->whenLoaded('variant', fn () => $this->variant ? [
+                'id' => $this->variant->id,
+                'display_name' => $this->variant->displayName(),
+            ] : null),
             'batch' => $this->batch,
-            'color' => $this->color,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
             'quantity' => $this->quantity,
             'free' => $this->free,
             'unit_measure_id' => $this->unit_measure_id,
             'unit_measure_name' => $this->unitMeasure?->name,
-            'size_id' => $this->size_id,
-            'size_name' => $this->size?->name,
             'category_id' => $this->category_id,
             'category_name' => $this->category?->name,
             'unit_price' => $this->unit_price,

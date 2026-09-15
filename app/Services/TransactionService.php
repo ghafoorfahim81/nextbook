@@ -597,9 +597,12 @@ class TransactionService
             $this->stockService->post([
                 'branch_id' => $movement->branch_id,
                 'item_id' => $movement->item_id,
+                // The compensating movement has to land in the exact bucket the
+                // original touched, or the restore silently misses it and opens
+                // a second, empty-looking bucket for the same item instead.
+                'variant_id' => $movement->variant_id,
                 'warehouse_id' => $movement->warehouse_id,
                 'unit_measure_id' => $movement->unit_measure_id,
-                'size_id' => $movement->size_id,
                 'movement_type' => $movement->movement_type === StockMovementType::IN
                     ? StockMovementType::OUT->value
                     : StockMovementType::IN->value,
@@ -613,6 +616,9 @@ class TransactionService
                 'expire_date' => $movement->expire_date,
                 'date' => now()->toDateString(),
                 'status' => \App\Enums\StockStatus::VOIDED->value,
+                // This restores stock the business already owned — not a new
+                // receipt at a market price — so it must not shift avg_cost.
+                'skip_average_recost' => true,
             ]);
         }
 

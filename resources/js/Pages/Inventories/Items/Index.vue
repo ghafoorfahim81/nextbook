@@ -71,12 +71,6 @@ const filterFields = computed(() => ([
     options: (props.filterOptions?.categories || []).map((o) => ({ id: o.id, name: o.name })),
   },
   {
-    key: 'size_id',
-    label: t('admin.size.size'),
-    type: 'select',
-    options: (props.filterOptions?.sizes || []).map((o) => ({ id: o.id, name: o.name })),
-  },
-  {
     key: 'brand_id',
     label: t('admin.brand.brand'),
     type: 'select',

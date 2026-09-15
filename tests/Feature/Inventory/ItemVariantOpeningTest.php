@@ -17,7 +17,9 @@ use Tests\TestCase;
  * The form keys each opening row to a variant by its position in the variant
  * grid (variant_index); the controller resolves that to a variant_id and hands
  * it to StockService, which now carries it onto the movement and the balance
- * bucket. A single-variant item still gets a NULL bucket, unchanged.
+ * bucket. A single-variant item resolves to that one variant too — every
+ * stock row now carries a real variant_id, never a null bucket, so FIFO/LIFO
+ * matching and reservations have one consistent key across every module.
  */
 class ItemVariantOpeningTest extends TestCase
 {
@@ -106,7 +108,7 @@ class ItemVariantOpeningTest extends TestCase
         $this->assertSame(0, Item::where('code', '9001')->count());
     }
 
-    public function test_a_single_variant_item_keeps_a_null_bucket(): void
+    public function test_a_single_variant_item_still_resolves_a_real_variant_bucket(): void
     {
         $this->post(route('items.store'), $this->payload([
             'variants' => [
@@ -118,15 +120,16 @@ class ItemVariantOpeningTest extends TestCase
         ]))->assertRedirect()->assertSessionHasNoErrors();
 
         $item = Item::where('code', '9001')->firstOrFail();
+        $variant = $item->variants()->firstOrFail();
         $balance = StockBalance::where('item_id', $item->id)->firstOrFail();
 
-        $this->assertNull($balance->variant_id);
+        $this->assertSame($variant->id, $balance->variant_id);
         $this->assertEqualsWithDelta(5.0, (float) $balance->quantity, 0.0001);
 
         $movement = StockMovement::where('item_id', $item->id)
             ->where('source', StockSourceType::OPENING->value)
             ->firstOrFail();
-        $this->assertNull($movement->variant_id);
+        $this->assertSame($variant->id, $movement->variant_id);
         $this->assertSame(StockMovementType::IN->value, $movement->movement_type->value);
     }
 

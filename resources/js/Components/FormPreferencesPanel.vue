@@ -61,8 +61,7 @@ const documentGeneralFields = [
 const saleItemColumns = [
     { key: 'batch', labelKey: 'preferences.fields.batch' },
     { key: 'expiry', labelKey: 'preferences.fields.expiry' },
-    { key: 'colors', labelKey: 'preferences.fields.colors' },
-    { key: 'size', labelKey: 'preferences.fields.size' },
+    { key: 'variant', labelKey: 'preferences.fields.variant' },
     { key: 'on_hand', labelKey: 'preferences.fields.on_hand' },
     { key: 'reserved_out', labelKey: 'general.reserved_out' },
     { key: 'measure', labelKey: 'preferences.fields.measure' },
@@ -74,8 +73,7 @@ const saleItemColumns = [
 const purchaseItemColumns = [
     { key: 'batch', labelKey: 'preferences.fields.batch' },
     { key: 'expiry', labelKey: 'preferences.fields.expiry' },
-    { key: 'colors', labelKey: 'preferences.fields.colors' },
-    { key: 'size', labelKey: 'preferences.fields.size' },
+    { key: 'variant', labelKey: 'preferences.fields.variant' },
     { key: 'on_hand', labelKey: 'preferences.fields.on_hand' },
     { key: 'reserved_in', labelKey: 'general.reserved_in' },
     { key: 'measure', labelKey: 'preferences.fields.measure' },
@@ -90,7 +88,7 @@ const saleOrderItemColumns = [
     { key: 'measure', labelKey: 'preferences.fields.measure' },
     { key: 'discount', labelKey: 'preferences.fields.discount' },
     { key: 'free', labelKey: 'preferences.fields.free' },
-    { key: 'size', labelKey: 'preferences.fields.size' },
+    { key: 'variant', labelKey: 'preferences.fields.variant' },
     { key: 'category', labelKey: 'preferences.fields.category' },
 ]
 
@@ -107,8 +105,7 @@ const returnGeneralFields = [
 
 const returnItemColumns = [
     { key: 'batch', labelKey: 'preferences.fields.batch' },
-    { key: 'colors', labelKey: 'preferences.fields.colors' },
-    { key: 'size', labelKey: 'preferences.fields.size' },
+    { key: 'variant', labelKey: 'preferences.fields.variant' },
 ]
 
 // Every toggleable item field — mirrors config/business_profiles.php `base.fields`,

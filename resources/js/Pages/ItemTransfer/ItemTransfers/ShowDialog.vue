@@ -212,6 +212,7 @@ function closeDialog() {
                 <tr>
                   <th class="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">#</th>
                   <th class="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">{{ t('item.item') }}</th>
+                  <th class="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">{{ t('item.variant') }}</th>
                   <th class="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">{{ t('general.batch') }}</th>
                   <th class="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">{{ t('general.expire_date') }}</th>
                   <th class="px-3 py-2 text-right text-xs font-semibold text-muted-foreground">{{ t('general.qty') }}</th>
@@ -229,6 +230,7 @@ function closeDialog() {
                       <div class="text-xs text-muted-foreground">{{ item.item?.code }}</div>
                     </div>
                   </td>
+                  <td class="px-3 py-2 text-foreground">{{ item.variant?.display_name || '-' }}</td>
                   <td class="px-3 py-2 text-foreground">{{ item.batch || '-' }}</td>
                   <td class="px-3 py-2 text-foreground">{{ item.expire_date || '-' }}</td>
                   <td class="px-3 py-2 text-foreground text-right">{{ item.quantity }}</td>

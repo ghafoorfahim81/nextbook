@@ -1703,41 +1703,43 @@ class ReportService
     {
         $movementTotals = $this->stockMovementTotalsByVariantSubquery($filters['branch_id']);
 
+        // Only items with more than one variant have a meaningful breakdown —
+        // a plain product's lone default variant is just the item itself.
+        $multiVariantItemIds = DB::table('item_variants')
+            ->whereNull('deleted_at')
+            ->groupBy('item_id')
+            ->havingRaw('COUNT(*) > 1')
+            ->select('item_id');
+
         $query = $this->stockBatchTotalsQuery($filters)
-            ->leftJoin('sizes as sz', 'sz.id', '=', 'sb.size_id')
+            ->leftJoin('item_variants as iv', 'iv.id', '=', 'sb.variant_id')
             ->leftJoinSub($movementTotals, 'sm_totals', function ($join) {
                 $join->on('sm_totals.item_id', '=', 'sb.item_id')
-                    ->whereRaw('COALESCE(sm_totals.color, \'\') = COALESCE(sb.color, \'\')')
-                    ->whereRaw('COALESCE(sm_totals.size_id::text, \'\') = COALESCE(sb.size_id::text, \'\')');
+                    ->whereRaw('COALESCE(sm_totals.variant_id::text, \'\') = COALESCE(sb.variant_id::text, \'\')');
             })
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sb.item_id', $itemId))
             ->when($filters['warehouse_id'], fn ($builder, $warehouseId) => $builder->where('sb.warehouse_id', $warehouseId))
-            ->when($filters['color'], fn ($builder, $color) => $builder->where('sb.color', $color))
-            ->when($filters['size_id'], fn ($builder, $sizeId) => $builder->where('sb.size_id', $sizeId))
-            // Variant rows only: at least one of colour/size must be present.
-            ->where(function ($builder) {
-                $builder->whereNotNull('sb.color')
-                    ->orWhereNotNull('sb.size_id');
-            })
+            ->when($filters['variant_id'] ?? null, fn ($builder, $variantId) => $builder->where('sb.variant_id', $variantId))
+            ->whereIn('sb.item_id', $multiVariantItemIds)
             ->where(function ($builder) {
                 $builder->whereRaw('COALESCE(sb.quantity, 0) <> 0')
                     ->orWhereRaw('COALESCE(sm_totals.total_in, 0) <> 0')
                     ->orWhereRaw('COALESCE(sm_totals.total_out, 0) <> 0');
             })
-            ->groupBy('i.id', 'i.code', 'i.name', 'sb.color', 'sb.size_id', 'sz.name')
+            ->groupBy('i.id', 'i.code', 'i.name', 'sb.variant_id', 'iv.name', 'iv.attributes', 'iv.sku')
             ->selectRaw('i.code as item_code')
             ->selectRaw('i.name as item_name')
-            ->selectRaw('sb.color as color')
-            ->selectRaw('sz.name as size_name')
+            ->selectRaw('iv.name as variant_name')
+            ->selectRaw('iv.attributes as variant_attributes')
+            ->selectRaw('iv.sku as variant_sku')
             ->selectRaw('COALESCE(SUM(COALESCE(sm_totals.total_in, 0)), 0) as in_quantity')
             ->selectRaw('COALESCE(SUM(COALESCE(sm_totals.total_out, 0)), 0) as out_quantity')
             ->selectRaw('COALESCE(SUM(sb.quantity), 0) as on_hand')
             ->selectRaw('COALESCE(SUM(sb.quantity), 0) * COALESCE(MAX(i.avg_cost), 0) as stock_value')
             ->orderBy('i.code')
             ->orderBy('i.name')
-            ->orderByRaw('CASE WHEN sb.color IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('sb.color')
-            ->orderBy('sz.name');
+            ->orderByRaw('CASE WHEN iv.is_default THEN 0 ELSE 1 END')
+            ->orderBy('iv.name');
 
         $summaryRow = DB::query()
             ->fromSub(clone $query, 'variant_rows')
@@ -1753,8 +1755,7 @@ class ReportService
             fn ($row) => [
                 'item_code' => $row->item_code,
                 'item_name' => $row->item_name,
-                'color' => $row->color ? $this->colorLabel($row->color) : '-',
-                'size' => $row->size_name ?: '-',
+                'variant' => $this->variantRowLabel($row),
                 'in_quantity' => $this->quantityValue($row->in_quantity),
                 'out_quantity' => $this->quantityValue($row->out_quantity),
                 'on_hand' => $this->quantityValue($row->on_hand),
@@ -1768,6 +1769,23 @@ class ReportService
             ],
             ['layout' => 'snapshot'],
         );
+    }
+
+    /**
+     * Mirrors ItemVariant::displayName() for a raw report row: explicit name,
+     * else the non-empty attribute values joined, else the item's own name.
+     */
+    protected function variantRowLabel(object $row): string
+    {
+        if (filled($row->variant_name ?? null)) {
+            return (string) $row->variant_name;
+        }
+
+        $attributes = $row->variant_attributes ?? null;
+        $attributes = is_string($attributes) ? (json_decode($attributes, true) ?: []) : (array) $attributes;
+        $values = collect($attributes)->filter(fn ($value) => filled($value))->values();
+
+        return $values->isNotEmpty() ? $values->implode(' / ') : (string) $row->item_name;
     }
 
     public function getExpiryWiseReport(array $filters): array
@@ -2392,10 +2410,9 @@ class ReportService
             ->where('sm.branch_id', $branchId)
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
-            ->groupBy('sm.item_id', 'sm.color', 'sm.size_id')
+            ->groupBy('sm.item_id', 'sm.variant_id')
             ->selectRaw('sm.item_id')
-            ->selectRaw('sm.color')
-            ->selectRaw('sm.size_id')
+            ->selectRaw('sm.variant_id')
             ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as total_in")
             ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as total_out");
     }
@@ -4042,7 +4059,7 @@ class ReportService
             'inventory_valuation' => ['item', 'quantity', 'average_cost', 'total_value'],
             'batch_wise_report' => ['item_code', 'item_name', 'batch_number', 'expiry_date', 'in_quantity', 'out_quantity', 'on_hand'],
             'expiry_wise_report' => ['item_code', 'item_name', 'expiry_date', 'in_quantity', 'out_quantity', 'on_hand'],
-            'variant_wise_report' => ['item_code', 'item_name', 'color', 'size', 'in_quantity', 'out_quantity', 'on_hand', 'stock_value'],
+            'variant_wise_report' => ['item_code', 'item_name', 'variant', 'in_quantity', 'out_quantity', 'on_hand', 'stock_value'],
             'zero_on_hand_report' => ['item_code', 'item_name', 'total_in', 'total_out', 'on_hand'],
             'fast_moving_report' => ['item_code', 'item_name', 'total_sold', 'sale_count', 'average_per_day'],
             'slow_moving_report' => ['item_code', 'item_name', 'total_sold', 'sale_count', 'days_on_hand', 'turnover_rate'],
@@ -4108,27 +4125,6 @@ class ReportService
      * Translate a stored colour slug (e.g. "red") into its localized label,
      * reusing the same colours.json the frontend colour pickers use.
      */
-    protected function colorLabel(string $color): string
-    {
-        static $cache = [];
-
-        $locale = app()->getLocale();
-
-        if (! array_key_exists($locale, $cache)) {
-            $path = resource_path("js/locales/{$locale}/colors.json");
-
-            if (! is_file($path)) {
-                $path = resource_path('js/locales/en/colors.json');
-            }
-
-            $cache[$locale] = is_file($path)
-                ? (json_decode((string) file_get_contents($path), true) ?: [])
-                : [];
-        }
-
-        return (string) ($cache[$locale][$color] ?? Str::headline($color));
-    }
-
     protected function reportColumnLabel(string $key): string
     {
         return $this->reportTranslation("columns.{$key}", Str::headline(str_replace('_', ' ', $key)));
@@ -4291,8 +4287,7 @@ class ReportService
             'account_id' => $this->nullableString($filters['account_id'] ?? null),
             'currency_id' => $this->nullableString($filters['currency_id'] ?? null),
             'warehouse_id' => $this->nullableString($filters['warehouse_id'] ?? null),
-            'color' => $this->nullableString($filters['color'] ?? null),
-            'size_id' => $this->nullableString($filters['size_id'] ?? null),
+            'variant_id' => $this->nullableString($filters['variant_id'] ?? null),
             'reason' => $this->nullableString($filters['reason'] ?? null),
             'type' => $this->nullableString($filters['type'] ?? null),
             'balance_type' => $this->normalizeBalanceType($filters['balance_type'] ?? null),

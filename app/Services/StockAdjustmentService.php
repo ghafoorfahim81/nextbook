@@ -298,8 +298,7 @@ class StockAdjustmentService
                     quantity: $quantity,
                     batch: $line['batch'] ?? null,
                     expireDate: $line['expire_date'] ?? null,
-                    color: $line['color'] ?? null,
-                    sizeId: $line['size_id'] ?? null,
+                    variantId: $variantId,
                 );
             } else {
                 $userCost = isset($line['unit_cost']) && $line['unit_cost'] !== '' && $line['unit_cost'] !== null
@@ -323,23 +322,13 @@ class StockAdjustmentService
                 'quantity' => $quantity,
                 'unit_cost' => $unitCost,
                 'batch' => $line['batch'] ?? null,
-                'color' => $line['color'] ?? null,
                 'expire_date' => !empty($line['expire_date'])
                     ? $this->dateConversionService->toGregorian($line['expire_date'])
                     : null,
-                'size_id' => $line['size_id'] ?? null,
                 'category_id' => $line['category_id'] ?? $itemModel->category_id,
                 'branch_id' => $adjustment->branch_id,
             ]);
 
-            // NOTE: variant_id is deliberately NOT in the stock payload yet.
-            // StockService keys a balance row by variant only when one is given,
-            // so a payload carrying a variant never matches a row written
-            // without one. Purchases, sales and transfers still post without a
-            // variant, which means their stock sits in null-variant rows — and
-            // an adjustment that sent a variant would miss that stock and open a
-            // second bucket for the same item and warehouse. It goes in here
-            // once those three send it too.
             $stockPayloads[] = [
                 'item_id' => $line['item_id'],
                 'movement_type' => $direction->value,
@@ -350,10 +339,9 @@ class StockAdjustmentService
                 'unit_cost_override' => $unitCost,
                 'status' => StockStatus::POSTED->value,
                 'batch' => $line['batch'] ?? null,
-                'color' => $line['color'] ?? null,
+                'variant_id' => $variantId,
                 'date' => $date,
                 'expire_date' => $line['expire_date'] ?? null,
-                'size_id' => $line['size_id'] ?? null,
                 'warehouse_id' => $adjustment->warehouse_id,
                 'branch_id' => $adjustment->branch_id,
                 'reference_type' => StockAdjustment::class,
@@ -530,8 +518,7 @@ class StockAdjustmentService
         float $quantity,
         ?string $batch = null,
         ?string $expireDate = null,
-        ?string $color = null,
-        ?string $sizeId = null,
+        ?string $variantId = null,
     ): float {
         $avgCost = (float) $itemModel->avg_cost;
 
@@ -560,25 +547,19 @@ class StockAdjustmentService
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0)
-            // deductFIFO narrows to the batch, the expiry and the colour/size
+            // deductFIFO narrows to the batch, the expiry and the variant
             // before it consumes anything. Peeking without the same filters
             // costed a batch-tracked line off whichever layer happened to be
-            // oldest — some other batch entirely. (It filters colour and size,
-            // not variant_id, so this mirrors that and not the newer column.)
+            // oldest — some other batch entirely.
             ->when($itemModel->is_batch_tracked && filled($batch), fn ($query) => $query->where('batch', $batch))
             ->when(filled($expireDate), fn ($query) => $query->whereDate(
                 'expire_date',
                 $this->dateConversionService->toGregorian($expireDate)
             ))
             ->when(
-                filled($color),
-                fn ($query) => $query->where('color', $color),
-                fn ($query) => $query->whereNull('color')
-            )
-            ->when(
-                filled($sizeId),
-                fn ($query) => $query->where('size_id', $sizeId),
-                fn ($query) => $query->whereNull('size_id')
+                filled($variantId),
+                fn ($query) => $query->where('variant_id', $variantId),
+                fn ($query) => $query->whereNull('variant_id')
             )
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('expire_date', 'asc')

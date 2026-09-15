@@ -44,8 +44,8 @@ class SaleOrderResource extends JsonResource
                     'unit_price' => $item->unit_price,
                     'unit_measure_id' => $item->unit_measure_id,
                     'batch' => $item->batch,
+                    'variant_id' => $item->variant_id,
                     'expire_date' => $item->expire_date,
-                    'size_id' => $item->size_id,
                     'category_id' => $item->category_id,
                     'discount' => $item->discount,
                 ];

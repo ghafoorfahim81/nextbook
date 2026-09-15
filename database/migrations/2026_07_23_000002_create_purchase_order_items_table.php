@@ -22,9 +22,7 @@ return new class extends Migration
             $table->decimal('unit_price', 18, 4);
             $table->ulid('unit_measure_id')->nullable()->index();
             $table->string('batch')->nullable();
-            $table->string('color')->nullable();
             $table->date('expire_date')->nullable();
-            $table->ulid('size_id')->nullable()->index();
             $table->ulid('category_id')->nullable()->index();
             $table->decimal('discount', 10, 2)->nullable()->default(0);
             $table->ulid('branch_id')->index();
@@ -43,7 +41,6 @@ return new class extends Migration
             $table->foreign('purchase_order_id')->references('id')->on('purchase_orders');
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
-            $table->foreign('size_id')->references('id')->on('sizes');
             $table->foreign('category_id')->references('id')->on('categories');
             $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');

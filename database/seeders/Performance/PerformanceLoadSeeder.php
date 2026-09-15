@@ -378,7 +378,7 @@ class PerformanceLoadSeeder extends Seeder
     private function getAdminUserId(): string
     {
         $adminId = User::withoutGlobalScopes()->where('email', 'admin@nextbook.af')->value('id');
-           
+
 
         if (!$adminId) {
             throw new \RuntimeException('No users found.');
@@ -705,8 +705,6 @@ class PerformanceLoadSeeder extends Seeder
                 'asset_account_id' => $assetAccountId,
                 'minimum_stock' => 0,
                 'maximum_stock' => 0,
-                'colors' => json_encode([]),
-                'size_id' => null,
                 'purchase_price' => $purchasePrice,
                 'cost' => $cost,
                 'sale_price' => $salePrice,
@@ -764,8 +762,7 @@ class PerformanceLoadSeeder extends Seeder
                     'unit_measure_id' => $unitMeasureId,
                     'quantity' => self::OPENING_QTY,
                     'unit_price' => $unitPrice,
-                    'free' => null,
-                    'size_id' => null,
+                    'free' => null, 
                     'batch' => null,
                     'discount' => null,
                     'tax' => null,
