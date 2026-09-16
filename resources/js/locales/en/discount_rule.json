@@ -16,5 +16,6 @@
     "priority": "Priority",
     "priority_hint": "Higher wins when two rules are equally specific.",
     "show_on_invoice": "Show on invoice",
-    "name_hint": "A label you will recognise later, e.g. Ramadan Promo."
+    "name_hint": "A label you will recognise later, e.g. Ramadan Promo.",
+    "restore": "Apply {name}"
 }

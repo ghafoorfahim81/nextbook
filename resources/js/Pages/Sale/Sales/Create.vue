@@ -29,6 +29,7 @@ import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 import SaleOrderPickerDialog from '@/Components/next/SaleOrderPickerDialog.vue'
 import { getCreditSummary } from '@/composables/useCreditLimit'
+import { useLineDiscounts } from '@/composables/useLineDiscounts'
 import { toDocumentCurrency } from '@/utils/currency'
 const { t } = useI18n();
 const showFilter = () => {
@@ -97,6 +98,10 @@ const buildEmptyRow = () => ({
     available_measures: [],
     selected_measure: '',
     item_discount: '',
+    // Which rule filled item_discount in, and whether the salesperson has since
+    // overruled it. Both are UI-only and stripped before the form is posted.
+    discount_rule: null,
+    discount_touched: false,
     free: '',
     tax: '',
 })
@@ -415,6 +420,10 @@ const applySaleOrderToForm = (saleOrderId, payload) => {
         reserved_in: '',
         available: '',
         item_discount: item.discount || '',
+        // The order already settled these figures with the customer, so the
+        // rules must not quietly rewrite them on conversion.
+        discount_rule: null,
+        discount_touched: true,
         free: item.free || '',
         tax: '',
     }))
@@ -660,6 +669,64 @@ const notifySound = (type) => {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Automatic item discounts
+//
+// The figure lands in the line's discount box, where the salesperson can see
+// where it came from and raise or lower it before saving. Touch it once and
+// the rules stop writing over it for the rest of the line's life.
+// ---------------------------------------------------------------------------
+const lineDiscounts = useLineDiscounts()
+
+const selectedItemIds = () => form.items.map((row) => row?.item_id).filter(Boolean)
+
+const applyRuleDiscount = (row) => {
+    if (!row?.item_id || row.discount_touched) return
+
+    const { rule, amount } = lineDiscounts.discountFor(row.item_id, row.quantity, row.unit_price)
+    row.discount_rule = rule
+    row.item_discount = amount > 0 ? Number(amount.toFixed(decimalPlaces)) : ''
+}
+
+const refreshRuleDiscounts = async () => {
+    await lineDiscounts.load(selectedItemIds(), {
+        customerId: form.customer_id || null,
+        date: form.date || null,
+    })
+    form.items.forEach(applyRuleDiscount)
+}
+
+/** The box is the salesperson's from the first keystroke. */
+const setLineDiscount = (row, value) => {
+    row.item_discount = value
+    row.discount_touched = true
+}
+
+/** The rule an overruled line would go back to, if there is one. */
+const ruleWaitingFor = (row) => (
+    row?.item_id ? lineDiscounts.ruleFor(row.item_id, row.quantity) : null
+)
+
+/** Hand the line back to the rules. */
+const restoreRuleDiscount = (row) => {
+    row.discount_touched = false
+    applyRuleDiscount(row)
+}
+
+// A different customer (or date) can mean a different rule, so the shortlists
+// are thrown away and asked for again.
+watch(() => [form.customer_id, form.date], () => {
+    lineDiscounts.reset()
+    refreshRuleDiscounts()
+})
+
+// Quantity and price move the amount, and quantity can also tip a line over a
+// bulk rule's minimum into a different rule altogether.
+watch(
+    () => form.items.map((row) => `${row?.item_id || ''}:${row?.quantity || ''}:${row?.unit_price || ''}`).join('|'),
+    () => form.items.forEach(applyRuleDiscount),
+)
+
 const handleItemChange = async (index, selected_item) => {
     const row = form.items[index]
     if (!row || !selected_item){
@@ -676,6 +743,9 @@ const handleItemChange = async (index, selected_item) => {
         row.batch = ''
         row.expire_date = ''
         row.discount = ''
+        row.item_discount = ''
+        row.discount_rule = null
+        row.discount_touched = false
         row.variant_id = null;
         row.selected_item_variant = null;
         row.item_variants = [];
@@ -717,6 +787,16 @@ const handleItemChange = async (index, selected_item) => {
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
     row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(2));
+
+    // A fresh item starts under the rules again, whatever the old row said.
+    row.discount_touched = false
+    row.item_discount = ''
+    row.discount_rule = null
+    await lineDiscounts.load([selected_item.id], {
+        customerId: form.customer_id || null,
+        date: form.date || null,
+    })
+    applyRuleDiscount(row)
 
     // Add a new empty row only when selecting into the last row
     if (index === form.items.length - 1) {
@@ -1295,12 +1375,29 @@ useFormGuard(form)
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="localColumns.discount">
                                 <NextInput
-                                    v-model="item.item_discount"
+                                    :model-value="item.item_discount"
+                                    @update:model-value="setLineDiscount(item, $event)"
                                     :disabled="!item?.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.item_discount`]"
                                 />
+                                <!-- Why this figure is here, and the way back to it. -->
+                                <div
+                                    v-if="item.discount_rule && !item.discount_touched"
+                                    class="mt-0.5 truncate text-xs text-violet-500"
+                                    :title="item.discount_rule.name"
+                                >
+                                    {{ item.discount_rule.name }}
+                                </div>
+                                <button
+                                    v-else-if="item.discount_touched && ruleWaitingFor(item)"
+                                    type="button"
+                                    class="mt-0.5 truncate text-xs text-muted-foreground underline hover:text-violet-500"
+                                    @click="restoreRuleDiscount(item)"
+                                >
+                                    {{ t('discount_rule.restore', { name: ruleWaitingFor(item).name }) }}
+                                </button>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="localColumns.free">
                                 <NextInput

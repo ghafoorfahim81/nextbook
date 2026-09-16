@@ -12,7 +12,10 @@ use App\Models\Administration\Category;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Inventory\DiscountRule;
 use App\Models\Inventory\Item;
+use App\Models\Sale\Sale;
 use App\Services\DateConversionService;
+use App\Services\DiscountRuleResolver;
+use App\Support\BranchContext;
 use Illuminate\Http\Request;
 
 class DiscountRuleController extends Controller
@@ -52,6 +55,54 @@ class DiscountRuleController extends Controller
                 'perPage' => $request->integer('perPage', recordsPerPage()),
             ],
         ]);
+    }
+
+    /**
+     * The rules a sale line could pick up, for the items on the form.
+     *
+     * The sale screen prefills each line's discount itself so the salesperson
+     * can see it and change it before saving. It asks once per item and then
+     * re-picks locally as the quantity changes, so the response carries every
+     * candidate — best first, quantity gate open — rather than one amount.
+     */
+    public function forItems(Request $request)
+    {
+        // Whoever can write a sale needs to see the discounts that sale earns;
+        // that is a different thing from being allowed to edit the rules.
+        $this->authorize('create', Sale::class);
+
+        $validated = $request->validate([
+            'item_ids' => ['required', 'array', 'max:200'],
+            'item_ids.*' => ['string'],
+            'customer_id' => ['nullable', 'string'],
+            'date' => ['nullable', 'string'],
+        ]);
+
+        $resolver = app(DiscountRuleResolver::class);
+        $date = filled($validated['date'] ?? null)
+            ? app(DateConversionService::class)->toGregorian($validated['date'])
+            : null;
+
+        $rules = collect($validated['item_ids'])
+            ->filter()
+            ->unique()
+            ->mapWithKeys(fn (string $itemId) => [
+                $itemId => $resolver->candidatesFor(
+                    itemId: $itemId,
+                    ledgerId: $validated['customer_id'] ?? null,
+                    branchId: BranchContext::branchId(),
+                    onDate: $date,
+                )->map(fn (DiscountRule $rule) => [
+                    'id' => $rule->id,
+                    'name' => $rule->name,
+                    'discount_type' => $rule->discount_type->value,
+                    'value' => (float) $rule->value,
+                    'min_quantity' => $rule->min_quantity === null ? null : (float) $rule->min_quantity,
+                    'show_on_invoice' => (bool) $rule->show_on_invoice,
+                ])->all(),
+            ]);
+
+        return response()->json(['data' => $rules]);
     }
 
     public function store(DiscountRuleRequest $request)

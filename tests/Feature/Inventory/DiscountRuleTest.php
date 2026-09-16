@@ -6,6 +6,8 @@ use App\Enums\DiscountScope;
 use App\Enums\DiscountType;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Inventory\DiscountRule;
+use App\Models\Role;
+use App\Models\User;
 use App\Services\DiscountRuleResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\BuildsErpContext;
@@ -37,6 +39,21 @@ class DiscountRuleTest extends TestCase
             'scope' => DiscountScope::ITEM->value,
             'scope_id' => $this->ctx['item']->id,
         ], $attributes));
+    }
+
+    /** A signed-in user of the same company who holds no permissions at all. */
+    private function userWithoutPermissions(): User
+    {
+        $role = Role::query()->firstOrCreate(
+            ['name' => 'no-access', 'guard_name' => 'web'],
+            ['slug' => 'no-access'],
+        );
+
+        return tap(User::factory()->create([
+            'preferences' => User::DEFAULT_PREFERENCES,
+            'company_id' => $this->ctx['company']->id,
+            'branch_id' => $this->ctx['branch']->id,
+        ]), fn (User $user) => $user->assignRole($role));
     }
 
     private function resolver(): DiscountRuleResolver
@@ -173,11 +190,12 @@ class DiscountRuleTest extends TestCase
         $this->assertNull($this->resolver()->resolve($this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id));
     }
 
-    public function test_a_sale_line_picks_up_the_rule_when_no_discount_is_typed(): void
+    /** The backstop, for a caller that posts no discount field at all. */
+    public function test_a_sale_line_with_no_discount_field_falls_back_to_the_rule(): void
     {
         $this->rule(['discount_type' => DiscountType::PERCENTAGE->value, 'value' => 10]);
 
-        $this->post(route('sales.store'), $this->salePayload(itemDiscount: 0));
+        $this->post(route('sales.store'), $this->salePayload(itemDiscount: null));
 
         $this->assertEqualsWithDelta(100.0, (float) \App\Models\Sale\SaleItem::query()->value('discount'), 0.0001);
     }
@@ -189,6 +207,106 @@ class DiscountRuleTest extends TestCase
         $this->post(route('sales.store'), $this->salePayload(itemDiscount: 7));
 
         $this->assertEqualsWithDelta(7.0, (float) \App\Models\Sale\SaleItem::query()->value('discount'), 0.0001);
+    }
+
+    /**
+     * The sale form fills the discount box in and the salesperson can take it
+     * back out again. Every way an emptied box can reach the controller has to
+     * mean zero, or the rule quietly puts its own figure back and the customer
+     * is given a discount nobody agreed to.
+     *
+     * '' matters as much as 0 here: ConvertEmptyStringsToNull rewrites it to
+     * null in middleware, and the validation rule is nullable, so a cleared box
+     * arrives as null rather than as the empty string that was typed.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('clearedDiscountProvider')]
+    public function test_a_line_sent_with_an_emptied_discount_keeps_the_zero(mixed $posted): void
+    {
+        $this->rule(['discount_type' => DiscountType::PERCENTAGE->value, 'value' => 10]);
+
+        $payload = $this->salePayload(itemDiscount: null);
+        $payload['item_list'][0]['item_discount'] = $posted;
+
+        $this->post(route('sales.store'), $payload);
+
+        $this->assertEqualsWithDelta(
+            0.0,
+            (float) \App\Models\Sale\SaleItem::query()->value('discount'),
+            0.0001,
+            'posted '.var_export($posted, true),
+        );
+    }
+
+    public static function clearedDiscountProvider(): array
+    {
+        return [
+            'integer zero' => [0],
+            'string zero' => ['0'],
+            'emptied box' => [''],
+            'explicit null' => [null],
+        ];
+    }
+
+    /**
+     * The sale form asks for the shortlist once per item and then re-picks from
+     * it locally as the quantity changes, so the response must carry every
+     * candidate — best first, minimum-quantity gate still open.
+     */
+    public function test_the_sale_form_is_handed_every_candidate_rule_best_first(): void
+    {
+        $this->rule(['name' => 'Everyday', 'value' => 5, 'priority' => 0]);
+        $this->rule(['name' => 'Ten or more', 'value' => 15, 'priority' => 5, 'min_quantity' => 10]);
+
+        $response = $this->getJson(route('discount-rules.for-items', [
+            'item_ids' => [$this->ctx['item']->id],
+            'customer_id' => $this->ctx['customer_ledger']->id,
+            'date' => '2026-03-10',
+        ]))->assertOk();
+
+        $candidates = $response->json('data.'.$this->ctx['item']->id);
+
+        $this->assertCount(2, $candidates);
+        $this->assertSame('Ten or more', $candidates[0]['name']);
+        $this->assertEquals(10.0, $candidates[0]['min_quantity']);
+        $this->assertSame('Everyday', $candidates[1]['name']);
+        $this->assertNull($candidates[1]['min_quantity']);
+    }
+
+    /**
+     * Taking the first candidate the line's quantity reaches has to land on the
+     * same rule the server would have chosen — that equivalence is the whole
+     * reason the form is allowed to pick locally.
+     */
+    public function test_picking_the_first_candidate_the_quantity_reaches_matches_the_resolver(): void
+    {
+        $this->rule(['name' => 'Everyday', 'value' => 5]);
+        $this->rule(['name' => 'Ten or more', 'value' => 15, 'priority' => 5, 'min_quantity' => 10]);
+
+        $candidates = $this->resolver()->candidatesFor(
+            $this->ctx['item']->id, branchId: $this->ctx['branch']->id,
+        );
+
+        foreach ([1, 9, 10, 40] as $quantity) {
+            $picked = $candidates->first(
+                fn ($rule) => $rule->min_quantity === null || $quantity >= (float) $rule->min_quantity,
+            );
+            $resolved = $this->resolver()->resolve(
+                $this->ctx['item']->id, $quantity, branchId: $this->ctx['branch']->id,
+            );
+
+            $this->assertSame($resolved?->id, $picked?->id, "quantity {$quantity}");
+        }
+    }
+
+    public function test_the_candidate_list_is_closed_to_someone_who_cannot_write_a_sale(): void
+    {
+        $this->rule();
+
+        $this->actingAs($this->userWithoutPermissions());
+
+        $this->getJson(route('discount-rules.for-items', [
+            'item_ids' => [$this->ctx['item']->id],
+        ]))->assertForbidden();
     }
 
     public function test_the_crud_screen_lists_rules_and_offers_its_pickers(): void
@@ -302,8 +420,13 @@ class DiscountRuleTest extends TestCase
         ])->assertSessionHasErrors('value');
     }
 
-    /** 4 x 250 = 1000 so a 10% rule is worth exactly 100. */
-    private function salePayload(float $itemDiscount): array
+    /**
+     * 4 x 250 = 1000 so a 10% rule is worth exactly 100.
+     *
+     * A null $itemDiscount leaves the key off the line entirely, which is how a
+     * caller that is not the sale form posts.
+     */
+    private function salePayload(?float $itemDiscount): array
     {
         app(\App\Services\StockService::class)->post([
             'item_id' => $this->ctx['item']->id,
@@ -331,7 +454,7 @@ class DiscountRuleTest extends TestCase
             'rate' => 1,
             'sale_type' => 'on_loan',
             'warehouse_id' => $this->ctx['warehouse']->id,
-            'item_list' => [[
+            'item_list' => [array_filter([
                 'item_id' => $this->ctx['item']->id,
                 'batch' => null,
                 'expire_date' => null,
@@ -341,7 +464,7 @@ class DiscountRuleTest extends TestCase
                 'item_discount' => $itemDiscount,
                 'free' => 0,
                 'tax' => 0,
-            ]],
+            ], fn ($value, $key) => $key !== 'item_discount' || $value !== null, ARRAY_FILTER_USE_BOTH)],
         ];
     }
 }
