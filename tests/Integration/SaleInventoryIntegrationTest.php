@@ -87,8 +87,12 @@ class SaleInventoryIntegrationTest extends TestCase
 
         $this->assertEquals(120.0, (float) $customerBalance);
 
-        $this->delete(route('sales.destroy', $sale))->assertRedirect(route('sales.index'));
-        $this->assertSoftDeleted('sales', ['id' => $sale->id]);
+        // Sales post on create by default (transaction.sale_post_immediately),
+        // and a posted sale has already moved stock and hit the ledger — it is
+        // reversed, never deleted. The index disables the action; this is the
+        // server refusing it even so.
+        $this->delete(route('sales.destroy', $sale))->assertSessionHas('error');
+        $this->assertNotSoftDeleted('sales', ['id' => $sale->id]);
     }
 
     public function test_sale_cannot_deduct_more_than_available_stock(): void

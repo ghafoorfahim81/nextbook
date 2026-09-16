@@ -166,9 +166,17 @@ class Sale extends Model
         );
     }
 
+    /**
+     * The stock this sale moved.
+     *
+     * This pointed at App\Models\Inventory\StockOut on a source_id column —
+     * neither of which exists — so every caller (force-deleting a sale, most
+     * visibly) died trying to autoload the missing class. Movements are keyed
+     * by reference_id, the same way Purchase::stocks() reads them.
+     */
     public function stockOuts()
     {
-        return $this->hasMany(\App\Models\Inventory\StockOut::class, 'source_id', 'id');
+        return $this->hasMany(\App\Models\Inventory\StockMovement::class, 'reference_id', 'id');
     }
 
     public function getDependencyMessage(): string

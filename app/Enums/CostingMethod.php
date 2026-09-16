@@ -23,4 +23,17 @@ enum CostingMethod: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    /**
+     * The methods the costing engine actually implements.
+     *
+     * SPECIFIC is defined but nothing costs by it — StockService::handleOut
+     * branches FIFO and LIFO and treats everything else as weighted average —
+     * so offering it on a form hands the user weighted average under another
+     * name. It stays in the enum so existing rows still resolve.
+     */
+    public static function selectable(): array
+    {
+        return [self::FIFO, self::LIFO, self::WEIGHTED_AVERAGE];
+    }
 }

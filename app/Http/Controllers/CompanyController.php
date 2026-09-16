@@ -99,7 +99,7 @@ class CompanyController extends Controller
                 'id' => $locale->value,
                 'name' => $locale->getLabel(),
             ])->values(),
-            'costingMethods' => collect(CostingMethod::cases())->map(fn (CostingMethod $method) => [
+            'costingMethods' => collect(CostingMethod::selectable())->map(fn (CostingMethod $method) => [
                 'id' => $method->value,
                 'name' => $method->getLabel(),
             ])->values(),

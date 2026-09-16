@@ -24,7 +24,10 @@
       "Bash(grep -v \"^\\\\s*//\")",
       "Bash(git log *)",
       "Bash(grep -n '// dd\\($avgCost\\);' app/Http/Controllers/Sale/SaleController.php)",
-      "PowerShell(php artisan route:list --json 2>$null | Out-File -Encoding utf8 \"$env:TEMP\\\\routes.json\"; node -e \"const r=require\\(process.env.TEMP+'/routes.json'\\);const m=r.filter\\(x=>/^\\(items|purchases|purchase-orders|purchase-quotations|purchase-returns|sales|sale-orders|sale-quotations|sale-returns|stock-adjustments|item-transfers|landed-costs|discount-rules\\)[.\\\\/]/.test\\(x.name||''\\)||/^\\(items|purchases|purchase-|sales|sale-\\)/.test\\(x.uri\\)\\);const g={};for\\(const x of m\\){const k=\\(x.name||x.uri\\).split\\('.'\\)[0];\\(g[k]=g[k]||[]\\).push\\(\\(x.method.replace\\('|HEAD',''\\)\\)+' '+x.uri+'  ['+\\(x.name||'-'\\)+']'\\)}for\\(const k of Object.keys\\(g\\).sort\\(\\)\\){console.log\\('=== '+k\\);g[k].forEach\\(l=>console.log\\('   '+l\\)\\)}\")"
+      "PowerShell(php artisan route:list --json 2>$null | Out-File -Encoding utf8 \"$env:TEMP\\\\routes.json\"; node -e \"const r=require\\(process.env.TEMP+'/routes.json'\\);const m=r.filter\\(x=>/^\\(items|purchases|purchase-orders|purchase-quotations|purchase-returns|sales|sale-orders|sale-quotations|sale-returns|stock-adjustments|item-transfers|landed-costs|discount-rules\\)[.\\\\/]/.test\\(x.name||''\\)||/^\\(items|purchases|purchase-|sales|sale-\\)/.test\\(x.uri\\)\\);const g={};for\\(const x of m\\){const k=\\(x.name||x.uri\\).split\\('.'\\)[0];\\(g[k]=g[k]||[]\\).push\\(\\(x.method.replace\\('|HEAD',''\\)\\)+' '+x.uri+'  ['+\\(x.name||'-'\\)+']'\\)}for\\(const k of Object.keys\\(g\\).sort\\(\\)\\){console.log\\('=== '+k\\);g[k].forEach\\(l=>console.log\\('   '+l\\)\\)}\")",
+      "PowerShell(php artisan test tests/Integration/PurchaseInventoryIntegrationTest.php 2>&1)",
+      "PowerShell(php artisan test tests/Integration/SaleInventoryIntegrationTest.php tests/Integration/StockMovementBalanceIntegrationTest.php 2>&1)",
+      "PowerShell(php artisan test tests/Feature/Inventory/LandedCostFeatureTest.php 2>&1)"
     ],
     "defaultMode": "acceptEdits"
   }
