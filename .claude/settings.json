@@ -19,7 +19,8 @@
       "PowerShell(php -l app/Http/Controllers/Concerns/ResolvesLineVariant.php)",
       "PowerShell(php artisan test --filter=\"store saves\" tests/Feature/Http/Controllers/Purchase/PurchaseControllerTest.php 2>&1)",
       "Bash(node -e ' *)",
-      "Bash(grep -v \"\\\\.json$\")"
+      "Bash(grep -v \"\\\\.json$\")",
+      "PowerShell(php artisan test tests/Feature/Inventory/DiscountRuleTest.php tests/Feature/Sale 2>&1)"
     ],
     "defaultMode": "acceptEdits"
   }

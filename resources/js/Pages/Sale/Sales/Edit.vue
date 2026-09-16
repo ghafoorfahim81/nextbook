@@ -24,6 +24,7 @@ import VariantCell from '@/Components/inventory/VariantCell.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps';
+import { useLineDiscounts } from '@/composables/useLineDiscounts';
 import { toDocumentCurrency } from '@/utils/currency';
 
 const { t } = useI18n();
@@ -97,6 +98,10 @@ const buildEmptyRow = () => ({
     available_measures: [],
     selected_measure: '',
     item_discount: '',
+    // Which rule filled item_discount in, and whether it has since been
+    // overruled by hand. Both are UI-only and never posted.
+    discount_rule: null,
+    discount_touched: false,
     free: '',
     tax: '',
     persisted_item_id: '',
@@ -163,6 +168,9 @@ const initialRows = (saleRecord?.items || []).map((item) => {
         available_measures: availableMeasures,
         selected_measure: selectedMeasure,
         item_discount: item.discount || '',
+        // A saved line's discount is settled history. Only a line whose item is
+        // picked afresh in this edit asks the rules for a figure.
+        discount_touched: true,
         free: item.free || '',
         tax: item.tax || '',
         persisted_item_id: item.item_id,
@@ -437,7 +445,46 @@ const notifyIfDuplicate = (index) => {
     }
 };
 
-const handleItemChange = (index, selectedItem) => {
+// ---------------------------------------------------------------------------
+// Automatic item discounts
+//
+// Same arrangement as the create form, with one difference: every line that
+// arrived from the saved sale starts out overruled, so re-opening an invoice
+// never rewrites figures the customer has already been given.
+// ---------------------------------------------------------------------------
+const lineDiscounts = useLineDiscounts();
+
+const applyRuleDiscount = (row) => {
+    if (!row?.item_id || row.discount_touched) return;
+
+    const { rule, amount } = lineDiscounts.discountFor(row.item_id, row.quantity, row.unit_price);
+    row.discount_rule = rule;
+    row.item_discount = amount > 0 ? Number(amount.toFixed(decimalPlaces.value)) : '';
+};
+
+/** The box is the salesperson's from the first keystroke. */
+const setLineDiscount = (row, value) => {
+    row.item_discount = value;
+    row.discount_touched = true;
+};
+
+/** The rule an overruled line would go back to, if there is one. */
+const ruleWaitingFor = (row) => (
+    row?.item_id ? lineDiscounts.ruleFor(row.item_id, row.quantity) : null
+);
+
+/** Hand the line back to the rules. */
+const restoreRuleDiscount = (row) => {
+    row.discount_touched = false;
+    applyRuleDiscount(row);
+};
+
+watch(
+    () => form.items.map((row) => `${row?.item_id || ''}:${row?.quantity || ''}:${row?.unit_price || ''}`).join('|'),
+    () => form.items.forEach(applyRuleDiscount),
+);
+
+const handleItemChange = async (index, selectedItem) => {
     const row = form.items[index];
     if (!row) return;
 
@@ -476,6 +523,15 @@ const handleItemChange = (index, selectedItem) => {
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
     row.unit_price = Number(toDocumentCurrency((toNum(row.base_unit_price, 0) * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces.value));
     row.selected_item = selectedItem;
+
+    // A newly picked item is not saved history, so the rules may speak.
+    row.discount_touched = false;
+    row.discount_rule = null;
+    await lineDiscounts.load([selectedItem.id], {
+        customerId: form.customer_id || null,
+        date: form.date || null,
+    });
+    applyRuleDiscount(row);
 
     if (index === form.items.length - 1) form.items.push(buildEmptyRow());
     notifyIfDuplicate(index);
@@ -968,13 +1024,30 @@ useFormGuard(form)
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.discount">
                                 <NextInput
-                                    v-model="item.item_discount"
+                                    :model-value="item.item_discount"
+                                    @update:model-value="setLineDiscount(item, $event)"
                                     :disabled="!item?.selected_item"
                                     type="number"
                                     step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.item_discount`]"
                                 />
+                                <!-- Why this figure is here, and the way back to it. -->
+                                <div
+                                    v-if="item.discount_rule && !item.discount_touched"
+                                    class="mt-0.5 truncate text-xs text-violet-500"
+                                    :title="item.discount_rule.name"
+                                >
+                                    {{ item.discount_rule.name }}
+                                </div>
+                                <button
+                                    v-else-if="item.discount_touched && ruleWaitingFor(item)"
+                                    type="button"
+                                    class="mt-0.5 truncate text-xs text-muted-foreground underline hover:text-violet-500"
+                                    @click="restoreRuleDiscount(item)"
+                                >
+                                    {{ t('discount_rule.restore', { name: ruleWaitingFor(item).name }) }}
+                                </button>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.free">
                                 <NextInput

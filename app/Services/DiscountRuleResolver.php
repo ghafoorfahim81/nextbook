@@ -36,22 +36,49 @@ class DiscountRuleResolver
         ?string $branchId = null,
         Carbon|string|null $onDate = null,
     ): ?DiscountRule {
+        return $this->candidatesFor($itemId, $ledgerId, $branchId, $onDate)
+            ->first(fn (DiscountRule $rule) => $this->quantityReaches($rule, $quantity));
+    }
+
+    /**
+     * Every rule that could apply to this item for this customer on this date,
+     * best first, with the minimum-quantity gate left open.
+     *
+     * The sale screen fetches this list once per item and then picks from it as
+     * the salesperson types a quantity, so the discount updates without a round
+     * trip. Ordering is quantity-independent, which is what makes that safe:
+     * take the first entry whose min_quantity the line reaches and you have
+     * exactly what resolve() would have returned.
+     *
+     * @return Collection<int, DiscountRule>
+     */
+    public function candidatesFor(
+        string $itemId,
+        ?string $ledgerId = null,
+        ?string $branchId = null,
+        Carbon|string|null $onDate = null,
+    ): Collection {
         $item = Item::query()->select(['id', 'category_id', 'brand_id'])->find($itemId);
 
         if (! $item) {
-            return null;
+            return collect();
         }
 
         $date = $onDate ? Carbon::parse($onDate)->startOfDay() : Carbon::now()->startOfDay();
 
         return $this->rulesFor($branchId)
-            ->filter(fn (DiscountRule $rule) => $this->applies($rule, $item, $quantity, $ledgerId, $date))
+            ->filter(fn (DiscountRule $rule) => $this->applies($rule, $item, $ledgerId, $date))
             ->sortByDesc(fn (DiscountRule $rule) => [
                 $rule->specificity(),
                 $rule->priority,
                 (float) $rule->value,
             ])
-            ->first();
+            ->values();
+    }
+
+    private function quantityReaches(DiscountRule $rule, float $quantity): bool
+    {
+        return $rule->min_quantity === null || $quantity >= (float) $rule->min_quantity;
     }
 
     /**
@@ -95,17 +122,12 @@ class DiscountRuleResolver
     private function applies(
         DiscountRule $rule,
         Item $item,
-        float $quantity,
         ?string $ledgerId,
         Carbon $date,
     ): bool {
         // A group-scoped rule is for that group only. An ungrouped rule applies
         // to everyone, including members of a group.
         if (filled($rule->customer_group_id) && $rule->customer_group_id !== $this->groupOf($ledgerId)) {
-            return false;
-        }
-
-        if ($rule->min_quantity !== null && $quantity < (float) $rule->min_quantity) {
             return false;
         }
 

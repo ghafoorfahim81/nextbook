@@ -1217,17 +1217,26 @@ class SaleController extends Controller
     /**
      * The discount stored on a sale line.
      *
-     * A figure typed on the line always wins — the salesperson standing in
-     * front of the customer overrules any rule. Only an untouched line asks the
-     * resolver whether an item / category / brand discount applies. The
-     * bill-level discount is a separate concept and is not consulted here.
+     * The figure that arrives with the line always wins — the salesperson
+     * standing in front of the customer overrules any rule, and the sale form
+     * has already shown them what the rules offered. The resolver is only a
+     * backstop for callers that send no discount at all. The bill-level
+     * discount is a separate concept and is not consulted here.
      */
     private function resolveLineDiscount(array $item, array $validated, ?string $branchId): float
     {
-        $typed = $item['item_discount'] ?? null;
-
-        if ($typed !== null && $typed !== '' && (float) $typed != 0.0) {
-            return (float) $typed;
+        // The sale form resolves the rule itself and shows the figure in the
+        // line's discount box, so the presence of the field — whatever it holds
+        // — is a decision someone made while looking at it. An emptied box is
+        // "no discount", not "choose one for me": it reaches here as null,
+        // because ConvertEmptyStringsToNull rewrites '' on the way in and the
+        // validation rule is nullable. Treating that as zero is what stops a
+        // deleted discount from quietly coming back.
+        //
+        // Only a caller that omits the field entirely (an import, an API
+        // client) still has the rule applied on its behalf.
+        if (array_key_exists('item_discount', $item)) {
+            return (float) $item['item_discount'];
         }
 
         return app(DiscountRuleResolver::class)->discountFor(

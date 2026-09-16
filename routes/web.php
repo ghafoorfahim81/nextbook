@@ -173,6 +173,10 @@ Route::middleware([
     Route::delete('/items/{item}/force-delete', [\App\Http\Controllers\Inventory\ItemController::class, 'forceDelete'])
         ->name('items.force-delete')
         ->withTrashed();
+    // Sale lines ask this for the discounts they would earn, so the figure is
+    // visible and editable on the form instead of appearing only after saving.
+    Route::get('/discount-rules/for-items', [\App\Http\Controllers\Inventory\DiscountRuleController::class, 'forItems'])
+        ->name('discount-rules.for-items');
     Route::resource('/discount-rules', \App\Http\Controllers\Inventory\DiscountRuleController::class)
         ->parameters(['discount-rules' => 'discount_rule'])
         ->except(['create', 'edit', 'show']);
