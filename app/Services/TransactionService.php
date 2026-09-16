@@ -594,6 +594,11 @@ class TransactionService
             ->get();
 
         foreach ($movements as $movement) {
+            // Undoing a receipt has to take that receipt's cost back out of the
+            // average it was blended into; undoing an issue has nothing to take
+            // out, because an issue never moved the average.
+            $undoesAReceipt = $movement->movement_type === StockMovementType::IN;
+
             $this->stockService->post([
                 'branch_id' => $movement->branch_id,
                 'item_id' => $movement->item_id,
@@ -619,6 +624,9 @@ class TransactionService
                 // This restores stock the business already owned — not a new
                 // receipt at a market price — so it must not shift avg_cost.
                 'skip_average_recost' => true,
+                // ...but a cancelled receipt's cost has to come back OUT of the
+                // average it was blended into when it was posted.
+                'unwind_average_cost' => $undoesAReceipt,
             ]);
         }
 

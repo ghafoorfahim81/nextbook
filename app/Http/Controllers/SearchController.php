@@ -614,10 +614,14 @@ class SearchController extends Controller
                     'display_name' => $label !== '' ? $label : $item->name,
                     'is_default' => (bool) $v->is_default,
                     'attributes' => $v->attributes,
-                    // The variant's own cost, when it has been priced separately
-                    // from the item — falls back to the item's cost otherwise.
-                    'avg_cost' => $v->avg_cost !== null && (float) $v->avg_cost > 0 ? (float) $v->avg_cost : null,
+                    // The variant's own prices, when it has been priced
+                    // separately from the item; null falls the form back to the
+                    // item's figure. A sale form must be handed sale_price and
+                    // a purchase form purchase_price — avg_cost is what the
+                    // stock is worth, and is never what either charges.
+                    'sale_price' => $v->sale_price !== null && (float) $v->sale_price > 0 ? (float) $v->sale_price : null,
                     'purchase_price' => $v->purchase_price !== null && (float) $v->purchase_price > 0 ? (float) $v->purchase_price : null,
+                    'avg_cost' => $v->avg_cost !== null && (float) $v->avg_cost > 0 ? (float) $v->avg_cost : null,
                     // Only set once stock has actually been recorded against this
                     // variant specifically; null tells the picker to fall back to
                     // the item's total on-hand rather than show a false zero.

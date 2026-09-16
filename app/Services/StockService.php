@@ -200,6 +200,12 @@ class StockService
         $this->validateStockAvailability($balanceData);
         $method = $this->getCostingMethod($item);
 
+        // Before anything is deducted, so the totals match the ones the
+        // original receipt blended against. See unwindAverage().
+        if (! empty($balanceData['unwind_average_cost'])) {
+            $this->unwindAverage($item, $balanceData);
+        }
+
         if ($method === CostingMethod::FIFO->value) {
             $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor);
             $this->decreaseBalance($balanceData, $allocations);
@@ -266,8 +272,11 @@ class StockService
                 'quantity' => $this->convertFromItemUnit($deductQty, $conversionFactor),
                 'date' => $this->normalizeDate($movementData['date']),
                 'expire_date' => $this->normalizeDate($movement->expire_date),
-                'unit_cost' => $movementData['unit_cost'],
-                // 'unit_cost' => $this->convertMovementCostToSelectedUnit($movement, $item, $conversionFactor),
+                // The cost of the layer actually being consumed, not whatever
+                // the caller happened to pass. Two layers at different costs
+                // must produce two OUT rows at those two costs — that is what
+                // FIFO means, and what the stock ledger is read for.
+                'unit_cost' => $this->convertMovementCostToSelectedUnit($movement, $item, $conversionFactor),
                 'qty_remaining' => null,
             ]);
 
@@ -340,7 +349,8 @@ class StockService
                 'quantity'     => $this->convertFromItemUnit($deductQty, $conversionFactor),
                 'date'         => $this->normalizeDate($movementData['date']),
                 'expire_date'  => $this->normalizeDate($movement->expire_date),
-                'unit_cost'    => $movementData['unit_cost'],
+                // The consumed layer's own cost, exactly as FIFO does it.
+                'unit_cost'    => $this->convertMovementCostToSelectedUnit($movement, $item, $conversionFactor),
                 'qty_remaining' => null,
             ]);
 
@@ -431,7 +441,45 @@ class StockService
 
     }
 
-        /**
+    /**
+     * Take a cancelled receipt's cost back out of the average.
+     *
+     * increaseBalance() blends every receipt into item.avg_cost. Undoing that
+     * receipt has to unblend it, or the average keeps the cost of goods the
+     * business never ended up owning — which then mis-states the value of every
+     * unit still on the shelf and every COGS figure taken from it afterwards.
+     * A plain sale must not do this: an OUT never moved the average to begin
+     * with, so only the compensating leg of a reversal asks for it.
+     *
+     * This is the exact inverse of calculateNewAverage(), fed the same
+     * base-unit quantity and per-base-unit cost, and it must run before the
+     * stock is deducted so the totals line up with the ones the receipt saw.
+     */
+    protected function unwindAverage(Item $item, array $balanceData): void
+    {
+        // Total before this deduction = total after the receipt being undone.
+        $totalQty = (float) StockBalance::where('item_id', $item->id)->sum('quantity');
+        $quantity = (float) $balanceData['quantity'];
+        $remainingQty = $totalQty - $quantity;
+
+        // Nothing left to carry an average. Leaving it as-is is harmless: the
+        // next receipt onto an empty shelf sets the average outright rather
+        // than blending (see calculateNewAverage's oldQty <= 0 branch).
+        if ($remainingQty <= 0) {
+            return;
+        }
+
+        $unwound = (($totalQty * (float) $item->avg_cost) - ($quantity * (float) $balanceData['unit_cost']))
+            / $remainingQty;
+
+        // A negative average is never meaningful; it would mean the receipt
+        // carried more value than the shelf holds, which only happens if the
+        // books drifted. Clamp rather than propagate the nonsense.
+        $item->avg_cost = round(max(0.0, $unwound), 4);
+        $item->save();
+    }
+
+    /**
      * Average Cost Formula
      */
     protected function calculateNewAverage(

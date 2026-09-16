@@ -14,7 +14,8 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
-import { pickDefaultVariant } from '@/composables/useVariantLine'
+import { pickDefaultVariant, repriceRow } from '@/composables/useVariantLine'
+import { toDocumentCurrency } from '@/utils/currency'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 
 const { t } = useI18n();
@@ -90,7 +91,7 @@ const itemOptions = ref([]);
 const loadItemOptions = async (warehouseId = form.warehouse_id) => {
     try {
         const response = await axios.get(route('search.items-list'), {
-            params: { warehouse_id: warehouseId || undefined, limit: 50 }
+            params: { warehouse_id: warehouseId || undefined, limit: 50, in_stock_only: false }
         })
         itemOptions.value = response.data?.data || []
     } catch (error) {
@@ -140,7 +141,7 @@ const handleItemChange = (index, selected_item) => {
 
     row.base_unit_price = row.selected_variant?.purchase_price ?? selected_item.purchase_price ?? selected_item.avg_cost ?? 0
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = Number(((row.base_unit_price * Number(row.selected_measure.unit) * form.rate) / baseUnit).toFixed(2));
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(2));
 }
 
 const handleVariantChange = (index, variant) => {
@@ -148,6 +149,12 @@ const handleVariantChange = (index, variant) => {
     if (!row) return
     row.selected_variant = variant || null
     row.variant_id = variant?.id || null
+    // Switching variant moves the price with it — that is what pricing a
+    // variant separately is for.
+    repriceRow(row, variant, 'purchase')
+    const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(2))
 }
 
 const rowTotal = (index) => {
