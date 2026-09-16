@@ -46,6 +46,13 @@ class ItemResource extends JsonResource
             'maximum_stock' => $this->maximum_stock,
             'purchase_price' => $this->purchase_price,
             'sale_price' => $this->sale_price,
+            // Margin and the free-form attribute bag are stored on the item but
+            // were never serialised, so the detail page had no way to show them.
+            'margin_percentage' => $this->margin_percentage,
+            // `attributes` is a jsonb bag of descriptive, non variant-forming
+            // specs. Read it off the model directly — `$this->attributes` on a
+            // resource would resolve to the model's raw attribute array.
+            'attributes' => $this->resource->attributes,
             'rate_a' => $this->rate_a,
             'rate_b' => $this->rate_b,
             'rate_c' => $this->rate_c,
@@ -100,6 +107,7 @@ class ItemResource extends JsonResource
             'reorder_quantity' => $this->reorder_quantity,
             'lead_time_days' => $this->lead_time_days,
             'default_warehouse_id' => $this->default_warehouse_id,
+            'default_warehouse_name' => $this->whenLoaded('defaultWarehouse', fn () => $this->defaultWarehouse?->name),
 
             'variants' => ItemVariantResource::collection($this->whenLoaded('variants')),
             // Calculate total in quantity in item's base unit

@@ -41,6 +41,7 @@
     "rate_b": "نرخ B",
     "rate_c": "نرخ C",
     "barcode": "بارکد",
+    "sku": "د زېرمې د ساتلو کوډ",
     "generate_new_barcode": "نوی بارکوډ جوړ کړئ",
     "in_records": "د ننوتلو مخینه",
     "out_records": "د وتلو مخینه",

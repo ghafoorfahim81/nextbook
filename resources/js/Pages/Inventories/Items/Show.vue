@@ -45,6 +45,8 @@ const currentRecords = computed(() => activeTab.value === 'in' ? inRecords.value
 const itemDetails = computed(() => [
     { label: t('general.name'), value: itemData.value?.name, icon: Package },
     { label: t('item.code'), value: itemData.value?.code, icon: Hash },
+    { label: t('item.sku'), value: itemData.value?.sku, icon: Hash },
+    { label: t('item.barcode'), value: itemData.value?.barcode, icon: Hash },
     { label: t('item.generic_name'), value: itemData.value?.generic_name, icon: Pill },
     { label: t('item.packing'), value: itemData.value?.packing, icon: Box },
     { label: t('item.item_type'), value: itemData.value?.item_type, icon: Tag },
@@ -56,6 +58,9 @@ const itemDetails = computed(() => [
     { label: t('item.cost_account'), value: itemData.value?.cost_account?.name, icon: TrendingDown },
     { label: t('item.current_stock'), value: itemData.value?.on_hand || 0, icon: Target },
     { label: t('item.average_cost'), value: itemData.value?.avg_cost, icon: DollarSign },
+    { label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign },
+    { label: t('item.sale_price'), value: itemData.value?.sale_price, icon: DollarSign },
+    { label: t('item.margin_percentage'), value: itemData.value?.margin_percentage, icon: DollarSign },
     { label: t('item.rate_a'), value: itemData.value?.rate_a, icon: DollarSign },
     { label: t('item.rate_b'), value: itemData.value?.rate_b, icon: DollarSign },
     { label: t('item.rate_c'), value: itemData.value?.rate_c, icon: DollarSign },
@@ -87,11 +92,27 @@ const sourcingDetails = computed(() => [
 ].filter((row) => filled(row.value)));
 
 const planningDetails = computed(() => [
+    { label: t('item.minimum_stock'), value: itemData.value?.minimum_stock, icon: TrendingDown },
+    { label: t('item.maximum_stock'), value: itemData.value?.maximum_stock, icon: TrendingUp },
+    { label: t('item.default_warehouse'), value: itemData.value?.default_warehouse_name, icon: Building },
     { label: t('item.reorder_quantity'), value: itemData.value?.reorder_quantity, icon: PackageSearch },
     { label: t('item.lead_time_days'), value: itemData.value?.lead_time_days, icon: CalendarClock },
     { label: t('item.costing_method'), value: itemData.value?.costing_method_label, icon: DollarSign },
     { label: t('item.pricing_method'), value: itemData.value?.pricing_method_label, icon: DollarSign },
 ].filter((row) => filled(row.value)));
+
+// Descriptive, non variant-forming specs the item carries as a JSON bag.
+// Keys are user-defined, so the label is the key itself, humanised.
+const customAttributes = computed(() => {
+    const bag = itemData.value?.attributes;
+    if (!bag || typeof bag !== 'object' || Array.isArray(bag)) return [];
+    return Object.entries(bag)
+        .filter(([, value]) => filled(value))
+        .map(([key, value]) => ({
+            label: key.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+            value: Array.isArray(value) ? value.join(', ') : String(value),
+        }));
+});
 
 const behaviourFlags = computed(() => [
     { key: 'is_stockable', label: t('item.is_stockable') },
@@ -452,6 +473,24 @@ onMounted(() => {
                     </div>
                 </template>
 
+                <!-- Descriptive attributes (free-form JSON bag on the item) -->
+                <template v-if="customAttributes.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><Tag class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.variant_attributes') }}</h3>
+                    </div>
+                    <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                        <div v-for="attribute in customAttributes" :key="attribute.label" class="flex items-start gap-2">
+                            <Tag class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs text-muted-foreground">{{ attribute.label }}</p>
+                                <p class="text-sm font-medium text-foreground truncate">{{ attribute.value }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- Behaviour flags -->
                 <template v-if="behaviourFlags.length">
                     <hr class="my-4 border-border" />
@@ -596,21 +635,22 @@ onMounted(() => {
                 <!-- Scrollable table -->
                 <div class="overflow-x-auto max-h-[500px] overflow-y-auto" @scroll="onScroll">
                     <table class="w-full text-xs text-foreground">
-                        <thead class="sticky top-0 border-b-2 border-border z-10 bg-violet-500 text-white">
-                            <tr class="text-xs uppercase tracking-wide font-semibold">
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">#</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.ledger') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.bill_number') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.date') }}</th>
-                                <th class="py-3 px-3 text-center whitespace-nowrap rtl:text-right">{{ t('general.quantity') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.unit_price') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.total') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.source') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.unit_measure.unit_measure') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.batch') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.expire_date') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.status') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.warehouse.warehouse') }}</th>
+                        <thead class="sticky top-0 border-b border-border z-10 bg-violet-500 text-white">
+                            <tr class="text-[11px] font-medium">
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">#</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.ledger') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.bill_number') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.date') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.variant') }}</th>
+                                <th class="py-2 px-3 text-center whitespace-nowrap rtl:text-right">{{ t('general.quantity') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.unit_price') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.total') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.source') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.unit_measure.unit_measure') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.batch') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.expire_date') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.status') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.warehouse.warehouse') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -625,6 +665,7 @@ onMounted(() => {
                                     {{ row.bill_number || '—' }}
                                 </td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.date }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.variant?.display_name || '—' }}</td>
                                 <td class="py-3 px-3 text-center whitespace-nowrap font-semibold rtl:text-right">{{ row.quantity }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_price }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ (Number(row.quantity || 0) * Number(row.unit_price || 0)).toFixed(4) }}</td>
@@ -636,7 +677,7 @@ onMounted(() => {
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.warehouse_name }}</td>
                             </tr>
                             <tr v-if="!loading && currentRecords.length === 0">
-                                <td colspan="13" class="py-8 text-center text-muted-foreground">{{ t('general.no_record_available') }}</td>
+                                <td colspan="14" class="py-8 text-center text-muted-foreground">{{ t('general.no_record_available') }}</td>
                             </tr>
                         </tbody>
                     </table>
