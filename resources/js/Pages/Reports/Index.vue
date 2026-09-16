@@ -80,6 +80,7 @@ function normalizeFilters(filters) {
     customer_id: filters.customer_id || '',
     supplier_id: filters.supplier_id || '',
     item_id: filters.item_id || '',
+    variant_id: filters.variant_id || '',
     account_id: filters.account_id || '',
     currency_id: filters.currency_id || '',
     warehouse_id: filters.warehouse_id || '',
@@ -390,7 +391,7 @@ const reportDefinitions = computed(() => ({
     description: t('report.reports.sales_report.description'),
     filters: localFilters.value.view_type === 'general'
       ? ['customer_id', 'type', 'currency_id', 'warehouse_id']
-      : ['item_id', 'warehouse_id'],
+      : ['item_id', 'variant_id', 'warehouse_id'],
     group: 'operations',
     icon: ShoppingCart,
     summary: localFilters.value.view_type === 'general'
@@ -417,6 +418,7 @@ const reportDefinitions = computed(() => ({
           { key: 'sale_number', label: t('report.columns.sale_number') },
           { key: 'customer', label: t('report.columns.customer') },
           { key: 'item', label: t('report.columns.item') },
+          { key: 'variant', label: t('report.columns.variant') },
           { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
           { key: 'unit_measure', label: t('report.columns.unit_measure') },
           { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
@@ -429,7 +431,7 @@ const reportDefinitions = computed(() => ({
     description: t('report.reports.purchase_report.description'),
     filters: localFilters.value.view_type === 'general'
       ? ['supplier_id', 'type', 'currency_id', 'warehouse_id']
-      : ['item_id', 'warehouse_id'],
+      : ['item_id', 'variant_id', 'warehouse_id'],
     group: 'operations',
     icon: ClipboardList,
     summary: localFilters.value.view_type === 'general'
@@ -455,6 +457,7 @@ const reportDefinitions = computed(() => ({
           { key: 'purchase_number', label: t('report.columns.purchase_number') },
           { key: 'supplier', label: t('report.columns.supplier') },
           { key: 'item', label: t('report.columns.item') },
+          { key: 'variant', label: t('report.columns.variant') },
           { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
           { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
           { key: 'discount', label: t('report.columns.discount'), type: 'money', align: 'right' },
@@ -483,7 +486,7 @@ const reportDefinitions = computed(() => ({
   inventory_stock: {
     label: t('report.reports.inventory_stock.label'),
     description: t('report.reports.inventory_stock.description'),
-    filters: ['item_id'],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Package,
@@ -502,7 +505,7 @@ const reportDefinitions = computed(() => ({
   stock_movement: {
     label: t('report.reports.stock_movement.label'),
     description: t('report.reports.stock_movement.description'),
-    filters: ['item_id'],
+    filters: ['item_id', 'variant_id'],
     group: 'inventory',
     icon: ArrowLeftRight,
     summary: [
@@ -527,7 +530,7 @@ const reportDefinitions = computed(() => ({
   stock_adjustment_report: {
     label: t('report.reports.stock_adjustment_report.label'),
     description: t('report.reports.stock_adjustment_report.description'),
-    filters: ['warehouse_id', 'item_id', 'reason'],
+    filters: ['warehouse_id', 'item_id', 'variant_id', 'reason'],
     group: 'inventory',
     icon: SlidersHorizontal,
     summary: [
@@ -555,7 +558,7 @@ const reportDefinitions = computed(() => ({
   low_stock: {
     label: t('report.reports.low_stock.label'),
     description: t('report.reports.low_stock.description'),
-    filters: ['item_id'],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Boxes,
@@ -572,7 +575,7 @@ const reportDefinitions = computed(() => ({
   inventory_valuation: {
     label: t('report.reports.inventory_valuation.label'),
     description: t('report.reports.inventory_valuation.description'),
-    filters: ['item_id'],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Archive,
@@ -590,7 +593,7 @@ const reportDefinitions = computed(() => ({
   batch_wise_report: {
     label: t('report.reports.batch_wise_report.label'),
     description: t('report.reports.batch_wise_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Boxes,
@@ -612,7 +615,7 @@ const reportDefinitions = computed(() => ({
   expiry_wise_report: {
     label: t('report.reports.expiry_wise_report.label'),
     description: t('report.reports.expiry_wise_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: CalendarClock,
@@ -633,7 +636,7 @@ const reportDefinitions = computed(() => ({
   variant_wise_report: {
     label: t('report.reports.variant_wise_report.label'),
     description: t('report.reports.variant_wise_report.description'),
-    filters: ['item_id', 'warehouse_id'],
+    filters: ['item_id', 'variant_id', 'warehouse_id'],
     snapshot: true,
     group: 'inventory',
     icon: Palette,
@@ -656,7 +659,7 @@ const reportDefinitions = computed(() => ({
   zero_on_hand_report: {
     label: t('report.reports.zero_on_hand_report.label'),
     description: t('report.reports.zero_on_hand_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: PackageX,
@@ -676,7 +679,7 @@ const reportDefinitions = computed(() => ({
   fast_moving_report: {
     label: t('report.reports.fast_moving_report.label'),
     description: t('report.reports.fast_moving_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     group: 'inventory',
     icon: TrendingUp,
     summary: [
@@ -695,7 +698,7 @@ const reportDefinitions = computed(() => ({
   slow_moving_report: {
     label: t('report.reports.slow_moving_report.label'),
     description: t('report.reports.slow_moving_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     group: 'inventory',
     icon: TrendingDown,
     summary: [
@@ -715,7 +718,7 @@ const reportDefinitions = computed(() => ({
   today_sale_purchase_closing_stock_report: {
     label: t('report.reports.today_sale_purchase_closing_stock_report.label'),
     description: t('report.reports.today_sale_purchase_closing_stock_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: ClipboardList,
@@ -737,7 +740,7 @@ const reportDefinitions = computed(() => ({
   near_expiry_report: {
     label: t('report.reports.near_expiry_report.label'),
     description: t('report.reports.near_expiry_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: CalendarClock,
@@ -757,7 +760,7 @@ const reportDefinitions = computed(() => ({
   maximum_stock_report: {
     label: t('report.reports.maximum_stock_report.label'),
     description: t('report.reports.maximum_stock_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Archive,
@@ -1182,6 +1185,7 @@ function resetFilters() {
     customer_id: '',
     supplier_id: '',
     item_id: '',
+    variant_id: '',
     account_id: '',
     currency_id: '',
     warehouse_id: '',
@@ -1219,6 +1223,7 @@ function selectReport(reportKey) {
     customer_id: '',
     supplier_id: '',
     item_id: '',
+    variant_id: '',
     account_id: '',
     currency_id: '',
     warehouse_id: '',
@@ -1248,6 +1253,7 @@ function switchViewType(viewType) {
     customer_id: '',
     supplier_id: '',
     item_id: '',
+    variant_id: '',
     currency_id: '',
     warehouse_id: '',
     type: '',
