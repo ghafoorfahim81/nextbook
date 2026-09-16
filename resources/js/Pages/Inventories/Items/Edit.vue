@@ -211,15 +211,21 @@ const normalize = () => {
 
 const handleSubmit = () => {
     normalize()
-    form.patch(route('items.update', form.id), {
-        onSuccess: () => {
-            form.reset()
-            toast.success(t('general.success'),{
-                description: t('general.update_success', { name: t('item.item') }),
-                class: 'bg-green-600',
-            });
-        },
-    })
+    // Posted, not patched: when a photo or attachment is picked Inertia sends
+    // the body as multipart/form-data, and PHP does not parse a multipart body
+    // on PATCH/PUT — the server saw an empty payload and every required field
+    // came back "required". Spoofing the method keeps the route the same while
+    // the upload arrives on a POST, which PHP does parse.
+    form.transform((data) => ({ ...data, _method: 'patch' }))
+        .post(route('items.update', form.id), {
+            onSuccess: () => {
+                form.reset()
+                toast.success(t('general.success'), {
+                    description: t('general.update_success', { name: t('item.item') }),
+                    class: 'bg-green-600',
+                });
+            },
+        })
 }
 const handleSelectChange = (field, value) => {
     form[field] = value;

@@ -237,7 +237,7 @@ class ItemController extends Controller
         $item->load(
             'assetAccount', 'incomeAccount', 'costAccount',
             'createdBy', 'updatedBy', 'brand', 'stocks', 'attachments',
-            'variants.stockBalances',
+            'variants.stockBalances', 'unitMeasure', 'category', 'defaultWarehouse',
         );
 
         if ($request->expectsJson()) {

@@ -26,6 +26,18 @@ The default admin user is seeded by the main seeder class (email from `UserSeede
 php artisan tinker --execute="\$u = \App\Models\User::where('name','admin')->first(); \$c = \App\Models\Administration\Company::first(); \$u->company_id = \$c->id; \$u->save(); \$u->assignRole('admin');"
 ```
 
+### File Uploads
+
+Uploaded files (item photos, company logos, expense and ledger attachments) are
+written to `storage/app/public` and served from `/storage/...`, so after a fresh
+clone run:
+```
+php artisan storage:link
+```
+Without it every upload resolves to a 404 and images render broken, even though
+the file saved correctly. If `public/storage` already exists as a real directory
+rather than a symlink, delete it first — `storage:link` refuses to overwrite it.
+
 ### Running the Application
 
 The full dev stack is started via `composer dev` (uses `concurrently` to run Laravel server, queue worker, log tail, and Vite). Alternatively, start individually:
