@@ -19,7 +19,7 @@ import { ToastAction } from '@/Components/ui/toast';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { printDocument } from '@/composables/usePrintDocument';
 import NextDate from '@/Components/next/NextDatePicker.vue';
-import { pickDefaultVariant } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow } from '@/composables/useVariantLine'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
@@ -513,11 +513,8 @@ const handleItemChange = async (index, selectedItem) => {
     row.selected_item_variant = pickDefaultVariant(row.item_variants);
     row.variant_id = row.selected_item_variant?.id || null;
 
-    const marginPercentage = toNum(selectedItem.margin_percentage, 0);
-    const variantPrice = row.selected_item_variant?.avg_cost ?? row.selected_item_variant?.purchase_price;
-    row.base_unit_price = (variantPrice && Number(variantPrice) > 0)
-        ? Number(variantPrice)
-        : (selectedItem.sale_price ?? (toNum(selectedItem.avg_cost, 0) * (1 + marginPercentage / 100)));
+    // What we sell it for, not what it cost us.
+    row.base_unit_price = resolveVariantUnitPrice(selectedItem, row.selected_item_variant, 'sale');
 
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1;
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
@@ -542,6 +539,12 @@ const handleItemVariantChange = (index, variant) => {
     if (!row) return;
     row.selected_item_variant = variant ?? null;
     row.variant_id = variant?.id || null;
+    // Switching variant moves the price with it — that is what pricing a
+    // variant separately is for.
+    repriceRow(row, variant, 'sale')
+    const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces.value))
     notifyIfDuplicate(index);
 };
 

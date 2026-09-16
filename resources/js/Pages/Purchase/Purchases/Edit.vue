@@ -18,7 +18,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import NextDate from '@/Components/next/NextDatePicker.vue';
-import { pickDefaultVariant, resolveVariantUnitCost } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow } from '@/composables/useVariantLine'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
@@ -467,7 +467,7 @@ const handleItemChange = (index, selectedItem) => {
     row.item_variants = selectedItem.item_variants || [];
     row.selected_variant = pickDefaultVariant(row.item_variants);
     row.variant_id = row.selected_variant?.id || null;
-    row.base_unit_price = resolveVariantUnitCost(selectedItem, row.selected_variant, 'purchase_price');
+    row.base_unit_price = resolveVariantUnitPrice(selectedItem, row.selected_variant, 'purchase');
 
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1;
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
@@ -486,6 +486,12 @@ const handleVariantChange = (index, variant) => {
     if (!row) return;
     row.selected_variant = variant ?? null;
     row.variant_id = variant?.id || null;
+    // Switching variant moves the price with it — that is what pricing a
+    // variant separately is for.
+    repriceRow(row, variant, 'purchase')
+    const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
+    row.unit_price = toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate)
     notifyIfDuplicate(index);
 };
 

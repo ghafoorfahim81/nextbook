@@ -224,4 +224,50 @@ class StockAdjustmentReversalTest extends TestCase
             'Reversing an IN adjustment should remove the found quantity again.',
         );
     }
+
+    /**
+     * The mirror of the OUT case, and the one that actually costs money.
+     *
+     * An IN *does* move the average when it is posted, so undoing it has to
+     * move the average back. Leaving the average where the cancelled receipt
+     * put it mis-states the value of every unit still on the shelf, and every
+     * COGS figure taken from it afterwards.
+     */
+    public function test_reversing_an_in_adjustment_puts_the_average_cost_back(): void
+    {
+        $item = $this->ctx['item'];
+        app(ItemVariantService::class)->ensureDefault($item);
+        $this->receive($item, 10, 20);
+
+        $this->assertEqualsWithDelta(20.0, (float) $item->fresh()->avg_cost, 0.0001);
+
+        $reason = collect(StockAdjustmentReason::cases())
+            ->first(fn ($case) => $case->direction() === StockMovementType::IN);
+
+        $adjustment = app(StockAdjustmentService::class)->create([
+            'date' => now()->toDateString(),
+            'reason' => $reason->value,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'items' => [[
+                'item_id' => $item->id,
+                'unit_measure_id' => $item->unit_measure_id,
+                'quantity' => 5,
+                'unit_cost' => 30,
+            ]],
+        ]);
+
+        // The receipt blended in: (10 x 20 + 5 x 30) / 15 = 23.3333.
+        $this->assertEqualsWithDelta(23.3333, (float) $item->fresh()->avg_cost, 0.001);
+
+        app(StockAdjustmentService::class)->reverse($adjustment, 'entered by mistake');
+
+        $this->assertEqualsWithDelta(10.0, $this->totalOnHand($item), 0.0001);
+        $this->assertEqualsWithDelta(
+            20.0,
+            (float) $item->fresh()->avg_cost,
+            0.0001,
+            'Reversing an IN adjustment must unwind its effect on the average cost, '
+            .'not leave the average where the cancelled receipt put it.',
+        );
+    }
 }

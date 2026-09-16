@@ -21,7 +21,7 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { printDocument } from '@/composables/usePrintDocument'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { pickDefaultVariant } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow } from '@/composables/useVariantLine'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
@@ -776,13 +776,9 @@ const handleItemChange = async (index, selected_item) => {
     row.item_variants = selected_item.item_variants || [];
     row.selected_item_variant = pickDefaultVariant(row.item_variants);
     row.variant_id = row.selected_item_variant?.id || null;
-    const marginPercentage = toNum(selected_item.margin_percentage, 0).toFixed(decimalPlaces);
-    // Set the base unit price - this is the price per base unit. A variant
-    // priced on its own wins; otherwise the item's usual sale-price fallback.
-    const variantPrice = row.selected_item_variant?.avg_cost ?? row.selected_item_variant?.purchase_price
-    row.base_unit_price = (variantPrice && Number(variantPrice) > 0)
-        ? Number(variantPrice)
-        : (selected_item.sale_price ?? selected_item.avg_cost*(1+marginPercentage/100) ?? 0)
+    // The price per base unit: what we sell it for, not what it cost us. A
+    // variant priced on its own wins; otherwise the item's own sale price.
+    row.base_unit_price = resolveVariantUnitPrice(selected_item, row.selected_item_variant, 'sale')
 
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
@@ -923,6 +919,12 @@ const handleItemVariantChange = (index, variant) => {
     if (!row) return
     row.selected_item_variant = variant ?? null
     row.variant_id = variant?.id || null
+    // Switching variant moves the price with it — that is what pricing a
+    // variant separately is for.
+    repriceRow(row, variant, 'sale')
+    const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(2))
     notifyIfDuplicate(index)
 }
 
