@@ -114,7 +114,7 @@ class ItemController extends Controller
     protected function methodOptions(): array
     {
         return [
-            'costingMethods' => collect(CostingMethod::cases())
+            'costingMethods' => collect(CostingMethod::selectable())
                 ->map(fn ($c) => ['id' => $c->value, 'name' => $c->getLabel()])
                 ->values(),
             'pricingMethods' => collect(PricingMethod::cases())
@@ -567,6 +567,10 @@ class ItemController extends Controller
             DB::transaction(function () use ($item) {
                 // Restore the main item first
                 $item->restore();
+                // destroy() soft-deletes the variants with the item, so they
+                // have to come back with it — an item restored without its
+                // variants has nothing sellable and no bucket for its stock.
+                $item->variants()->withTrashed()->restore();
                 $item->stocks()->withTrashed()->restore();
                 $item->stockBalances()->withTrashed()->restore();
 
@@ -611,16 +615,22 @@ class ItemController extends Controller
 
                 // Force delete opening transactions with their related models
                 $openingTransaction = $item->openingTransaction()->first();
-                    if ($openingTransaction) {
-                        // Then safely delete the related transactions
-                        if ($openingTransaction->id) {
-                            TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
-                            Transaction::where('id', $openingTransaction->id)->forceDelete();
-                        }
-
-                // Finally force delete the main item
-                $item->forceDelete();
+                if ($openingTransaction && $openingTransaction->id) {
+                    TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
+                    Transaction::where('id', $openingTransaction->id)->forceDelete();
                 }
+
+                // Everything that points at the item has to go before the item
+                // itself, or its foreign keys block the delete.
+                $item->variants()->withTrashed()->forceDelete();
+                $item->stocks()->withTrashed()->forceDelete();
+                $item->stockBalances()->withTrashed()->forceDelete();
+
+                // Finally force delete the main item. This used to sit inside
+                // the opening-transaction branch above, so an item without an
+                // opening was never deleted at all while the screen still
+                // reported success.
+                $item->forceDelete();
             });
 
             return redirect()->route('items.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.item')]));

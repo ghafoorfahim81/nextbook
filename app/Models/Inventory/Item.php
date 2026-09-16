@@ -2,7 +2,6 @@
 
 namespace App\Models\Inventory;
 
-use App\Models\Inventory\StockOut;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
@@ -271,10 +270,6 @@ class Item extends Model
         return $this->hasMany(StockMovement::class, 'item_id', 'id')->where('source', StockSourceType::OPENING->value);
     }
 
-    public function stockOut()
-    {
-        return $this->hasMany(StockOut::class);
-    }
     public function openingTransaction(): HasOne
     {
         return $this->hasOne(Transaction::class, 'reference_id');

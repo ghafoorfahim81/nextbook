@@ -40,7 +40,6 @@ use App\Models\Hr\TaxBracketSet;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
-use App\Models\Inventory\StockOut;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Models\JournalEntry\JournalClass;
 use App\Models\JournalEntry\JournalEntry;
@@ -67,6 +66,8 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -807,6 +808,25 @@ class DeletedRecordService
         $record->forceDelete();
     }
 
+    /**
+     * Does this relation's model soft-delete?
+     *
+     * This used to be asked as method_exists($relation, 'withTrashed'), which
+     * is always false: withTrashed is a macro the soft-delete scope adds to the
+     * query builder and reaches the relation through __call, so method_exists
+     * never sees it. Both helpers below therefore skipped every child silently
+     * — force-delete left the lines behind and then died on the foreign key,
+     * and restore brought a document back with no lines at all.
+     */
+    private function relationSoftDeletes(Relation $relation): bool
+    {
+        return in_array(
+            SoftDeletes::class,
+            class_uses_recursive($relation->getRelated()),
+            true,
+        );
+    }
+
     private function restoreSimpleRelations(Model $record, array $relations): void
     {
         $record->restore();
@@ -817,7 +837,10 @@ class DeletedRecordService
             }
 
             $related = $record->{$relation}();
-            if (method_exists($related, 'withTrashed')) {
+
+            // Only a soft-deleted child can be brought back; a hard-deleted one
+            // is already gone.
+            if ($this->relationSoftDeletes($related)) {
                 $related->withTrashed()->restore();
             }
         }
@@ -831,8 +854,12 @@ class DeletedRecordService
             }
 
             $related = $record->{$relation}();
-            if (method_exists($related, 'withTrashed')) {
+
+            // Children first, or the parent's delete hits their foreign key.
+            if ($this->relationSoftDeletes($related)) {
                 $related->withTrashed()->forceDelete();
+            } else {
+                $related->delete();
             }
         }
 
@@ -855,6 +882,10 @@ class DeletedRecordService
     private function restoreItemRecord(Item $item): void
     {
         $item->restore();
+        // ItemController::destroy soft-deletes the variants with the item, so
+        // they have to come back with it too — an item with no variants has
+        // nothing sellable attached and no bucket for its stock.
+        $item->variants()->withTrashed()->restore();
         $item->stocks()->withTrashed()->restore();
         $item->stockBalances()->withTrashed()->restore();
         $this->restoreOpeningTransaction($item);
@@ -862,6 +893,8 @@ class DeletedRecordService
 
     private function forceDeleteItemRecord(Item $item): void
     {
+        // Children first, or the item's delete hits their foreign key.
+        $item->variants()->withTrashed()->forceDelete();
         $item->stocks()->withTrashed()->forceDelete();
         $item->stockBalances()->withTrashed()->forceDelete();
         $this->forceDeleteOpeningTransaction($item);

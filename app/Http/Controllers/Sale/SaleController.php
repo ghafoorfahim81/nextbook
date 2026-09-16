@@ -271,6 +271,7 @@ class SaleController extends Controller
                     warehouseId: $validated['warehouse_id'],
                     branchId: $sale->branch_id,
                     quantity: (float) $item['quantity'],
+                    costingMethod: $itemModel->effectiveCostingMethod()->value,
                 ) : 0.0;
                 return $item;
             }, $validated['item_list']);
@@ -743,6 +744,7 @@ class SaleController extends Controller
                         warehouseId: $item['warehouse_id'],
                         branchId: $sale->branch_id,
                         quantity: (float) $item['quantity'],
+                        costingMethod: $itemModel->effectiveCostingMethod()->value,
                     ) : 0.0);
                 return $item;
             }, $validated['item_list']);
@@ -1263,7 +1265,10 @@ class SaleController extends Controller
 
         $itemModelsById = Item::query()
             ->whereIn('id', $itemIds)
-            ->get(['id', 'name', 'unit_measure_id', 'income_account_id', 'cost_account_id', 'asset_account_id'])
+            // costing_method must be in the select: without it the attribute is
+            // null and effectiveCostingMethod() silently falls back to the
+            // company default, costing the line by the wrong method.
+            ->get(['id', 'name', 'unit_measure_id', 'costing_method', 'income_account_id', 'cost_account_id', 'asset_account_id'])
             ->keyBy('id')
             ->all();
         $averageCostsByItemId = Item::query()
@@ -1300,8 +1305,13 @@ class SaleController extends Controller
         string $warehouseId,
         string $branchId,
         float $quantity,
+        ?string $costingMethod = null,
     ): float {
-        $method = BranchContext::costingMethod();
+        // The ITEM's method, not the company's. An item may override the
+        // company default (Item::effectiveCostingMethod), and StockService
+        // deducts the stock on that override — so reading the company default
+        // here issued the goods at one cost and booked them at another.
+        $method = $costingMethod ?? BranchContext::costingMethod();
 
         if ($method !== CostingMethod::FIFO->value && $method !== CostingMethod::LIFO->value) {
             return $this->resolveUnitCost($avgCost, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);

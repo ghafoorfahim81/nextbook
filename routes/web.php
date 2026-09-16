@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\NextController;
-
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\Administration\BranchController;
@@ -234,7 +232,6 @@ Route::middleware([
         ->name('purchases.force-delete')
         ->withTrashed();
     //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
-    Route::get('/purchase-item-change', [NextController::class, 'purchaseItemChange'])->name('purchase.item.change');
 
     Route::get('/sales/open-bills', [\App\Http\Controllers\Sale\SaleController::class, 'openBills'])->name('sales.open-bills');
     Route::get('/sales/list-export', [\App\Http\Controllers\Sale\SaleController::class, 'exportList'])->name('sales.list-export');
@@ -246,7 +243,6 @@ Route::middleware([
     Route::delete('/sales/{sale}/force-delete', [\App\Http\Controllers\Sale\SaleController::class, 'forceDelete'])
         ->name('sales.force-delete')
         ->withTrashed();
-    Route::get('/item-with-batches', [NextController::class, 'getItemWithBatches'])->name('item.with.batches');
     Route::get('/sales/{sale}/print', [\App\Http\Controllers\Sale\SaleController::class, 'print'])->name('sales.print');
     Route::get('/sales/{sale}/export', [\App\Http\Controllers\Sale\SaleController::class, 'exportDetail'])->name('sales.export');
     Route::get('/purchases/{purchase}/export', [\App\Http\Controllers\Purchase\PurchaseController::class, 'exportDetail'])->name('purchases.export');

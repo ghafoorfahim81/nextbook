@@ -77,14 +77,23 @@ class LandedCostRequest extends FormRequest
 
             $totalCost = (float) $this->input('total_cost', 0);
 
-            // The item-level allocation the client already computed (proportional
-            // methods always sum to total_cost by construction; only 'manual' can
-            // legitimately drift) must still equal total_cost — the same
+            // An allocation the CLIENT supplied must equal total_cost — the same
             // requirement the UI blocks submission on.
-            $itemsAllocatedTotal = $items->sum(fn ($item) => (float) data_get($item, 'allocated_amount', 0));
+            //
+            // Only check it when the client actually supplied one. Under a
+            // proportional method (by_value, by_quantity, ...) the server works
+            // the split out itself, so a legitimate payload carries no
+            // allocated_amount at all; summing those absent values to 0 and
+            // comparing to total_cost rejected every such request. The service
+            // re-checks the computed figure before posting either way.
+            $clientAllocated = $items->contains(fn ($item) => filled(data_get($item, 'allocated_amount')));
 
-            if ($totalCost > 0 && abs(round($itemsAllocatedTotal, 2) - round($totalCost, 2)) > 0.01) {
-                $validator->errors()->add('items', __('general.landed_cost_allocation_must_match_total_cost'));
+            if ($clientAllocated) {
+                $itemsAllocatedTotal = $items->sum(fn ($item) => (float) data_get($item, 'allocated_amount', 0));
+
+                if ($totalCost > 0 && abs(round($itemsAllocatedTotal, 2) - round($totalCost, 2)) > 0.01) {
+                    $validator->errors()->add('items', __('general.landed_cost_allocation_must_match_total_cost'));
+                }
             }
 
             // The category breakdown is where total_cost comes from on the
