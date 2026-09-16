@@ -21,6 +21,7 @@ const showLedger = computed(() => props.activeDefinition.filters.includes('ledge
 const showCustomer = computed(() => props.activeDefinition.filters.includes('customer_id'))
 const showSupplier = computed(() => props.activeDefinition.filters.includes('supplier_id'))
 const showItem = computed(() => props.activeDefinition.filters.includes('item_id'))
+const showVariant = computed(() => props.activeDefinition.filters.includes('variant_id'))
 const showAccount = computed(() => props.activeDefinition.filters.includes('account_id'))
 const showWarehouse = computed(() => props.activeDefinition.filters.includes('warehouse_id'))
 const showCurrency = computed(() => props.activeDefinition.filters.includes('currency_id'))
@@ -62,6 +63,19 @@ const ledgerOptions = computed(() => withPlaceholder(props.options.ledgers, t('r
 const customerOptions = computed(() => withPlaceholder(props.options.customers, t('report.filters.customer')))
 const supplierOptions = computed(() => withPlaceholder(props.options.suppliers, t('report.filters.supplier')))
 const itemOptions = computed(() => withPlaceholder(props.options.items, t('report.filters.item')))
+
+// Only the chosen item's variants. Every variant in the branch is shipped with
+// the page and narrowed here, so picking an item costs no round trip. With no
+// item chosen there is nothing to narrow by, so the picker stays empty.
+const variantOptions = computed(() => {
+  const itemId = props.filters.item_id
+  if (!itemId) return withPlaceholder([], t('report.filters.variant'))
+
+  return withPlaceholder(
+    (props.options.variants || []).filter((variant) => variant.item_id === itemId),
+    t('report.filters.variant'),
+  )
+})
 const accountOptions = computed(() => withPlaceholder(props.options.cash_accounts, t('report.filters.account')))
 const warehouseOptions = computed(() => withPlaceholder(props.options.warehouses, t('report.filters.warehouse')))
 const currencyOptions = computed(() => withPlaceholder(props.options.currencies, t('report.filters.currency')))
@@ -94,6 +108,20 @@ function setFilter(key, value) {
   })
 }
 
+/**
+ * Changing the item drops any variant chosen under the previous one — that
+ * variant belongs to a different item, so leaving it would filter the report
+ * down to nothing with no visible reason why.
+ */
+function setItemFilter(itemId) {
+  updateFilters({
+    ...props.filters,
+    item_id: itemId,
+    variant_id: '',
+    page: 1,
+  })
+}
+
 function setReport(report) {
   updateFilters({
     ...props.filters,
@@ -102,6 +130,7 @@ function setReport(report) {
     customer_id: '',
     supplier_id: '',
     item_id: '',
+    variant_id: '',
     account_id: '',
     currency_id: '',
     balance_type: 'all',
@@ -207,7 +236,16 @@ function setReport(report) {
             :floating-text="t('report.filters.item')"
             :model-value="filters.item_id"
             :options="itemOptions"
-            @update:modelValue="setFilter('item_id', $event)"
+            @update:modelValue="setItemFilter($event)"
+          />
+        </div>
+        <div v-if="showVariant">
+          <NextSelect
+            :floating-text="t('report.filters.variant')"
+            :model-value="filters.variant_id"
+            :options="variantOptions"
+            :disabled="!filters.item_id"
+            @update:modelValue="setFilter('variant_id', $event)"
           />
         </div>
         <div v-if="showAccount">

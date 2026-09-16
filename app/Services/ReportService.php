@@ -949,11 +949,15 @@ class ReportService
                     ->where('um.branch_id', '=', $filters['branch_id'])
                     ->whereNull('um.deleted_at');
             })
+            // Left, not inner: lines written before variants existed carry no
+            // variant_id and must still appear on the report.
+            ->leftJoin('item_variants as iv', 'iv.id', '=', 'si.variant_id')
             ->where('s.branch_id', $filters['branch_id'])
             ->whereNull('s.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('si.item_id', $itemId))
             ->when($filters['warehouse_id'], fn ($q, $v) => $q->where('si.warehouse_id', $v));
 
+        $this->applyVariantFilter($query, $filters, 'si.variant_id');
         $this->applyDateFilter($query, 's.date', $filters);
 
         $summaryRow = (clone $query)
@@ -971,6 +975,9 @@ class ReportService
             ->selectRaw("COALESCE(l.name, '-') as customer")
             ->selectRaw('i.name as item')
             ->selectRaw('i.code as code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('iv.name as variant_name')
+            ->selectRaw('iv.attributes as variant_attributes')
             ->selectRaw('um.name as unit_measure')
             ->selectRaw('si.quantity as quantity')
             ->selectRaw('si.unit_price * COALESCE(t.rate, 1) as unit_price')
@@ -985,6 +992,7 @@ class ReportService
                 'sale_number'  => $row->sale_number,
                 'customer'     => $row->customer,
                 'item'         => $row->item.' - '.$row->code,
+                'variant'      => $this->variantRowLabel($row),
                 'unit_measure' => $row->unit_measure,
                 'quantity'     => $this->quantityValue($row->quantity),
                 'unit_price'   => $this->moneyValue($row->unit_price),
@@ -1118,11 +1126,15 @@ class ReportService
                     ->where('l.branch_id', '=', $filters['branch_id'])
                     ->whereNull('l.deleted_at');
             })
+            // Left, not inner: lines written before variants existed carry no
+            // variant_id and must still appear on the report.
+            ->leftJoin('item_variants as iv', 'iv.id', '=', 'pi.variant_id')
             ->where('p.branch_id', $filters['branch_id'])
             ->whereNull('p.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('pi.item_id', $itemId))
             ->when($filters['warehouse_id'], fn ($q, $v) => $q->where('pi.warehouse_id', $v));
 
+        $this->applyVariantFilter($query, $filters, 'pi.variant_id');
         $this->applyDateFilter($query, 'p.date', $filters);
 
         $summaryRow = (clone $query)
@@ -1139,6 +1151,9 @@ class ReportService
             ->selectRaw('p.number as purchase_number')
             ->selectRaw("COALESCE(l.name, '-') as supplier")
             ->selectRaw('i.name as item')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('iv.name as variant_name')
+            ->selectRaw('iv.attributes as variant_attributes')
             ->selectRaw('pi.quantity as quantity')
             ->selectRaw('pi.unit_price * COALESCE(t.rate, 1) as unit_price')
             ->selectRaw("COALESCE($lineDiscountSql, 0) as discount")
@@ -1152,6 +1167,7 @@ class ReportService
                 'purchase_number' => $row->purchase_number,
                 'supplier'        => $row->supplier,
                 'item'            => $row->item,
+                'variant'         => $this->variantRowLabel($row),
                 'quantity'        => $this->quantityValue($row->quantity),
                 'unit_price'      => $this->moneyValue($row->unit_price),
                 'discount'        => $this->moneyValue($row->discount),
@@ -1257,6 +1273,7 @@ class ReportService
     {
         $branchId  = $filters['branch_id'];
         $itemId    = $filters['item_id'] ?? null;
+        $variantId = $filters['variant_id'] ?? null;
         $inValue   = StockMovementType::IN->value;
         $voided    = StockStatus::VOIDED->value;
         $cancelled = StockStatus::CANCELLED->value;
@@ -1267,6 +1284,7 @@ class ReportService
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sb.item_id', $id))
+            ->when($variantId, fn ($q, $id) => $q->where('sb.variant_id', $id))
             ->groupBy('sb.item_id', 'sb.warehouse_id')
             ->selectRaw('sb.item_id, sb.warehouse_id, SUM(sb.quantity) as total_qty');
 
@@ -1279,6 +1297,7 @@ class ReportService
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sm.item_id', $id))
+            ->when($variantId, fn ($q, $id) => $q->where('sm.variant_id', $id))
             ->groupBy('sm.item_id', 'sm.warehouse_id')
             ->selectRaw('sm.item_id, sm.warehouse_id')
             ->selectRaw(
@@ -1393,6 +1412,7 @@ class ReportService
             ->whereNull('sm.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sm.item_id', $itemId));
 
+        $this->applyVariantFilter($query, $filters, 'sm.variant_id');
         $this->applyDateFilter($query, 'sm.date', $filters);
 
         $summaryRow = (clone $query)
@@ -1488,6 +1508,7 @@ class ReportService
             ->whereNull('sa.deleted_at')
             ->when($filters['warehouse_id'], fn ($builder, $warehouseId) => $builder->where('sa.warehouse_id', $warehouseId))
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sai.item_id', $itemId))
+            ->when($filters['variant_id'] ?? null, fn ($builder, $id) => $builder->where('sai.variant_id', $id))
             ->when($filters['reason'], fn ($builder, $reason) => $builder->where('sa.reason', $reason));
 
         $this->applyDateFilter($query, 'sa.date', $filters);
@@ -1843,14 +1864,15 @@ class ReportService
 
     public function getZeroOnHandReport(array $filters): array
     {
-        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id']);
-        $movementTotals = $this->stockMovementTotalsByItemSubquery($filters['branch_id']);
+        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id'], $filters['variant_id'] ?? null);
+        $movementTotals = $this->stockMovementTotalsByItemSubquery($filters['branch_id'], $filters['variant_id'] ?? null);
 
         $query = DB::table('items as i')
             ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
             ->leftJoinSub($movementTotals, 'movement_totals', fn ($join) => $join->on('movement_totals.item_id', '=', 'i.id'))
             ->where('i.branch_id', $filters['branch_id'])
             ->whereNull('i.deleted_at')
+            ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereRaw('COALESCE(stock_totals.on_hand, 0) = 0')
             ->selectRaw('i.code as item_code')
             ->selectRaw('i.name as item_name')
@@ -1895,6 +1917,7 @@ class ReportService
             ->leftJoinSub($saleTotals, 'sale_totals', fn ($join) => $join->on('sale_totals.item_id', '=', 'i.id'))
             ->where('i.branch_id', $filters['branch_id'])
             ->whereNull('i.deleted_at')
+            ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereRaw('COALESCE(sale_totals.total_sold, 0) > 0')
             ->orderByDesc('sale_totals.total_sold')
             ->orderByDesc('sale_totals.sale_count')
@@ -1933,7 +1956,7 @@ class ReportService
     public function getSlowMovingReport(array $filters): array
     {
         $saleTotals = $this->saleTotalsByItemSubquery($filters);
-        $firstInDates = $this->stockFirstInDateSubquery($filters['branch_id']);
+        $firstInDates = $this->stockFirstInDateSubquery($filters['branch_id'], $filters['variant_id'] ?? null);
         $reportEnd = Carbon::parse($filters['date_to']);
 
         $query = DB::table('items as i')
@@ -1941,6 +1964,7 @@ class ReportService
             ->leftJoinSub($firstInDates, 'first_stock', fn ($join) => $join->on('first_stock.item_id', '=', 'i.id'))
             ->where('i.branch_id', $filters['branch_id'])
             ->whereNull('i.deleted_at')
+            ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereRaw('COALESCE(sale_totals.total_sold, 0) > 0')
             ->orderBy('sale_totals.total_sold')
             ->orderBy('sale_totals.sale_count')
@@ -1983,14 +2007,15 @@ class ReportService
     public function getTodaySalePurchaseClosingStockReport(array $filters): array
     {
         $today = Carbon::parse($filters['date_to'])->toDateString();
-        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id']);
-        $todayMovements = $this->todayStockMovementTotalsByItemSubquery($filters['branch_id'], $today);
+        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id'], $filters['variant_id'] ?? null);
+        $todayMovements = $this->todayStockMovementTotalsByItemSubquery($filters['branch_id'], $today, $filters['variant_id'] ?? null);
 
         $query = DB::table('items as i')
             ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
             ->leftJoinSub($todayMovements, 'today_totals', fn ($join) => $join->on('today_totals.item_id', '=', 'i.id'))
             ->where('i.branch_id', $filters['branch_id'])
             ->whereNull('i.deleted_at')
+            ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereRaw('COALESCE(stock_totals.on_hand, 0) <> 0 OR COALESCE(today_totals.purchase_today, 0) <> 0 OR COALESCE(today_totals.sale_today, 0) <> 0')
             ->orderBy('i.code')
             ->orderBy('i.name')
@@ -2077,12 +2102,13 @@ class ReportService
 
     public function getMaximumStockReport(array $filters): array
     {
-        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id']);
+        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id'], $filters['variant_id'] ?? null);
 
         $query = DB::table('items as i')
             ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
             ->where('i.branch_id', $filters['branch_id'])
             ->whereNull('i.deleted_at')
+            ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereNotNull('i.maximum_stock')
             ->where('i.maximum_stock', '>', 0)
             ->whereRaw('COALESCE(stock_totals.on_hand, 0) > i.maximum_stock')
@@ -2357,7 +2383,7 @@ class ReportService
 
     protected function stockBatchTotalsQuery(array $filters): Builder
     {
-        return DB::table('stock_balances as sb')
+        $query = DB::table('stock_balances as sb')
             ->join('items as i', function ($join) use ($filters) {
                 $join->on('i.id', '=', 'sb.item_id')
                     ->where('i.branch_id', '=', $filters['branch_id'])
@@ -2365,7 +2391,10 @@ class ReportService
             })
             ->where('sb.branch_id', $filters['branch_id'])
             ->whereNull('sb.deleted_at')
-            ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value]);
+            ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('sb.item_id', $id));
+
+        return $this->applyVariantFilter($query, $filters, 'sb.variant_id');
     }
 
     protected function stockExpiryTotalsQuery(array $filters): Builder
@@ -2374,12 +2403,13 @@ class ReportService
             ->whereNotNull('sb.expire_date');
     }
 
-    protected function stockTotalsByItemSubquery(string $branchId): Builder
+    protected function stockTotalsByItemSubquery(string $branchId, ?string $variantId = null): Builder
     {
         return DB::table('stock_balances as sb')
             ->where('sb.branch_id', $branchId)
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->when($variantId, fn ($q, $id) => $q->where('sb.variant_id', $id))
             ->groupBy('sb.item_id')
             ->selectRaw('sb.item_id')
             ->selectRaw('COALESCE(SUM(sb.quantity), 0) as on_hand');
@@ -2431,25 +2461,27 @@ class ReportService
             ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as total_out");
     }
 
-    protected function stockMovementTotalsByItemSubquery(string $branchId): Builder
+    protected function stockMovementTotalsByItemSubquery(string $branchId, ?string $variantId = null): Builder
     {
         return DB::table('stock_movements as sm')
             ->where('sm.branch_id', $branchId)
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->when($variantId, fn ($q, $id) => $q->where('sm.variant_id', $id))
             ->groupBy('sm.item_id')
             ->selectRaw('sm.item_id')
             ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as total_in")
             ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as total_out");
     }
 
-    protected function stockFirstInDateSubquery(string $branchId): Builder
+    protected function stockFirstInDateSubquery(string $branchId, ?string $variantId = null): Builder
     {
         return DB::table('stock_movements as sm')
             ->where('sm.branch_id', $branchId)
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->where('sm.movement_type', StockMovementType::IN->value)
+            ->when($variantId, fn ($q, $id) => $q->where('sm.variant_id', $id))
             ->groupBy('sm.item_id')
             ->selectRaw('sm.item_id')
             ->selectRaw('MIN(sm.date) as first_stock_in_date');
@@ -2471,6 +2503,7 @@ class ReportService
                     ->whereNull('t.deleted_at');
             })
             ->whereNull('si.deleted_at')
+            ->when($filters['variant_id'] ?? null, fn ($q, $id) => $q->where('si.variant_id', $id))
             ->when($filters['date_from'] ?? null, fn ($query) => $query->whereBetween('s.date', [$filters['date_from'], $filters['date_to']]))
             ->groupBy('si.item_id')
             ->selectRaw('si.item_id')
@@ -2478,13 +2511,14 @@ class ReportService
             ->selectRaw('COUNT(DISTINCT si.sale_id) as sale_count');
     }
 
-    protected function todayStockMovementTotalsByItemSubquery(string $branchId, string $date): Builder
+    protected function todayStockMovementTotalsByItemSubquery(string $branchId, string $date, ?string $variantId = null): Builder
     {
         return DB::table('stock_movements as sm')
             ->where('sm.branch_id', $branchId)
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->whereDate('sm.date', $date)
+            ->when($variantId, fn ($q, $id) => $q->where('sm.variant_id', $id))
             ->groupBy('sm.item_id')
             ->selectRaw('sm.item_id')
             ->selectRaw("COALESCE(SUM(CASE WHEN sm.source = 'purchase' AND sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as purchase_today")
@@ -3583,12 +3617,29 @@ class ReportService
         }
     }
 
+    /**
+     * Narrow a report to one variant, when the filters name one.
+     *
+     * Every stock and line table carries variant_id, so the only thing that
+     * changes per report is which alias holds it. A no-op when no variant is
+     * selected, which is the usual case.
+     */
+    protected function applyVariantFilter(Builder $query, array $filters, string $column): Builder
+    {
+        return $query->when(
+            $filters['variant_id'] ?? null,
+            fn (Builder $builder, string $variantId) => $builder->where($column, $variantId),
+        );
+    }
+
     protected function activeStockBalanceQuery(array $filters): Builder
     {
-        return DB::table('stock_balances as sb')
+        $query = DB::table('stock_balances as sb')
             ->where('sb.branch_id', $filters['branch_id'])
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value]);
+
+        return $this->applyVariantFilter($query, $filters, 'sb.variant_id');
     }
 
     protected function paginateReport(Builder $query, array $filters, callable $transformer, array $summary = [], array $meta = []): array
@@ -4048,10 +4099,10 @@ class ReportService
             'cash_position_by_currency' => ['currency', 'currency_name', 'account_name', 'amount', 'home_equivalent'],
             'sales_report' => $viewType === 'general'
                 ? ['date', 'number', 'customer', 'type', 'status', 'payment_status', 'amount']
-                : ['date', 'sale_number', 'customer', 'item', 'quantity', 'unit_price', 'discount', 'total_amount'],
+                : ['date', 'sale_number', 'customer', 'item', 'variant', 'quantity', 'unit_price', 'discount', 'total_amount'],
             'purchase_report' => $viewType === 'general'
                 ? ['date', 'number', 'supplier', 'type', 'status', 'amount']
-                : ['date', 'purchase_number', 'supplier', 'item', 'quantity', 'unit_price', 'discount', 'total_amount'],
+                : ['date', 'purchase_number', 'supplier', 'item', 'variant', 'quantity', 'unit_price', 'discount', 'total_amount'],
             'inventory_stock' => ['item', 'warehouse', 'quantity', 'average_cost', 'total_value'],
             'stock_movement' => ['date', 'item', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
             'stock_adjustment_report' => ['date', 'reference', 'item', 'warehouse', 'type', 'reason', 'quantity', 'unit_measure', 'unit_cost', 'total_cost', 'batch', 'expire_date', 'status', 'notes'],
@@ -4284,10 +4335,16 @@ class ReportService
             'customer_id' => $this->nullableString($filters['customer_id'] ?? null),
             'supplier_id' => $this->nullableString($filters['supplier_id'] ?? null),
             'item_id' => $this->nullableString($filters['item_id'] ?? null),
+            // Narrows an item down to one of its sellable variants. Only
+            // meaningful alongside item_id — the picker lists the chosen item's
+            // variants — so it is dropped when no item is selected, or a stale
+            // variant from a previous item would silently empty the report.
+            'variant_id' => filled($filters['item_id'] ?? null)
+                ? $this->nullableString($filters['variant_id'] ?? null)
+                : null,
             'account_id' => $this->nullableString($filters['account_id'] ?? null),
             'currency_id' => $this->nullableString($filters['currency_id'] ?? null),
             'warehouse_id' => $this->nullableString($filters['warehouse_id'] ?? null),
-            'variant_id' => $this->nullableString($filters['variant_id'] ?? null),
             'reason' => $this->nullableString($filters['reason'] ?? null),
             'type' => $this->nullableString($filters['type'] ?? null),
             'balance_type' => $this->normalizeBalanceType($filters['balance_type'] ?? null),
@@ -4344,6 +4401,29 @@ class ReportService
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->all(),
+            // Every variant in the branch, each carrying its item_id. The
+            // variant picker is filtered client-side to whichever item is
+            // selected, so choosing an item never costs a round trip.
+            'variants' => DB::table('item_variants as iv')
+                ->join('items as i', 'i.id', '=', 'iv.item_id')
+                ->where('iv.branch_id', $branchId)
+                ->whereNull('iv.deleted_at')
+                ->whereNull('i.deleted_at')
+                ->orderBy('i.name')
+                ->orderBy('iv.sort_order')
+                ->get([
+                    'iv.id',
+                    'iv.item_id',
+                    'iv.name as variant_name',
+                    'iv.attributes as variant_attributes',
+                    'i.name as item_name',
+                ])
+                ->map(fn ($row) => [
+                    'id' => $row->id,
+                    'item_id' => $row->item_id,
+                    'name' => $this->variantRowLabel($row),
+                ])
                 ->all(),
             'cash_accounts' => DB::table('accounts as a')
                 ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
