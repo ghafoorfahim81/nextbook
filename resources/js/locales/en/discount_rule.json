@@ -7,15 +7,16 @@
     "target": "Target",
     "all_items": "All items",
     "customer_group": "Customer Group",
-    "customer_group_hint": "Leave empty to apply to every customer. A rule tied to a group beats the same rule without one.",
+    "customer_group_hint": "Choose “All customers”, or a group to aim the rule at. A rule tied to a group beats the same rule without one.",
     "min_quantity": "Minimum Qty",
     "starts_at": "Starts",
     "ends_at": "Ends",
     "active_period": "Active Period",
     "always": "Always",
     "priority": "Priority",
-    "priority_hint": "Higher wins when two rules are equally specific.",
+    "priority_hint": "Wins when two rules are equally specific.",
     "show_on_invoice": "Show on invoice",
     "name_hint": "A label you will recognise later, e.g. Ramadan Promo.",
-    "restore": "Apply {name}"
+    "restore": "Apply {name}",
+    "all_customers": "All customers"
 }

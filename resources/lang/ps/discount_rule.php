@@ -5,5 +5,6 @@
 return [
     'discount_rule' => 'د تخفیف قاعده',
     'all_items' => 'ټول توکي',
+    'all_customers' => 'ټول پېرودونکي',
     'always' => 'تل',
 ];

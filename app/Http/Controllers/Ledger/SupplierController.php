@@ -81,7 +81,7 @@ class SupplierController extends Controller
             'suppliers' => LedgerResource::collection($suppliers),
             'filterOptions' => [
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
-                'groups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
+                'groups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'local_name']),
                 'countries' => Country::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
                 'provinces' => Province::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa', 'country_id']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),

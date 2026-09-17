@@ -60,6 +60,9 @@ class User extends Authenticatable
         'appearance' => [
             'theme' => 'system',
             'accent_color' => 'system',
+            // 'solid' keeps opaque surfaces; 'glass' switches the whole shell
+            // to the translucent material (resources/css/glass.css).
+            'surface_style' => 'solid',
             'font_size' => 14,
             'sidebar_font_size' => 14,
             'heading_font_size' =>14,

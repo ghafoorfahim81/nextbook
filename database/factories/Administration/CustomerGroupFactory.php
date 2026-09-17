@@ -15,7 +15,7 @@ class CustomerGroupFactory extends Factory
 
         return [
             'name_en' => $name,
-            'name_fa' => $name,
+            'local_name' => $name,
             'description' => null,
         ];
     }

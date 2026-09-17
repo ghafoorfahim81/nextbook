@@ -91,6 +91,12 @@
         "location": "مکان",
         "sub_domain": "زیر دامنه"
     },
+    "customer_group": {
+        "customer_group": "د پیرودونکي ډله",
+        "customer_groups": "د پیرودونکو ډلې",
+        "name_en": "نوم (انګلیسي)",
+        "local_name": "سیمه‌ییز نوم"
+    },
     "shared": {
         "remark": "توضیحات",
         "parent": "والد",

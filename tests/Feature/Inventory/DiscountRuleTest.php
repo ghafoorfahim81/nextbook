@@ -183,6 +183,63 @@ class DiscountRuleTest extends TestCase
         $this->assertNotNull($this->resolver()->resolve($this->ctx['item']->id, 10, branchId: $this->ctx['branch']->id));
     }
 
+    /**
+     * Priority is a switch, not a number. It only ever decided which of two
+     * equally specific rules wins, so there was nothing for "4" or "5" to mean
+     * beyond "more than the other one".
+     */
+    public function test_priority_breaks_a_tie_between_two_equally_specific_rules(): void
+    {
+        $this->rule(['name' => 'Ordinary', 'value' => 30, 'is_priority' => false]);
+        $this->rule(['name' => 'Wins ties', 'value' => 5, 'is_priority' => true]);
+
+        $winner = $this->resolver()->resolve(
+            $this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id,
+        );
+
+        // Same scope, same group: the switched-on rule wins even though the
+        // other one is worth six times more.
+        $this->assertSame('Wins ties', $winner?->name);
+    }
+
+    public function test_without_priority_the_larger_discount_wins_a_tie(): void
+    {
+        $this->rule(['name' => 'Small', 'value' => 5]);
+        $this->rule(['name' => 'Large', 'value' => 30]);
+
+        $winner = $this->resolver()->resolve(
+            $this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id,
+        );
+
+        $this->assertSame('Large', $winner?->name);
+    }
+
+    /** A rule with no group applies to everyone, and the screen says so. */
+    public function test_a_rule_without_a_customer_group_reads_as_all_customers(): void
+    {
+        $this->rule(['customer_group_id' => null]);
+
+        $this->get(route('discount-rules.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('discountRules.data.0.customer_group_name', 'All customers'));
+    }
+
+    public function test_a_rule_with_a_group_still_names_that_group(): void
+    {
+        $wholesale = CustomerGroup::factory()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'name_en' => 'Wholesale',
+        ]);
+
+        $this->rule(['customer_group_id' => $wholesale->id]);
+
+        $this->get(route('discount-rules.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('discountRules.data.0.customer_group_name', 'Wholesale'));
+    }
+
     public function test_an_inactive_rule_is_ignored(): void
     {
         $this->rule(['is_active' => false]);
@@ -254,8 +311,8 @@ class DiscountRuleTest extends TestCase
      */
     public function test_the_sale_form_is_handed_every_candidate_rule_best_first(): void
     {
-        $this->rule(['name' => 'Everyday', 'value' => 5, 'priority' => 0]);
-        $this->rule(['name' => 'Ten or more', 'value' => 15, 'priority' => 5, 'min_quantity' => 10]);
+        $this->rule(['name' => 'Everyday', 'value' => 5, 'is_priority' => false]);
+        $this->rule(['name' => 'Ten or more', 'value' => 15, 'is_priority' => true, 'min_quantity' => 10]);
 
         $response = $this->getJson(route('discount-rules.for-items', [
             'item_ids' => [$this->ctx['item']->id],
@@ -280,7 +337,7 @@ class DiscountRuleTest extends TestCase
     public function test_picking_the_first_candidate_the_quantity_reaches_matches_the_resolver(): void
     {
         $this->rule(['name' => 'Everyday', 'value' => 5]);
-        $this->rule(['name' => 'Ten or more', 'value' => 15, 'priority' => 5, 'min_quantity' => 10]);
+        $this->rule(['name' => 'Ten or more', 'value' => 15, 'is_priority' => true, 'min_quantity' => 10]);
 
         $candidates = $this->resolver()->candidatesFor(
             $this->ctx['item']->id, branchId: $this->ctx['branch']->id,

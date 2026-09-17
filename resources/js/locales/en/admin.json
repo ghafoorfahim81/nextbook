@@ -112,6 +112,12 @@
         "location": "Location",
         "sub_domain": "Sub Domain"
     },
+    "customer_group": {
+        "customer_group": "Customer Group",
+        "customer_groups": "Customer Groups",
+        "name_en": "Name (English)",
+        "local_name": "Local Name"
+    },
     "shared": {
         "remark": "Remark",
         "parent": "Parent",

@@ -22,7 +22,7 @@ import {
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
     Save, Plug, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText
 } from 'lucide-vue-next'
-import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode } from '@/lib/theme'
+import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode, resolveSurfaceStyle } from '@/lib/theme'
 import { vHighlightSearch } from '@/directives/highlightSearch'
 import { stringsMatchQuery, tabSearchValues, translateSearchKeys } from '@/Pages/Preferences/preferenceSearchIndex'
 
@@ -360,6 +360,9 @@ form.display.theme = legacyColorModes.includes(form.display.theme) ? form.displa
 form.appearance.accent_color = accentColorOptions.includes(form.appearance.accent_color)
     ? form.appearance.accent_color
     : resolveAccentColor(props.preferences)
+// Preferences saved before the surface style existed have no key at all, so
+// the Select would start blank and post nothing.
+form.appearance.surface_style = resolveSurfaceStyle(form)
 
 const allSidebarMenusSelected = computed(() => {
     const selected = form.appearance.sidebar_menus ?? []
@@ -376,6 +379,7 @@ watch(
     () => [
         form.appearance?.theme,
         form.appearance?.accent_color,
+        form.appearance?.surface_style,
         form.appearance?.font_size,
         form.appearance?.sidebar_font_size,
         form.appearance?.heading_font_size,
@@ -1040,6 +1044,21 @@ watch(normalizedMenuSearch, (query) => {
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.surface_style') }}</Label>
+                                    <Select v-model="form.appearance.surface_style">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
+                                            <SelectItem value="solid">{{ t('preferences.appearance.surface_solid') }}</SelectItem>
+                                            <SelectItem value="glass">{{ t('preferences.appearance.surface_glass') }}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ t('preferences.appearance.surface_style_hint') }}
+                                    </p>
                                 </div>
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.color_mode') }}</Label>
