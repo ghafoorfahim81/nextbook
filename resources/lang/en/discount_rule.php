@@ -5,5 +5,6 @@
 return [
     'discount_rule' => 'Discount Rule',
     'all_items' => 'All items',
+    'all_customers' => 'All customers',
     'always' => 'Always',
 ];

@@ -23,7 +23,7 @@ class CustomerGroupRequest extends FormRequest
     {
         return [
             'name_en' => ['required', 'string', 'max:255'],
-            'name_fa' => ['required', 'string', 'max:255'],
+            'local_name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ];
     }

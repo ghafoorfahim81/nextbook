@@ -27,7 +27,7 @@ class DiscountRuleRequest extends FormRequest
             'min_quantity' => ['nullable', 'numeric', 'min:0'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date'],
-            'priority' => ['nullable', 'integer'],
+            'is_priority' => ['boolean'],
             'is_active' => ['boolean'],
             'show_on_invoice' => ['boolean'],
         ];

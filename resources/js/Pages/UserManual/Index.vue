@@ -328,24 +328,25 @@ onBeforeUnmount(() => {
             <!-- ============================ GUIDE PICKER ============================ -->
             <div
                 v-if="!activeGuide"
-                class="min-h-0 flex-1 overflow-y-auto bg-background px-4 py-6 sm:px-8 lg:px-10"
+                class="min-h-0 flex-1 overflow-y-auto bg-background px-3 py-3 sm:px-4"
             >
                 <section
-                    class="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-violet-700 via-violet-600 to-amber-500 p-8 text-white shadow-lg sm:p-12"
+                    class="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-violet-700 via-violet-600 to-amber-500 px-4 py-3 text-white shadow-sm"
                 >
-                    <div class="pointer-events-none absolute -end-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-                    <div class="pointer-events-none absolute -bottom-20 -start-10 h-56 w-56 rounded-full bg-amber-300/20 blur-3xl" />
-                    <div class="relative space-y-4">
-                        <span class="inline-flex rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium backdrop-blur">
+                    <div class="pointer-events-none absolute -end-10 -top-16 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+                    <div class="relative min-w-0">
+                        <h1 class="truncate text-lg font-bold leading-tight sm:text-xl">{{ meta.title }}</h1>
+                        <p class="truncate text-xs text-violet-50 sm:text-sm">{{ meta.subtitle }}</p>
+                    </div>
+                    <div class="relative flex shrink-0 items-center gap-2">
+                        <span class="hidden rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium backdrop-blur sm:inline-flex">
                             {{ meta.badge }}
                         </span>
-                        <h1 class="text-3xl font-bold leading-tight sm:text-4xl">{{ meta.title }}</h1>
-                        <p class="text-base text-violet-50 sm:text-lg">{{ meta.subtitle }}</p>
-                        <p class="text-sm text-violet-100">{{ meta.version }}</p>
+                        <span class="text-xs text-violet-100">{{ meta.version }}</span>
                     </div>
                 </section>
 
-                <section class="mx-auto mt-6 max-w-5xl space-y-4">
+                <section class="mt-4 space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <p class="text-sm text-muted-foreground">{{ meta.howToRead }}</p>
                         <div class="flex flex-wrap gap-1.5">
@@ -364,7 +365,7 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <button
                             v-for="guide in filteredGuides"
                             :key="guide.id"
@@ -409,20 +410,20 @@ onBeforeUnmount(() => {
 
                 <article
                     ref="articleRef"
-                    class="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden bg-background px-4 py-6 sm:px-8 lg:px-10"
+                    class="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden bg-background px-3 py-3 sm:px-4"
                 >
-                    <section id="guide-top" class="scroll-mt-6 space-y-3 rounded-2xl border border-border bg-card p-6 shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <span class="flex size-11 shrink-0 items-center justify-center rounded-xl" :class="accentFor(activeGuide)">
-                                <component :is="iconFor(activeGuide)" class="size-6" />
+                    <section id="guide-top" class="scroll-mt-6 space-y-2 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
+                        <div class="flex items-center gap-2.5">
+                            <span class="flex size-9 shrink-0 items-center justify-center rounded-lg" :class="accentFor(activeGuide)">
+                                <component :is="iconFor(activeGuide)" class="size-5" />
                             </span>
-                            <div>
+                            <div class="min-w-0">
                                 <p class="text-xs font-bold text-primary">{{ activeGuide.number }}</p>
-                                <h2 class="text-2xl font-bold text-card-foreground">{{ activeGuide.title }}</h2>
+                                <h2 class="text-lg font-bold text-card-foreground">{{ activeGuide.title }}</h2>
                             </div>
                         </div>
-                        <p class="text-sm text-muted-foreground">{{ activeGuide.subtitle }}</p>
-                        <p class="text-base leading-7 text-card-foreground">{{ activeGuide.summary }}</p>
+                        <p class="text-xs text-muted-foreground">{{ activeGuide.subtitle }}</p>
+                        <p class="text-sm leading-6 text-card-foreground">{{ activeGuide.summary }}</p>
                     </section>
 
                     <p

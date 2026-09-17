@@ -138,6 +138,11 @@ export default {
                         ['Batch / expiry', 'For batch-tracked items. The system suggests the oldest batch first (FIFO).'],
                     ],
                 },
+                {
+                    type: 'note',
+                    label: 'Some discounts fill themselves in',
+                    text: 'If a discount rule covers the item, the line’s discount box is filled in for you and the rule’s name appears beneath it. Type over the figure to overrule it — the rules then leave that line alone. Clearing the box means no discount and is saved as such. Discount rules are set up under Inventory → Discount rules.',
+                },
                 { type: 'h4', text: 'c) Invoice footer' },
                 {
                     type: 'list',

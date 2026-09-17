@@ -31,7 +31,7 @@ class DiscountRuleController extends Controller
             ->with('customerGroup')
             ->search($request->query('search'))
             ->orderByDesc('is_active')
-            ->orderByDesc('priority')
+            ->orderByDesc('is_priority')
             ->orderBy('name')
             ->paginate($request->integer('perPage', recordsPerPage()))
             ->withQueryString();
@@ -48,7 +48,7 @@ class DiscountRuleController extends Controller
                 'items' => Item::query()->orderBy('name')->get(['id', 'name']),
                 'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
                 'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
-                'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en as name']),
+                'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'local_name']),
             ],
             'filters' => [
                 'search' => $request->query('search'),

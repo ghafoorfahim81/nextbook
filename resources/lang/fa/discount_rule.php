@@ -5,5 +5,6 @@
 return [
     'discount_rule' => 'قانون تخفیف',
     'all_items' => 'همه کالاها',
+    'all_customers' => 'همهٔ مشتریان',
     'always' => 'همیشه',
 ];

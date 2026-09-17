@@ -114,6 +114,12 @@
         "location": "مکان",
         "sub_domain": "زیر دامنه"
     },
+    "customer_group": {
+        "customer_group": "گروه مشتری",
+        "customer_groups": "گروه‌های مشتری",
+        "name_en": "نام (انگلیسی)",
+        "local_name": "نام محلی"
+    },
     "shared": {
         "remark": "توضیحات",
         "parent": "والد",

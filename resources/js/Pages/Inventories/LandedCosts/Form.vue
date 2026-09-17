@@ -83,6 +83,10 @@ const normalizeItem = (row) => ({
   item_cost_after: row?.item_cost_after ?? 0,
 });
 
+// An empty line, built by the same normaliser as a loaded one so the two can
+// never drift apart — every field in normalizeItem already falls back.
+const blankRow = () => normalizeItem({});
+
 const normalizePurchase = (purchase) => ({
   id: purchase?.id || '',
   number: purchase?.number || '',

@@ -23,7 +23,7 @@ class DiscountRuleFactory extends Factory
             'min_quantity' => null,
             'starts_at' => null,
             'ends_at' => null,
-            'priority' => 0,
+            'is_priority' => false,
             'is_active' => true,
             'show_on_invoice' => true,
         ];

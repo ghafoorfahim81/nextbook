@@ -184,6 +184,8 @@
   "email": "Email",
   "active": "Active",
   "inactive": "Inactive",
+  "is_active": "Active",
+  "discount_type": "Discount Type",
   "unit_price": "Unit Price",
   "created_successfully": "created successfully",
   "general_info": "General Information",
