@@ -32,10 +32,10 @@ class ReferenceDataSeeder extends Seeder
             ['VIP', 'ویژه'],
             ['Government', 'دولتی'],
             ['Online', 'آنلاین'],
-        ] as [$nameEn, $nameFa]) {
+        ] as [$nameEn, $localName]) {
             CustomerGroup::query()->firstOrCreate(
                 ['branch_id' => null, 'name_en' => $nameEn],
-                ['name_fa' => $nameFa],
+                ['local_name' => $localName],
             );
         }
 

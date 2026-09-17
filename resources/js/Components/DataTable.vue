@@ -245,7 +245,7 @@
         <div class="shrink-0 flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
             <!-- Left: Showing X - Y of Z [title] -->
             <div class="text-xs text-muted-foreground">
-                {{ t('datatable.showing', { from: items.meta.from, to: items.meta.to, total: items.total }) }}
+                {{ t('datatable.showing', { from: pageMeta.from ?? 0, to: pageMeta.to ?? 0, total: pageMeta.total ?? 0 }) }}
                 <template v-if="props.title"> {{ props.title.toLowerCase() }}</template>
             </div>
 
@@ -392,8 +392,20 @@ const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 defineEmits(['edit', 'delete', 'add', 'print', 'show'])
 
 const pageOptions = [10, 20, 50, 100]
+
+/**
+ * Pagination figures, whichever shape the page sent.
+ *
+ * An API Resource collection nests them under `meta`; a raw Laravel paginator
+ * puts them at the top level. Both reach this table from different controllers,
+ * so read `meta` when it is there and fall back to the object itself. Reaching
+ * straight into `items.meta.from` blanked the whole page for every screen that
+ * passes a raw paginator.
+ */
+const pageMeta = computed(() => props.items?.meta ?? props.items ?? {})
+
 const search = ref(props.filters?.search || '')
-const perPage = ref(props.items?.meta?.per_page || 10)
+const perPage = ref(props.items?.meta?.per_page ?? props.items?.per_page ?? 10)
 const sortField = ref(props.filters?.sortField || 'id')
 const sortDirection = ref(props.filters?.sortDirection || 'asc')
 const advancedFilters = ref(props.filters?.filters || {})
@@ -403,8 +415,8 @@ const isAdvancedFiltering = computed(() => {
     const f = advancedFilters.value || {}
     return Object.keys(f).some((k) => f[k] !== null && f[k] !== undefined && f[k] !== '')
 })
-const currentPage = computed(() => props.items?.meta?.current_page ?? 1)
-const lastPage = computed(() => props.items?.meta?.last_page ?? 1)
+const currentPage = computed(() => pageMeta.value.current_page ?? 1)
+const lastPage = computed(() => pageMeta.value.last_page ?? 1)
 
 // Empty state and rows handling
 const isEmpty = computed(() => !props.items?.data || props.items.data.length === 0)
@@ -568,8 +580,8 @@ const clearAdvancedFilters = () => {
 
 // Row number: starts at 1 and increments across pages
 const getRowNumber = (rowIndex) => {
-    const current = props.items?.meta?.current_page ?? 1
-    const per = props.items?.meta?.per_page ?? (perPage.value || 10)
+    const current = pageMeta.value.current_page ?? 1
+    const per = pageMeta.value.per_page ?? (perPage.value || 10)
     return (current - 1) * per + rowIndex + 1
 }
 

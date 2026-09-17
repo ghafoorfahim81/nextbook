@@ -14,9 +14,10 @@ use Illuminate\Support\Collection;
  *
  * Most specific wins, never stacks: a rule naming the item beats one naming its
  * category, which beats a blanket rule, and any rule tied to this customer's
- * group beats the same scope without one. A discount typed by hand on the line
- * is not this service's business — the caller only asks when the line has none,
- * so the salesperson always keeps the final say.
+ * group beats the same scope without one. Between two rules that are still
+ * level, the one marked priority wins, then the larger discount. A discount
+ * typed by hand on the line is not this service's business — the caller only
+ * asks when the line has none, so the salesperson always keeps the final say.
  */
 class DiscountRuleResolver
 {
@@ -70,7 +71,7 @@ class DiscountRuleResolver
             ->filter(fn (DiscountRule $rule) => $this->applies($rule, $item, $ledgerId, $date))
             ->sortByDesc(fn (DiscountRule $rule) => [
                 $rule->specificity(),
-                $rule->priority,
+                $rule->is_priority ? 1 : 0,
                 (float) $rule->value,
             ])
             ->values();

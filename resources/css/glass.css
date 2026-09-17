@@ -1,0 +1,423 @@
+/* ===========================================================================
+   Liquid-glass surface style.
+
+   Everything here is scoped to html[data-surface='glass'], stamped by
+   applyAppearanceTheme() from the `appearance.surface_style` preference. With
+   the default 'solid' style not a single rule below matches, so the existing
+   look is untouched.
+
+   The idea: chrome and containers stop being opaque paint and become a
+   translucent material — a tinted, blurred, saturated pane with a bright
+   specular edge — floating over one ambient gradient painted on <html>.
+   Translucency only reads as glass if there is something behind it, so the
+   root gradient and the transparent body/main below are load-bearing, not
+   decoration.
+
+   Selectors deliberately lead with html[data-surface='glass'] so they outrank
+   the Tailwind utility (.bg-card, .bg-popover, …) they override without
+   needing !important.
+
+   Cost note: backdrop-filter is composited per element, so blur is reserved
+   for containers (chrome, cards, overlays, sticky headers). Rows, cells,
+   inputs and buttons get the tint and the edge but no blur — hundreds of
+   blurred layers in a data table would drop frames.
+   =========================================================================== */
+
+html[data-surface='glass'] {
+  /* Material */
+  --glass-blur: 22px;
+  --glass-saturate: 175%;
+  --glass-alpha: 0.62;
+  --glass-alpha-strong: 0.78;
+  --glass-alpha-chrome: 0.68;
+
+  /* Specular edge + lift */
+  --glass-edge: 0 0% 100%;
+  --glass-edge-alpha: 0.55;
+  --glass-highlight: inset 0 1px 0 hsl(var(--glass-edge) / 0.6);
+  --glass-shadow:
+    0 10px 30px -12px hsl(var(--foreground) / 0.22),
+    0 2px 6px -2px hsl(var(--foreground) / 0.08);
+  --glass-shadow-lifted:
+    0 24px 60px -20px hsl(var(--foreground) / 0.38),
+    0 6px 16px -8px hsl(var(--foreground) / 0.16);
+
+  /* iOS-ish continuous corners: --radius feeds rounded-sm/md/lg app-wide. */
+  --radius: 0.9rem;
+
+  background-color: hsl(var(--background));
+  background-image:
+    radial-gradient(58rem 40rem at 6% -12%, hsl(var(--primary) / 0.3), transparent 62%),
+    radial-gradient(46rem 34rem at 96% 2%, hsl(var(--chart-2) / 0.26), transparent 60%),
+    radial-gradient(52rem 42rem at 48% 112%, hsl(var(--chart-5) / 0.22), transparent 62%),
+    radial-gradient(38rem 30rem at 78% 68%, hsl(var(--chart-3) / 0.16), transparent 60%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+html.dark[data-surface='glass'] {
+  --glass-alpha: 0.5;
+  --glass-alpha-strong: 0.66;
+  --glass-alpha-chrome: 0.55;
+  --glass-edge-alpha: 0.14;
+  --glass-highlight: inset 0 1px 0 hsl(var(--glass-edge) / 0.16);
+  --glass-shadow:
+    0 12px 34px -14px hsl(0 0% 0% / 0.65),
+    0 2px 8px -3px hsl(0 0% 0% / 0.45);
+  --glass-shadow-lifted:
+    0 28px 70px -22px hsl(0 0% 0% / 0.8),
+    0 8px 20px -10px hsl(0 0% 0% / 0.55);
+
+  background-image:
+    radial-gradient(58rem 40rem at 6% -12%, hsl(var(--primary) / 0.26), transparent 62%),
+    radial-gradient(46rem 34rem at 96% 2%, hsl(var(--chart-2) / 0.2), transparent 60%),
+    radial-gradient(52rem 42rem at 48% 112%, hsl(var(--chart-5) / 0.18), transparent 62%),
+    radial-gradient(38rem 30rem at 78% 68%, hsl(var(--chart-3) / 0.14), transparent 60%);
+}
+
+/* The ambient gradient lives on <html>; everything structural above it has to
+   get out of the way or the glass has nothing to refract. */
+html[data-surface='glass'] body,
+html[data-surface='glass'] main,
+html[data-surface='glass'] [data-scroll-region],
+html[data-surface='glass'] [data-sidebar='sidebar'] > div {
+  background-color: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   Reusable material
+   --------------------------------------------------------------------------- */
+
+html[data-surface='glass'] .glass-panel {
+  background-color: hsl(var(--card) / var(--glass-alpha));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid hsl(var(--glass-edge) / var(--glass-edge-alpha));
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+}
+
+/* ---------------------------------------------------------------------------
+   App chrome — sidebar, top bar, footer
+   --------------------------------------------------------------------------- */
+
+html[data-surface='glass'] [data-sidebar='sidebar'] {
+  background-color: hsl(var(--sidebar-background) / var(--glass-alpha-chrome));
+  backdrop-filter: blur(28px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(28px) saturate(var(--glass-saturate));
+  box-shadow:
+    var(--glass-highlight),
+    inset -1px 0 0 hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.5)),
+    var(--glass-shadow);
+}
+
+html[data-surface='glass'] [data-side='right'] [data-sidebar='sidebar'] {
+  box-shadow:
+    var(--glass-highlight),
+    inset 1px 0 0 hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.5)),
+    var(--glass-shadow);
+}
+
+/* Sidebar rows read as inset lozenges rather than filled bars. */
+html[data-surface='glass'] [data-sidebar='menu-button'],
+html[data-surface='glass'] [data-sidebar='menu-sub-button'] {
+  border-radius: 9999px;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* The active top-level row keeps its primary fill — it is paired with
+   text-primary-foreground, so swapping the fill for a neutral tint (as an
+   earlier pass did) left white text on a white pane. Only the alpha and the
+   lift change here; the hue that guarantees the contrast does not. */
+html[data-surface='glass'] [data-sidebar='menu-button'][data-active='true'] {
+  background-color: hsl(var(--primary) / 0.92);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-edge) / 0.35),
+    0 4px 12px -4px hsl(var(--primary) / 0.65);
+}
+
+/* Sub-items are the opposite case: Layout.vue overrides them to bg-transparent
+   with text-primary, so a primary fill here paints the label in its own
+   colour. A faint wash is as far as this can go. */
+html[data-surface='glass'] [data-sidebar='menu-sub-button'][data-active='true'] {
+  background-color: hsl(var(--primary) / 0.14);
+  box-shadow: inset 0 1px 0 hsl(var(--glass-edge) / 0.25);
+}
+
+html[data-surface='glass'] main > header {
+  background-color: hsl(var(--app-chrome-background) / var(--glass-alpha-chrome));
+  backdrop-filter: blur(24px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(24px) saturate(var(--glass-saturate));
+  border-bottom-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.6));
+  box-shadow: var(--glass-highlight), 0 6px 20px -14px hsl(var(--foreground) / 0.5);
+}
+
+html[data-surface='glass'] main > footer {
+  background-color: hsl(var(--app-chrome-background) / calc(var(--glass-alpha-chrome) * 0.8));
+  backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  border-top-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.5));
+}
+
+/* ---------------------------------------------------------------------------
+   Cards and page containers
+   --------------------------------------------------------------------------- */
+
+/* Content cards are deliberately NOT backdrop-filtered.
+
+   backdrop-filter creates a stacking context, and a card that is its own
+   stacking context traps every popup opened inside it: the reports date
+   picker painted *under* the totals cards that follow it in the DOM, because
+   its z-index could never escape the filter card. Moving the blur to a
+   z-index:-1 pseudo-element does not fix it either — a relatively positioned
+   card is not a stacking context, so that layer escapes to the nearest
+   ancestor one and stops blurring the card's actual backdrop.
+
+   So the blur stays where it is safe and cheap: chrome (sidebar, header,
+   footer), portalled overlays, and sticky table heads. Cards get the same
+   material rendered without a filter — a translucent tint over the ambient
+   gradient, plus a top-down specular sheen and the bright edge. Background
+   gradients cost nothing to composite and keep popups stacking normally. */
+html[data-surface='glass'] .bg-card {
+  background-color: hsl(var(--card) / var(--glass-alpha));
+  background-image: linear-gradient(
+    to bottom,
+    hsl(var(--glass-edge) / 0.2),
+    hsl(var(--glass-edge) / 0.04) 45%,
+    hsl(var(--glass-edge) / 0) 100%
+  );
+  border-color: hsl(var(--glass-edge) / var(--glass-edge-alpha));
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+}
+
+/* Nested cards drop the sheen and the lift so the stack stays readable. */
+html[data-surface='glass'] .bg-card .bg-card {
+  background-color: hsl(var(--card) / 0.45);
+  background-image: none;
+  box-shadow: var(--glass-highlight);
+}
+
+/* ~50 form pages label their sections with an absolutely positioned bg-card
+   chip pulled onto the panel's top border (`absolute -top-3 … bg-card`). That
+   chip is not a surface — it is a mask, and it only works while it is opaque.
+   Dressing it as glass gave every section title its own edge, sheen and drop
+   shadow, with the border still showing through the translucency. */
+html[data-surface='glass'] .absolute.bg-card {
+  background-color: hsl(var(--card));
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Each token keeps its own hue — these are paired with matching *-foreground
+   utilities, so collapsing them all onto --muted destroys contrast wherever
+   the palette makes --accent a saturated colour (the cyan theme, say). */
+html[data-surface='glass'] .bg-muted {
+  background-color: hsl(var(--muted) / 0.6);
+}
+
+html[data-surface='glass'] .bg-secondary {
+  background-color: hsl(var(--secondary) / 0.6);
+}
+
+/* ---------------------------------------------------------------------------
+   Overlays — dialogs, dropdowns, popovers, selects, tooltips, sheets
+   --------------------------------------------------------------------------- */
+
+/* :not([data-sidebar]) keeps the mobile sidebar out of this: it is a Sheet, so
+   it carries role="dialog" too, and the popover fill would replace its
+   sidebar tint while its text stayed sidebar-foreground. */
+html[data-surface='glass'] .bg-popover,
+html[data-surface='glass'] [role='dialog']:not([data-sidebar]),
+html[data-surface='glass'] [role='menu'],
+html[data-surface='glass'] [role='listbox'],
+html[data-surface='glass'] [data-radix-popper-content-wrapper] > * {
+  background-color: hsl(var(--popover) / var(--glass-alpha-strong));
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  border-color: hsl(var(--glass-edge) / var(--glass-edge-alpha));
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lifted);
+}
+
+/* The scrim behind a dialog: lighter than the solid style, since the dialog
+   itself now does the separating. */
+html[data-surface='glass'] .bg-black\/80,
+html[data-surface='glass'] .bg-background\/80 {
+  background-color: hsl(var(--background) / 0.35);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+}
+
+html[data-surface='glass'] [role='tooltip'] {
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+/* ---------------------------------------------------------------------------
+   Tables — the surface most of this app actually is
+   --------------------------------------------------------------------------- */
+
+/* DataTable paints its header with bg-primary on BOTH the thead and its row,
+   and the labels inside are text-white. Tinting those neutral (as an earlier
+   pass did) left white-on-white headers, so the primary hue stays and only
+   its alpha moves. */
+html[data-surface='glass'] thead.bg-primary,
+html[data-surface='glass'] thead .bg-primary {
+  background-color: hsl(var(--primary) / 0.82);
+}
+
+html[data-surface='glass'] thead.bg-primary {
+  backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-highlight);
+}
+
+/* Headers that are not primary-filled (plain shadcn tables) get the frost
+   instead — their labels are text-muted-foreground, which stays readable. */
+html[data-surface='glass'] thead:not(.bg-primary) {
+  backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  background-color: hsl(var(--muted) / 0.6);
+  box-shadow: var(--glass-highlight);
+}
+
+html[data-surface='glass'] tbody tr {
+  border-color: hsl(var(--border) / 0.45);
+  transition: background-color 120ms ease;
+}
+
+html[data-surface='glass'] tbody tr:hover {
+  background-color: hsl(var(--primary) / 0.07);
+}
+
+/* ---------------------------------------------------------------------------
+   Controls — inputs and buttons (tint + edge, no per-element blur)
+   --------------------------------------------------------------------------- */
+
+/* vue-select's search field is an <input> *inside* .vs__dropdown-toggle, and
+   it is flex-grow:1 — so framing it drew a second box filling the rest of
+   every NextSelect. It has to be excluded here rather than reset afterwards:
+   a chain of :not()s costs specificity, and a later `.vs__search` rule scored
+   (0,2,1) against this selector's (0,4,2) and silently lost. The toggle is
+   the control; its search field stays invisible. */
+html[data-surface='glass'] input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.vs__search),
+html[data-surface='glass'] textarea,
+html[data-surface='glass'] select,
+html[data-surface='glass'] button[role='combobox'],
+html[data-surface='glass'] .vs__dropdown-toggle {
+  background-color: hsl(var(--card) / 0.5);
+  border-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.8));
+  box-shadow: inset 0 1px 2px hsl(var(--foreground) / 0.06);
+}
+
+html[data-surface='glass'] .vs__dropdown-toggle input {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-surface='glass'] input:not(.vs__search):focus,
+html[data-surface='glass'] textarea:focus,
+html[data-surface='glass'] button[role='combobox']:focus {
+  background-color: hsl(var(--card) / 0.72);
+}
+
+/* Capsule buttons are the loudest single cue of the iOS look. Chrome that is
+   already a row — sidebar entries, combobox triggers — is left alone so
+   nothing turns into a stretched pill. Semantic controls are excluded too:
+   radix renders checkboxes, radios, tabs and menu entries as <button>, and a
+   capsule radius turns a 16px checkbox into a radio button.
+
+   The exclusions sit inside :where() so they cost no specificity — chained
+   bare :not()s would score (0,9,1) and make the reset below unreachable. */
+html[data-surface='glass']
+  button:where(:not([role='combobox'], [data-sidebar], [role='checkbox'], [role='radio'], [role='switch'], [role='menuitem'], [role='option'], [role='tab'])) {
+  border-radius: 9999px;
+}
+
+/* Table header sort buttons and menu rows fill their cell, so a capsule there
+   reads as a stray lozenge — put the shape back. */
+html[data-surface='glass'] th button,
+html[data-surface='glass'] [role='menuitem'],
+html[data-surface='glass'] [role='option'],
+html[data-surface='glass'] [role='tab'] {
+  border-radius: var(--radius);
+}
+
+html[data-surface='glass'] .bg-primary {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-edge) / 0.35),
+    0 6px 16px -8px hsl(var(--primary) / 0.7);
+}
+
+html[data-surface='glass'] .bg-primary:hover {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--glass-edge) / 0.45),
+    0 10px 22px -8px hsl(var(--primary) / 0.8);
+}
+
+/* Outline buttons become actual glass pills — but only the ones still wearing
+   the variant's own bg-background. Matching bare .border-input also repainted
+   outline buttons that were given a fill of their own (the header quick-add
+   button is variant="outline" plus bg-primary with a white icon), turning
+   them into blank white pills. */
+html[data-surface='glass'] .border-input.bg-background {
+  background-color: hsl(var(--card) / 0.45);
+  border-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.8));
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+}
+
+/* Badges keep their hue but pick up the edge. */
+html[data-surface='glass'] .rounded-full.border {
+  box-shadow: inset 0 1px 0 hsl(var(--glass-edge) / 0.3);
+}
+
+/* ---------------------------------------------------------------------------
+   Accessibility and capability fallbacks
+   --------------------------------------------------------------------------- */
+
+/* No backdrop-filter (older browsers, some Linux GPUs): fall back to opaque
+   surfaces rather than shipping unreadable washed-out panes. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-surface='glass'] {
+    --glass-alpha: 1;
+    --glass-alpha-strong: 1;
+    --glass-alpha-chrome: 1;
+  }
+
+  html[data-surface='glass'] [data-sidebar='sidebar'],
+  html[data-surface='glass'] main > header,
+  html[data-surface='glass'] main > footer,
+  html[data-surface='glass'] .bg-card,
+  html[data-surface='glass'] .bg-popover,
+  html[data-surface='glass'] thead,
+  html[data-surface='glass'] [role='dialog'] {
+    background-color: hsl(var(--card));
+  }
+}
+
+/* Users who ask the OS for less transparency get the same layout with solid
+   fills — the design still works, it just stops being see-through. */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-surface='glass'] {
+    --glass-alpha: 0.97;
+    --glass-alpha-strong: 0.99;
+    --glass-alpha-chrome: 0.98;
+    --glass-blur: 0px;
+    background-image: none;
+  }
+}
+
+/* Glass is a screen material; print stays paper. */
+@media print {
+  html[data-surface='glass'],
+  html[data-surface='glass'] * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  html[data-surface='glass'] {
+    background-image: none !important;
+  }
+}

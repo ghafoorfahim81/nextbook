@@ -2,7 +2,7 @@ export default {
     id: 'inventory',
     number: '4',
     title: 'Inventory module guide',
-    subtitle: 'Items · batch & expiry · opening · transfers · adjustments · pricing · barcodes',
+    subtitle: 'Items · variants · batch & expiry · opening · transfers · adjustments · pricing · discount rules · barcodes',
     summary:
         'The inventory module tracks the stock of every item in every warehouse. Purchases and sales move stock; transfers, adjustments, and openings are the direct tools for correcting it.',
     chapters: [
@@ -40,9 +40,14 @@ export default {
                     rows: [
                         ['Category', 'Grouping items for reports and filters (food, construction).'],
                         ['Brand', 'The manufacturer’s trade name.'],
-                        ['Size', 'For items that come in several sizes.'],
                         ['Unit of measure', 'Piece, kilogram, litre, carton. Conversions between units can be defined.'],
+                        ['Customer group', 'Wholesale, retail, staff. Used to aim a discount rule at one kind of customer.'],
                     ],
+                },
+                {
+                    type: 'note',
+                    label: 'Size and colour are not master data',
+                    text: 'You no longer pick a size or colour from a list when registering an item. They are typed as variant attributes on the item itself — see “Variants”.',
                 },
             ],
         },
@@ -67,7 +72,8 @@ export default {
                         ['Cost of goods account', 'Where the cost is booked when it is sold.'],
                         ['Batch / expiry tracking', 'Groups stock into delivery lots with their own batch number, expiry and landed cost. Permanent once a transaction is posted.'],
                         ['Serial tracking', 'Records every unit individually with its own serial number and warranty.'],
-                        ['Costing method', 'Batch/expiry-tracked items use FIFO; the rest use weighted average.'],
+                        ['Costing method', 'FIFO, LIFO or weighted average. Leave it blank to follow the company default set under Company settings.'],
+                        ['Sale price / Purchase price', 'The item’s fallback prices. A variant priced on its own overrides them.'],
                     ],
                 },
                 {
@@ -212,8 +218,80 @@ export default {
             ],
         },
         {
-            id: 'barcode',
+            id: 'discount-rules',
             number: '9',
+            title: 'Discount rules',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'A discount rule gives a standing discount on a sale line without anybody having to remember it. You set it up once — “10% off everything in the Beverages category”, “50 AFN off this item for wholesale customers” — and the sale form fills the discount in for you when that item is added to an invoice.',
+                },
+                {
+                    type: 'note',
+                    label: 'Sales only',
+                    text: 'Rules apply to sales. A purchase discount is agreed with the supplier on the bill itself, so there is nothing to set up in advance.',
+                },
+                { type: 'h4', text: 'What a rule is made of' },
+                {
+                    type: 'table',
+                    headers: ['Field', 'What it does'],
+                    rows: [
+                        ['Name', 'A label you will recognise later, e.g. “Ramadan promo”. It is shown on the sale line so the cashier can see where the figure came from.'],
+                        ['Applies to', 'All items, or one brand, one category, or one item.'],
+                        ['Target', 'Which brand, category or item — depending on what you chose above.'],
+                        ['Discount type', 'Percentage of the line, or a fixed amount off it.'],
+                        ['Value', 'The percentage or the amount.'],
+                        ['Customer group', '“All customers”, or one group. A rule aimed at a group only fires for customers in it.'],
+                        ['Minimum quantity', 'The rule waits until the line reaches this quantity. Leave empty for no minimum.'],
+                        ['Starts / Ends', 'The date window. Leave either side empty for open-ended.'],
+                        ['Priority', 'A switch. When two rules are equally specific, the one switched on wins.'],
+                        ['Active', 'Turn a rule off without deleting it.'],
+                        ['Show on invoice', 'Whether the discount is printed on the customer’s invoice.'],
+                    ],
+                },
+                { type: 'h4', text: 'Which rule wins' },
+                {
+                    type: 'p',
+                    text: 'Only ever one. Discounts never stack. The most specific rule wins, and a rule aimed at the customer’s group beats the same kind of rule without one:',
+                },
+                {
+                    type: 'table',
+                    headers: ['Rule', 'Beats'],
+                    rows: [
+                        ['Named item', 'A category, brand or all-items rule'],
+                        ['Category', 'A brand or all-items rule'],
+                        ['Brand', 'An all-items rule'],
+                        ['Tied to a customer group', 'The same scope without a group'],
+                    ],
+                },
+                {
+                    type: 'p',
+                    text: 'If two rules are still level after that, the one with Priority switched on wins; if both or neither have it, the larger discount does.',
+                },
+                { type: 'h4', text: 'On the sale form' },
+                {
+                    type: 'p',
+                    text: 'Add the item to a sale and the discount box fills in by itself, with the rule’s name underneath it. The figure is a suggestion, not a lock: type over it and it is yours — the rules stop touching that line, even if you change the quantity afterwards. A small “Apply …” link appears so you can hand the line back to the rule if you change your mind.',
+                },
+                {
+                    type: 'warn',
+                    label: 'Clearing the box means no discount',
+                    text: 'If you empty the discount box or set it to zero, the sale saves with no discount on that line. It is treated as your decision and the rule will not put its figure back.',
+                },
+                {
+                    type: 'p',
+                    text: 'A quantity change can move the line onto a different rule — a “10 or more” bulk rule takes over as soon as the line reaches 10, and drops away again if you reduce it. Changing the customer re-checks every line that you have not typed over, because a different customer may be in a different group.',
+                },
+                {
+                    type: 'note',
+                    label: 'Orders converted into a sale',
+                    text: 'When a sale order becomes a sale, the prices and discounts already agreed on the order are kept as they are. Rules do not overwrite them.',
+                },
+            ],
+        },
+        {
+            id: 'barcode',
+            number: '10',
             title: 'Barcode printing',
             blocks: [
                 {
@@ -224,7 +302,7 @@ export default {
         },
         {
             id: 'in-out-records',
-            number: '10',
+            number: '11',
             title: 'Item in / out history',
             blocks: [
                 {
@@ -239,7 +317,7 @@ export default {
         },
         {
             id: 'glossary',
-            number: '11',
+            number: '12',
             title: 'Glossary of confusing fields',
             blocks: [
                 {
@@ -261,7 +339,7 @@ export default {
         },
         {
             id: 'reports',
-            number: '12',
+            number: '13',
             title: 'Inventory reports',
             blocks: [
                 {
@@ -273,14 +351,31 @@ export default {
                         ['Stock value', 'The value of stock at cost.'],
                         ['Stock shortage', 'Items below minimum stock.'],
                         ['Batch and expiry', 'Batches nearing their expiry date.'],
+                        ['Variant-wise', 'On-hand and movement split by variant, for items that have more than one.'],
                         ['Fast / slow movers', 'The turnover speed of each item.'],
+                        ['Zero on hand', 'Items that have moved but are now at zero.'],
+                        ['Maximum stock', 'Items sitting above their maximum level.'],
                     ],
+                },
+                { type: 'h4', text: 'Narrowing a report to one variant' },
+                {
+                    type: 'p',
+                    text: 'Every inventory report has an Item filter and, next to it, a Variant filter. Choose an item first: the Variant list then offers only that item’s variants. Leave the variant empty to see the item as a whole.',
+                },
+                {
+                    type: 'note',
+                    label: 'The same filter on sales and purchases',
+                    text: 'The Sales and Purchases reports carry it too, on their item-wise view, and each row names the variant that was sold or bought. Exports include that column.',
+                },
+                {
+                    type: 'p',
+                    text: 'Changing the item clears the variant, because a variant belongs to one item — if it did not, the report would come back empty for no visible reason.',
                 },
             ],
         },
         {
             id: 'troubleshooting',
-            number: '13',
+            number: '14',
             title: 'Troubleshooting',
             blocks: [
                 {
@@ -291,6 +386,11 @@ export default {
                         ['Cannot turn off batch tracking', 'The item has a posted transaction. This setting is locked afterwards.'],
                         ['Stock value does not match the financial report', 'An adjustment or landed cost may still be a draft, or a manual journal entry hit the asset account.'],
                         ['Item not found in sales', 'It may be inactive or deleted, or its type is service and it has no stock in the chosen warehouse.'],
+                        ['The price filled in is not the one I expected', 'The line takes the variant’s own sale price first, then the item’s. Check the variant you picked — switching variant re-prices the line.'],
+                        ['A discount appeared on a sale line by itself', 'A discount rule matched. Its name is shown under the box; type over the figure to overrule it, or turn the rule off under Discount rules.'],
+                        ['A discount I deleted keeps coming back', 'It should not. Clearing the box is treated as “no discount” and saves as zero — if you see otherwise, the line was re-added rather than edited.'],
+                        ['A report is empty after choosing a variant', 'That variant has no movement in the chosen dates or warehouse. Clear the variant to see the whole item.'],
+                        ['Reversing a purchase left the average cost too high', 'It should not — reversing a receipt takes its cost back out of the average. If a figure still looks wrong, check for a later adjustment or landed cost on the same item.'],
                     ],
                 },
             ],
