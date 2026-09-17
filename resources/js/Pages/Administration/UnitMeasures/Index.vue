@@ -60,6 +60,7 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('unit-measures.destroy', id, {
         title: t('general.delete', { name: t('admin.unit_measure.unit_measure') }),
+        name: t('admin.unit_measure.unit_measure'),
         description: t('general.delete_description', { name: t('admin.unit_measure.unit_measure') }),
         successMessage: t('general.delete_success', { name: t('admin.unit_measure.unit_measure') }),
     })

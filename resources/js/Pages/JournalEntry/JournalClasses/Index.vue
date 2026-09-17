@@ -31,6 +31,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('journal-classes.destroy', id, {
         title: t('general.delete', { name: t('sidebar.journal_entry.journal_class') }),
+        name: t('sidebar.journal_entry.journal_class'),
         description: t('general.delete_description', { name: t('sidebar.journal_entry.journal_class') }),
         successMessage: t('general.delete_success', { name: t('sidebar.journal_entry.journal_class') }),
     });

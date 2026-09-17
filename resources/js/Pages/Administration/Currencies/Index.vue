@@ -51,6 +51,7 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('currencies.destroy', id, {
         title: t('general.delete', { name: t('admin.currency.currency') }),
+        name: t('admin.currency.currency'),
         description: t('general.delete_description', { name: t('admin.currency.currency') }),
         successMessage: t('general.delete_success', { name: t('admin.currency.currency') }),
     })

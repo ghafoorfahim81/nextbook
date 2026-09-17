@@ -35,6 +35,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('landed-cost-categories.destroy', id, {
         title: t('general.delete', { name: t('admin.landed_cost_category.landed_cost_category') }),
+        name: t('admin.landed_cost_category.landed_cost_category'),
         description: t('general.delete_description', { name: t('admin.landed_cost_category.landed_cost_category') }),
         successMessage: t('general.delete_success', { name: t('admin.landed_cost_category.landed_cost_category') }),
     });

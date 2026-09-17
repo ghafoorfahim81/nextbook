@@ -43,6 +43,7 @@ const deleteItem = (id) => {
   }
   deleteResource('stock-adjustments.destroy', id, {
     title: t('general.delete', { name: t('adjustment.stock_adjustment') }),
+    name: t('adjustment.stock_adjustment'),
   })
 }
 

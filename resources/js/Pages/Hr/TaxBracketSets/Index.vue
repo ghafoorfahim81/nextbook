@@ -42,6 +42,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('tax-bracket-sets.destroy', id, {
         title: t('general.delete', { name: t('hr.tax_bracket_set') }),
+        name: t('hr.tax_bracket_set'),
         description: t('general.delete_description', { name: t('hr.tax_bracket_set') }),
         successMessage: t('general.delete_success', { name: t('hr.tax_bracket_set') }),
     });

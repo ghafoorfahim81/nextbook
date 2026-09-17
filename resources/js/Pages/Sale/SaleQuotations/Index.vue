@@ -21,6 +21,7 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('sale-quotations.destroy', id, {
         title: t('general.delete', { name: t('sale_quotation.sale_quotations') }),
+        name: t('sale_quotation.sale_quotations'),
     })
 }
 

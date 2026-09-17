@@ -39,6 +39,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('attendance-devices.destroy', id, {
         title: t('general.delete', { name: t('hr.device') }),
+        name: t('hr.device'),
         description: t('general.delete_description', { name: t('hr.device') }),
         successMessage: t('general.delete_success', { name: t('hr.device') }),
     });

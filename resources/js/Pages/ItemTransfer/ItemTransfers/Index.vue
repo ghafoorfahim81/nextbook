@@ -47,6 +47,7 @@ const deleteItem = (id) => {
     }
   deleteResource('item-transfers.destroy', id, {
     title: t('general.delete', { name: t('item_transfer.item_transfer') }),
+    name: t('item_transfer.item_transfer'),
   })
 }
 

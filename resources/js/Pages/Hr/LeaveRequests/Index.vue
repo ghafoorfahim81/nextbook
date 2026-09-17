@@ -48,6 +48,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('leave-requests.destroy', id, {
         title: t('general.delete', { name: t('hr.leave_request') }),
+        name: t('hr.leave_request'),
         description: t('general.delete_description', { name: t('hr.leave_request') }),
         successMessage: t('general.delete_success', { name: t('hr.leave_request') }),
     });
