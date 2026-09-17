@@ -61,6 +61,7 @@ const showItem = (id) => {
 const deleteItem = (id) => {
   deleteResource('landed-costs.destroy', id, {
     title: t('general.delete', { name: t('landed_cost.title') }),
+    name: t('landed_cost.title'),
   });
 };
 </script>

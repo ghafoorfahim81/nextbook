@@ -40,6 +40,7 @@ const showItem = (item) => {
 const deleteItem = (id) => {
     deleteResource('suppliers.destroy', id, {
         title: t('general.delete', { name: t('ledger.supplier.supplier') }),
+        name: t('ledger.supplier.supplier'),
         description: t('general.delete_description', { name: t('ledger.supplier.supplier') }),
         successMessage: t('general.delete_success', { name: t('ledger.supplier.supplier') }),
     });

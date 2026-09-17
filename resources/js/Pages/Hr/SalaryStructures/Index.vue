@@ -37,6 +37,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('salary-structures.destroy', id, {
         title: t('general.delete', { name: t('hr.salary_structure') }),
+        name: t('hr.salary_structure'),
         description: t('general.delete_description', { name: t('hr.salary_structure') }),
         successMessage: t('general.delete_success', { name: t('hr.salary_structure') }),
     });

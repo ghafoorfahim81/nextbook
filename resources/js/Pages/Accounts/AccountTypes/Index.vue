@@ -27,6 +27,7 @@
     const deleteItem = (id) => {
         deleteResource('account-types.destroy', id, {
             title: t('general.delete', { name: t('account.account_type') }),
+            name: t('account.account_type'),
             description: t('general.delete_description', { name: t('account.account_type') }),
             successMessage: t('general.delete_success', { name: t('account.account_type') }),
         })

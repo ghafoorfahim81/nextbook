@@ -40,6 +40,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('brands.destroy', id, {
         title: t('general.delete', { name: t('admin.brand.brand') }),
+        name: t('admin.brand.brand'),
         description: t('general.delete_description', { name: t('admin.brand.brand') }),
         successMessage: t('general.delete_success', { name: t('admin.brand.brand') }),
     });

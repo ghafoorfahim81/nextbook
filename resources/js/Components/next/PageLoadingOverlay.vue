@@ -70,12 +70,26 @@ function isSilentVisit(event) {
     }
 }
 
+// Deleting a record never navigates anywhere — the operator stays on the list
+// and the row simply leaves it. Covering the screen with a book loader hides
+// that, and hides the undo toast that follows. This is checked on the method so
+// it holds for every delete in the system, including pages that call
+// router.delete() directly rather than going through useDeleteResource().
+function isDelete(event) {
+    try {
+        return String(event?.detail?.visit?.method ?? 'get').toLowerCase() === 'delete'
+    } catch {
+        return false
+    }
+}
+
 function handleStart(event) {
     if (
         isSamePageReportsRefresh(event)
         || isDataTableRefresh(event)
         || isPreferencesMutation(event)
         || isSilentVisit(event)
+        || isDelete(event)
     ) return
 
     clearTimeout(hideTimer)
