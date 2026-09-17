@@ -34,6 +34,11 @@ const COLOR_PALETTES = [
     'mist',
     'olive',
 ]
+// Surface style decides what containers are made of: 'solid' paints opaque
+// tokens (the original look), 'glass' swaps in the translucent material in
+// resources/css/glass.css.
+const SURFACE_STYLES = ['solid', 'glass']
+
 const CUSTOM_APPEARANCE_THEMES = COLOR_PALETTES.filter((palette) => palette !== 'system')
 const ACCENT_COLORS = COLOR_PALETTES.filter((palette) => palette !== 'violet-900')
 const DEFAULT_FONT_SIZES = {
@@ -93,6 +98,12 @@ export function resolveAccentColor(preferences) {
     return ACCENT_COLORS.includes(accentColor) ? accentColor : 'system'
 }
 
+export function resolveSurfaceStyle(preferences) {
+    const surfaceStyle = preferences?.appearance?.surface_style
+
+    return SURFACE_STYLES.includes(surfaceStyle) ? surfaceStyle : 'solid'
+}
+
 export function applyAppearanceTheme(preferences) {
     if (typeof document === 'undefined') return
 
@@ -101,6 +112,7 @@ export function applyAppearanceTheme(preferences) {
 
     root.dataset.theme = resolveAppearanceTheme(preferences)
     root.dataset.accentColor = resolveAccentColor(preferences)
+    root.dataset.surface = resolveSurfaceStyle(preferences)
 
     Object.entries(DEFAULT_FONT_SIZES).forEach(([key, fallback]) => {
         root.style.setProperty(`--app-${key.replaceAll('_', '-')}`, `${resolveFontSize(appearance[key], fallback)}px`)
