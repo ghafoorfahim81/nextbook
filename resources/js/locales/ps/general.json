@@ -178,6 +178,8 @@
   "address": "آدرس",
   "email": "ایمیل",
   "active": "فعال",
+  "is_active": "فعال",
+  "discount_type": "د تخفیف ډول",
   "unit_price": "قیمت واحد",
   "created_successfully": "موفقانه ثبت شد",
   "code": "کد",

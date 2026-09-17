@@ -6,7 +6,7 @@ import ModalDialog from '@/Components/next/Dialog.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue';
-import { Checkbox } from '@/Components/ui/checkbox';
+import { Switch } from '@/Components/ui/switch';
 import { Label } from '@/Components/ui/label';
 
 const props = defineProps({
@@ -31,7 +31,7 @@ const blank = {
     min_quantity: '',
     starts_at: '',
     ends_at: '',
-    priority: 0,
+    is_priority: false,
     is_active: true,
     show_on_invoice: true,
 };
@@ -47,6 +47,14 @@ const targetOptions = computed(() => ({
 }[form.scope] || []));
 
 const needsTarget = computed(() => form.scope !== 'all');
+
+// "All customers" is the no-group case, spelled out. It used to be an empty
+// box with a hint underneath, which reads as an unanswered question rather
+// than a choice — and a rule with no group really does apply to everyone.
+const customerGroupOptions = computed(() => [
+    { id: null, localized_name: t('discount_rule.all_customers') },
+    ...(props.options.customerGroups || []),
+]);
 
 const targetLabel = computed(() => ({
     item: t('item.item'),
@@ -145,10 +153,11 @@ const submit = () => {
             <NextSelect
                 :floating-text="t('discount_rule.customer_group')"
                 v-model="form.customer_group_id"
-                :options="options.customerGroups"
-                label-key="name"
+                :options="customerGroupOptions"
+                label-key="localized_name"
                 value-key="id"
                 :reduce="option => option.id"
+                :clearable="false"
                 :error="form.errors.customer_group_id"
             />
             <p class="-mt-2 text-xs text-muted-foreground">{{ t('discount_rule.customer_group_hint') }}</p>
@@ -176,21 +185,21 @@ const submit = () => {
                 />
             </div>
 
-            <NextInput
-                type="number"
-                :label="t('discount_rule.priority')"
-                v-model="form.priority"
-                :error="form.errors.priority"
-                :hint="t('discount_rule.priority_hint')"
-            />
+            <div class="flex items-start gap-3 rounded-lg border border-border p-3">
+                <Switch id="rule-priority" :model-value="form.is_priority" @update:model-value="form.is_priority = $event" />
+                <div class="space-y-0.5">
+                    <Label for="rule-priority" class="cursor-pointer font-normal">{{ t('discount_rule.priority') }}</Label>
+                    <p class="text-xs text-muted-foreground">{{ t('discount_rule.priority_hint') }}</p>
+                </div>
+            </div>
 
             <div class="flex flex-wrap items-center gap-6 pt-1">
                 <div class="flex items-center gap-2">
-                    <Checkbox id="rule-active" :checked="form.is_active" @update:checked="form.is_active = $event" />
+                    <Switch id="rule-active" :model-value="form.is_active" @update:model-value="form.is_active = $event" />
                     <Label for="rule-active" class="cursor-pointer font-normal">{{ t('general.is_active') }}</Label>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Checkbox id="rule-invoice" :checked="form.show_on_invoice" @update:checked="form.show_on_invoice = $event" />
+                    <Switch id="rule-invoice" :model-value="form.show_on_invoice" @update:model-value="form.show_on_invoice = $event" />
                     <Label for="rule-invoice" class="cursor-pointer font-normal">{{ t('discount_rule.show_on_invoice') }}</Label>
                 </div>
             </div>

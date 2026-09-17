@@ -27,7 +27,7 @@ class DiscountRuleResource extends JsonResource
             'min_quantity' => $this->min_quantity,
             'starts_at' => $this->starts_at?->toDateString(),
             'ends_at' => $this->ends_at?->toDateString(),
-            'priority' => $this->priority,
+            'is_priority' => (bool) $this->is_priority,
             'is_active' => (bool) $this->is_active,
             'show_on_invoice' => (bool) $this->show_on_invoice,
 
@@ -37,11 +37,10 @@ class DiscountRuleResource extends JsonResource
             'value_label' => $this->discount_type === DiscountType::PERCENTAGE
                 ? rtrim(rtrim(number_format((float) $this->value, 2, '.', ''), '0'), '.').'%'
                 : number_format((float) $this->value, 2),
-            'customer_group_name' => $this->whenLoaded(
-                'customerGroup',
-                fn () => $this->customerGroup?->name_en ?? '—',
-                '—',
-            ),
+            // A rule with no group genuinely applies to everyone, so the table
+            // says so rather than showing a dash that reads as missing data.
+            'customer_group_name' => $this->customerGroup?->localized_name
+                ?? __('discount_rule.all_customers'),
             'window_label' => $this->windowLabel($dates),
         ];
     }

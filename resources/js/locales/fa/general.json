@@ -183,6 +183,8 @@
   "email": "ایمیل",
   "active": "فعال",
   "inactive": "غیرفعال",
+  "is_active": "فعال",
+  "discount_type": "نوع تخفیف",
   "unit_price": "قیمت واحد",
   "created_successfully": "موفقانه ثبت شد",
   "general_info": "اطلاعات عمومی",

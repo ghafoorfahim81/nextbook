@@ -15,7 +15,7 @@ class CustomerGroup extends Model
 
     protected $fillable = [
         'name_en',
-        'name_fa',
+        'local_name',
         'description',
         'branch_id',
         'created_by',
@@ -26,13 +26,13 @@ class CustomerGroup extends Model
 
     protected static function searchableColumns(): array
     {
-        return ['name_en', 'name_fa', 'description'];
+        return ['name_en', 'local_name', 'description'];
     }
 
     public function getLocalizedNameAttribute(): string
     {
-        $preferred = app()->getLocale() === 'fa' ? $this->name_fa : $this->name_en;
+        $preferred = in_array(app()->getLocale(), ['fa', 'ps'], true) ? $this->local_name : $this->name_en;
 
-        return (string) ($preferred ?: $this->name_en ?: $this->name_fa ?: '');
+        return (string) ($preferred ?: $this->name_en ?: $this->local_name ?: '');
     }
 }
