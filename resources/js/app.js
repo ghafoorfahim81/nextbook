@@ -1,5 +1,8 @@
 import './bootstrap';
 import '../css/app.css';
+// Loaded after app.css so its html[data-surface='glass'] rules override the
+// Tailwind utilities they replace. Inert unless that attribute is set.
+import '../css/glass.css';
 import '../css/vue-select.css';
 import 'vue-sonner/style.css';
 import { createApp, h } from 'vue';
