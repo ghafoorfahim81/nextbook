@@ -230,5 +230,7 @@
   "cheque_no": "د چک شمېره",
   "narration": "یادونه",
   "saving": "خوندي کېږي...",
-  "required_field": "دا ساحه اړینه ده."
+  "required_field": "دا ساحه اړینه ده.",
+  "select_all": "ټول وټاکئ",
+  "search_placeholder": "{name} ولټوئ..."
 }

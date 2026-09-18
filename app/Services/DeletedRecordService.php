@@ -59,6 +59,7 @@ use App\Models\Sale\SaleOrder;
 use App\Models\Sale\SaleQuotation;
 use App\Models\Sale\SaleReturn;
 use App\Models\Transaction\Transaction;
+use App\Models\Role;
 use App\Models\Transaction\TransactionLine;
 use App\Models\User;
 use App\Services\Hr\SalaryDisbursementService;
@@ -523,6 +524,11 @@ class DeletedRecordService
             'users' => [
                 'label' => 'Users',
                 'model' => User::class,
+                'title' => fn (Model $record) => $record->name,
+            ],
+            'roles' => [
+                'label' => 'Roles',
+                'model' => Role::class,
                 'title' => fn (Model $record) => $record->name,
             ],
             'journal_classes' => [

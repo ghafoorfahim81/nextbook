@@ -67,5 +67,11 @@
     "tax_bracket_sets": "جداول مالیه",
     "job_openings": "بست‌های خالی",
     "job_applications": "درخواست‌های وظیفه",
-    "interviews": "مصاحبه‌ها"
+    "interviews": "مصاحبه‌ها",
+    "customer_groups": "گروه‌های مشتری",
+    "deleted_records": "رکوردهای حذف‌شده",
+    "discount_rules": "قوانین تخفیف",
+    "landed_costs": "هزینه‌های ورود",
+    "landed_cost_categories": "دسته‌های هزینه ورود",
+    "payment_terms": "شرایط پرداخت"
 }

@@ -34,6 +34,16 @@ class RolePolicy extends BasePolicy
     {
         return $this->hasPermission($user, 'roles.delete');
     }
+
+    /**
+     * `authorizeResource` only covers the seven RESTful actions, so restore
+     * was reachable by any authenticated user. Putting a role back carries
+     * the same authority as removing it, so it reuses `roles.delete`.
+     */
+    public function restore(User $user, Role $role): bool
+    {
+        return $this->hasPermission($user, 'roles.delete');
+    }
 }
 
 

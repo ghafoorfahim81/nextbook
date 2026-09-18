@@ -10,5 +10,9 @@
   "print": "Print",
   "approve": "Approve",
   "reject": "Reject",
-  "email": "Email"
+  "email": "Email",
+  "force_delete": "Force Delete",
+  "restore": "Restore",
+  "allocate": "Allocate",
+  "post": "Post"
 }

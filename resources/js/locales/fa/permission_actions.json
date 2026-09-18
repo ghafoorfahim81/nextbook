@@ -10,5 +10,9 @@
   "print": "چاپ",
   "approve": "تأیید",
   "reject": "رد",
-  "email": "ارسال ایمیل"
+  "email": "ارسال ایمیل",
+  "force_delete": "حذف دائمی",
+  "restore": "بازیابی",
+  "allocate": "تخصیص",
+  "post": "ثبت نهایی"
 }

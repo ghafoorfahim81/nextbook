@@ -67,5 +67,11 @@
     "tax_bracket_sets": "Tax Tables",
     "job_openings": "Job Openings",
     "job_applications": "Job Applications",
-    "interviews": "Interviews"
+    "interviews": "Interviews",
+    "customer_groups": "Customer Groups",
+    "deleted_records": "Deleted Records",
+    "discount_rules": "Discount Rules",
+    "landed_costs": "Landed Costs",
+    "landed_cost_categories": "Landed Cost Categories",
+    "payment_terms": "Payment Terms"
 }
