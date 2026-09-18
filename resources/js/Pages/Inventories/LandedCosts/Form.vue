@@ -165,7 +165,7 @@ const isEditMode = computed(() => !!currentRecord.value?.id);
 // (see the watch below).
 const categoryAllocations = ref((props.landedCostCategories || []).map((category) => ({
   id: category.id,
-  name: category.name,
+  name: category.localized_name || category.name,
   amount: '',
 })));
 

@@ -56,7 +56,7 @@ class ItemController extends Controller
         // Eager load and aggregate up front: the list resource previously ran
         // a SUM per row for on-hand, plus lazy loads for unit/category/brand.
         $items = Item::query()
-            ->with(['unitMeasure:id,name', 'category:id,name', 'brand:id,name'])
+            ->with(['unitMeasure:id,name', 'category:id,name,local_name', 'brand:id,name'])
             ->withSum('stockBalances as on_hand', 'quantity')
             ->withCount('variants')
             ->search($request->query('search'))
@@ -74,7 +74,7 @@ class ItemController extends Controller
                     'name' => $c->getLabel(),
                 ])->values(),
                 'unitMeasures' => UnitMeasure::orderBy('name')->get(['id', 'name']),
-                'categories' => Category::orderBy('name')->get(['id', 'name']),
+                'categories' => Category::orderBy('name')->get(['id', 'name', 'local_name']),
                 'brands' => Brand::orderBy('name')->get(['id', 'name']),
                 'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),

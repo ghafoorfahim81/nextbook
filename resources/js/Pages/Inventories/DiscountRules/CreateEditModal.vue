@@ -42,7 +42,8 @@ const form = useForm({ ...blank });
 // draws from a different table, and "all items" needs no target at all.
 const targetOptions = computed(() => ({
     item: props.options.items,
-    category: props.options.categories,
+    // Categories carry both labels; the picker prints the one for the active locale.
+    category: (props.options.categories || []).map((c) => ({ ...c, name: c.localized_name || c.name })),
     brand: props.options.brands,
 }[form.scope] || []));
 

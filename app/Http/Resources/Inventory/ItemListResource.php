@@ -26,7 +26,7 @@ class ItemListResource extends JsonResource
             'barcode' => $this->barcode,
             'measure' => $this->unitMeasure?->name,
             'unitMeasure' => $this->unitMeasure,
-            'category' => $this->category?->name,
+            'category' => $this->category?->localized_name,
             // The index declares these two columns but the resource never
             // sent them, so they rendered blank on every row.
             'brand_name' => $this->brand?->name,

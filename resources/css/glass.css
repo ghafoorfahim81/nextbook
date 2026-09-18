@@ -51,6 +51,14 @@ html[data-surface='glass'] {
      surface read as frosted plastic rather than glass. */
   --glass-blur-overlay: 10px;
 
+  /* A modal is the one surface that carries a whole form's worth of text, and
+     it covers the densest part of the page — a data table. At the shared alpha
+     with no blur, every row behind it stayed word-for-word readable and fought
+     the dialog's own labels for attention. Heavier tint plus a real blur: the
+     colour and shape of the page still come through, the words do not. */
+  --glass-alpha-dialog: 0.62;
+  --glass-blur-dialog: 2px;
+
   --glass-shadow:
     0 10px 30px -12px hsl(var(--foreground) / 0.22),
     0 2px 6px -2px hsl(var(--foreground) / 0.08);
@@ -61,12 +69,20 @@ html[data-surface='glass'] {
   /* iOS-ish continuous corners: --radius feeds rounded-sm/md/lg app-wide. */
   --radius: 0.9rem;
 
-  background-color: hsl(var(--background));
-  background-image:
+  /* The ambient wash, named so surfaces other than <html> can repaint it.
+     Every layer is `background-attachment: fixed`, which anchors it to the
+     viewport rather than the element — so a patch that repeats this recipe
+     lines up pixel-for-pixel with the page underneath it, whatever its own
+     size or position. That is what lets a label mask a border without
+     announcing itself as a rectangle. */
+  --glass-ambient:
     radial-gradient(58rem 40rem at 6% -12%, hsl(var(--primary) / 0.3), transparent 62%),
     radial-gradient(46rem 34rem at 96% 2%, hsl(var(--chart-2) / 0.26), transparent 60%),
     radial-gradient(52rem 42rem at 48% 112%, hsl(var(--chart-5) / 0.22), transparent 62%),
     radial-gradient(38rem 30rem at 78% 68%, hsl(var(--chart-3) / 0.16), transparent 60%);
+
+  background-color: hsl(var(--background));
+  background-image: var(--glass-ambient);
   background-attachment: fixed;
   background-repeat: no-repeat;
 }
@@ -89,7 +105,7 @@ html.dark[data-surface='glass'] {
     0 28px 70px -22px hsl(0 0% 0% / 0.8),
     0 8px 20px -10px hsl(0 0% 0% / 0.55);
 
-  background-image:
+  --glass-ambient:
     radial-gradient(58rem 40rem at 6% -12%, hsl(var(--primary) / 0.26), transparent 62%),
     radial-gradient(46rem 34rem at 96% 2%, hsl(var(--chart-2) / 0.2), transparent 60%),
     radial-gradient(52rem 42rem at 48% 112%, hsl(var(--chart-5) / 0.18), transparent 62%),
@@ -212,15 +228,28 @@ html[data-surface='glass'] .bg-card .bg-card {
   box-shadow: var(--glass-highlight);
 }
 
-/* ~50 form pages label their sections with an absolutely positioned bg-card
-   chip pulled onto the panel's top border (`absolute -top-3 … bg-card`). That
-   chip is not a surface — it is a mask, and it only works while it is opaque.
-   Dressing it as glass gave every section title its own edge, sheen and drop
-   shadow, with the border still showing through the translucency. */
-html[data-surface='glass'] .absolute.bg-card {
-  background-color: hsl(var(--card));
-  background-image: none;
+/* Form-section title chips (`absolute -top-3 … bg-card`) still punch a hole
+   in their panel border with a fill. On glass a solid `--background` chip is
+   a white stamp, so repaint the page wash instead. NextInput legends are not
+   listed here — they cut a real gap in a fieldset and must stay unpainted. */
+html[data-surface='glass'] .absolute.bg-card,
+html[data-surface='glass'] .absolute.bg-background {
+  background-color: hsl(var(--background));
+  background-image: var(--glass-ambient);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   border-color: transparent;
+  box-shadow: none;
+}
+
+/* Form fieldsets (and the bordered "form set" boxes that use the same look)
+   must not pick up card/muted fills — those read as a white slab inside the
+   outline. */
+html[data-surface='glass'] fieldset,
+html[data-surface='glass'] fieldset.bg-card,
+html[data-surface='glass'] fieldset[class*='bg-muted'] {
+  background-color: transparent;
+  background-image: none;
   box-shadow: none;
 }
 
@@ -263,14 +292,15 @@ html[data-surface='glass'] [data-radix-popper-content-wrapper] > * {
   box-shadow: var(--glass-highlight), var(--glass-shadow-lifted);
 }
 
-/* A modal owns the whole viewport and its own scrim already separates it from
-   the page, so it can go the last step the drawer took and drop the blur
-   entirely — what is behind a dialog stays legible, which is the whole point
-   of the material. Floating menus keep their blur: they are small and land on
-   unpredictable content, so their labels need the page behind them quieted. */
+/* A modal takes the card's tint a step further. Dropping the blur entirely
+   here read as glass on a quiet page but failed on a list screen: the dialog
+   opens directly over a full table, and legible text behind legible text is
+   just noise. The point of the material is that you can see the page through
+   it, not that you can read it. */
 html[data-surface='glass'] [role='dialog']:not([data-sidebar]) {
-  backdrop-filter: saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: saturate(var(--glass-saturate));
+  background-color: hsl(var(--popover) / var(--glass-alpha-dialog));
+  backdrop-filter: blur(var(--glass-blur-dialog)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-dialog)) saturate(var(--glass-saturate));
 }
 
 /* Dialog bodies are built as a stack of full-bleed rows — a sticky footer
@@ -294,13 +324,13 @@ html[data-surface='glass'] [role='listbox'] [role='separator'] {
   background-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.7));
 }
 
-/* The scrim behind a dialog: lighter than the solid style, since the dialog
-   itself now does the separating. */
+/* The scrim behind a dialog: still lighter than the solid style, but it carries
+   its share of the separating instead of leaving all of it to the pane. */
 html[data-surface='glass'] .bg-black\/80,
 html[data-surface='glass'] .bg-background\/80 {
-  background-color: hsl(var(--background) / 0.35);
-  backdrop-filter: blur(6px) saturate(120%);
-  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  background-color: hsl(var(--background) / 0.45);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
 }
 
 html[data-surface='glass'] [role='tooltip'] {
@@ -360,9 +390,9 @@ html[data-surface='glass'] textarea,
 html[data-surface='glass'] select,
 html[data-surface='glass'] button[role='combobox'],
 html[data-surface='glass'] .vs__dropdown-toggle {
-  background-color: hsl(var(--card) / 0.5);
+  background-color: transparent;
   border-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.8));
-  box-shadow: inset 0 1px 2px hsl(var(--foreground) / 0.06);
+  box-shadow: none;
 }
 
 html[data-surface='glass'] .vs__dropdown-toggle input {
@@ -371,10 +401,11 @@ html[data-surface='glass'] .vs__dropdown-toggle input {
   box-shadow: none;
 }
 
+
 html[data-surface='glass'] input:not(.vs__search):focus,
 html[data-surface='glass'] textarea:focus,
 html[data-surface='glass'] button[role='combobox']:focus {
-  background-color: hsl(var(--card) / 0.72);
+  background-color: transparent;
 }
 
 /* Capsule buttons are the loudest single cue of the iOS look. Chrome that is
@@ -438,6 +469,8 @@ html[data-surface='glass'] .rounded-full.border {
   html[data-surface='glass'] {
     --glass-alpha: 1;
     --glass-alpha-chrome: 1;
+    --glass-alpha-dialog: 1;
+    --glass-blur-dialog: 0px;
   }
 
   html[data-surface='glass'] [data-sidebar='sidebar'],
@@ -457,8 +490,10 @@ html[data-surface='glass'] .rounded-full.border {
   html[data-surface='glass'] {
     --glass-alpha: 0.97;
     --glass-alpha-chrome: 0.98;
+    --glass-alpha-dialog: 0.98;
     --glass-blur: 0px;
     --glass-blur-overlay: 0px;
+    --glass-blur-dialog: 0px;
     --glass-sheen: none;
     background-image: none;
   }

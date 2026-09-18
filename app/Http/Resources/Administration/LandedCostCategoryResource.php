@@ -13,6 +13,8 @@ class LandedCostCategoryResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'local_name' => $this->local_name,
+            'localized_name' => $this->localized_name,
             'remark' => $this->remark,
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),

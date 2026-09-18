@@ -1,10 +1,9 @@
 {
-    "category":{
+    "category": {
         "category": "دسته بندی",
         "parent": "والد",
         "categories": "دسته بندی ها"
     },
-
     "warehouse": {
         "warehouse": "گودام",
         "warehouses": "گودام ها"
@@ -99,6 +98,7 @@
     },
     "shared": {
         "remark": "توضیحات",
+        "local_name": "سیمه‌ییز نوم",
         "parent": "والد",
         "address": "آدرس",
         "symbol": "نماد",

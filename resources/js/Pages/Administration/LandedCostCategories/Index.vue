@@ -17,6 +17,7 @@ const editingItem = ref(null);
 
 const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
+    { key: 'local_name', label: t('admin.shared.local_name'), sortable: true },
     { key: 'remark', label: t('general.remark') },
     {
         key: 'created_by.name',

@@ -22,6 +22,7 @@ class CategoryFactory extends Factory
     {
         return [
             'name' => fake()->unique()->word(),
+            'local_name' => fake()->optional()->word(),
             'remark' => fake()->optional()->sentence(),
             'parent_id' => null,
             'branch_id' => Branch::factory(),

@@ -1,10 +1,9 @@
 {
-    "category":{
+    "category": {
         "category": "دسته بندی",
         "parent": "والد",
         "categories": "دسته بندی ها"
     },
-
     "warehouse": {
         "warehouse": "گدام/انبار",
         "warehouses": "گدام/انبار ها"
@@ -34,7 +33,7 @@
         "no_currencies_to_update": "هیچ ارز فعال غیر اصلی برای به‌روزرسانی وجود ندارد.",
         "home_currency_cannot_be_updated": "نرخ ارز اصلی از این صفحه قابل به‌روزرسانی نیست."
     },
-        "brand": {
+    "brand": {
         "brand": "برند",
         "brands": "برند ها",
         "website": "وبسایت",
@@ -122,6 +121,7 @@
     },
     "shared": {
         "remark": "توضیحات",
+        "local_name": "نام محلی",
         "parent": "والد",
         "address": "آدرس",
         "symbol": "نماد",

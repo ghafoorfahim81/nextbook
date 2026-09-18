@@ -785,16 +785,18 @@ class SearchController extends Controller
     private function searchCategories(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
         $query = Category::query()
-            ->select('id', 'name', 'remark')
+            ->select('id', 'name', 'local_name', 'remark')
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
-                    if (in_array($field, ['name', 'remark'])) {
+                    if (in_array($field, ['name', 'local_name', 'remark'])) {
                         $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
 
+        // `localized_name` rides along via the model's appends, so pickers label
+        // search hits the same way they label the options they were given.
         return $query->limit($limit)->get()->toArray();
     }
     /**

@@ -46,6 +46,7 @@ export const quickCreateRegistry = {
     endpointType: 'categories',
     fields: [
       { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'local_name', labelKey: 'admin.shared.local_name', type: 'text' },
       { key: 'parent_id', labelKey: 'admin.shared.parent', type: 'select' },
       { key: 'remark', labelKey: 'general.remarks', type: 'textarea' },
     ],

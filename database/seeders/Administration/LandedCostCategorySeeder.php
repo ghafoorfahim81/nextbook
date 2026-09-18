@@ -23,17 +23,24 @@ class LandedCostCategorySeeder extends Seeder
         $createdBy = User::where('email', 'admin@nextbook.af')->first()?->id ?? User::first()?->id;
 
         foreach (LandedCostCategory::defaultCategories() as $category) {
-            $exists = LandedCostCategory::withoutGlobalScopes()
+            $existing = LandedCostCategory::withoutGlobalScopes()
                 ->where('branch_id', $branch->id)
                 ->where('name', $category['name'])
-                ->exists();
+                ->first();
 
-            if ($exists) {
+            // Re-running the seeder must not duplicate rows, but it should fill in
+            // the local name for categories that predate the column.
+            if ($existing) {
+                if (blank($existing->local_name) && filled($category['local_name'] ?? null)) {
+                    $existing->forceFill(['local_name' => $category['local_name']])->save();
+                }
+
                 continue;
             }
 
             LandedCostCategory::create([
                 'name' => $category['name'],
+                'local_name' => $category['local_name'] ?? null,
                 'remark' => $category['remark'],
                 'branch_id' => $branch->id,
                 'created_by' => $createdBy,

@@ -21,6 +21,7 @@ class LandedCostCategoryStoreRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:150', $this->uniqueInBranch('landed_cost_categories', $id)],
+            'local_name' => ['nullable', 'string', 'max:150'],
             'remark' => ['nullable', 'string'],
         ];
     }

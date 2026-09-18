@@ -68,7 +68,7 @@ const filterFields = computed(() => ([
     key: 'category_id',
     label: t('admin.category.category'),
     type: 'select',
-    options: (props.filterOptions?.categories || []).map((o) => ({ id: o.id, name: o.name })),
+    options: (props.filterOptions?.categories || []).map((o) => ({ id: o.id, name: o.localized_name || o.name })),
   },
   {
     key: 'brand_id',

@@ -270,7 +270,7 @@ class LandedCostController extends Controller
     {
         return LandedCostCategory::query()
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'local_name']);
     }
 
     private function currencyOptions()

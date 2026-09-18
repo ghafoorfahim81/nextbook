@@ -48,7 +48,7 @@ class LandedCostResource extends JsonResource
                 'id' => $row->id,
                 'landed_cost_category_id' => $row->landed_cost_category_id,
                 'amount' => $row->amount,
-                'category_name' => $row->category?->name,
+                'category_name' => $row->category?->localized_name,
             ])->values()),
             'category_allocations_total' => $this->whenLoaded('categoryAllocations', fn () => round((float) $this->categoryAllocations->sum('amount'), 2)),
             'total_cost' => $this->total_cost,
