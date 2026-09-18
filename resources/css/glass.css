@@ -28,13 +28,29 @@ html[data-surface='glass'] {
   --glass-blur: 22px;
   --glass-saturate: 175%;
   --glass-alpha: 0.62;
-  --glass-alpha-strong: 0.78;
   --glass-alpha-chrome: 0.68;
 
   /* Specular edge + lift */
   --glass-edge: 0 0% 100%;
   --glass-edge-alpha: 0.55;
   --glass-highlight: inset 0 1px 0 hsl(var(--glass-edge) / 0.6);
+
+  /* The top-down specular sheen. Shared by every pane (cards, dialogs,
+     menus) so a dialog is visibly the same material as the panel it opened
+     from, not a second, heavier one. */
+  --glass-sheen: linear-gradient(
+    to bottom,
+    hsl(var(--glass-edge) / 0.2),
+    hsl(var(--glass-edge) / 0.04) 45%,
+    hsl(var(--glass-edge) / 0) 100%
+  );
+
+  /* Floating surfaces (menus, selects, poppers) blur what is behind them so
+     their own labels stay readable over arbitrary page content. Kept small:
+     at the 30px this used to be, the page dissolved into a flat wash and the
+     surface read as frosted plastic rather than glass. */
+  --glass-blur-overlay: 10px;
+
   --glass-shadow:
     0 10px 30px -12px hsl(var(--foreground) / 0.22),
     0 2px 6px -2px hsl(var(--foreground) / 0.08);
@@ -57,10 +73,15 @@ html[data-surface='glass'] {
 
 html.dark[data-surface='glass'] {
   --glass-alpha: 0.5;
-  --glass-alpha-strong: 0.66;
   --glass-alpha-chrome: 0.55;
   --glass-edge-alpha: 0.14;
   --glass-highlight: inset 0 1px 0 hsl(var(--glass-edge) / 0.16);
+  --glass-sheen: linear-gradient(
+    to bottom,
+    hsl(var(--glass-edge) / 0.07),
+    hsl(var(--glass-edge) / 0.02) 45%,
+    hsl(var(--glass-edge) / 0) 100%
+  );
   --glass-shadow:
     0 12px 34px -14px hsl(0 0% 0% / 0.65),
     0 2px 8px -3px hsl(0 0% 0% / 0.45);
@@ -179,12 +200,7 @@ html[data-surface='glass'] main > footer {
    gradients cost nothing to composite and keep popups stacking normally. */
 html[data-surface='glass'] .bg-card {
   background-color: hsl(var(--card) / var(--glass-alpha));
-  background-image: linear-gradient(
-    to bottom,
-    hsl(var(--glass-edge) / 0.2),
-    hsl(var(--glass-edge) / 0.04) 45%,
-    hsl(var(--glass-edge) / 0) 100%
-  );
+  background-image: var(--glass-sheen);
   border-color: hsl(var(--glass-edge) / var(--glass-edge-alpha));
   box-shadow: var(--glass-highlight), var(--glass-shadow);
 }
@@ -223,7 +239,15 @@ html[data-surface='glass'] .bg-secondary {
    Overlays — dialogs, dropdowns, popovers, selects, tooltips, sheets
    --------------------------------------------------------------------------- */
 
-/* :not([data-sidebar]) keeps the mobile sidebar out of this: it is a Sheet, so
+/* The preferences drawer is a plain .bg-card pane, and it is the surface this
+   look is judged against: you can read the page through it. Dialogs and menus
+   used to be mixed at a heavier alpha behind a 30px blur, which is a
+   different, much heavier material — opaque enough that nothing behind them
+   survived, so they read as frosted slabs sitting next to real glass. They now
+   take the card's exact tint and sheen, and the blur drops to a radius that
+   softens the page without erasing it.
+
+   :not([data-sidebar]) keeps the mobile sidebar out of this: it is a Sheet, so
    it carries role="dialog" too, and the popover fill would replace its
    sidebar tint while its text stayed sidebar-foreground. */
 html[data-surface='glass'] .bg-popover,
@@ -231,11 +255,43 @@ html[data-surface='glass'] [role='dialog']:not([data-sidebar]),
 html[data-surface='glass'] [role='menu'],
 html[data-surface='glass'] [role='listbox'],
 html[data-surface='glass'] [data-radix-popper-content-wrapper] > * {
-  background-color: hsl(var(--popover) / var(--glass-alpha-strong));
-  backdrop-filter: blur(30px) saturate(190%);
-  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  background-color: hsl(var(--popover) / var(--glass-alpha));
+  background-image: var(--glass-sheen);
+  backdrop-filter: blur(var(--glass-blur-overlay)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-overlay)) saturate(var(--glass-saturate));
   border-color: hsl(var(--glass-edge) / var(--glass-edge-alpha));
   box-shadow: var(--glass-highlight), var(--glass-shadow-lifted);
+}
+
+/* A modal owns the whole viewport and its own scrim already separates it from
+   the page, so it can go the last step the drawer took and drop the blur
+   entirely — what is behind a dialog stays legible, which is the whole point
+   of the material. Floating menus keep their blur: they are small and land on
+   unpredictable content, so their labels need the page behind them quieted. */
+html[data-surface='glass'] [role='dialog']:not([data-sidebar]) {
+  backdrop-filter: saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: saturate(var(--glass-saturate));
+}
+
+/* Dialog bodies are built as a stack of full-bleed rows — a sticky footer
+   holding the action buttons, sometimes a sticky header — and those rows carry
+   their own bg-background/bg-card. Left opaque they paint a solid band across
+   the pane and the dialog is only glass in the middle. The .sticky qualifier
+   keeps this off the controls inside: outline buttons are .bg-background too,
+   and stripping their fill would leave them as bare outlines. */
+html[data-surface='glass'] [role='dialog'] .sticky.bg-background,
+html[data-surface='glass'] [role='dialog'] .sticky.bg-card {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+/* Separators and borders inside a translucent pane read as hard black lines
+   against the page showing through; the specular edge is the right divider. */
+html[data-surface='glass'] [role='dialog'] .bg-border,
+html[data-surface='glass'] [role='menu'] [role='separator'],
+html[data-surface='glass'] [role='listbox'] [role='separator'] {
+  background-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.7));
 }
 
 /* The scrim behind a dialog: lighter than the solid style, since the dialog
@@ -381,7 +437,6 @@ html[data-surface='glass'] .rounded-full.border {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html[data-surface='glass'] {
     --glass-alpha: 1;
-    --glass-alpha-strong: 1;
     --glass-alpha-chrome: 1;
   }
 
@@ -401,9 +456,10 @@ html[data-surface='glass'] .rounded-full.border {
 @media (prefers-reduced-transparency: reduce) {
   html[data-surface='glass'] {
     --glass-alpha: 0.97;
-    --glass-alpha-strong: 0.99;
     --glass-alpha-chrome: 0.98;
     --glass-blur: 0px;
+    --glass-blur-overlay: 0px;
+    --glass-sheen: none;
     background-image: none;
   }
 }

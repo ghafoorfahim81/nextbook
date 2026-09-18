@@ -34,7 +34,8 @@
     "branch": "څانګه",
     "brand": "برنډ",
     "warehouse": "ګودام",
-    "company": "شرکت"
+    "company": "شرکت",
+    "landed_cost_category": "د تحویلي لګښت کټګورۍ"
   },
   "inventory": {
     "item": "ایټم",
@@ -43,7 +44,9 @@
     "barcode_print": "بارکوډ چاپ",
     "item_transfer": "جنس لېږد",
     "stock_adjustment": "د موجودۍ تعدیل",
-    "pricing": "د قیمتونو کتنه"
+    "pricing": "د قیمتونو کتنه",
+    "landed_cost": "د تحویلي لګښت",
+    "landed_costs": "د تحویلي لګښتونه"
   },
   "account": {
     "chart_of_account": "حسابونو جدول",

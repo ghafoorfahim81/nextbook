@@ -5,10 +5,11 @@ import '../css/app.css';
 import '../css/glass.css';
 import '../css/vue-select.css';
 import 'vue-sonner/style.css';
-import { createApp, h } from 'vue';
+import { createApp, h, ref } from 'vue';
 import { createInertiaApp, Head, Link, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { ConfigProvider } from 'radix-vue';
 import vSelect from 'vue-select'; // ✅ Import v-select
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { createI18nInstance } from './lib/i18n'
@@ -47,10 +48,26 @@ const appName = import.meta.env.VITE_APP_NAME || 'Nextbook';
     }
 })
 
+const resolveDirection = (locale, direction) =>
+    direction || (['fa', 'ps'].includes(locale) ? 'rtl' : 'ltr')
+
+// Mirrors <html dir> for radix-vue. Every radix primitive resolves its reading
+// direction through ConfigProvider and *stamps the result as a dir attribute on
+// its own element* — defaulting to 'ltr'. For inline primitives that is
+// invisible (they inherit rtl from <html> anyway, and the stamped value agrees
+// by accident in LTR locales), but menus, selects, dialogs and popovers are
+// portalled to document.body, where an explicit dir='ltr' is the nearest
+// declaration and wins over the rtl on <html>. That is why the user menu and
+// the other portalled surfaces kept laying out left-to-right in Persian and
+// Pashto while the sidebar behind them was correct.
+const documentDirection = ref('ltr')
+
 function applyDocumentLocale(locale, direction) {
     if (!locale) return
+    const dir = resolveDirection(locale, direction)
+    documentDirection.value = dir
     document.documentElement.setAttribute('lang', locale)
-    document.documentElement.setAttribute('dir', direction || (['fa', 'ps'].includes(locale) ? 'rtl' : 'ltr'))
+    document.documentElement.setAttribute('dir', dir)
 }
 
 createInertiaApp({
@@ -80,7 +97,13 @@ createInertiaApp({
         router.on('navigate', (event) => applyFromPage(event.detail.page))
         router.on('success', (event) => applyFromPage(event.detail.page))
 
-        return createApp({ render: () => h(App, props) })
+        return createApp({
+            // ConfigProvider renders no element of its own — it only provides the
+            // direction, so every portalled primitive stamps 'rtl' instead of the
+            // default. Reading the ref inside render() keeps it live across
+            // language switches, which are a POST + redirect, not a remount.
+            render: () => h(ConfigProvider, { dir: documentDirection.value }, () => h(App, props)),
+        })
             .use(plugin)
             .use(i18n)
             .use(ZiggyVue)
