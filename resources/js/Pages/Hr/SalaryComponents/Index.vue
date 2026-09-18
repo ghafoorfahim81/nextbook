@@ -64,7 +64,6 @@ const deleteItem = (id) => {
     deleteResource('salary-components.destroy', id, {
         title: t('general.delete', { name: t('hr.salary_component') }),
         name: t('hr.salary_component'),
-        description: t('general.delete_description', { name: t('hr.salary_component') }),
         successMessage: t('general.delete_success', { name: t('hr.salary_component') }),
     });
 };

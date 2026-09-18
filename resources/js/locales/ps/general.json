@@ -232,5 +232,7 @@
   "saving": "خوندي کېږي...",
   "required_field": "دا ساحه اړینه ده.",
   "select_all": "ټول وټاکئ",
-  "search_placeholder": "{name} ولټوئ..."
+  "search_placeholder": "{name} ولټوئ...",
+  "delete_module_description": "دا ریکارډ به له {module} څخه ړنګ شي او د {days} ورځو لپاره به په {trash} کې پاتې وي.",
+  "deleting": "ړنګول کیږي..."
 }

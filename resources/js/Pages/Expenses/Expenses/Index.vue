@@ -56,7 +56,6 @@ const deleteItem = (id) => {
     deleteResource('expenses.destroy', id, {
         title: t('general.delete', { name: t('expense.expense') }),
         name: t('expense.expense'),
-        description: t('general.delete_description', { name: t('expense.expense') }),
         successMessage: t('general.delete_success', { name: t('expense.expense') }),
     });
 };

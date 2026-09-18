@@ -2,14 +2,40 @@
 import { createApp, h, markRaw, ref } from 'vue'
 import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue'
 import UndoToast from '@/Components/next/UndoToast.vue'
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
+import { moduleLabelForRoute } from '@/lib/modules'
 import { toast } from 'vue-sonner'
 import { useSoundPreferences } from '@/composables/useSoundPreferences'
 
 export function useDeleteResource() {
     const { t } = useI18n()
     const { play } = useSoundPreferences()
+    const page = usePage()
+
+    /**
+     * Name the module the record is leaving and how long it stays recoverable,
+     * so the operator knows both what they are about to lose and where to go
+     * looking for it. Routes outside the grouped resources fall back to the
+     * generic warning rather than naming a module we had to guess.
+     */
+    const describeDelete = (routeName, options) => {
+        if (options.description) {
+            return options.description
+        }
+
+        const module = moduleLabelForRoute(routeName, t)
+
+        if (!module) {
+            return t('general.action_cannot_be_undone')
+        }
+
+        return t('general.delete_module_description', {
+            module,
+            trash: t('sidebar.main.trash'),
+            days: page.props?.app?.deleted_records_retention_days ?? 30,
+        })
+    }
 
     // Gmail gives you three seconds to change your mind; the ring in the toast
     // is drawn against this same number.
@@ -17,12 +43,16 @@ export function useDeleteResource() {
 
     const deleteResource = (routeName, id, options = {}) => {
         const isOpen = ref(true)
+        const isDeleting = ref(false)
         const container = document.createElement('div')
         document.body.appendChild(container)
 
         const app = createApp({
             setup() {
                 const handleConfirm = () => {
+                    if (isDeleting.value) return
+                    isDeleting.value = true
+
                     router.delete(route(routeName, id), {
                         // A delete leaves the operator on the same screen, so the
                         // full-screen BookLoader has nothing to announce.
@@ -159,6 +189,11 @@ export function useDeleteResource() {
                 }
 
                 const handleClose = () => {
+                    // A delete in flight owns the dialog; dismissing it here
+                    // would tear down the component that is still waiting on
+                    // the response.
+                    if (isDeleting.value) return
+
                     isOpen.value = false
                     app.unmount()
                     container.remove()
@@ -170,7 +205,9 @@ export function useDeleteResource() {
                         cancelText: t('general.cancel'),
                         continueText: t('general.confirm'),
                         title: options.title || t('general.are_you_sure'),
-                        description: options.description || t('general.action_cannot_be_undone'),
+                        description: describeDelete(routeName, options),
+                        loading: isDeleting.value,
+                        loadingText: t('general.deleting'),
                         'onUpdate:open': (val) => {
                             if (!val) handleClose()
                         },

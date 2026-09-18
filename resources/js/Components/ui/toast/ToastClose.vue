@@ -18,7 +18,10 @@ const delegatedProps = reactiveOmit(props, "class");
     v-bind="delegatedProps"
     :class="
       cn(
-        'pointer-events-auto absolute right-1 top-1 rounded-md p-1 text-foreground/60 opacity-100 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-1 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600',
+        // `text-current` so the X follows whatever foreground the variant set;
+        // the old `text-foreground/60` was a dark token that disappeared on
+        // every coloured surface.
+        'pointer-events-auto absolute end-1 top-1 rounded-md p-1 text-current opacity-60 transition-opacity hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-current',
         props.class,
       )
     "

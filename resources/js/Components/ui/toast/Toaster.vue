@@ -29,9 +29,11 @@ const { toasts } = useToast();
             {{ toast.description }}
           </ToastDescription>
         </template>
-        <ToastClose />
       </div>
       <component :is="toast.action" />
+      <!-- Absolutely positioned against the toast root, so it belongs beside
+           the text column rather than inside it. -->
+      <ToastClose />
     </Toast>
 
     <ToastViewport />

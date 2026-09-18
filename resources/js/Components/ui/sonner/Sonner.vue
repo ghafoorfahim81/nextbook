@@ -44,17 +44,31 @@ const delegatedProps = reactiveOmit(props, "toastOptions");
       // follow our `:root` / `.dark` CSS variables in `resources/css/app.css`.
       unstyled: true,
       classes: {
+        // `--foreground` / `--muted-foreground` are tuned for `--background`,
+        // so on a coloured surface they read as dark-on-green. Each toast type
+        // therefore carries its own surface *and* its own foreground, marked
+        // important so it wins over the `bg-*` a call site may still pass.
         toast:
-          'group toast flex w-full items-start gap-2 rounded-lg border border-border bg-background p-4 text-foreground shadow-lg',
-        title: 'text-sm font-semibold leading-none tracking-tight text-foreground',
-        description: 'text-sm text-muted-foreground',
+          'group toast flex w-full items-start gap-3 rounded-lg border border-border bg-background p-4 text-foreground shadow-lg'
+          + ' data-[type=success]:!border-transparent data-[type=success]:!bg-green-600 data-[type=success]:!text-white dark:data-[type=success]:!bg-green-700'
+          + ' data-[type=error]:!border-transparent data-[type=error]:!bg-red-600 data-[type=error]:!text-white dark:data-[type=error]:!bg-red-700'
+          + ' data-[type=warning]:!border-transparent data-[type=warning]:!bg-amber-500 data-[type=warning]:!text-white dark:data-[type=warning]:!bg-amber-600'
+          + ' data-[type=info]:!border-transparent data-[type=info]:!bg-sky-600 data-[type=info]:!text-white dark:data-[type=info]:!bg-sky-700',
+        // Title and icon inherit the surface's foreground; only the muted
+        // description needs walking back, since white/90 reads on every surface
+        // above while `--muted-foreground` only reads on `--background`.
+        title: 'text-sm font-semibold leading-none tracking-tight',
+        description:
+          'text-sm text-muted-foreground'
+          + ' group-data-[type=success]:!text-white/90 group-data-[type=error]:!text-white/90'
+          + ' group-data-[type=warning]:!text-white/90 group-data-[type=info]:!text-white/90',
         content: 'flex flex-col gap-1',
         actionButton:
           'inline-flex h-8 shrink-0 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground',
         cancelButton:
           'inline-flex h-8 shrink-0 items-center justify-center rounded-md bg-muted px-3 text-xs font-medium text-muted-foreground',
         closeButton:
-          'absolute right-2 top-2 rounded-md p-1 text-foreground/70 opacity-0 transition-opacity group-hover:opacity-100',
+          'absolute end-2 top-2 rounded-md p-1 text-current opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-70',
       },
     }"
     v-bind="delegatedProps"

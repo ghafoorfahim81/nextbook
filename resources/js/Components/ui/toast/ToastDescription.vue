@@ -14,7 +14,7 @@ const delegatedProps = reactiveOmit(props, "class");
 
 <template>
   <ToastDescription
-    :class="cn('text-sm opacity-90', props.class)"
+    :class="cn('text-sm text-current opacity-90', props.class)"
     v-bind="delegatedProps"
   >
     <slot />

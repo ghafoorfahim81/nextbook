@@ -286,5 +286,7 @@
   "error_creating_purchase_quotation": "Failed to create purchase quotation",
   "attachment": "Attachment",
   "create_error_message": "Something went wrong while saving.",
-  "required_field": "This field is required."
+  "required_field": "This field is required.",
+  "delete_module_description": "This record will be deleted from {module}. It will be in {trash} for {days} days.",
+  "deleting": "Deleting..."
 }

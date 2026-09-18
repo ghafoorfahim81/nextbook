@@ -74,6 +74,10 @@ final class CoreShared
             'app' => [
                 'name' => config('app.name'),
                 'version' => config('app.version'),
+                // How long a soft-deleted record stays recoverable. The delete
+                // confirmation quotes it, and it must not drift from the window
+                // the cleanup job actually enforces.
+                'deleted_records_retention_days' => \App\Services\DeletedRecordService::RETENTION_DAYS,
             ],
             'auth' => [
                 'user' => $user ? [

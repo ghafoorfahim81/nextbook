@@ -41,7 +41,6 @@ const deleteItem = (id) => {
     deleteResource('holidays.destroy', id, {
         title: t('general.delete', { name: t('hr.holiday') }),
         name: t('hr.holiday'),
-        description: t('general.delete_description', { name: t('hr.holiday') }),
         successMessage: t('general.delete_success', { name: t('hr.holiday') }),
     });
 };
