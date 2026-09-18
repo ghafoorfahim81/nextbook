@@ -48,7 +48,6 @@ const deleteItem = (id) => {
   deleteResource('drawings.destroy', id, {
     title: t('general.delete', { name: t('sidebar.owners.drawing') }),
     name: t('sidebar.owners.drawing'),
-    description: t('general.delete_description', { name: t('sidebar.owners.drawing') }),
     successMessage: t('general.delete_success', { name: t('sidebar.owners.drawing') }),
   })
 }

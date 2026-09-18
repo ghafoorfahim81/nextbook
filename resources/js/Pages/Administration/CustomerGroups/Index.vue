@@ -22,7 +22,6 @@ const editItem = (item) => { editingItem.value = item; isDialogOpen.value = true
 const deleteItem = (id) => {
     deleteResource('customer-groups.destroy', id, {
         title: t('general.delete', { name: t('admin.customer_group.customer_group') }),
-        description: t('general.delete_description', { name: t('admin.customer_group.customer_group') }),
         successMessage: t('general.delete_success', { name: t('admin.customer_group.customer_group') }),
     });
 };

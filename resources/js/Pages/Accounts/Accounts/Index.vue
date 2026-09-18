@@ -218,7 +218,6 @@ const deleteItem = (item) => {
     deleteResource('chart-of-accounts.destroy', item.id, {
         title: t('general.delete', { name: t('account.account') }),
         name: t('account.account'),
-        description: t('general.delete_description', { name: t('account.account') }),
         successMessage: t('general.delete_success', { name: t('account.account') }),
     });
 };

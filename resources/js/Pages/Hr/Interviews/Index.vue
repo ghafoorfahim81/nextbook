@@ -88,7 +88,6 @@ const deleteItem = (id) => {
     deleteResource('interviews.destroy', id, {
         title: t('general.delete', { name: t('hr.interview') }),
         name: t('hr.interview'),
-        description: t('general.delete_description', { name: t('hr.interview') }),
         successMessage: t('general.delete_success', { name: t('hr.interview') }),
     });
 };

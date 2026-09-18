@@ -40,7 +40,6 @@ import { router } from '@inertiajs/vue3'
         deleteResource('customers.destroy', id, {
             title: t('general.delete', { name: t('ledger.customer.customer') }),
             name: t('ledger.customer.customer'),
-            description: t('general.delete_description', { name: t('ledger.customer.customer') }),
             successMessage: t('general.delete_success', { name: t('ledger.customer.customer') }),
         })
 

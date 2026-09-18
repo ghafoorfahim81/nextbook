@@ -65,7 +65,6 @@ const deleteItem = (id) => {
     deleteResource('leave-allocations.destroy', id, {
         title: t('general.delete', { name: t('hr.leave_allocation') }),
         name: t('hr.leave_allocation'),
-        description: t('general.delete_description', { name: t('hr.leave_allocation') }),
         successMessage: t('general.delete_success', { name: t('hr.leave_allocation') }),
     });
 };

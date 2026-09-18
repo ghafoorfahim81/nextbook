@@ -42,7 +42,6 @@ const deleteItem = (id) => {
     deleteResource('users.destroy', id, {
         title: t('general.delete', { name: t('user_mangements.users') }),
         name: t('user_mangements.users'),
-        description: t('general.delete_description', { name: t('user_mangements.users') }),
         successMessage: t('general.delete_success', { name: t('user_mangements.users') }),
     });
 };

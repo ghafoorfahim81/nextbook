@@ -289,5 +289,7 @@
   "error_creating_purchase_quotation": "ایجاد پیش‌فاکتور خرید ناموفق بود",
   "attachment": "ضمیمه",
   "create_error_message": "هنگام ذخیره کردن مشکلی پیش آمد.",
-  "required_field": "این فیلد الزامی است."
+  "required_field": "این فیلد الزامی است.",
+  "delete_module_description": "این رکورد از {module} حذف می‌شود و به مدت {days} روز در {trash} باقی می‌ماند.",
+  "deleting": "در حال حذف..."
 }

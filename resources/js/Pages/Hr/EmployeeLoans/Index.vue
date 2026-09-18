@@ -61,7 +61,6 @@ const deleteItem = (id) => {
     deleteResource('employee-loans.destroy', id, {
         title: t('general.delete', { name: t('hr.employee_loan') }),
         name: t('hr.employee_loan'),
-        description: t('general.delete_description', { name: t('hr.employee_loan') }),
         successMessage: t('general.delete_success', { name: t('hr.employee_loan') }),
     });
 };

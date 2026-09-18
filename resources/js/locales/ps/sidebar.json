@@ -21,7 +21,9 @@
     "attendance": "حاضري",
     "leave": "رخصتي",
     "payroll": "معاشونه",
-    "recruitment": "ګمارنه"
+    "recruitment": "ګمارنه",
+    "trash": "کثافت دانی",
+    "expense": "مصارف"
   },
   "administration": {
     "category": "کټګوري",

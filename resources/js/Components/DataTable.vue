@@ -166,7 +166,7 @@
                                             v-if="props.hasEdit && can(`${props.can}.update`)"
                                             :disabled="props.canEditItem ? !props.canEditItem(item) || item.status === 'posted' || item.status === 'reversed' : (item.status === 'posted' || item.status === 'reversed')"
                                             :class="[
-                                                isRTL ? 'flex-row-reverse gap-2' : 'gap-2',
+                                                'gap-2',
                                                 '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5',
                                                 (
                                                     (props.canEditItem && !props.canEditItem(item)) ||
@@ -180,7 +180,7 @@
                                             v-if="can(`${props.can}.delete`)"
                                             :disabled="props.canDeleteItem ? !props.canDeleteItem(item) || item.status === 'posted' || item.status === 'reversed' : (item.status === 'posted' || item.status === 'reversed')"
                                             :class="[
-                                                isRTL ? 'flex-row-reverse gap-2' : 'gap-2',
+                                                'gap-2',
                                                 '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5',
                                                 (
                                                     (props.canDeleteItem && !props.canDeleteItem(item)) ||
@@ -190,8 +190,8 @@
                                             ]"
                                             @click="$emit('delete', item.id)"
                                         ><Trash2 class="h-3 w-3" /> {{ t('datatable.delete') }}</DropdownMenuItem>
-                                        <DropdownMenuItem v-if="props.hasShow && can(`${props.can}.view`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('show', item.id)"><Eye class="h-3 w-3" /> {{ t('datatable.show') }}</DropdownMenuItem>
-                                        <DropdownMenuItem v-if="props.hasPrint && can(`${props.can}.print`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('print', item.id)"><Printer class="h-3 w-3" /> {{ t('datatable.print') }}</DropdownMenuItem>
+                                        <DropdownMenuItem v-if="props.hasShow && can(`${props.can}.view`)" :class="['gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('show', item.id)"><Eye class="h-3 w-3" /> {{ t('datatable.show') }}</DropdownMenuItem>
+                                        <DropdownMenuItem v-if="props.hasPrint && can(`${props.can}.print`)" :class="['gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('print', item.id)"><Printer class="h-3 w-3" /> {{ t('datatable.print') }}</DropdownMenuItem>
                                     </DropdownMenuContent>
 
                                 </DropdownMenu>
