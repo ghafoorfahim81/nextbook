@@ -19,7 +19,7 @@ class RoleUpdateRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('roles', 'name')->ignore($this->route('role')),
+                Rule::unique('roles', 'name')->ignore($this->route('role'))->whereNull('deleted_at'),
             ],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['exists:permissions,id'],

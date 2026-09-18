@@ -130,6 +130,8 @@ class RoleController extends Controller
     public function restore(Request $request, $id)
     {
         $role = Role::withTrashed()->findOrFail($id);
+        $this->authorize('restore', $role);
+
         $role->restore();
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
         return redirect()->route('roles.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.role')]));
