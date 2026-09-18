@@ -37,6 +37,7 @@ const isEditing = computed(() => !!props.editingItem?.id)
 
 const form = useForm({
     name: '',
+    local_name: '',
     remark: '',
     parent_id: null,
 })
@@ -45,6 +46,7 @@ const form = useForm({
 watch(() => props.editingItem, (item) => {
     if (item) {
         form.name = item.name || ''
+        form.local_name = item.local_name || ''
         form.remark = item.remark || ''
         form.parent_id = item.parent_id || null
     } else {
@@ -107,10 +109,11 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4"> 
                 <NextInput is-required :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors.name" />
+                <NextInput :label="t('admin.shared.local_name')" :placeholder="t('general.enter', { text: t('admin.shared.local_name') })" v-model="form.local_name" :error="form.errors.local_name" />
                 <NextSelect
                     v-model="form.parent_id"
                     :options="categories"
-                    label-key="name"
+                    label-key="localized_name"
                     @update:modelValue="(value) => handleParentSelectChange(value)"
                     value-key="id"
                     id="parent"
@@ -118,7 +121,7 @@ const handleSubmit = async () => {
                     :error="form.errors?.parent_id"
                     :searchable="true"
                     resource-type="categories"
-                    :search-fields="['name']"
+                    :search-fields="['name', 'local_name']"
                     /> 
                 <NextTextarea
                     v-model="form.remark"

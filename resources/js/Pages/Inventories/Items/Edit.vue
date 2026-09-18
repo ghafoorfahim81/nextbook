@@ -341,13 +341,13 @@ useFormGuard(form)
                         v-model="form.selected_category"
                         @update:modelValue="(value) => handleSelectChange('category_id', value)"
                         :options="categories"
-                        label-key="name"
+                        label-key="localized_name"
                         value-key="id"
                         id="category"
                         :floating-text="t('admin.category.category')"
                         :searchable="true"
                         resource-type="categories"
-                        :search-fields="['name']"
+                        :search-fields="['name', 'local_name']"
                         :error="form.errors.category_id"
                     />
                      <NextSelect

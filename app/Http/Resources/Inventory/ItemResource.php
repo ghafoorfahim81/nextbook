@@ -35,7 +35,7 @@ class ItemResource extends JsonResource
             'brand' => BrandResource::make($this->whenLoaded('brand')),
             'brand_name' => $this->brand?->name,
             'category_id' => $this->category_id,
-            'category' => $this->category?->name,
+            'category' => $this->category?->localized_name,
             'asset_account_id' => $this->asset_account_id,
             'income_account_id' => $this->income_account_id,
             'cost_account_id' => $this->cost_account_id,

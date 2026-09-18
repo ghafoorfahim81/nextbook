@@ -46,7 +46,7 @@ class DiscountRuleController extends Controller
                 'discountTypes' => collect(DiscountType::cases())
                     ->map(fn ($case) => ['id' => $case->value, 'name' => $case->getLabel()])->values(),
                 'items' => Item::query()->orderBy('name')->get(['id', 'name']),
-                'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+                'categories' => Category::query()->orderBy('name')->get(['id', 'name', 'local_name']),
                 'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
                 'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'local_name']),
             ],

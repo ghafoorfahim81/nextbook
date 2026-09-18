@@ -467,6 +467,7 @@ class BranchProvisioningService
 
             $this->insert(Category::class, [
                 'name' => $category['name'],
+                'local_name' => $category['local_name'] ?? null,
                 'remark' => $category['remark'],
                 'is_active' => true,
                 'branch_id' => $branch->id,

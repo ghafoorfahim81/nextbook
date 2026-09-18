@@ -51,7 +51,10 @@ class DiscountRuleResource extends JsonResource
             return __('discount_rule.all_items');
         }
 
-        return $this->resource->target()?->name ?? '—';
+        $target = $this->resource->target();
+
+        // Categories carry a localized label; items and brands only have `name`.
+        return $target?->localized_name ?? $target?->name ?? '—';
     }
 
     private function windowLabel(DateConversionService $dates): string

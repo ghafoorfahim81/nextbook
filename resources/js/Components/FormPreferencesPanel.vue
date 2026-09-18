@@ -369,7 +369,7 @@ const setShowFieldHints = (value) => {
     <Transition name="fade">
         <div
             v-if="open"
-            class="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]"
+            class="fixed inset-0 z-40 bg-black/30 backdrop-blur-[3px]"
             @click="close"
         />
     </Transition>

@@ -1,5 +1,5 @@
 {
-    "category":{
+    "category": {
         "category": "Category",
         "parent": "Parent",
         "categories": "Categories"
@@ -120,6 +120,7 @@
     },
     "shared": {
         "remark": "Remark",
+        "local_name": "Local Name",
         "parent": "Parent",
         "address": "Address",
         "symbol": "Symbol",

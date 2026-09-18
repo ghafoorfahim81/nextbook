@@ -24,6 +24,7 @@ class CategoryStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', $this->uniqueInBranch('categories')],
+            'local_name' => ['nullable', 'string', 'max:256'],
             'parent_id' => ['nullable', 'string', 'exists:categories,id'],
             'remark' => ['nullable', 'string'],
         ];

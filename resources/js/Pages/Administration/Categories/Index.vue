@@ -13,11 +13,12 @@ const editingCategory = ref(null)
 const { t } = useI18n()
 const columns = computed(() => [
     { key: 'name', label: t('general.name'),sortable: true },
+    { key: 'local_name', label: t('admin.shared.local_name'), sortable: true },
     {
         key: 'parent.name',
         label: t('admin.category.parent'),
         sortable: true,
-        render: (row) => row.parent?.name,
+        render: (row) => row.parent?.localized_name ?? row.parent?.name,
     },
     {
         key: 'is_active',

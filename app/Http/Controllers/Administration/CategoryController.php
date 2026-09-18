@@ -47,6 +47,7 @@ class CategoryController extends Controller
             description: "Category {$category->name} created.",
             newValues: [
                 'name' => $category->name,
+                'local_name' => $category->local_name,
                 'parent_id' => $category->parent_id,
                 'remark' => $category->remark,
                 'is_active' => $category->is_active,
@@ -69,6 +70,7 @@ class CategoryController extends Controller
     {
         $beforeState = [
             'name' => $category->name,
+            'local_name' => $category->local_name,
             'parent_id' => $category->parent_id,
             'remark' => $category->remark,
             'is_active' => $category->is_active,
@@ -82,6 +84,7 @@ class CategoryController extends Controller
             before: $beforeState,
             after: [
                 'name' => $category->name,
+                'local_name' => $category->local_name,
                 'parent_id' => $category->parent_id,
                 'remark' => $category->remark,
                 'is_active' => $category->is_active,
@@ -107,6 +110,7 @@ class CategoryController extends Controller
 
         $oldValues = [
             'name' => $category->name,
+            'local_name' => $category->local_name,
             'parent_id' => $category->parent_id,
             'remark' => $category->remark,
             'is_active' => $category->is_active,
@@ -137,6 +141,7 @@ class CategoryController extends Controller
             description: "Category {$category->name} restored.",
             newValues: [
                 'name' => $category->name,
+                'local_name' => $category->local_name,
                 'is_active' => $category->is_active,
             ],
             branchId: $category->branch_id,

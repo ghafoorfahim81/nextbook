@@ -26,7 +26,8 @@ Notation:
 - Searchable: `name, code, remark, parent.name`
 
 #### `App\Models\Administration\Category`
-- Attributes: `name, parent_id, created_by, updated_by, ...`
+- Attributes: `name, local_name, parent_id, created_by, updated_by, ...`
+- Appends: `localized_name` — `local_name` under the `fa`/`ps` locales, `name` otherwise
 - Relationships: `parent(): BelongsTo(Category)`, `children(): HasMany(Category)`
 
 #### `App\Models\Administration\Brand`

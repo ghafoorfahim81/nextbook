@@ -859,12 +859,12 @@ onMounted(() => {
                                             v-else-if="column.key === 'category_id'"
                                             v-model="item.category_id"
                                             :options="categories"
-                                            label-key="name"
+                                            label-key="localized_name"
                                             value-key="id"
                                             :show-arrow="false"
                                             :searchable="true"
                                             resource-type="categories"
-                                            :search-fields="['name']"
+                                            :search-fields="['name', 'local_name']"
                                             append-to-body
                                             :error="fieldError(index, 'category_id')"
                                         />

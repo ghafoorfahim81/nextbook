@@ -154,6 +154,7 @@ class QuickCreateController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', $this->uniqueInBranch('categories')],
+            'local_name' => ['nullable', 'string', 'max:256'],
             'parent_id' => ['nullable', 'string', 'exists:categories,id'],
             'remark' => ['nullable', 'string'],
         ]);
@@ -167,6 +168,7 @@ class QuickCreateController extends Controller
             description: "Category {$category->name} created.",
             newValues: [
                 'name' => $category->name,
+                'local_name' => $category->local_name,
                 'parent_id' => $category->parent_id,
                 'remark' => $category->remark,
                 'is_active' => $category->is_active,

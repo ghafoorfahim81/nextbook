@@ -220,7 +220,7 @@ class DeletedRecordService
             'categories' => [
                 'label' => 'Categories',
                 'model' => Category::class,
-                'title' => fn (Model $record) => $record->name,
+                'title' => fn (Model $record) => $record->localized_name,
             ],
             'brands' => [
                 'label' => 'Brands',
@@ -245,7 +245,7 @@ class DeletedRecordService
             'landed_cost_categories' => [
                 'label' => 'Landed Cost Categories',
                 'model' => LandedCostCategory::class,
-                'title' => fn (Model $record) => $record->name,
+                'title' => fn (Model $record) => $record->localized_name,
             ],
             'quantities' => [
                 'label' => 'Quantities',

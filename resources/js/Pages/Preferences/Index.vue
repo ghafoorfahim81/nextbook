@@ -855,7 +855,7 @@ const tabSearchExtras = computed(() => ({
         ...allUnitMeasures.value.map((item) => item.name),
         ...allUnitMeasures.value.map((item) => item.symbol).filter(Boolean),
         ...allWarehouses.value.map((item) => item.name),
-        ...allCategories.value.map((item) => item.name),
+        ...allCategories.value.flatMap((item) => [item.name, item.local_name].filter(Boolean)),
         ...allSizes.value.map((item) => item.name),
         ...allCurrencies.value.flatMap((item) => [item.name, item.code].filter(Boolean)),
         ...allLedgers.value.map((item) => item.name),
@@ -2182,7 +2182,7 @@ watch(normalizedMenuSearch, (query) => {
                                             @update:checked="(checked) => togglePluginIds('categories', c.id, checked)"
                                         />
                                         <Label :for="`fav-category-${c.id}`" class="font-normal cursor-pointer">
-                                            {{ c.name }}
+                                            {{ c.localized_name || c.name }}
                                         </Label>
                                     </div>
                                 </div>
