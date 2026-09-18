@@ -90,6 +90,7 @@ import {
     Trash2,
     History,
     Rocket,
+    ChartNoAxesCombined
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -491,7 +492,7 @@ const navMain = computed(() => [
         key: 'dashboard',
         title: t('sidebar.main.dashboard'),
         url: '/dashboard',
-        icon: HousePlug,
+        icon: ChartNoAxesCombined,
     },
     {
         key: 'account',
@@ -663,12 +664,6 @@ const navMain = computed(() => [
             { title: t('sidebar.user_management.user'), url: '/users', permission: 'users.view_any' },
             { title: t('sidebar.user_management.role'), url: '/roles', permission: 'roles.view_any' },
         ],
-    },
-    {
-        key: 'preferences',
-        title: t('sidebar.main.preferences'),
-        url: '/preferences',
-        icon: Cog,
     },
     {
         key: 'administration',
@@ -893,11 +888,11 @@ function logout() {
                                     <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                                         <component :is="activeTeam.logo" class="size-4" />
                                     </div>
-                                    <div class="grid flex-1 text-left text-sm leading-tight">
+                                    <div class="grid flex-1 text-start text-sm leading-tight">
                                         <span class="truncate font-semibold">{{ activeTeam.name }}</span>
                                         <span class="truncate text-xs">{{ activeTeam.plan }}</span>
                                     </div>
-                                    <ChevronsUpDown class="ml-auto" />
+                                    <ChevronsUpDown class="ms-auto" />
                                 </SidebarMenuButton> -->
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
@@ -1042,7 +1037,7 @@ function logout() {
                                                 </span>
                                                 <component
                                                     :is="chevronIcon"
-                                                    :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'"
+                                                    class="ms-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
                                                 />
                                             </SidebarMenuButton>
                                         </CollapsibleTrigger>
@@ -1126,23 +1121,23 @@ function logout() {
                                             {{ user?.name?.charAt(0) || 'NB' }}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div class="grid flex-1 text-left text-sm leading-tight">
+                                    <div class="grid flex-1 text-start text-sm leading-tight">
                                         <span class="truncate font-semibold">{{ data.user.name }}</span>
                                         <span class="truncate text-xs">{{ data.user.email }}</span>
                                     </div>
-                                    <ChevronsUpDown class="ml-auto size-4" />
+                                    <ChevronsUpDown class="ms-auto size-4" />
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent class="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" side="bottom" align="end" :side-offset="4">
                                 <DropdownMenuLabel class="p-0 font-normal">
-                                    <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                                    <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                         <Avatar class="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
                                             <AvatarImage :src="profilePhotoUrl" :alt="data.user.name" />
                                             <AvatarFallback class="rounded-lg">
                                                 {{ user?.name?.charAt(0) || 'NB' }}
                                             </AvatarFallback>
                                         </Avatar>
-                                        <div class="grid flex-1 text-left text-sm leading-tight">
+                                        <div class="grid flex-1 text-start text-sm leading-tight">
                                             <span class="truncate font-semibold">{{ data.user.name }}</span>
                                                 <span class="truncate text-xs">{{ data.user.email }}</span>
                                         </div>
@@ -1163,6 +1158,12 @@ function logout() {
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
+                                    <DropdownMenuItem as-child>
+                                        <Link :href="route('preferences.index')" class="flex w-full items-center">
+                                            <Cog class="text-primary hover:text-white" />
+                                            {{ t('layout.preferences') }}
+                                        </Link>
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem as-child>
                                         <Link href="/profile" class="flex w-full items-center">
                                             <BadgeCheck class="text-primary hover:text-white" />

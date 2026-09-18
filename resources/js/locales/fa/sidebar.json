@@ -45,7 +45,8 @@
     "branch": "شعبه",
     "brand": "برند",
     "warehouse": "گدام/انبار",
-    "company": "شرکت"
+    "company": "شرکت",
+    "landed_cost_category": "دسته‌بندی هزینه ورودی"
   },
   "inventory": {
     "item": "جنس/کالا",
@@ -55,6 +56,7 @@
     "item_transfer": "انتقال جنس",
     "stock_adjustment": "تعدیل موجودی",
     "pricing": "بررسی قیمت‌ها",
+    "landed_cost": "مصرف جنس",
     "landed_costs": "مصارف اجناس"
   },
   "account": {

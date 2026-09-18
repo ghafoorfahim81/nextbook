@@ -99,7 +99,6 @@ class User extends Authenticatable
                 'user_management',
                 'trash',
                 'reports',
-                'preferences',
             ],
         ],
         'item_management' => [
@@ -569,7 +568,7 @@ class User extends Authenticatable
                     default => $menu,
                 };
 
-                if ($menu === 'transfer' || ! is_string($menu) || $menu === '') {
+                if ($menu === 'transfer' || $menu === 'preferences' || ! is_string($menu) || $menu === '') {
                     continue;
                 }
 
