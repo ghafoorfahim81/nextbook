@@ -67,10 +67,12 @@ defineExpose({
 </script>
 
 <style scoped>
-/* Match focus style with NextInput */
+/* Match focus style with NextInput — which this claimed to do while spending a
+   hardcoded indigo. Same --ring, and the 1px border plus a solid 1px ring adds
+   up to the 2px edge NextInput draws with its border alone. */
 :deep(textarea:focus),
 :deep(textarea:focus-visible) {
-    border-color: rgb(99 102 241);
-    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 1px hsl(var(--ring));
 }
 </style>

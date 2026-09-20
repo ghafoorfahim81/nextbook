@@ -693,11 +693,19 @@ const onGlobalQuickCreated = (event) => {
     padding-bottom: 0 !important; /* REMOVE bottom padding to eliminate space */
   }
 
-  /* focus parity with inputs */
+  /* Focus parity with NextInput: the same --ring, at the same 2px weight.
+     It was a hardcoded purple, so on any theme but the violet one the select
+     lit up a different colour from the input beside it.
+
+     NextInput grows its border inward — its outline is an inset-0 fieldset —
+     but this toggle is in flow, where a 2px border would shove the selected
+     text 1px sideways every time the dropdown opens. A 1px border plus a
+     solid 1px ring just outside it renders as the same 2px edge and costs no
+     layout at all. */
   :deep(.vs--open .vs__dropdown-toggle),
   :deep(.vs__dropdown-toggle:focus-within) {
-    border-color: rgb(137, 80, 221);
-    box-shadow: 0 0 0 1px rgba(99,102,241,.25);
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 1px hsl(var(--ring));
   }
 
   /* suppress the browser's native focus outline on internal elements —
