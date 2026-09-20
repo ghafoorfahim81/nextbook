@@ -35,6 +35,16 @@ html[data-surface='glass'] {
   --glass-edge-alpha: 0.55;
   --glass-highlight: inset 0 1px 0 hsl(var(--glass-edge) / 0.6);
 
+  /* Controls need a different edge from panes. A pane carries its own tint, so
+     a white rim reads as a lit edge against the darker page behind it. A
+     control is fully transparent and, on the light palette, sits on a
+     near-white wash — a white rim there is just invisible, which left every
+     input and NextSelect with no frame at all. Light mode gives controls an
+     ink edge instead; dark mode keeps the specular one (matching what the
+     white-at-0.8-of-0.14 edge already produced there). */
+  --glass-edge-control: var(--foreground);
+  --glass-edge-control-alpha: 0.22;
+
   /* The top-down specular sheen. Shared by every pane (cards, dialogs,
      menus) so a dialog is visibly the same material as the panel it opened
      from, not a second, heavier one. */
@@ -91,6 +101,8 @@ html.dark[data-surface='glass'] {
   --glass-alpha: 0.5;
   --glass-alpha-chrome: 0.55;
   --glass-edge-alpha: 0.14;
+  --glass-edge-control: var(--glass-edge);
+  --glass-edge-control-alpha: calc(var(--glass-edge-alpha) * 0.8);
   --glass-highlight: inset 0 1px 0 hsl(var(--glass-edge) / 0.16);
   --glass-sheen: linear-gradient(
     to bottom,
@@ -384,14 +396,21 @@ html[data-surface='glass'] tbody tr:hover {
    every NextSelect. It has to be excluded here rather than reset afterwards:
    a chain of :not()s costs specificity, and a later `.vs__search` rule scored
    (0,2,1) against this selector's (0,4,2) and silently lost. The toggle is
-   the control; its search field stays invisible. */
-html[data-surface='glass'] input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.vs__search),
+   the control; its search field stays invisible.
+
+   NextInput is excluded for the same reason. Its frame is a sibling <fieldset>
+   whose <legend> cuts a real gap in the top border for the floated label —
+   nothing paints over anything. The field itself is border-transparent by
+   design, so giving it an edge here draws a second, uncut outline in exactly
+   the same place: everywhere but the gap it hides under the fieldset's, and
+   inside the gap it surfaces as a stub struck through the label. */
+html[data-surface='glass'] input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.vs__search):not(.next-input-field),
 html[data-surface='glass'] textarea,
 html[data-surface='glass'] select,
 html[data-surface='glass'] button[role='combobox'],
 html[data-surface='glass'] .vs__dropdown-toggle {
   background-color: transparent;
-  border-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.8));
+  border-color: hsl(var(--glass-edge-control) / var(--glass-edge-control-alpha));
   box-shadow: none;
 }
 
@@ -399,6 +418,16 @@ html[data-surface='glass'] .vs__dropdown-toggle input {
   background-color: transparent;
   border-color: transparent;
   box-shadow: none;
+}
+
+/* The frame the excluded field lost: NextInput's outline is the fieldset, so
+   it takes the control edge instead of the field. Sharing the token is what
+   keeps an input and the select next to it the same weight — its own
+   `border-border` is a step lighter, which showed as soon as the controls
+   stopped using the specular edge. The component's focus rule outranks this
+   (0,4,0 against 0,2,1), so the ring still takes over on focus. */
+html[data-surface='glass'] .next-input-outline {
+  border-color: hsl(var(--glass-edge-control) / var(--glass-edge-control-alpha));
 }
 
 
@@ -449,7 +478,7 @@ html[data-surface='glass'] .bg-primary:hover {
    them into blank white pills. */
 html[data-surface='glass'] .border-input.bg-background {
   background-color: hsl(var(--card) / 0.45);
-  border-color: hsl(var(--glass-edge) / calc(var(--glass-edge-alpha) * 0.8));
+  border-color: hsl(var(--glass-edge-control) / var(--glass-edge-control-alpha));
   backdrop-filter: blur(10px) saturate(150%);
   -webkit-backdrop-filter: blur(10px) saturate(150%);
 }
