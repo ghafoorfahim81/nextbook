@@ -7,6 +7,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
+use App\Models\Inventory\ItemVariant;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use Illuminate\Support\Facades\Auth;
@@ -433,6 +434,8 @@ class StockService
             );
             $item->avg_cost = $newAvg;
             $item->save();
+
+            $this->replayVariantAverage($data['variant_id'] ?? null);
         }
 
         $balance->update([
@@ -477,6 +480,98 @@ class StockService
         // books drifted. Clamp rather than propagate the nonsense.
         $item->avg_cost = round(max(0.0, $unwound), 4);
         $item->save();
+    }
+
+    /**
+     * Rebuild every variant's average from the movements it still holds.
+     *
+     * For the rebuild paths, which remove movements (an edited or deleted
+     * purchase) rather than adding one.
+     */
+    public function recalculateVariantAverageCosts(string $itemId): void
+    {
+        $variantIds = ItemVariant::query()
+            ->where('item_id', $itemId)
+            ->pluck('id');
+
+        foreach ($variantIds as $variantId) {
+            $this->replayVariantAverage($variantId);
+        }
+    }
+
+    /**
+     * Weigh every receipt the variant still holds, oldest first.
+     *
+     * Derived rather than kept running, because a running figure has to be
+     * seeded and there is nothing trustworthy to seed it from: a variant whose
+     * earlier stock arrived before this column was maintained sits at 0 with
+     * goods on the shelf, and blending into that prices those goods at
+     * nothing — 15 pc carrying no average plus 10 pc at 35,000 comes out at
+     * 14,000 rather than 34,400. Deriving also means any figure that is
+     * already wrong is corrected by the next receipt instead of compounding.
+     */
+    private function replayVariantAverage(?string $variantId): void
+    {
+        $variant = $variantId ? ItemVariant::find($variantId) : null;
+
+        if ($variant === null) {
+            return;
+        }
+
+        $movements = StockMovement::query()
+            ->where('variant_id', $variantId)
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get(['movement_type', 'quantity', 'unit_cost', 'unit_measure_id']);
+
+        // A movement records quantity and unit_cost in whichever unit its
+        // document selected — 2 boxes at 60 for an item stocked in pieces.
+        // Value survives that (2 x 60 = 12 x 10) but an average does not, so
+        // each layer is converted to the item's own unit before it is blended.
+        //
+        // Looked up in one go rather than through resolveConversionFactor():
+        // that findOrFail()s, and a history can name a unit that has since
+        // been retired — which would turn an ordinary purchase into a crash.
+        $itemUnit = (float) UnitMeasure::withTrashed()
+            ->whereKey($variant->item?->unit_measure_id)
+            ->value('unit') ?: 1.0;
+
+        $units = UnitMeasure::withTrashed()
+            ->whereIn('id', $movements->pluck('unit_measure_id')->unique())
+            ->pluck('unit', 'id');
+
+        $avgCost = 0.0;
+        $runningQty = 0.0;
+
+        foreach ($movements as $movement) {
+            $factor = (float) ($units[$movement->unit_measure_id] ?? $itemUnit) / $itemUnit;
+            $factor = $factor > 0 ? $factor : 1.0;
+            $qty = (float) $movement->quantity * $factor;
+
+            if ($movement->movement_type !== StockMovementType::IN) {
+                $runningQty = max(0.0, $runningQty - $qty);
+
+                continue;
+            }
+
+            $cost = (float) $movement->unit_cost / $factor;
+
+            if ($runningQty + $qty > 0) {
+                $avgCost = (($runningQty * $avgCost) + ($qty * $cost)) / ($runningQty + $qty);
+            }
+
+            $runningQty += $qty;
+        }
+
+        // An empty shelf keeps the last average it carried: the figure still
+        // prices the returns and reversals that can arrive after the stock has
+        // gone, and the next receipt derives it afresh anyway.
+        if ($runningQty <= 0) {
+            return;
+        }
+
+        $variant->avg_cost = round($avgCost, 4);
+        $variant->save();
     }
 
     /**
