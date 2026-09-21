@@ -625,6 +625,9 @@ class LandedCostService
 
         $item->avg_cost = round($avgCost, 4);
         $item->save();
+
+        // Each variant carries its own average too, replayed the same way.
+        app(StockService::class)->recalculateVariantAverageCosts($itemId);
     }
 
     private function assertAllocationMatchesTotalCost(float $totalCost, float $allocatedTotal): void

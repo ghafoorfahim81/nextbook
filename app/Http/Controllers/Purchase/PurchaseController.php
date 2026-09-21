@@ -749,6 +749,9 @@ class PurchaseController extends Controller
             $item->avg_cost = $avgCost;
             $item->save();
         }
+
+        // Each variant carries its own average too, replayed the same way.
+        app(StockService::class)->recalculateVariantAverageCosts($itemId);
     }
 
     private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void

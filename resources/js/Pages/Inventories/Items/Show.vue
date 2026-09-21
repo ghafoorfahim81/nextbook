@@ -220,6 +220,9 @@ const stockRows = computed(() => props.stockByWarehouse ?? []);
 const variantRows = computed(() => itemData.value?.variants ?? []);
 
 const formatQty = (value) => Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 });
+// Thresholds and weight are optional: an unset one is blank, not 0 — "0" would
+// read as "reorder at zero", which is a different statement.
+const formatOptionalQty = (value) => (value === null || value === undefined || value === '' ? '—' : formatQty(value));
 const formatMoney = (value) => Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const inOutSeries = computed(() => [
@@ -523,7 +526,12 @@ onMounted(() => {
                                     <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('general.name') }}</th>
                                     <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.sku') }}</th>
                                     <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.barcode') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.purchase_price') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.sale_price') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.average_cost') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.minimum_stock') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.maximum_stock') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.weight') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('general.on_hand') }}</th>
                                     <th class="py-2 px-3 text-center font-medium whitespace-nowrap">{{ t('general.status') }}</th>
                                 </tr>
@@ -540,7 +548,12 @@ onMounted(() => {
                                     </td>
                                     <td class="py-2 px-3 whitespace-nowrap text-muted-foreground">{{ variant.sku || '—' }}</td>
                                     <td class="py-2 px-3 whitespace-nowrap text-muted-foreground">{{ variant.barcode || '—' }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatMoney(variant.purchase_price) }}</td>
                                     <td class="py-2 px-3 text-end whitespace-nowrap text-foreground">{{ formatMoney(variant.sale_price) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatMoney(variant.avg_cost) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.minimum_stock) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.maximum_stock) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.weight) }}</td>
                                     <td class="py-2 px-3 text-end whitespace-nowrap font-semibold text-foreground">{{ formatQty(variant.on_hand) }}</td>
                                     <td class="py-2 px-3 text-center whitespace-nowrap">
                                         <span

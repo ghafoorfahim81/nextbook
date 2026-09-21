@@ -11,6 +11,7 @@
     "items": "جنس",
     "cost": "هزینه",
     "quantity": "مقدار",
+    "average_cost": "اوسط لګښت",
     "purchase_price": "قیمت خرید",
     "sale_price": "قیمت فروش",
     "margin_percentage": "د ګټې سلنه (%)",

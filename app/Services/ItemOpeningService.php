@@ -444,6 +444,9 @@ class ItemOpeningService
         $item->forceFill([
             'avg_cost' => $quantity > 0 ? round((float) $totals->value / $quantity, 4) : 0,
         ])->save();
+
+        // Each variant carries its own average too, replayed the same way.
+        app(StockService::class)->recalculateVariantAverageCosts($item->id);
     }
 
     // ==========================================================
