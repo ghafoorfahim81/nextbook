@@ -291,5 +291,14 @@
   "create_error_message": "هنگام ذخیره کردن مشکلی پیش آمد.",
   "required_field": "این فیلد الزامی است.",
   "delete_module_description": "این رکورد از {module} حذف می‌شود و به مدت {days} روز در {trash} باقی می‌ماند.",
-  "deleting": "در حال حذف..."
+  "deleting": "در حال حذف...",
+  "activate": "فعال کردن",
+  "deactivate": "غیرفعال کردن",
+  "activate_title": "{name} فعال شود؟",
+  "deactivate_title": "{name} غیرفعال شود؟",
+  "activate_description": "{name} دوباره در همه جایی که قابل انتخاب است نشان داده می‌شود.",
+  "deactivate_description": "{name} در فهرست و سوابق باقی می‌ماند، اما دیگر در جایی برای انتخاب نشان داده نمی‌شود. هر زمان می‌توانید دوباره فعالش کنید.",
+  "activated": "{name} فعال شد",
+  "deactivated": "{name} غیرفعال شد",
+  "something_went_wrong": "مشکلی پیش آمد. دوباره تلاش کنید."
 }

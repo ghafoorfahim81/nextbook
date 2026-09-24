@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import { useToggleStatus } from '@/composables/useToggleStatus';
 import CreateEditModal from '@/Pages/Administration/Categories/CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
 const props = defineProps({
@@ -54,6 +55,16 @@ const deleteItem = (id) => {
     })
 }
 
+// Deactivating is how a record that other rows depend on gets retired —
+// the delete guard refuses those, and they must stop appearing in pickers.
+const { toggleStatus } = useToggleStatus()
+const toggleItemStatus = (item) => {
+    toggleStatus('categories.toggle-status', item.id, {
+        isActive: item.is_active !== false,
+        name: item.name || t('admin.category.category'),
+    })
+}
+
 </script>
 
 <template>
@@ -74,6 +85,8 @@ const deleteItem = (id) => {
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
+            @toggle-status="toggleItemStatus"
+            :has-status-toggle="true"
             @add="isDialogOpen = true"
             :title="t('admin.category.categories')"
             :url="`categories.index`"

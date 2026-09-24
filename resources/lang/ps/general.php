@@ -53,6 +53,8 @@ return [
     'updated_successfully' => ':resource updated successfully.',
     'deleted_successfully' => ':resource deleted successfully.',
     'restored_successfully' => ':resource restored successfully.',
+    'activated_successfully' => ':resource فعال شو.',
+    'deactivated_successfully' => ':resource غیرفعال شو.',
     'status_updated_successfully' => ':resource status updated successfully.',
     'completed_successfully' => ':resource completed successfully.',
     'cancelled_successfully' => ':resource cancelled successfully.',

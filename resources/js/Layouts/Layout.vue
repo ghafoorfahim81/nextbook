@@ -1032,7 +1032,13 @@ function logout() {
                                                 :isActive="shouldExpandParent(item.items)"
                                             >
                                                 <component :is="item.icon" />
-                                                <span class="font-medium hover:text-primary">
+                                                <!-- No hover:text-primary here. The button already paints
+                                                     an active group with bg-primary, so a primary-coloured
+                                                     label on hover was the same colour as its own
+                                                     background — the name of whichever module you were in
+                                                     vanished the moment you pointed at it. The button's
+                                                     own hover colours handle both states. -->
+                                                <span class="font-medium">
                                                     {{ item.title }}
                                                 </span>
                                                 <component

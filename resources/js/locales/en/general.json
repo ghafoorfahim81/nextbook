@@ -288,5 +288,14 @@
   "create_error_message": "Something went wrong while saving.",
   "required_field": "This field is required.",
   "delete_module_description": "This record will be deleted from {module}. It will be in {trash} for {days} days.",
-  "deleting": "Deleting..."
+  "deleting": "Deleting...",
+  "activate": "Activate",
+  "deactivate": "Deactivate",
+  "activate_title": "Activate {name}?",
+  "deactivate_title": "Deactivate {name}?",
+  "activate_description": "{name} will be offered again everywhere it can be selected.",
+  "deactivate_description": "{name} stays in the list and keeps its history, but stops being offered anywhere it can be selected. You can switch it back on at any time.",
+  "activated": "{name} activated",
+  "deactivated": "{name} deactivated",
+  "something_went_wrong": "Something went wrong. Please try again."
 }

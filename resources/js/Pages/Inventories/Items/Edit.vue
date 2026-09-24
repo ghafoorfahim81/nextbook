@@ -12,7 +12,8 @@ import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import VariantEditor from '@/Components/inventory/VariantEditor.vue'
 import ItemDetailFields from '@/Components/inventory/ItemDetailFields.vue'
 import { useBusinessProfile } from '@/composables/useBusinessProfile'
-import { Trash2, AlertCircleIcon } from 'lucide-vue-next'
+import { Trash2, AlertCircleIcon, Plus } from 'lucide-vue-next'
+import { Button } from '@/Components/ui/button'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner';
 import { Checkbox } from '@/Components/ui/checkbox'
@@ -365,6 +366,7 @@ useFormGuard(form)
                         :error="form.errors.brand_id"
                     />
                     <NextSelect
+                        v-show="visibleFields.accounts"
                         :options="otherCurrentAssetsAccounts"
                         v-model="form.asset_account_id"
                         label-key="name"
@@ -378,6 +380,7 @@ useFormGuard(form)
                         :error="form.errors.asset_account_id"
                     />
                     <NextSelect
+                        v-show="visibleFields.accounts"
                         :options="incomeAccounts"
                         v-model="form.income_account_id"
                         label-key="name"
@@ -391,6 +394,7 @@ useFormGuard(form)
                         :error="form.errors.income_account_id"
                     />
                     <NextSelect
+                        v-show="visibleFields.accounts"
                         :options="costAccounts"
                         v-model="form.cost_account_id"
                         label-key="name"
@@ -469,13 +473,10 @@ useFormGuard(form)
                     <div class="pt-2">
                         <div class="flex items-center justify-between">
                             <span class="font-bold">{{ t('item.opening') }}</span>
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-primary px-3"
-                                @click="addOpeningRow"
-                            >
-                                + {{ t('general.add', { title: t('item.opening') }) }}
-                            </button>
+                            <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addOpeningRow">
+                                <Plus class="h-3.5 w-3.5" />
+                                {{ t('general.add', { title: t('item.opening') }) }}
+                            </Button>
                         </div>
                         <div class="rounded-md border border-primary overflow-hidden overflow-x-auto">
                             <table class="w-full text-sm">
@@ -516,7 +517,7 @@ useFormGuard(form)
                                             <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" :disabled="opening.is_locked" />
                                         </td>
                                         <td v-show="form.is_expiry_tracked" class="p-2 min-w-[160px]">
-                                            <NextDatePicker :disabled="opening.is_locked" v-model="opening.expire_date" :lock-future-dates="false" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                                            <NextDatePicker :disabled="opening.is_locked" :show-icon="false" v-model="opening.expire_date" :lock-future-dates="false" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                                         </td>
                                         <td class="p-2 min-w-[110px]">
                                             <NextInput label="" :disabled="opening.is_locked" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
@@ -572,3 +573,5 @@ useFormGuard(form)
         </form>
     </AppLayout>
 </template>
+
+

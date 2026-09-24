@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\UserManagement;
 
+use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserManagement\UserStoreRequest;
 use App\Http\Requests\UserManagement\UserUpdateRequest;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Enums\UserStatus;
 class UserController extends Controller
 {
+    use TogglesRecordStatus;
+
     public function __construct()
     {
         $this->authorizeResource(User::class, 'user');
@@ -167,4 +170,11 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.user')]));
     }
+
+    /** Flip the record between active and inactive; see the trait for why. */
+    public function toggleStatus(User $user)
+    {
+        return $this->toggleRecordStatus($user, 'general.resource.user');
+    }
 }
+

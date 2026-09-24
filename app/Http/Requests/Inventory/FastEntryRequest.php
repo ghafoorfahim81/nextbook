@@ -103,6 +103,21 @@ class FastEntryRequest extends FormRequest
                         __('validation.required', ['attribute' => __('general.opening_amount')])
                     );
                 }
+
+                // Opening stock has to be worth something. The controller costs
+                // the layer at the final cost and falls back to the purchase
+                // price, so either will do — with neither it posted the stock in
+                // at zero and skipped the voucher entirely, leaving quantity on
+                // hand with no value behind it and the first sale of it showing
+                // as pure profit.
+                $priced = static fn ($value) => filled($value) && is_numeric($value) && (float) $value > 0;
+
+                if ($quantity > 0 && ! $priced($row['purchase_price'] ?? null) && ! $priced($row['cost'] ?? null)) {
+                    $validator->errors()->add(
+                        "items.{$index}.purchase_price",
+                        __('validation.required', ['attribute' => __('general.purchase_price')])
+                    );
+                }
             }
         });
     }

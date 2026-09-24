@@ -7,7 +7,9 @@ use App\Http\Requests\Administration\BrandStoreRequest;
 use App\Http\Requests\Administration\BrandUpdateRequest;
 use App\Http\Resources\Administration\BrandResource;
 use App\Models\Administration\Brand;
+use App\Support\Inertia\CacheKey;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class BrandController extends Controller
 {
@@ -42,7 +44,17 @@ class BrandController extends Controller
     public function show(Request $request, Brand $brand)
     {
         $brand->load(['createdBy', 'updatedBy']);
-        return new BrandResource($brand);
+
+        // The list can only carry four of a brand's dozen fields, so the row
+        // opens a detail page. JSON is still served to anything that asks for
+        // it — the quick-create select reads this endpoint.
+        if ($request->wantsJson()) {
+            return new BrandResource($brand);
+        }
+
+        return inertia('Administration/Brands/Show', [
+            'brand' => new BrandResource($brand),
+        ]);
     }
 
     public function update(BrandUpdateRequest $request, Brand $brand)

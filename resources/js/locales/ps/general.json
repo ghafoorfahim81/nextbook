@@ -234,5 +234,14 @@
   "select_all": "ټول وټاکئ",
   "search_placeholder": "{name} ولټوئ...",
   "delete_module_description": "دا ریکارډ به له {module} څخه ړنګ شي او د {days} ورځو لپاره به په {trash} کې پاتې وي.",
-  "deleting": "ړنګول کیږي..."
+  "deleting": "ړنګول کیږي...",
+  "activate": "فعالول",
+  "deactivate": "غیرفعالول",
+  "activate_title": "{name} فعال شي؟",
+  "deactivate_title": "{name} غیرفعال شي؟",
+  "activate_description": "{name} به بیا هر هغه ځای کې چې غوره کېدای شي ښکاري.",
+  "deactivate_description": "{name} په لیست او تاریخچه کې پاتې کېږي، خو نور به د غوره کولو لپاره نه ښکاري. هر وخت یې بیا فعالولی شئ.",
+  "activated": "{name} فعال شو",
+  "deactivated": "{name} غیرفعال شو",
+  "something_went_wrong": "یوه ستونزه رامنځته شوه. بیا هڅه وکړئ."
 }

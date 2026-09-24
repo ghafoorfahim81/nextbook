@@ -1,29 +1,35 @@
 <template>
     <div class="relative">
-        <textarea
-            ref="textareaRef"
-            :id="id"
-            rows="4"
-            :name="name"
-            :placeholder="placeholder ?? t('general.enter', { text: label })"
-            :value="modelValue"
-            @input="e => emit('update:modelValue', e.target.value)"
-            :readonly="readonly ?? false"
-            class="peer block min-h-[96px] w-full rounded-md border border-border bg-background px-3 pb-2 pt-5 text-sm shadow-sm
-            placeholder:text-transparent focus:placeholder:text-muted-foreground focus:outline-none
-            disabled:cursor-not-allowed disabled:opacity-50"
-        />
+        <!-- Same notched outline as NextInput and NextSelect; the shared rules
+             live in resources/css/next-field.css. A textarea has no empty
+             state worth floating out of — a label centred in four rows of box
+             reads as body text — so it stays floated and shows its real
+             placeholder underneath. -->
+        <div class="next-field next-field--floated"
+             :class="{ 'next-field--error': Boolean(error), 'next-field--disabled': disabled }">
+            <textarea
+                ref="textareaRef"
+                :id="id"
+                :rows="rows"
+                :name="name"
+                :placeholder="placeholder ?? t('general.enter', { text: label })"
+                :value="modelValue"
+                @input="e => emit('update:modelValue', e.target.value)"
+                :readonly="readonly ?? false"
+                :disabled="disabled"
+                class="next-field-control peer block min-h-[96px] w-full rounded-lg pb-2 pt-6 text-sm
+                placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            />
 
-        <label
-            :for="id"
-            class="pointer-events-none absolute start-3 top-2 z-10 rounded bg-background px-1 text-xs
-         text-muted-foreground transition-all duration-150
-         peer-focus:top-1 peer-focus:text-xs peer-focus:text-foreground
-         peer-focus:opacity-100
-         peer-[:not(:placeholder-shown)]:top-1
-         peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:opacity-100">
-            {{ label }}
-        </label>
+            <fieldset aria-hidden="true" class="next-field-outline">
+                <legend v-if="label"><span>{{ label }}<span v-if="isRequired">*</span></span></legend>
+            </fieldset>
+
+            <label v-if="label" :for="id" class="next-field-label text-sm">{{ label }}<span
+                v-if="isRequired" class="next-field-required">*</span></label>
+        </div>
+
+        <p v-if="error" class="mt-1 text-xs text-red-500">{{ error }}</p>
     </div>
 </template>
 
@@ -40,6 +46,10 @@ const props = defineProps({
     label: String,
     id: { type: String, default: () => `ta-${Math.random().toString(36).slice(2, 9)}` },
     readonly: Boolean,
+    disabled: Boolean,
+    isRequired: Boolean,
+    error: String,
+    rows: { type: [String, Number], default: 4 },
     placeholder: String,
 });
 
@@ -67,12 +77,9 @@ defineExpose({
 </script>
 
 <style scoped>
-/* Match focus style with NextInput — which this claimed to do while spending a
-   hardcoded indigo. Same --ring, and the 1px border plus a solid 1px ring adds
-   up to the 2px edge NextInput draws with its border alone. */
-:deep(textarea:focus),
-:deep(textarea:focus-visible) {
-    border-color: hsl(var(--ring));
-    box-shadow: 0 0 0 1px hsl(var(--ring));
+/* The label sits on the top border, so the first line of text has to start
+   below it — the shared sheet only owns the horizontal padding. */
+.next-field-control {
+    padding-top: 1.5rem;
 }
 </style>

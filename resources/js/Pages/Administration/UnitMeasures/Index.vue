@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import { useToggleStatus } from '@/composables/useToggleStatus';
 import CreateEditModal from '@/Pages/Administration/UnitMeasures/CreateEditModal.vue';
 import ShowDialog from '@/Pages/Administration/UnitMeasures/ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
@@ -76,6 +77,16 @@ const showItem = (id) => {
     showDialogOpen.value = true
 }
 
+// Deactivating is how a record that other rows depend on gets retired —
+// the delete guard refuses those, and they must stop appearing in pickers.
+const { toggleStatus } = useToggleStatus()
+const toggleItemStatus = (item) => {
+    toggleStatus('unit-measures.toggle-status', item.id, {
+        isActive: item.is_active !== false,
+        name: item.name || t('admin.unit_measure.unit_measure'),
+    })
+}
+
 </script>
 
 <template>
@@ -110,6 +121,8 @@ const showItem = (id) => {
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
+            @toggle-status="toggleItemStatus"
+            :has-status-toggle="true"
             @show="showItem"
             :title="`${t('admin.unit_measure.unit_measure')}`"
             :showAddButton="true"

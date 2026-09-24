@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Administration;
 
+use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\UnitMeasureStoreRequest;
 use App\Http\Requests\Administration\UnitMeasureUpdateRequest;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 class UnitMeasureController extends Controller
 {
+    use TogglesRecordStatus;
+
     protected $metric;
 
     public function __construct()
@@ -184,4 +187,11 @@ class UnitMeasureController extends Controller
 
         return redirect()->route('unit-measures.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.unit_measure')]));
     }
+
+    /** Flip the record between active and inactive; see the trait for why. */
+    public function toggleStatus(UnitMeasure $unitMeasure)
+    {
+        return $this->toggleRecordStatus($unitMeasure, 'general.resource.unit_measure');
+    }
 }
+

@@ -5,6 +5,7 @@ import CreateEditModal from './CreateEditModal.vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import { useToggleStatus } from '@/composables/useToggleStatus';
 
 defineProps({
     discountRules: Object,
@@ -23,6 +24,12 @@ const columns = computed(() => [
     { key: 'value_label', label: t('general.discount'), align: 'right' },
     { key: 'customer_group_name', label: t('discount_rule.customer_group') },
     { key: 'window_label', label: t('discount_rule.active_period') },
+    {
+        key: 'is_active',
+        label: t('general.status'),
+        sortable: true,
+        render: (row) => (row.is_active ? t('general.active') : t('general.inactive')),
+    },
     { key: 'actions', label: t('general.actions') },
 ]);
 
@@ -33,6 +40,15 @@ const editItem = (item) => {
     isDialogOpen.value = true;
 };
 const deleteItem = (id) => deleteResource('discount-rules.destroy', id);
+
+// A rule that has already priced a sale should be switched off, not deleted.
+const { toggleStatus } = useToggleStatus();
+const toggleItemStatus = (item) => {
+    toggleStatus('discount-rules.toggle-status', item.id, {
+        isActive: item.is_active !== false,
+        name: item.name || t('discount_rule.discount_rule'),
+    });
+};
 </script>
 
 <template>
@@ -56,6 +72,8 @@ const deleteItem = (id) => deleteResource('discount-rules.destroy', id);
             @add="editingItem = null; isDialogOpen = true"
             @edit="editItem"
             @delete="deleteItem"
+            @toggle-status="toggleItemStatus"
+            :has-status-toggle="true"
         />
     </AppLayout>
 </template>

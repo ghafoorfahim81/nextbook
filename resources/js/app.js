@@ -4,6 +4,10 @@ import '../css/app.css';
 // Tailwind utilities they replace. Inert unless that attribute is set.
 import '../css/glass.css';
 import '../css/vue-select.css';
+// After vue-select's own sheet: the shared field outline strips the toggle's
+// border and padding, and both selectors are single-class, so load order is
+// what decides. Glass still wins over it on specificity.
+import '../css/next-field.css';
 import 'vue-sonner/style.css';
 import { createApp, h, ref } from 'vue';
 import { createInertiaApp, Head, Link, router } from '@inertiajs/vue3';

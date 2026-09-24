@@ -191,6 +191,14 @@
                                             @click="$emit('delete', item.id)"
                                         ><Trash2 class="h-3 w-3" /> {{ t('datatable.delete') }}</DropdownMenuItem>
                                         <DropdownMenuItem v-if="props.hasShow && can(`${props.can}.view`)" :class="['gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('show', item.id)"><Eye class="h-3 w-3" /> {{ t('datatable.show') }}</DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="props.hasStatusToggle && can(`${props.can}.update`)"
+                                            :class="['gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']"
+                                            @click="$emit('toggle-status', item)"
+                                        >
+                                            <Power class="h-3 w-3" />
+                                            {{ props.isItemActive(item) ? t('general.deactivate') : t('general.activate') }}
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem v-if="props.hasPrint && can(`${props.can}.print`)" :class="['gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('print', item.id)"><Printer class="h-3 w-3" /> {{ t('datatable.print') }}</DropdownMenuItem>
                                     </DropdownMenuContent>
 
@@ -350,7 +358,7 @@ import {
 import {
     Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis, SquarePen, Trash,
     Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileX,
-    Eye, Printer, FileDown,
+    Eye, Printer, FileDown, Power,
 } from 'lucide-vue-next'
 import {
     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -374,6 +382,12 @@ const props = defineProps({
     hasEdit:{ type: Boolean, default: true },
     hasShow:{ type: Boolean, default: false },
     hasPrint:{ type: Boolean, default: false },
+    // Offers "Activate"/"Deactivate" in the row menu for records that carry a
+    // status. Deactivating is the only way to retire something the dependency
+    // guard will not let you delete.
+    hasStatusToggle: { type: Boolean, default: false },
+    // How to read "is this row active" — the column differs by module.
+    isItemActive: { type: Function, default: (item) => item?.is_active !== false && item?.status !== 'inactive' && item?.status !== 'blocked' },
     // Hide delete action when the provided key path resolves to true on the row item
     hideDeleteOnKeyTrue: { type: String, default: null },
     // Optional per-row callbacks: receive the row item, return true to allow the action
@@ -389,7 +403,7 @@ const props = defineProps({
 const { t, locale } = useI18n()
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 // Declare emits for clarity
-defineEmits(['edit', 'delete', 'add', 'print', 'show'])
+defineEmits(['edit', 'delete', 'add', 'print', 'show', 'toggle-status'])
 
 const pageOptions = [10, 20, 50, 100]
 

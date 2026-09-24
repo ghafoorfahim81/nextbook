@@ -211,6 +211,7 @@
     "measure_required_in_row": "قطار {row}: د اندازې واحد اړین دی.",
     "warehouse_required_in_row": "قطار {row}: د پرانیستلو اندازې لپاره ګدام وټاکئ.",
     "quantity_required_in_row": "قطار {row}: د هغه بچ/نېټې لپاره چې لیکلې ده د پرانیستلو اندازه ولیکئ.",
+    "opening_price_required_in_row": "قطار {row}: د پرانیستلو اندازې لپاره د پیر بیه یا وروستی لګښت ولیکئ.",
     "duplicate_name_in_row": "قطار {row}: دا نوم له یو ځل زیات کارول شوی.",
     "items_to_create": "د جوړولو اجناس",
     "with_opening_stock": "د پرانیستې ذخیرې سره",

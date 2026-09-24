@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Enums\DiscountScope;
 use App\Enums\DiscountType;
+use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\DiscountRuleRequest;
 use App\Http\Resources\Inventory\DiscountRuleResource;
@@ -20,6 +21,8 @@ use Illuminate\Http\Request;
 
 class DiscountRuleController extends Controller
 {
+    use TogglesRecordStatus;
+
     public function __construct()
     {
         $this->authorizeResource(DiscountRule::class, 'discount_rule');
@@ -142,4 +145,11 @@ class DiscountRuleController extends Controller
 
         return back()->with('success', __('general.deleted_successfully', ['resource' => __('discount_rule.discount_rule')]));
     }
+
+    /** Flip the record between active and inactive; see the trait for why. */
+    public function toggleStatus(DiscountRule $discountRule)
+    {
+        return $this->toggleRecordStatus($discountRule, 'general.resource.discount_rule');
+    }
 }
+

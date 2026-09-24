@@ -247,6 +247,7 @@
     "measure_required_in_row": "Row {row}: the unit measure is required.",
     "warehouse_required_in_row": "Row {row}: choose a warehouse for the opening amount.",
     "quantity_required_in_row": "Row {row}: enter an opening amount for the batch/expiry you typed.",
+    "opening_price_required_in_row": "Row {row}: enter a purchase price or a final cost for the opening amount.",
     "duplicate_name_in_row": "Row {row}: this name is used more than once.",
     "items_to_create": "Items to create",
     "with_opening_stock": "With opening stock",

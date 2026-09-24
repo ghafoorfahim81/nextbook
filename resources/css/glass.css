@@ -398,17 +398,16 @@ html[data-surface='glass'] tbody tr:hover {
    (0,2,1) against this selector's (0,4,2) and silently lost. The toggle is
    the control; its search field stays invisible.
 
-   NextInput is excluded for the same reason. Its frame is a sibling <fieldset>
-   whose <legend> cuts a real gap in the top border for the floated label —
-   nothing paints over anything. The field itself is border-transparent by
-   design, so giving it an edge here draws a second, uncut outline in exactly
-   the same place: everywhere but the gap it hides under the fieldset's, and
-   inside the gap it surfaces as a stub struck through the label. */
-html[data-surface='glass'] input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.vs__search):not(.next-input-field),
-html[data-surface='glass'] textarea,
+   Every .next-field control is excluded for the same reason: its frame is a
+   sibling <fieldset> whose <legend> cuts a real gap in the top border for the
+   floated label, and the control itself is border-transparent by design. An
+   edge here would draw a second, uncut outline in exactly the same place —
+   everywhere but the gap it hides under the fieldset's, and inside the gap it
+   surfaces as a stub struck through the label. */
+html[data-surface='glass'] input:not([type='checkbox']):not([type='radio']):not([type='range']):not(.vs__search):not(.next-field-control),
+html[data-surface='glass'] textarea:not(.next-field-control),
 html[data-surface='glass'] select,
-html[data-surface='glass'] button[role='combobox'],
-html[data-surface='glass'] .vs__dropdown-toggle {
+html[data-surface='glass'] button[role='combobox'] {
   background-color: transparent;
   border-color: hsl(var(--glass-edge-control) / var(--glass-edge-control-alpha));
   box-shadow: none;
@@ -420,13 +419,12 @@ html[data-surface='glass'] .vs__dropdown-toggle input {
   box-shadow: none;
 }
 
-/* The frame the excluded field lost: NextInput's outline is the fieldset, so
-   it takes the control edge instead of the field. Sharing the token is what
-   keeps an input and the select next to it the same weight — its own
-   `border-border` is a step lighter, which showed as soon as the controls
-   stopped using the specular edge. The component's focus rule outranks this
-   (0,4,0 against 0,2,1), so the ring still takes over on focus. */
-html[data-surface='glass'] .next-input-outline {
+/* The frame the excluded controls lost: a .next-field's outline is its
+   fieldset, so the edge goes there instead. One token for inputs, selects and
+   textareas alike — a plain `border-border` is a step lighter, which showed as
+   soon as the controls stopped using the specular edge. The focus and error
+   rules in next-field.css outrank this, so they still take over. */
+html[data-surface='glass'] .next-field-outline {
   border-color: hsl(var(--glass-edge-control) / var(--glass-edge-control-alpha));
 }
 
