@@ -157,6 +157,11 @@ const columns = computed(() => [
 ])
 
 const visibleColumns = computed(() => columns.value.filter((c) => !c.optional || columnSettings[c.key]))
+
+// Enough room for every visible column to hold its own header, plus the row
+// number and action cells. Fixed at 1000px this scrolled even with half the
+// columns hidden, and still clipped "Actions" with all of them on.
+const gridMinWidth = computed(() => `${visibleColumns.value.length * 108 + 120}px`)
 const visibleKeys = computed(() => visibleColumns.value.map((c) => c.key))
 const optionalColumns = computed(() => columns.value.filter((c) => c.optional))
 
@@ -188,7 +193,10 @@ const blankRow = (code = currentMaxCode.value) => ({
     _key: ++rowKeySeed,
     name: '',
     code: formatCode(code),
-    barcode: '',
+    // Generated up front rather than given a column of its own: nobody types a
+    // barcode by hand on this screen, and isEmptyRow() ignores it, so a filled
+    // barcode never keeps an untouched row from being skipped.
+    barcode: generateBarcode(),
     measure_id: null,
     category_id: null,
     purchase_price: '',
@@ -373,6 +381,28 @@ const validateRows = () => {
         if (hasLot && !(Number.isFinite(quantity) && quantity > 0)) {
             errors[`items.${idx}.quantity`] = t('general.required_field')
             problems.push(t('item.quantity_required_in_row', { row: rowNumber }))
+        }
+
+        // An opening layer has to be worth something. Final cost is what the
+        // layer is valued at and it falls back to the purchase price, so either
+        // one will do — but not neither, which posted stock in at zero and left
+        // the first sale of it showing pure profit.
+        const hasOpening = Number.isFinite(quantity) && quantity > 0
+        const priced = (field) => {
+            const value = Number(row[field])
+            return String(row[field] ?? '').trim() !== '' && Number.isFinite(value) && value > 0
+        }
+
+        if (hasOpening && !priced('purchase_price') && !priced('cost')) {
+            errors[`items.${idx}.purchase_price`] = t('general.required_field')
+            errors[`items.${idx}.cost`] = t('general.required_field')
+            problems.push(t('item.opening_price_required_in_row', { row: rowNumber }))
+
+            // Both columns are optional, so the operator can be looking at a
+            // grid with nowhere to fix this. Bring one back.
+            if (!columnSettings.purchase_price && !columnSettings.cost) {
+                columnSettings.purchase_price = true
+            }
         }
     })
 
@@ -791,20 +821,23 @@ onMounted(() => {
                     class="rounded-xl border border-violet-400 bg-card shadow-sm overflow-x-auto p-3 mt-3 mb-1"
                     @keydown="onGridKeydown"
                 >
-                    <table class="w-full table-fixed min-w-[1000px]">
+                    <!-- The grid is only as wide as the columns switched on, so
+                         turning a few off lets it fit the screen instead of
+                         scrolling at a fixed 1000px. -->
+                    <table class="fast-entry-grid w-full table-fixed" :style="{ minWidth: gridMinWidth }">
                         <thead class="sticky top-0 z-10 bg-muted/40">
-                            <tr class="text-muted-foreground font-semibold text-sm text-white bg-primary">
+                            <tr class="text-muted-foreground font-semibold text-white bg-primary">
                                 <th class="px-1 py-1 w-8 min-w-8">#</th>
                                 <th
                                     v-for="column in visibleColumns"
                                     :key="column.key"
-                                    class="px-1 py-1"
+                                    class="px-1 py-1 align-bottom leading-tight"
                                     :class="column.width"
                                 >
                                     {{ column.label }}
                                     <span v-if="column.required" class="text-red-300">*</span>
                                 </th>
-                                <th class="px-1 py-1 w-14">{{ t('general.actions') }}</th>
+                                <th class="px-1 py-1 w-14 align-bottom leading-tight">{{ t('general.actions') }}</th>
                             </tr>
                         </thead>
 
@@ -1034,6 +1067,15 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* app.css pins every th to --app-table-header-font-size with !important, and at
+   its 16px default an eleven-column grid wrapped "Unit Measure" onto two lines
+   and pushed "Actions" off the edge. This grid is dense by nature, so it takes
+   a step down — still derived from the user's preference rather than pinned to
+   a constant, and floored so a small preference stays legible. */
+.fast-entry-grid th {
+    font-size: max(12px, calc(var(--app-table-header-font-size, 16px) * 0.875)) !important;
+}
+
 /* Keep dense grid cells from being pushed apart by the inputs' own spacing. */
 :deep(.vpd-input-group),
 :deep(.vs__dropdown-toggle) {
@@ -1045,11 +1087,6 @@ onMounted(() => {
     height: 2.25rem;
 }
 
-/* The focused cell has to be obvious when the caret is being driven by the
-   arrow keys rather than the mouse. */
-td[data-cell]:focus-within {
-    outline: 2px solid hsl(var(--primary) / 0.35);
-    outline-offset: -2px;
-    border-radius: calc(var(--radius) - 2px);
-}
+/* The field inside draws its own 2px ring on focus now, so a second outline
+   on the cell read as a stray box around the box. */
 </style>

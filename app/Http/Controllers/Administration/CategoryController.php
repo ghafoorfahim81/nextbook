@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Administration;
 
+use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\CategoryStoreRequest;
 use App\Http\Requests\Administration\CategoryUpdateRequest;
@@ -15,6 +16,8 @@ use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\Cache;
 class CategoryController extends Controller
 {
+    use TogglesRecordStatus;
+
     public function __construct()
     {
         $this->authorizeResource(Category::class, 'category');
@@ -157,4 +160,11 @@ class CategoryController extends Controller
 
         return back()->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.category')]));
     }
+
+    /** Flip the record between active and inactive; see the trait for why. */
+    public function toggleStatus(Category $category)
+    {
+        return $this->toggleRecordStatus($category, 'general.resource.category');
+    }
 }
+

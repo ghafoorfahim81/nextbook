@@ -102,6 +102,7 @@ Route::middleware([
         ->withTrashed();
     Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class);
     Route::patch('/categories/{category}/restore', [\App\Http\Controllers\Administration\CategoryController::class, 'restore'])->name('categories.restore')->withTrashed();
+    Route::patch('/categories/{category}/toggle-status', [\App\Http\Controllers\Administration\CategoryController::class, 'toggleStatus'])->name('categories.toggle-status');
     Route::delete('/categories/{category}/force-delete', [\App\Http\Controllers\Administration\CategoryController::class, 'forceDelete'])
         ->name('categories.force-delete')
         ->withTrashed();
@@ -116,6 +117,7 @@ Route::middleware([
         ->except(['create', 'edit']);
     Route::resource('/warehouses', \App\Http\Controllers\Administration\WarehouseController::class);
     Route::patch('/warehouses/{warehouse}/restore', [\App\Http\Controllers\Administration\WarehouseController::class, 'restore'])->name('warehouses.restore')->withTrashed();
+    Route::patch('/warehouses/{warehouse}/toggle-status', [\App\Http\Controllers\Administration\WarehouseController::class, 'toggleStatus'])->name('warehouses.toggle-status');
     Route::delete('/warehouses/{warehouse}/force-delete', [\App\Http\Controllers\Administration\WarehouseController::class, 'forceDelete'])
         ->name('warehouses.force-delete')
         ->withTrashed();
@@ -153,6 +155,7 @@ Route::middleware([
     Route::post('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'store'])->name('currency-rate-updates.store');
     Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class);
     Route::patch('/unit-measures/{unitMeasure}/restore', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'restore'])->name('unit-measures.restore')->withTrashed();
+    Route::patch('/unit-measures/{unitMeasure}/toggle-status', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'toggleStatus'])->name('unit-measures.toggle-status');
     Route::delete('/unit-measures/{unitMeasure}/force-delete', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'forceDelete'])
         ->name('unit-measures.force-delete')
         ->withTrashed();
@@ -178,6 +181,7 @@ Route::middleware([
     Route::resource('/discount-rules', \App\Http\Controllers\Inventory\DiscountRuleController::class)
         ->parameters(['discount-rules' => 'discount_rule'])
         ->except(['create', 'edit', 'show']);
+    Route::patch('/discount-rules/{discount_rule}/toggle-status', [\App\Http\Controllers\Inventory\DiscountRuleController::class, 'toggleStatus'])->name('discount-rules.toggle-status');
     Route::resource('/landed-costs', \App\Http\Controllers\Inventory\LandedCostController::class);
     Route::get('/stock-adjustments/export', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'export'])->name('stock-adjustments.export');
     Route::resource('/stock-adjustments', \App\Http\Controllers\Inventory\StockAdjustmentController::class)
@@ -387,6 +391,7 @@ Route::middleware([
     // User Management
     Route::resource('/users', \App\Http\Controllers\UserManagement\UserController::class);
     Route::patch('/users/{user}/restore', [\App\Http\Controllers\UserManagement\UserController::class, 'restore'])->name('users.restore')->withTrashed();
+    Route::patch('/users/{user}/toggle-status', [\App\Http\Controllers\UserManagement\UserController::class, 'toggleStatus'])->name('users.toggle-status');
     Route::delete('/users/{user}/force-delete', [\App\Http\Controllers\UserManagement\UserController::class, 'forceDelete'])
         ->name('users.force-delete')
         ->withTrashed();
@@ -597,3 +602,4 @@ Route::middleware([
         ->name('branches.switch');
 
 });
+

@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import { router } from '@inertiajs/vue3';
 import CreateEditModal from './CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
 
@@ -49,6 +50,11 @@ const editItem = (item) => {
     editingItem.value = item;
     isDialogOpen.value = true;
 };
+
+// The list shows four of a brand's dozen fields; the rest are on the show page.
+const showItem = (id) => {
+    router.visit(route('brands.show', id));
+};
 </script>
 
 <template>
@@ -69,6 +75,8 @@ const editItem = (item) => {
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
+            @show="showItem"
+            :has-show="true"
             @add="isDialogOpen = true"
             :title="t('admin.brand.brands')"
             :url="`brands.index`"

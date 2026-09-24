@@ -53,6 +53,8 @@ return [
     'updated_successfully' => ':resource با موفقیت به‌روزرسانی شد.',
     'deleted_successfully' => ':resource با موفقیت حذف شد.',
     'restored_successfully' => ':resource با موفقیت بازیابی شد.',
+    'activated_successfully' => ':resource با موفقیت فعال شد.',
+    'deactivated_successfully' => ':resource با موفقیت غیرفعال شد.',
     'status_updated_successfully' => 'وضعیت :resource با موفقیت به‌روزرسانی شد.',
     'completed_successfully' => ':resource با موفقیت تکمیل شد.',
     'cancelled_successfully' => ':resource با موفقیت لغو شد.',

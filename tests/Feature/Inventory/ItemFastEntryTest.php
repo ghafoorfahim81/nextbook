@@ -206,7 +206,12 @@ class ItemFastEntryTest extends TestCase
         $this->assertDatabaseMissing('items', ['code' => '7007']);
     }
 
-    public function test_an_opening_worth_nothing_posts_stock_but_no_voucher(): void
+    /**
+     * This used to be allowed, and posted the stock at a unit cost of zero with
+     * no voucher behind it: quantity on hand with no value, and the first sale
+     * of it reading as pure profit. An opening now has to carry a price.
+     */
+    public function test_an_opening_without_a_price_is_rejected(): void
     {
         $this->post(route('item.fast.store'), [
             'items' => [
@@ -218,11 +223,30 @@ class ItemFastEntryTest extends TestCase
                     'warehouse_id' => $this->ctx['warehouse']->id,
                 ],
             ],
+        ])->assertSessionHasErrors('items.0.purchase_price');
+
+        $this->assertDatabaseMissing('items', ['code' => '7009']);
+    }
+
+    /** The final cost stands in for the purchase price — either one will do. */
+    public function test_an_opening_priced_by_final_cost_alone_is_accepted(): void
+    {
+        $this->post(route('item.fast.store'), [
+            'items' => [
+                [
+                    'name' => 'Landed Only',
+                    'code' => '7010',
+                    'measure_id' => $this->ctx['unit_measure']->id,
+                    'quantity' => 2,
+                    'cost' => 15,
+                    'warehouse_id' => $this->ctx['warehouse']->id,
+                ],
+            ],
         ])->assertSessionHasNoErrors();
 
-        $item = Item::where('code', '7009')->firstOrFail();
+        $item = Item::where('code', '7010')->firstOrFail();
 
         $this->assertTrue(StockMovement::where('item_id', $item->id)->exists());
-        $this->assertFalse(Transaction::where('reference_id', $item->id)->exists());
+        $this->assertTrue(Transaction::where('reference_id', $item->id)->exists());
     }
 }

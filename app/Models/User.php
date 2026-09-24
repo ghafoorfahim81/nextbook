@@ -118,6 +118,11 @@ class User extends Authenticatable
                 'fast_search' => true,
                 'item_type' => true,
                 'sku' => true,
+                // The asset/income/cost account trio is derived from the item
+                // type and the chart of accounts, and the form already fills
+                // all three. Most users never change them, so they are off by
+                // default and the accountant switches them on when they do.
+                'accounts' => false,
                 'is_batch_tracked' => false,
                 'is_expiry_tracked' => false,
             ],

@@ -18,7 +18,8 @@ import { useBusinessProfile } from '@/composables/useBusinessProfile'
 import { useSoundPreferences } from '@/composables/useSoundPreferences'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
-import { Trash2, AlertCircleIcon } from 'lucide-vue-next'
+import { Trash2, AlertCircleIcon, Plus } from 'lucide-vue-next'
+import { Button } from '@/Components/ui/button'
 import { Checkbox } from '@/Components/ui/checkbox'
 import {
   Alert,
@@ -428,7 +429,7 @@ const handleSubmitAction = (createAndNew = false) => {
     // Always show toast on success, regardless of which button is used
     const postOptions = {
         onSuccess: () => {
-            // Follows preferences → notifications → sound → success, and stays
+            // Follows preferences â†’ notifications â†’ sound â†’ success, and stays
             // silent when the operator has switched that slot off.
             play('success')
             toast.success(t('general.success'), {
@@ -602,7 +603,11 @@ useFormGuard(form)
                     :error="form.errors.brand_id"
                 />
                 <NextInput v-show="visibleFields.photo" :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
+                <!-- The account trio is derived from the item type and filled in
+                     automatically; `accounts` is off by default in preferences so
+                     it stays out of the way until an accountant wants it. -->
                 <NextSelect
+                    v-show="visibleFields.accounts"
                     :options="otherCurrentAssetsAccounts"
                     v-model="form.asset_account_id"
                     label-key="name"
@@ -617,6 +622,7 @@ useFormGuard(form)
                     :hint="t('item.hint.asset_account')"
                 />
                 <NextSelect
+                    v-show="visibleFields.accounts"
                     :options="incomeAccounts"
                     v-model="form.income_account_id"
                     label-key="name"
@@ -632,6 +638,7 @@ useFormGuard(form)
                     :hint="t('item.hint.income_account')"
                 />
                 <NextSelect
+                    v-show="visibleFields.accounts"
                     :options="costAccounts"
                     v-model="form.cost_account_id"
                     label-key="name"
@@ -717,13 +724,12 @@ useFormGuard(form)
                 <div class="pt-2">
                     <div class="flex items-center justify-between mb-3">
                         <span class="font-bold">{{ t('item.opening') }}</span>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary px-3"
-                            @click="addOpeningRow"
-                        >
-                            + {{ t('general.add', { title: t('item.opening') }) }}
-                        </button>
+                        <!-- `btn btn-outline-primary` is Bootstrap; this app has
+                             no such classes, so this rendered as bare text. -->
+                        <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addOpeningRow">
+                            <Plus class="h-3.5 w-3.5" />
+                            {{ t('general.add', { title: t('item.opening') }) }}
+                        </Button>
                     </div>
                     <div class="rounded-md border border-primary overflow-hidden overflow-x-auto">
                         <table class="w-full text-sm">
@@ -761,7 +767,9 @@ useFormGuard(form)
                                         <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
                                     </td>
                                     <td v-show="form.is_expiry_tracked" class="p-2 min-w-[160px]">
-                                        <NextDate v-model="opening.expire_date" :lock-future-dates="false" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                                        <!-- show-icon renders a filled calendar block in the cell; the
+                                             column header already says what the date is. -->
+                                        <NextDate v-model="opening.expire_date" :show-icon="false" :lock-future-dates="false" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                                     </td>
                                     <td class="p-2 min-w-[110px]">
                                         <NextInput label="" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
@@ -822,3 +830,4 @@ useFormGuard(form)
         </form>
     </AppLayout>
 </template>
+

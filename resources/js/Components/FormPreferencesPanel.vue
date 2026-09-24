@@ -109,10 +109,14 @@ const returnItemColumns = [
 ]
 
 // Every toggleable item field — mirrors config/business_profiles.php `base.fields`,
-// so an owner can switch on anything their trade's profile hid. `accounts` and
-// `is_active` are always shown and not listed here. Labels come from `item.*`.
+// so an owner can switch on anything their trade's profile hid. `is_active` is
+// always shown and not listed here. Labels come from `item.*`.
 const itemManagementFields = [
     { key: 'code', labelKey: 'item.code' },
+    // The asset/income/cost trio, shown or hidden as one group: they are
+    // filled in from the item type and the chart of accounts, so they are off
+    // by default and this is how an accountant gets them back.
+    { key: 'accounts', labelKey: 'preferences.fields.accounts' },
     { key: 'generic_name', labelKey: 'item.generic_name' },
     { key: 'packing', labelKey: 'item.packing' },
     { key: 'description', labelKey: 'item.description' },

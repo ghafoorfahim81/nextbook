@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import { useToggleStatus } from '@/composables/useToggleStatus';
 import ShowDialog from '@/Pages/UserManagement/Users/ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3'
@@ -33,8 +34,19 @@ const columns = computed(() => ([
         label: t('user_mangements.roles'),
         render: (row) => row.roles?.map(r => r.name).join(', ') ?? '-',
     },
+    // There was no way to see, let alone change, whether an account still works.
+    {
+        key: 'status',
+        label: t('general.status'),
+        sortable: true,
+        render: (row) => (userIsActive(row) ? t('general.active') : t('general.inactive')),
+    },
     { key: 'actions', label: t('general.action') },
 ]));
+
+// A user is active unless the enum says otherwise; `blocked` is a separate
+// state that the toggle deliberately leaves alone.
+const userIsActive = (row) => row?.is_active !== false && row?.status === 'active';
 
 const { deleteResource } = useDeleteResource();
 
@@ -54,6 +66,14 @@ const showItem = (id) => {
     selectedUserId.value = id;
     showDialog.value = true;
 };
+
+const { toggleStatus } = useToggleStatus();
+const toggleItemStatus = (item) => {
+    toggleStatus('users.toggle-status', item.id, {
+        isActive: userIsActive(item),
+        name: item.name || t('user_mangements.user'),
+    });
+};
 </script>
 
 <template>
@@ -66,6 +86,9 @@ const showItem = (id) => {
             :filterFields="filterFields"
             @delete="deleteItem"
             @edit="editItem"
+            @toggle-status="toggleItemStatus"
+            :has-status-toggle="true"
+            :is-item-active="userIsActive"
             :title="t('user_mangements.users')"
             :url="`users.index`"
             :showAddButton="true"

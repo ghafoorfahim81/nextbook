@@ -1,0 +1,318 @@
+/* ===========================================================================
+   next-field — the notched outline shared by NextInput, NextSelect and
+   NextTextarea.
+
+   A floating label has to survive sitting on top of the control's own border.
+   Two ways exist: paint a patch of the page behind the word, or cut the border
+   out from under it. Only the second works here. A painted patch has to match
+   whatever is behind it, and on the glass surface that is not one thing — a
+   field on the page sits over the ambient gradient, the same field inside a
+   dialog sits over a translucent pane. The patch was repainting the page wash
+   in both cases, so every label inside a dialog wore a visible coloured chip.
+
+   So the frame is a <fieldset> and the label's clearance is its <legend>: the
+   browser cuts the top border around the legend and nothing is painted over
+   anything. It works on any surface, in any theme, inside or outside a dialog.
+
+   Markup contract (the control must come first — the floated state is matched
+   with a sibling combinator, not :has()):
+
+     <div class="next-field">
+       <input class="next-field-control peer">
+       <fieldset class="next-field-outline" aria-hidden="true">
+         <legend><span>Label<span>*</span></span></legend>
+       </fieldset>
+       <label class="next-field-label">Label<span>*</span></label>
+     </div>
+
+   Both copies of the word must render identically, because the gap is measured
+   from the legend and has to land on the label's box. Anything that changes
+   one — font size, padding, the asterisk's margin — comes from a variable used
+   by both, never a literal typed twice.
+   =========================================================================== */
+
+.next-field {
+  position: relative;
+
+  /* One notch, measured once: where the gap starts, where the label sits and
+     where the control's own text begins are three readings of it.
+
+     It has to clear the corner arc. The arc owns the first --radius of the top
+     edge, and a notch cut into it leaves the curve hanging as a detached hook,
+     because it is severed while still sloping. */
+  /* The same corner every other control in the app uses (`rounded-md`). The
+     full --radius is a pill at the glass surface's 0.9rem, which made these
+     read as a different kind of control from the ones beside them. */
+  --next-field-radius: calc(var(--radius, 0.5rem) - 2px);
+  --next-field-notch: max(var(--next-field-radius), 0.5rem);
+  --next-field-label-pad: 0.375rem;
+  --next-field-label-size: calc(var(--app-label-font-size, 14px) * 0.8);
+  --next-field-required-gap: 0.125rem;
+}
+
+/* The control never draws the frame — the outline does, so there is only ever
+   one border and the notch is the only thing that interrupts it.
+
+   Scoped through .next-field on purpose: the shadcn Input ships `bg-background`
+   and `focus-visible:ring-2 ring-offset-2`, which are single-class utilities
+   too. Tied on specificity the winner is whichever sheet loads last, and that
+   left the field opaque white inside a translucent dialog and drew a second
+   rounded box outside it on focus. */
+.next-field .next-field-control,
+.next-field .next-field-control:focus,
+.next-field .next-field-control:focus-visible,
+.next-field .next-field-control:focus-within {
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+  border-radius: var(--next-field-radius);
+}
+
+/* One fill for all three, and it is the surface behind them.
+
+   !important because the fills being overridden are not all ordinary
+   utilities: the date-picker ships its own `background-color: … !important`,
+   and an input, a vue-select toggle and a picker group each pick up a
+   different default. Anything weaker leaves one of the three a shade off from
+   its neighbours — which is visible precisely because they sit side by side. */
+.next-field .next-field-control,
+.next-field .next-field-control:focus,
+.next-field .next-field-control input,
+.next-field .vs__dropdown-toggle,
+.next-field .vs__search,
+.next-field .vs__selected,
+.next-field .vpd-input-group,
+.next-field .vpd-input-group input,
+.next-field .vpd-input {
+  background-color: transparent !important;
+}
+
+/* Text lines up under the label rather than a few pixels inside it, so
+   floating the label is a move up, not up and across. */
+input.next-field-control,
+textarea.next-field-control {
+  padding-inline: calc(var(--next-field-notch) + var(--next-field-label-pad));
+}
+
+/* vue-select builds its own box inside the component root, so the padding and
+   the stripped border belong to the toggle rather than the element carrying
+   the class. */
+.next-field-control .vs__dropdown-toggle {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding-inline: calc(var(--next-field-notch) + var(--next-field-label-pad));
+}
+
+/* vue-select gives its search field 7px of its own padding, so the text you
+   type sat 7px right of the value it replaces — and of the label above it. */
+.next-field-control .vs__search {
+  padding-inline: 0;
+}
+
+/* A single select is one line: a long value ("Afghanistan, Afghani", a
+   warehouse name in a narrow table cell) used to wrap or spill straight out
+   through the side of the control. min-width:0 is what lets a flex child
+   shrink below its text — without it the ellipsis never triggers. */
+.next-field-control:not(.vs--multiple) .vs__selected-options {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.next-field-control:not(.vs--multiple) .vs__selected {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A multi-select is as tall as its chips. Pinned to one line's height they
+   piled up and hung outside the box; the control grows instead, and the
+   outline follows because it is inset-0 of the same wrapper. */
+.next-field-control.vs--multiple .vs__dropdown-toggle {
+  height: auto;
+  min-height: 2.5rem;
+  padding-block: 0.3125rem;
+}
+
+.next-field-control.vs--multiple .vs__selected-options {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.next-field-control.vs--multiple .vs__selected {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   The frame
+   --------------------------------------------------------------------------- */
+
+.next-field-outline {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  margin: 0;
+  min-width: 0;
+  overflow: visible;
+  pointer-events: none;
+  text-align: start;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--next-field-radius);
+  padding-block: 0;
+  /* inset-0 + border-box means content starts at border + padding, so the
+     padding carries the border's width and the notch holds still when focus
+     thickens it — otherwise focus slid the gap 1px right of the label and left
+     a sliver of border against the first letter. */
+  padding-inline: calc(var(--next-field-notch) - 1px);
+}
+
+/* The legend is only a spacer: zero height so it cannot inflate the control,
+   and max-width 0.01px while the label is still inside the box so the top
+   border stays closed. Opening it to 100% is what cuts the gap. */
+.next-field-outline legend {
+  display: block;
+  float: none;
+  width: auto;
+  height: 0;
+  max-width: 0.01px;
+  padding: 0;
+  overflow: hidden;
+  visibility: hidden;
+  white-space: nowrap;
+  line-height: 0;
+  background: transparent;
+  /* The gap is only as wide as this legend, so it has to be measured at the
+     exact size the label renders at — the same expression, not a constant. */
+  font-size: var(--next-field-label-size);
+  transition: max-width 150ms ease;
+}
+
+/* Direct child only. As a descendant selector this also matched the asterisk's
+   own span, spending the padding twice and making the gap exactly 12px too
+   wide — but only on required fields, which is why it read as an asterisk bug
+   rather than a padding one. */
+.next-field-outline legend > span {
+  display: inline-block;
+  visibility: visible;
+  /* The same padding the label spends, from the same variable, so the gap is
+     the label's box and not its text, and the clearance is even on both. */
+  padding: 0 var(--next-field-label-pad);
+  opacity: 0;
+}
+
+.next-field-outline legend > span > span {
+  margin-inline-start: var(--next-field-required-gap);
+}
+
+/* ---------------------------------------------------------------------------
+   The label
+   --------------------------------------------------------------------------- */
+
+.next-field-label {
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  inset-inline-start: var(--next-field-notch);
+  padding-inline: var(--next-field-label-pad);
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  transform: translateY(-50%);
+  transform-origin: 0 0;
+  transition: top 150ms ease, font-size 150ms ease, color 150ms ease;
+}
+
+:dir(rtl) .next-field-label {
+  transform-origin: 100% 0;
+}
+
+.next-field-required {
+  margin-inline-start: var(--next-field-required-gap);
+  color: hsl(var(--destructive, 0 84% 60%));
+}
+
+/* ---------------------------------------------------------------------------
+   Floated — label up in the gap, gap open.
+
+   Three ways in: the control is focused, it holds a value, or the field is one
+   that has no empty state to float out of (a select always shows something,
+   and a centred label in a four-row textarea would read as body text).
+   --------------------------------------------------------------------------- */
+
+.next-field--floated .next-field-label,
+.next-field:focus-within .next-field-label,
+.next-field-control:not(:placeholder-shown) ~ .next-field-label {
+  top: 0;
+  /* `label { font-size: … !important }` in app.css beats a plain declaration
+     here, so without this the floated label never shrank and sat in the gap at
+     full size. The size still derives from the user's font preference. */
+  font-size: var(--next-field-label-size) !important;
+}
+
+.next-field--floated .next-field-outline legend,
+.next-field:focus-within .next-field-outline legend,
+.next-field-control:not(:placeholder-shown) ~ .next-field-outline legend {
+  max-width: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   Focus — the ring has to BE the border, not a shadow around it. A box-shadow
+   is painted from the border box and knows nothing about the legend, so it
+   closed back over the gap and drew a line through the label. Thickening the
+   border keeps the weight with the gap intact, and the padding above absorbs
+   the extra pixel so nothing shifts.
+   --------------------------------------------------------------------------- */
+
+.next-field:focus-within .next-field-outline {
+  border-color: hsl(var(--ring));
+  border-width: 2px;
+  padding-inline: calc(var(--next-field-notch) - 2px);
+}
+
+.next-field:focus-within .next-field-label {
+  color: hsl(var(--ring));
+}
+
+/* vue-select keeps focus on its search input only while the dropdown is open
+   on some paths, so the open state gets the ring explicitly.
+
+   The doubled class is load-bearing, not a typo: glass paints the resting edge
+   with `html[data-surface='glass'] .next-field-outline`, which scores (0,2,1)
+   and beat a single-class state rule — the ring simply never appeared on the
+   glass surface. :focus-within already scored (0,3,0) and worked, which is
+   what made the gap easy to miss. */
+.next-field.next-field--open .next-field-outline {
+  border-color: hsl(var(--ring));
+  border-width: 2px;
+  padding-inline: calc(var(--next-field-notch) - 2px);
+}
+
+.next-field.next-field--open .next-field-label {
+  color: hsl(var(--ring));
+}
+
+/* Error state outranks focus: a field you are typing in is still wrong. */
+.next-field.next-field--error .next-field-outline {
+  border-color: hsl(var(--destructive, 0 84% 60%));
+}
+
+.next-field.next-field--error .next-field-label {
+  color: hsl(var(--destructive, 0 84% 60%));
+}
+
+.next-field.next-field--disabled .next-field-outline,
+.next-field.next-field--disabled .next-field-label {
+  opacity: 0.5;
+}
+
+/* The outline is the only focus indicator; the browser's own ring on the
+   control inside would draw a second box in the wrong shape. */
+.next-field :focus,
+.next-field :focus-visible {
+  outline: none;
+}

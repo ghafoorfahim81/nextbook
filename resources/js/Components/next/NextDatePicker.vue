@@ -1,7 +1,14 @@
 <template>
     <div
-        class="relative"
-        :class="{ 'date-picker-active': isFocused || hasValue }"
+        class="next-field"
+        :class="{
+            // Floats on the same terms as an input: when it holds a value or
+            // has focus. Pinned up, an empty picker sat in a row next to an
+            // empty input and the two labels were in different places.
+            'next-field--floated': Boolean(label) && (hasValue || isFocused),
+            'next-field--error': Boolean(error),
+            'next-field--disabled': disabled,
+        }"
         @focusin="isFocused = true"
         @focusout="isFocused = false"
     >
@@ -35,14 +42,15 @@
             </template>
         </component>
 
-        <label
-            v-if="label"
-            :for="id"
-            class="pointer-events-none absolute start-3 top-1/2 z-10 -translate-y-1/2 rounded bg-background px-1 text-sm text-muted-foreground transition-all duration-150"
-        >
-            {{ label }}
-            <span v-if="isRequired" class="ms-[2px] text-red-600">*</span>
-        </label>
+        <!-- Same notched outline as NextInput / NextSelect (next-field.css):
+             the frame is the fieldset and the label's clearance is its legend,
+             so nothing paints a patch that has to match the surface behind it. -->
+        <fieldset aria-hidden="true" class="next-field-outline">
+            <legend v-if="label"><span>{{ label }}<span v-if="isRequired">*</span></span></legend>
+        </fieldset>
+
+        <label v-if="label" :for="id" class="next-field-label text-sm">{{ label }}<span
+            v-if="isRequired" class="next-field-required">*</span></label>
 
         <!-- Display error outside the component if present -->
         <span v-if="error" class="mt-1 block text-red-500 text-sm">{{ error }}</span>
@@ -227,7 +235,9 @@ function safeYear(m) {
    - radius: theme --radius
    ----------------------------- */
 
-/* Ensure the date input fits exactly inside its container */
+/* The frame belongs to .next-field-outline now, so the picker's own group is
+   only a transparent box of the right height — two borders in the same place
+   is what refilled the label's gap with a stub. */
 :deep(.vpd-input-group) {
     width: 100%;
     max-width: 100%;
@@ -236,23 +246,18 @@ function safeYear(m) {
     box-sizing: border-box;
     height: 2.5rem;
     min-height: 2.5rem;
-    background-color: hsl(var(--background)) !important; /* ← match shadcn */
-    border: 1px solid hsl(var(--border)) !important;
-    border-radius: calc(var(--radius) - 2px);
+    background-color: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
     overflow: hidden;
 }
-/* Focus parity (same as NextInput/NextSelect) */
-:deep(.vpd-input-group:focus-within) {
-    border-color: hsl(var(--ring)) !important;
-    box-shadow: 0 0 0 1px hsl(var(--ring) / 0.25);
-}
 
-/* Floating-label behavior mirrors NextInput. */
-.date-picker-active > label {
-    top: 0;
-    transform: translateY(-50%);
-    font-size: 0.75rem;
-    color: hsl(var(--foreground));
+:deep(.vpd-input-group input) {
+    background-color: transparent;
+    border: 0;
+    box-shadow: none;
+    outline: none;
+    padding-inline: calc(var(--next-field-notch) + var(--next-field-label-pad));
 }
 
 :deep(.vpd-day) {

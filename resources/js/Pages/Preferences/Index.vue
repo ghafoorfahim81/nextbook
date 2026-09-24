@@ -636,6 +636,9 @@ const itemFieldChecked = (key) => {
 // profile can hide, so the owner can switch it back on. Labels from `item.*`.
 const itemManagementFields = [
     { key: 'code', label: 'item.code' },
+    // Asset/income/cost as one group — filled in from the item type, so they
+    // are off by default and this switches all three back on.
+    { key: 'accounts', label: 'preferences.fields.accounts' },
     { key: 'generic_name', label: 'item.generic_name' },
     { key: 'packing', label: 'item.packing' },
     { key: 'description', label: 'item.description' },

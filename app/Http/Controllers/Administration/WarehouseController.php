@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Administration;
 
+use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\WarehouseStoreRequest;
 use App\Http\Requests\Administration\WarehouseUpdateRequest;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Inventory\StockMovement;
 class WarehouseController extends Controller
 {
+    use TogglesRecordStatus;
+
     public function __construct()
     {
         $this->authorizeResource(Warehouse::class, 'warehouse');
@@ -112,4 +115,11 @@ class WarehouseController extends Controller
             ->route('warehouses.index')
             ->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.warehouse')]));
     }
+
+    /** Flip the record between active and inactive; see the trait for why. */
+    public function toggleStatus(Warehouse $warehouse)
+    {
+        return $this->toggleRecordStatus($warehouse, 'general.resource.warehouse');
+    }
 }
+

@@ -272,7 +272,8 @@
         "item_type": "Item Type",
         "sku": "Stock keeping unit",
         "is_batch_tracked": "Batch Tracked",
-        "is_expiry_tracked": "Expiry Tracked"
+        "is_expiry_tracked": "Expiry Tracked",
+        "accounts": "Accounting fields (asset, income, cost)"
     },
     "sale": {
         "description": "Configure sale transaction preferences",

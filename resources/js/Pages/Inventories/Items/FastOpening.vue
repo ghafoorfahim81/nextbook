@@ -847,11 +847,6 @@ useFormGuard(form)
     height: 2.25rem;
 }
 
-/* The focused cell has to be obvious when the caret is being driven by the
-   arrow keys rather than the mouse. */
-td[data-cell]:focus-within {
-    outline: 2px solid hsl(var(--primary) / 0.35);
-    outline-offset: -2px;
-    border-radius: calc(var(--radius) - 2px);
-}
+/* The field inside draws its own 2px ring on focus now, so a second outline
+   on the cell read as a stray box around the box. */
 </style>

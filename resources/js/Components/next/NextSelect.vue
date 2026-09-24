@@ -1,5 +1,17 @@
 <template>
     <div class="relative w-full">
+      <!-- Same notched outline as NextInput and NextTextarea; the shared rules
+           live in resources/css/next-field.css. A select always shows either a
+           value or a placeholder, so its label has no empty state to float out
+           of and stays up. -->
+      <div
+        class="next-field next-field--floated"
+        :class="{
+          'next-field--open': isOpen,
+          'next-field--error': Boolean(error),
+          'next-field--disabled': isDisabled,
+        }"
+      >
   <v-select
         ref="selectRef"
         :id="id"
@@ -20,7 +32,7 @@
         :close-on-select="!isMultiple"
         :append-to-body="shouldAppendToBody"
         :calculate-position="shouldAppendToBody ? calculatePosition : null"
-        class="col-span-3 w-full sm:text-sm"
+        class="next-field-control col-span-3 w-full sm:text-sm"
         :class="[{ 'no-arrow': !showArrow }]"
 
         v-bind="$attrs"
@@ -59,6 +71,14 @@
         </template>
       </v-select>
 
+        <fieldset aria-hidden="true" class="next-field-outline">
+          <legend v-if="floatingText"><span>{{ floatingText }}<span v-if="isRequired">*</span></span></legend>
+        </fieldset>
+
+        <label v-if="floatingText" :for="id" class="next-field-label text-sm">{{ floatingText }}<span
+          v-if="isRequired" class="next-field-required">*</span></label>
+      </div>
+
       <QuickCreateModal
         v-if="quickCreateConfig"
         :open="quickCreateOpen"
@@ -66,14 +86,6 @@
         :additional-params="normalizedSearchOptions.additionalParams || {}"
         @update:open="quickCreateOpen = $event"
         @created="handleQuickCreated"
-      />
-
-      <!-- Floating label (does NOT block clicks) -->
-      <FloatingLabel
-        :id="id"
-        :label="floatingText"
-        :required="isRequired"
-        class="pointer-events-none z-20"
       />
 
       <!-- Error / hint display -->
@@ -95,7 +107,6 @@
   defineOptions({ inheritAttrs: false })
   import { useI18n } from 'vue-i18n'
   import { usePage } from '@inertiajs/vue3'
-  import FloatingLabel from '@/Components/next/FloatingLabel.vue'
   import { Spinner } from '@/Components/ui/spinner'
   import { useSearchResources } from '@/composables/useSearchResources.js'
   import QuickCreateModal from '@/Components/next/QuickCreateModal.vue'
@@ -151,6 +162,12 @@
 
   const attrs = useAttrs()
   const isMultiple = computed(() => attrs.multiple !== undefined && attrs.multiple !== false)
+  const isDisabled = computed(() => attrs.disabled !== undefined && attrs.disabled !== false)
+
+  // Drives the outline's ring. :focus-within alone is not enough: opening the
+  // dropdown by mouse can leave focus on the toggle rather than the search
+  // field, and with append-to-body the menu is not even inside the wrapper.
+  const isOpen = ref(false)
 
   /* ---------------- I18N / DIRECTION ---------------- */
 
@@ -404,12 +421,14 @@
 }
 
 const handleOpen = () => {
+  isOpen.value = true
   if (!currentSearchTerm.value.trim()) {
     resetSearchableOptions()
   }
 }
 
 const handleClose = () => {
+  isOpen.value = false
   currentSearchTerm.value = ''
   nextTick(resetSearchableOptions)
 }
@@ -579,14 +598,14 @@ const onGlobalQuickCreated = (event) => {
     color: hsl(var(--primary-foreground));
   }
 
-  /* match app input look (light + dark via CSS vars) */
+  /* The frame belongs to .next-field-outline now (next-field.css), so the
+     toggle only has to be the right size and hold its content — its border and
+     fill are stripped there. Two borders in the same place is what used to
+     refill the label's gap with a stub. */
   :deep(.vs__dropdown-toggle) {
-    background-color: hsl(var(--background));
-    border: 1px solid hsl(var(--border));
-    border-radius: calc(var(--radius) - 2px);
     height: 2.5rem;      /* match input h-10 */
     min-height: 2.5rem;
-    padding: 0 0.75rem;  /* avoid extra vertical height from padding */
+    padding-block: 0;    /* avoid extra vertical height from padding */
     display: flex;
     align-items: center;
     color: hsl(var(--foreground));
@@ -602,8 +621,7 @@ const onGlobalQuickCreated = (event) => {
   }
 
   :deep(.vs--disabled .vs__dropdown-toggle) {
-    background-color: hsl(var(--background)) !important;
-    opacity: 0.5;
+    background-color: transparent !important;
     cursor: not-allowed;
   }
 
@@ -635,12 +653,16 @@ const onGlobalQuickCreated = (event) => {
   }
 
   /* Multi-select tags (chips) — only for multiple selects.
-     Single selects keep vue-select's default transparent selected text. */
+     Single selects keep vue-select's default transparent selected text.
+     Kept compact on purpose: four role chips at the old size needed more than
+     one row's worth of height and hung outside the control. */
   :deep(.vs--multiple .vs__selected) {
     background-color: hsl(var(--muted));
     border: 1px solid hsl(var(--border));
     border-radius: calc(var(--radius) - 4px);
-    padding: 0.0625rem 0.5rem;
+    padding: 0 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.375rem;
   }
 
   :deep(.vs__deselect) {
@@ -693,20 +715,9 @@ const onGlobalQuickCreated = (event) => {
     padding-bottom: 0 !important; /* REMOVE bottom padding to eliminate space */
   }
 
-  /* Focus parity with NextInput: the same --ring, at the same 2px weight.
-     It was a hardcoded purple, so on any theme but the violet one the select
-     lit up a different colour from the input beside it.
-
-     NextInput grows its border inward — its outline is an inset-0 fieldset —
-     but this toggle is in flow, where a 2px border would shove the selected
-     text 1px sideways every time the dropdown opens. A 1px border plus a
-     solid 1px ring just outside it renders as the same 2px edge and costs no
-     layout at all. */
-  :deep(.vs--open .vs__dropdown-toggle),
-  :deep(.vs__dropdown-toggle:focus-within) {
-    border-color: hsl(var(--ring));
-    box-shadow: 0 0 0 1px hsl(var(--ring));
-  }
+  /* Focus is the outline's job now — .next-field:focus-within and
+     .next-field--open both light the same --ring that NextInput uses, so the
+     select no longer lights up a hardcoded purple next to a cyan input. */
 
   /* suppress the browser's native focus outline on internal elements —
      our custom border/box-shadow above is the only focus indicator */

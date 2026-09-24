@@ -11,7 +11,7 @@
  * in a later phase, at which point the name input becomes a select. The stored
  * shape does not change, so nothing here needs rewriting then.
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import NextInput from '@/Components/next/NextInput.vue'
 import { Button } from '@/Components/ui/button'
@@ -74,12 +74,15 @@ const legendLabel = computed(() =>
     props.enabled ? t('item.variants') : t('item.identification_pricing')
 )
 
+/** `ITM` + 9 digits — the same shape the item-level barcode field generates. */
+const newBarcode = () => `ITM${Math.floor(100000000 + Math.random() * 900000000)}`
+
 const blankVariant = (sortOrder) => ({
     id: null,
     attributes: attributeNames.value.reduce((acc, name) => ({ ...acc, [name]: '' }), {}),
     name: '',
     sku: '',
-    barcode: '',
+    barcode: newBarcode(),
     // `margin` is a client-side helper — it fills sale_price from purchase_price
     // and is never persisted (item_variants has no margin column).
     margin: '',
@@ -153,9 +156,23 @@ const setPricing = (index, patch) => {
 
 /** Fill a variant's barcode with a fresh code, same format as the item field. */
 const generateBarcode = (index) => {
-    const random = Math.floor(100000000 + Math.random() * 900000000)
-    setField(index, 'barcode', `ITM${random}`)
+    setField(index, 'barcode', newBarcode())
 }
+
+/**
+ * The default variant is built by the page, not by blankVariant(), so it
+ * arrives with an empty barcode. Fill it here — but only for rows that have
+ * never been saved: an existing variant left deliberately without a barcode is
+ * the user's decision, not something a page load should overwrite.
+ */
+onMounted(() => {
+    const needsBarcode = props.modelValue.some((v) => !v.id && !v.barcode)
+    if (!needsBarcode) return
+
+    variants.value = props.modelValue.map((variant) =>
+        !variant.id && !variant.barcode ? { ...variant, barcode: newBarcode() } : variant
+    )
+})
 
 const errorFor = (index, field) => props.errors?.[`variants.${index}.${field}`]
 

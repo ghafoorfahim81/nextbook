@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import { useToggleStatus } from '@/composables/useToggleStatus';
 import CreateEditModal from '@/Pages/Administration/Warehouses/CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
 
@@ -49,6 +50,16 @@ const deleteItem = (id) => {
         successMessage: t('general.delete_success', { name: t('admin.warehouse.warehouse') }),
     });
 };
+
+// A warehouse with stock movements behind it cannot be deleted, so retiring
+// one has to mean deactivating it.
+const { toggleStatus } = useToggleStatus();
+const toggleItemStatus = (item) => {
+    toggleStatus('warehouses.toggle-status', item.id, {
+        isActive: item.is_active !== false,
+        name: item.name || t('admin.warehouse.warehouse'),
+    });
+};
 </script>
 
 <template>
@@ -69,6 +80,8 @@ const deleteItem = (id) => {
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
+            @toggle-status="toggleItemStatus"
+            :has-status-toggle="true"
             @add="isDialogOpen = true"
             :title="t('admin.warehouse.warehouses')"
             :url="`warehouses.index`"

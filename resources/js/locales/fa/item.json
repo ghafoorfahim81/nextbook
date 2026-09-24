@@ -247,6 +247,7 @@
     "measure_required_in_row": "ردیف {row}: واحد اندازه گیری الزامی است.",
     "warehouse_required_in_row": "ردیف {row}: برای مقدار موجودی یک گدام انتخاب کنید.",
     "quantity_required_in_row": "ردیف {row}: برای بچ/تاریخ انقضایی که نوشته اید مقدار موجودی وارد کنید.",
+    "opening_price_required_in_row": "ردیف {row}: برای مقدار موجودی، قیمت خرید یا قیمت تمام‌شده را وارد کنید.",
     "duplicate_name_in_row": "ردیف {row}: این نام بیش از یک بار استفاده شده است.",
     "items_to_create": "اجناس برای ثبت",
     "with_opening_stock": "دارای موجودی اولیه",
