@@ -14,7 +14,7 @@ import {
     DollarSign, Ruler, MapPin, Search, ShieldCheck, PackageSearch,
     SlidersHorizontal, Globe, Factory, CalendarClock, Scale, Boxes,
     Building, Target, User, Download, ArrowLeft, SquarePen, HandCoins,
-    Power, PowerOff, Loader2
+    Power, PowerOff, Loader2, Activity
 } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useBusinessProfile } from '@/composables/useBusinessProfile';
@@ -42,6 +42,9 @@ const loading = ref(false);
 
 const currentRecords = computed(() => activeTab.value === 'in' ? inRecords.value : outRecords.value);
 
+/** Whether the page renders the per-variant table further down. */
+const showsVariantTable = computed(() => showsSection('variants') && variantRows.value.length > 0);
+
 const itemDetails = computed(() => [
     { label: t('general.name'), value: itemData.value?.name, icon: Package },
     { label: t('item.code'), value: itemData.value?.code, icon: Hash },
@@ -58,8 +61,12 @@ const itemDetails = computed(() => [
     { label: t('item.cost_account'), value: itemData.value?.cost_account?.name, icon: TrendingDown },
     { label: t('item.current_stock'), value: itemData.value?.on_hand || 0, icon: Target },
     { label: t('item.average_cost'), value: itemData.value?.avg_cost, icon: DollarSign },
-    { label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign },
-    { label: t('item.sale_price'), value: itemData.value?.sale_price, icon: DollarSign },
+    // Purchase price is a per-variant figure and is read off the variants
+    // table below. It only appears up here for trades that never show that
+    // table, where the item row is the only place it could be read at all.
+    ...(showsVariantTable.value
+        ? []
+        : [{ label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign }]), 
     { label: t('item.margin_percentage'), value: itemData.value?.margin_percentage, icon: DollarSign },
     { label: t('item.rate_a'), value: itemData.value?.rate_a, icon: DollarSign },
     { label: t('item.rate_b'), value: itemData.value?.rate_b, icon: DollarSign },
@@ -424,6 +431,10 @@ onMounted(() => {
                 </div>
 
                 <hr class="my-4 border-border" />
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="bg-violet-500 text-white p-1.5 rounded"><Activity class="w-4 h-4" /></div>
+                    <h3 class="text-sm font-semibold text-foreground">{{ t('item.section.transaction_status') }}</h3>
+                </div>
                 <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-4">
 
                     <div class="flex items-start gap-2">
@@ -517,7 +528,7 @@ onMounted(() => {
                 </template>
 
                 <!-- Variants: only meaningful when the trade uses them -->
-                <template v-if="showsSection('variants') && variantRows.length">
+                <template v-if="showsVariantTable">
                     <hr class="my-4 border-border" />
                     <div class="flex items-center gap-2 mb-3">
                         <div class="bg-violet-500 text-white p-1.5 rounded"><Tag class="w-4 h-4" /></div>

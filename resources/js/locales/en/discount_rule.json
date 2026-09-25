@@ -18,5 +18,8 @@
     "show_on_invoice": "Show on invoice",
     "name_hint": "A label you will recognise later, e.g. Ramadan Promo.",
     "restore": "Apply {name}",
-    "all_customers": "All customers"
+    "all_customers": "All customers",
+    "percentage_hint": "Percentage discounts are capped at {max}.",
+    "percentage_max": "A percentage discount cannot be more than {max}.",
+    "delete_description": "This rule will be deleted for good — it does not go to Trash and cannot be restored. To stop it pricing new sales without losing it, switch it off instead."
 }

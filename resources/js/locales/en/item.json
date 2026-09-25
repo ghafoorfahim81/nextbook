@@ -187,6 +187,7 @@
     "pricing_method": "Pricing Method",
     "accounts": "Accounts",
     "section": {
+    "transaction_status": "Item Transaction General Status",
         "identity": "Identity",
         "classification": "Classification",
         "pricing": "Pricing",

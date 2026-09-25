@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useToggleStatus } from '@/composables/useToggleStatus';
 
-defineProps({
+const props = defineProps({
     discountRules: Object,
     options: { type: Object, default: () => ({}) },
 });
@@ -39,7 +39,18 @@ const editItem = (item) => {
     editingItem.value = item;
     isDialogOpen.value = true;
 };
-const deleteItem = (id) => deleteResource('discount-rules.destroy', id);
+// Deleting a rule is final: there is no restore route and a deleted rule never
+// reaches Trash, so the dialog warns instead of promising a recovery window and
+// the toast that follows carries no Undo.
+const deleteItem = (id) => {
+    const rule = (props.discountRules?.data || []).find((row) => row.id === id);
+
+    deleteResource('discount-rules.destroy', id, {
+        reversible: false,
+        description: t('discount_rule.delete_description'),
+        name: rule?.name || t('discount_rule.discount_rule'),
+    });
+};
 
 // A rule that has already priced a sale should be switched off, not deleted.
 const { toggleStatus } = useToggleStatus();

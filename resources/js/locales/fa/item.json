@@ -187,6 +187,7 @@
     "pricing_method": "روش قیمت‌گذاری",
     "accounts": "حساب‌ها",
     "section": {
+    "transaction_status": "وضعیت عمومی معاملات جنس",
         "identity": "شناسه",
         "classification": "دسته‌بندی",
         "pricing": "قیمت‌گذاری",

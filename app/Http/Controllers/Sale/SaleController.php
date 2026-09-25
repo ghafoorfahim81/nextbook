@@ -1045,35 +1045,14 @@ class SaleController extends Controller
             return;
         }
 
-        $movements = StockMovement::query()
-            ->where('item_id', $itemId)
-            ->orderBy('date')
-            ->orderBy('id')
-            ->get(['movement_type', 'quantity', 'unit_cost']);
-
-        $avgCost = 0.0;
-        $runningQty = 0.0;
-
-        foreach ($movements as $movement) {
-            $qty = (float) $movement->quantity;
-            if ($movement->movement_type === StockMovementType::IN) {
-                $cost = (float) $movement->unit_cost;
-                if ($runningQty + $qty > 0) {
-                    $avgCost = (($runningQty * $avgCost) + ($qty * $cost)) / ($runningQty + $qty);
-                }
-                $runningQty += $qty;
-            } else {
-                $runningQty = max(0.0, $runningQty - $qty);
-            }
-        }
-
-        if ($runningQty > 0) {
-            $item->avg_cost = $avgCost;
-            $item->save();
-        }
-
-        // Each variant carries its own average too, replayed the same way.
-        app(StockService::class)->recalculateVariantAverageCosts($itemId);
+        // Both figures are replayed by the one implementation, so they cannot
+        // disagree. This loop used to live here in a hand-rolled copy that
+        // blended voided layers back in and ignored the unit a movement was
+        // recorded in — an item stocked in pieces but received in boxes came
+        // out priced per box.
+        $stockService = app(StockService::class);
+        $stockService->recalculateItemAverage($itemId);
+        $stockService->recalculateVariantAverageCosts($itemId);
     }
 
     private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
