@@ -227,7 +227,12 @@ class PurchaseController extends Controller
                 ];
 
                 if ($postImmediately) {
-                    $stockService->post($stockPayloads[array_key_last($stockPayloads)]);
+                    // Posted on creation: the movement is posted too. The stored
+                    // payload keeps the draft status for the post() route to reuse.
+                    $stockService->post([
+                        ...$stockPayloads[array_key_last($stockPayloads)],
+                        'status' => StockStatus::POSTED->value,
+                    ]);
                 } else {
                     // Draft: record the incoming stock as reserved_in for visibility.
                     $stockService->reserve($stockPayloads[array_key_last($stockPayloads)]);
@@ -927,7 +932,10 @@ class PurchaseController extends Controller
             $transaction = $purchase->transaction()->firstOrFail();
 
             foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
-                // The draft's reserved_in becomes a real stock increase.
+                // The draft's reserved_in becomes a real stock increase. The payload
+                // was frozen when the draft was written, so it still says "draft" —
+                // the movement this creates belongs to a posted document.
+                $payload['status'] = StockStatus::POSTED->value;
                 $stockService->release($payload);
                 $stockService->post($payload);
             }

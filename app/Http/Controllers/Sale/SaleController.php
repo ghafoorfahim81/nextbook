@@ -1431,7 +1431,10 @@ class SaleController extends Controller
                             $stockService->ensureReservedAvailability($payload);
                         }
 
-                        // This draft's reservation becomes a real deduction.
+                        // This draft's reservation becomes a real deduction. The
+                        // payload was frozen when the draft was written, so it still
+                        // says "draft" — this movement belongs to a posted document.
+                        $payload['status'] = StockStatus::POSTED->value;
                         $stockService->release($payload);
                         $stockService->post($payload);
                     } catch (ValidationException $e) {

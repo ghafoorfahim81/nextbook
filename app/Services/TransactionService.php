@@ -591,6 +591,12 @@ class TransactionService
         $movements = StockMovement::query()
             ->where('reference_type', $original->reference_type)
             ->where('reference_id', $original->reference_id)
+            // A movement that is already voided has been compensated once. A
+            // document whose module undoes its own stock (an item transfer
+            // moves goods between two of its own warehouses, so the generic
+            // rules below do not fit) reaches here with nothing left to do,
+            // and re-compensating would double the correction.
+            ->whereNotIn('status', [\App\Enums\StockStatus::VOIDED->value, \App\Enums\StockStatus::CANCELLED->value])
             ->get();
 
         foreach ($movements as $movement) {

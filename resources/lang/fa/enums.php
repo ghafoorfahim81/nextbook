@@ -98,7 +98,7 @@ return [
         'sale' => 'فروش',
         'sale_return' => 'برگشت فروش',
         'stock_adjustment' => 'تعدیل انبار',
-        'item_transfer' => 'ترجمه مورد',
+        'item_transfer' => 'انتقال جنس',
         'adjustment' => 'تعدیل',
         'opening' => 'موجودی اولیه',
     ],

@@ -163,6 +163,9 @@ class StockAdjustmentService
 
             foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
                 try {
+                    // The stored payload still carries the status it was written
+                    // with; the document is being posted, so its stock is too.
+                    $payload['status'] = StockStatus::POSTED->value;
                     $this->stockService->release($payload);
                     $this->stockService->post($payload);
                 } catch (ValidationException $e) {

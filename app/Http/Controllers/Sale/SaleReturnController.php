@@ -556,6 +556,9 @@ class SaleReturnController extends Controller
                 $transaction = $saleReturn->transaction()->firstOrFail();
 
                 foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                    // The stored payload still carries the draft status it was
+                    // written with; the document is being posted, so its stock is.
+                    $payload['status'] = StockStatus::POSTED->value;
                     $stockService->release($payload);
                     $stockService->post($payload);
                 }

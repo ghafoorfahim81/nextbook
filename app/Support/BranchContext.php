@@ -46,6 +46,9 @@ final class BranchContext
         'freight-customs-clearing',
         'inventory-shrinkage-and-wastage',
         'inventory-adjustments',
+        // Freight for moving goods between the company's own warehouses. An
+        // item transfer defaults its expense line to this account.
+        'item-transfer-expense',
         // Realised exchange differences and unapplied money, both resolved by
         // slug only — the names are localised into Dari and Pashto, so any
         // lookup by name breaks the moment someone switches language.

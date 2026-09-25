@@ -10,6 +10,9 @@ use App\Http\Resources\ItemTransfer\ItemTransferResource;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Models\Administration\Warehouse;
 use App\Models\Inventory\Item;
+use App\Models\Account\Account;
+use App\Http\Resources\Account\AccountResource;
+use App\Support\BranchContext;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ItemTransferService;
@@ -66,7 +69,34 @@ class ItemTransferController extends Controller
      */
     public function create(Request $request)
     {
-        return inertia('ItemTransfer/ItemTransfers/Create');
+        return inertia('ItemTransfer/ItemTransfers/Create', $this->transferCostOptions());
+    }
+
+    /**
+     * Lookups the transfer-cost switch needs once it is turned on.
+     *
+     * The expense side is pre-selected rather than left to the operator: moving
+     * stock between the company's own warehouses always lands on the same
+     * account, and letting each transfer pick its own would scatter freight
+     * across the chart of accounts.
+     *
+     * @return array<string, mixed>
+     */
+    private function transferCostOptions(): array
+    {
+        return [
+            'bankAccounts' => AccountResource::collection(
+                Account::whereHas('accountType', fn ($q) => $q->where('slug', 'cash-or-bank'))
+                    ->orderBy('name')
+                    ->get()
+            ),
+            'expenseAccounts' => AccountResource::collection(
+                Account::whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
+                    ->orderBy('name')
+                    ->get()
+            ),
+            'defaultExpenseAccountId' => BranchContext::glAccount('item-transfer-expense'),
+        ];
     }
 
     /**
@@ -101,10 +131,22 @@ class ItemTransferController extends Controller
      */
     public function show(Request $request, ItemTransfer $itemTransfer)
     {
-        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.variant', 'items.unitMeasure', 'branch', 'createdBy', 'updatedBy', 'attachments']);
+        $itemTransfer->load([
+            'fromWarehouse', 'toWarehouse', 'items.item', 'items.variant', 'items.unitMeasure',
+            'branch', 'createdBy', 'updatedBy', 'attachments',
+            'bankAccount', 'expenseAccount', 'currency',
+        ]);
 
-        return response()->json([
-            'data' => new ItemTransferResource($itemTransfer),
+        // The listing still fetches a transfer over XHR for its quick preview;
+        // a normal visit gets the full page.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => new ItemTransferResource($itemTransfer),
+            ]);
+        }
+
+        return inertia('ItemTransfer/ItemTransfers/Show', [
+            'transfer' => new ItemTransferResource($itemTransfer),
         ]);
     }
 
@@ -116,10 +158,14 @@ class ItemTransferController extends Controller
         if ($itemTransfer->status === TransferStatus::COMPLETED || $itemTransfer->status === TransferStatus::CANCELLED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_edit_completed_or_cancelled_transfer')]);
         }
-        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'attachments']);
+        $itemTransfer->load([
+            'fromWarehouse', 'toWarehouse', 'items.item', 'items.item.variants', 'items.variant',
+            'items.unitMeasure', 'attachments', 'bankAccount', 'expenseAccount', 'currency',
+        ]);
 
         return inertia('ItemTransfer/ItemTransfers/Edit', [
             'transfer' => new ItemTransferResource($itemTransfer),
+            ...$this->transferCostOptions(),
         ]);
     }
 
@@ -234,6 +280,13 @@ class ItemTransferController extends Controller
     public function reverse(Request $request, ItemTransfer $itemTransfer)
     {
         $request->validate(['reason' => ['nullable', 'string', 'max:255']]);
+
+        // Every other module reverses posted documents only — a draft has moved
+        // no stock and posted no ledger, so there is nothing to undo. A draft
+        // that is no longer wanted is deleted instead.
+        if ($itemTransfer->status !== TransferStatus::COMPLETED) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
 
         return $this->cancel($request, $itemTransfer);
     }

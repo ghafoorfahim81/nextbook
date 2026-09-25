@@ -29,7 +29,12 @@ class ItemTransfer extends Model
         'from_warehouse_id',
         'to_warehouse_id',
         'status',
+        'has_transfer_cost',
         'transfer_cost',
+        'bank_account_id',
+        'expense_account_id',
+        'currency_id',
+        'rate',
         'branch_id',
         'remarks',
         'created_by',
@@ -43,7 +48,12 @@ class ItemTransfer extends Model
             'from_warehouse_id' => 'string',
             'to_warehouse_id' => 'string',
             'status' => TransferStatus::class,
+            'has_transfer_cost' => 'boolean',
             'transfer_cost' => 'decimal:4',
+            'bank_account_id' => 'string',
+            'expense_account_id' => 'string',
+            'currency_id' => 'string',
+            'rate' => 'decimal:6',
             'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
@@ -87,6 +97,21 @@ class ItemTransfer extends Model
     public function items(): HasMany
     {
         return $this->hasMany(ItemTransferItem::class);
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'bank_account_id');
+    }
+
+    public function expenseAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'expense_account_id');
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Currency::class, 'currency_id');
     }
 
 

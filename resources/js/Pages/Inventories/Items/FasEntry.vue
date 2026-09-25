@@ -726,9 +726,20 @@ const goToItemList = () => {
 // Guards Inertia navigation and tab close while rows are unsaved.
 useFormGuard(form)
 
+/* Ctrl/Cmd+S saves, same as Sales. Routed through handleSubmit() so the grid
+   validation and the confirm dialog behave exactly like pressing Save. */
+const handleGlobalKeydown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault()
+        if (!form.processing) handleSubmit()
+    }
+}
+
 onMounted(() => {
     nextTick(() => focusCell(0, visibleKeys.value[0]))
+    window.addEventListener('keydown', handleGlobalKeydown)
 })
+onUnmounted(() => window.removeEventListener('keydown', handleGlobalKeydown))
 </script>
 
 <template>

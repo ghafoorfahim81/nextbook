@@ -1,10 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeleteResource } from '@/composables/useDeleteResource'
-import ShowDialog from '@/Pages/ItemTransfer/ItemTransfers/ShowDialog.vue'
 import { router } from '@inertiajs/vue3'
 import { useToast } from '@/Components/ui/toast/use-toast'
 const { t } = useI18n()
@@ -16,9 +15,6 @@ const props = defineProps({
   filters: Object,
   filterOptions: Object,
 })
-
-const showDialog = ref(false)
-const selectedId = ref(null)
 
 const editItem = (item) => {
  if(item.status === 'completed' || item.status === 'cancelled') {
@@ -52,8 +48,7 @@ const deleteItem = (id) => {
 }
 
 const showItem = (id) => {
-  selectedId.value = id
-  showDialog.value = true
+  router.visit(route('item-transfers.show', id))
 }
 
 const columns = computed(() => ([
@@ -123,12 +118,6 @@ const filterFields = computed(() => ([
       :addTitle="t('item_transfer.item_transfer')"
       :addAction="'redirect'"
       :addRoute="'item-transfers.create'"
-    />
-
-    <ShowDialog
-      :open="showDialog"
-      :transfer-id="selectedId"
-      @update:open="showDialog = $event"
     />
   </AppLayout>
 </template>

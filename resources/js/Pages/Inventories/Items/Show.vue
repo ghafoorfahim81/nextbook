@@ -319,8 +319,10 @@ onMounted(() => {
 </script>
 
 <template>
-    <AppLayout :title="`${t('item.item')} - ${itemData.name || ''}`">
-        <div class="space-y-6">
+    <AppLayout :title="`${t('item.item')} - ${itemData.name || ''}`" :sidebar-collapsed="true">
+        <!-- min-w-0 + overflow-x-clip keep the page itself from scrolling sideways:
+             every wide table below carries its own overflow-x-auto. -->
+        <div class="space-y-6 min-w-0 max-w-full overflow-x-clip">
             <!-- Page header -->
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <Button
@@ -364,7 +366,9 @@ onMounted(() => {
             </div>
 
             <!-- Info section -->
-            <fieldset class="rounded-xl border border-border bg-muted/40 px-5 pb-5 pt-3">
+            <!-- min-w-0: a fieldset defaults to min-inline-size:min-content and would
+                 otherwise refuse to shrink below its widest child. -->
+            <fieldset class="rounded-xl border border-border bg-muted/40 px-5 pb-5 pt-3 min-w-0">
                 <legend class="px-2 text-sm font-semibold text-violet-500">{{ itemData.name }}</legend>
                 <div class="flex flex-wrap items-center gap-2 mb-4">
                     <div class="bg-violet-500 text-white p-1.5 rounded">

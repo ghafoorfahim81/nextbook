@@ -115,6 +115,7 @@ class ItemResource extends JsonResource
             'stock_count' => $this->whenLoaded('stocks', function () {
                 $sum = $this->stocks
                     ->where('movement_type', StockMovementType::IN->value)
+                    ->reject(fn ($stock) => $this->isReversedMovement($stock))
                     ->sum(function ($stock) {
                         // If unit_measure_id differs (e.g. sale in box, item in each), normalize to item unit
                         if ((string)$stock->unit_measure_id === (string)$this->unit_measure_id || !$stock->unit_measure_id) {
@@ -130,6 +131,7 @@ class ItemResource extends JsonResource
             'stock_out_count' => $this->whenLoaded('stocks', function () {
                 $sum = $this->stocks
                     ->where('movement_type', StockMovementType::OUT->value)
+                    ->reject(fn ($stock) => $this->isReversedMovement($stock))
                     ->sum(function ($stock) {
                         if ((string)$stock->unit_measure_id === (string)$this->unit_measure_id || !$stock->unit_measure_id) {
                             return $stock->quantity;
@@ -168,5 +170,19 @@ class ItemResource extends JsonResource
         ];
     }
 
+    /**
+     * Was this movement undone?
+     *
+     * Reversing a document voids its original layer AND posts a compensating
+     * one that is voided too. Counting either would report goods that came in
+     * or went out when neither ever did, so Total In / Total Out skip both.
+     */
+    private function isReversedMovement($stock): bool
+    {
+        $status = $stock->status instanceof StockStatus
+            ? $stock->status->value
+            : (string) $stock->status;
 
+        return in_array($status, [StockStatus::VOIDED->value, StockStatus::CANCELLED->value], true);
+    }
 }
