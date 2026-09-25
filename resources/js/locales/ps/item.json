@@ -313,5 +313,11 @@
     "pricing_direction": "لوری",
     "pricing_increase": "زیاتوالی",
     "pricing_decrease": "کموالی",
-    "pricing_direction_hint": "د «په سلنه بدلون» او «په مبلغ بدلون» لپاره کارېږي. شمېره مثبته ولیکئ."
+    "pricing_direction_hint": "د «په سلنه بدلون» او «په مبلغ بدلون» لپاره کارېږي. شمېره مثبته ولیکئ.",
+    "pricing_scope": "پلي کول پر",
+    "pricing_scope_all": "ټول توکي",
+    "pricing_scope_hint": "لړلیک یوې کټګورۍ یا برانډ ته محدود کړئ، بیا مطلوبې کرښې وټاکئ او لاندې ډله‌ییزه کړنه وکاروئ.",
+    "pricing_apply_filter": "پلي کول",
+    "pricing_pick_a_target": "لومړی یوه کټګوري یا برانډ وټاکئ.",
+    "pricing_select_all": "د دې مخ ټولې کرښې وټاکئ"
 }

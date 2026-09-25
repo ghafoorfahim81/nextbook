@@ -37,6 +37,7 @@ use App\Models\Sale\InvoiceFormat;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\CostingMethod;
 use App\Models\Inventory\Item;
+use App\Models\Inventory\ItemVariant;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use App\Services\DateConversionService;
@@ -250,9 +251,9 @@ class SaleController extends Controller
             $totalDiscount = $request->input('discount_total', 0);
             // Build cost lookup before createMany so net_unit_cost captures the avg_cost
             // at the moment of this sale (before any stock deductions change state).
-            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId] = $this->buildSaleItemCostLookup($validated['item_list']);
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById) {
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId) {
                 // The form posts the line discount as item_discount; the column is
                 // `discount`. Without this the value is dropped on create, so the GL
                 // records the discount (it is folded into discount_total) while the
@@ -261,7 +262,12 @@ class SaleController extends Controller
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 $item['variant_id'] = $this->resolveLineVariantId($item);
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
-                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
+                $avgCost = $this->resolveLineBaseCost(
+                    $item['variant_id'] ?? null,
+                    $item['item_id'],
+                    $averageCostsByVariantId,
+                    $averageCostsByItemId,
+                );
                 $item['net_unit_cost'] = $itemModel ? $this->resolveItemCostByMethod(
                     avgCost: $avgCost,
                     selectedUnitMeasureId: $item['unit_measure_id'],
@@ -272,6 +278,7 @@ class SaleController extends Controller
                     branchId: $sale->branch_id,
                     quantity: (float) $item['quantity'],
                     costingMethod: $itemModel->effectiveCostingMethod()->value,
+                    variantId: $item['variant_id'] ?? null,
                 ) : 0.0;
                 return $item;
             }, $validated['item_list']);
@@ -680,11 +687,14 @@ class SaleController extends Controller
             // Fallback: unit_cost from the stock movement (covers historical data where
             // net_unit_cost was NULL). This ensures a sale update NEVER re-costs at the
             // current avg_cost — the original COGS is always preserved.
+            // Keyed by variant too: two lines of the same item in different
+            // variants cost different amounts, and a variant-blind key handed
+            // the second line the first one's cost.
             $originalNetUnitCosts = $sale->items()
                 ->whereNotNull('net_unit_cost')
-                ->get(['item_id', 'unit_measure_id', 'net_unit_cost'])
+                ->get(['item_id', 'unit_measure_id', 'variant_id', 'net_unit_cost'])
                 ->mapWithKeys(fn ($i) => [
-                    $i->item_id . '_' . $i->unit_measure_id => (float) $i->net_unit_cost
+                    $i->item_id . '_' . $i->unit_measure_id . '_' . ($i->variant_id ?? '') => (float) $i->net_unit_cost
                 ])
                 ->all();
 
@@ -725,18 +735,23 @@ class SaleController extends Controller
             // $this->rebuildStockStateForCombos($affectedCombos);
 
             // Build cost lookup after rebuild so avg_cost reflects post-rebuild state.
-            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId] = $this->buildSaleItemCostLookup($validated['item_list']);
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts, $originalMovementCosts) {
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId, $originalNetUnitCosts, $originalMovementCosts) {
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
-                $key = $item['item_id'] . '_' . $item['unit_measure_id'];
+                $key = $item['item_id'] . '_' . $item['unit_measure_id'] . '_' . ($item['variant_id'] ?? '');
                 // 1. net_unit_cost on the sale item — most authoritative (set at sale creation).
                 // 2. unit_cost from the stock movement — covers historical rows with NULL net_unit_cost.
                 // 3. Current avg_cost — only for items newly added in this edit.
                 $item['net_unit_cost'] = $originalNetUnitCosts[$key]
                     ?? $originalMovementCosts[$key]
                     ?? ($itemModel ? $this->resolveItemCostByMethod(
-                        avgCost: (float) ($averageCostsByItemId[$item['item_id']] ?? 0),
+                        avgCost: $this->resolveLineBaseCost(
+                            $item['variant_id'] ?? null,
+                            $item['item_id'],
+                            $averageCostsByVariantId,
+                            $averageCostsByItemId,
+                        ),
                         selectedUnitMeasureId: $item['unit_measure_id'],
                         itemUnitMeasureId: $itemModel->unit_measure_id,
                         unitValuesById: $unitValuesById,
@@ -745,6 +760,7 @@ class SaleController extends Controller
                         branchId: $sale->branch_id,
                         quantity: (float) $item['quantity'],
                         costingMethod: $itemModel->effectiveCostingMethod()->value,
+                        variantId: $item['variant_id'] ?? null,
                     ) : 0.0);
                 return $item;
             }, $validated['item_list']);
@@ -1263,7 +1279,7 @@ class SaleController extends Controller
             ->values();
 
         if ($itemIds->isEmpty()) {
-            return [[], [], []];
+            return [[], [], [], []];
         }
 
         $itemModelsById = Item::query()
@@ -1276,6 +1292,17 @@ class SaleController extends Controller
             ->all();
         $averageCostsByItemId = Item::query()
             ->whereIn('id', $itemIds)
+            ->pluck('avg_cost', 'id')
+            ->map(fn ($value) => (float) $value)
+            ->all();
+
+        // A variant carries its own average, blended only from the receipts of
+        // that variant. Selling "Red / XL" has to relieve inventory at what the
+        // Red / XL stock cost, not at an average smeared across every colour —
+        // otherwise COGS and the inventory credit are both wrong, and by
+        // opposite amounts on the cheap and the expensive variants.
+        $averageCostsByVariantId = ItemVariant::query()
+            ->whereIn('item_id', $itemIds)
             ->pluck('avg_cost', 'id')
             ->map(fn ($value) => (float) $value)
             ->all();
@@ -1296,7 +1323,31 @@ class SaleController extends Controller
             ->map(fn ($value) => (float) $value)
             ->all();
 
-        return [$itemModelsById, $averageCostsByItemId, $unitValuesById];
+        return [$itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId];
+    }
+
+    /**
+     * The per-base-unit cost a sale line should relieve inventory at.
+     *
+     * The variant's own average wins whenever it carries one. It can legitimately
+     * be zero — a variant whose stock arrived before the column was maintained,
+     * or one that has never been received — and pricing goods at nothing would
+     * report the whole sale as profit, so a zero falls back to the item figure
+     * rather than being trusted.
+     */
+    private function resolveLineBaseCost(
+        ?string $variantId,
+        string $itemId,
+        array $averageCostsByVariantId,
+        array $averageCostsByItemId,
+    ): float {
+        $variantCost = $variantId ? (float) ($averageCostsByVariantId[$variantId] ?? 0.0) : 0.0;
+
+        if ($variantCost > 0) {
+            return $variantCost;
+        }
+
+        return (float) ($averageCostsByItemId[$itemId] ?? 0.0);
     }
 
     private function resolveItemCostByMethod(
@@ -1309,6 +1360,7 @@ class SaleController extends Controller
         string $branchId,
         float $quantity,
         ?string $costingMethod = null,
+        ?string $variantId = null,
     ): float {
         // The ITEM's method, not the company's. An item may override the
         // company default (Item::effectiveCostingMethod), and StockService
@@ -1338,6 +1390,15 @@ class SaleController extends Controller
             ->where('branch_id', $branchId)
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0)
+            // Peek at the SAME layers StockService::deductFIFO() will consume —
+            // it filters by variant, so leaving this unfiltered costed the line
+            // from another variant's receipts and left the GL disagreeing with
+            // the movement the sale actually posted.
+            ->when(
+                $variantId !== null && $variantId !== '',
+                fn ($q) => $q->where('variant_id', $variantId),
+                fn ($q) => $q->whereNull('variant_id'),
+            )
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('expire_date', 'asc')
             ->orderBy('date', $order)

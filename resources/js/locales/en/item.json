@@ -349,5 +349,11 @@
     "pricing_direction": "Direction",
     "pricing_increase": "Increase",
     "pricing_decrease": "Decrease",
-    "pricing_direction_hint": "Applies to \"Change by %\" and \"Change by amount\". Enter the figure as a positive number."
+    "pricing_direction_hint": "Applies to \"Change by %\" and \"Change by amount\". Enter the figure as a positive number.",
+    "pricing_scope": "Apply to",
+    "pricing_scope_all": "All items",
+    "pricing_scope_hint": "Narrow the list to one category or brand, then tick the rows you want and use the bulk action below.",
+    "pricing_apply_filter": "Apply",
+    "pricing_pick_a_target": "Choose a category or a brand first.",
+    "pricing_select_all": "Select all rows on this page"
 }

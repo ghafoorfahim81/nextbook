@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\Administration\Brand;
+use App\Models\Administration\Category;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\ItemVariant;
 use Carbon\Carbon;
@@ -14,7 +16,16 @@ class ItemPricingController extends Controller
     /** Opening the screen with the whole catalogue is a slow page nobody asked for. */
     private const DEFAULT_PER_PAGE = 10;
 
-    private const PER_PAGE_CHOICES = [10, 25, 50, 100];
+    private const PER_PAGE_CHOICES = [10, 25, 50, 100, 250];
+
+    /**
+     * Repricing is rarely one product at a time — it is "every drink" or
+     * "everything this supplier sells". Narrowing the grid to a category or a
+     * brand is what makes the tick-all above it mean something useful.
+     */
+    private const SCOPE_CHOICES = ['all', 'category', 'brand'];
+
+    private const SCOPE_COLUMNS = ['category' => 'category_id', 'brand' => 'brand_id'];
 
     public function index(Request $request)
     {
@@ -26,6 +37,16 @@ class ItemPricingController extends Controller
         if (! in_array($perPage, self::PER_PAGE_CHOICES, true)) {
             $perPage = self::DEFAULT_PER_PAGE;
         }
+
+        $scope = (string) $request->get('scope', 'all');
+
+        if (! in_array($scope, self::SCOPE_CHOICES, true)) {
+            $scope = 'all';
+        }
+
+        // "All items" targets nothing in particular, so a leftover id from the
+        // previously chosen category must not keep filtering the grid.
+        $scopeId = $scope === 'all' ? null : ($request->get('scope_id') ?: null);
 
         // Price lives on the variant now, so the variant is the row: a shirt in
         // three sizes is three prices, not one.
@@ -44,6 +65,10 @@ class ItemPricingController extends Controller
                         }
                     }));
             }))
+            ->when($scopeId !== null, fn ($q) => $q->whereHas(
+                'item',
+                fn ($itemQuery) => $itemQuery->where(self::SCOPE_COLUMNS[$scope], $scopeId)
+            ))
             ->withSum('stockBalances as on_hand', 'quantity')
             ->withMin('stockBalances as earliest_expiry', 'expire_date')
             // Newest first without a search: the thing just created is the thing
@@ -60,8 +85,15 @@ class ItemPricingController extends Controller
             'filters' => [
                 'search' => $search,
                 'perPage' => $perPage,
+                'scope' => $scope,
+                'scope_id' => $scopeId,
             ],
             'perPageChoices' => self::PER_PAGE_CHOICES,
+            // Labels for these come from the front-end locale files, so the
+            // payload carries the ids and the page prints the names.
+            'scopeChoices' => self::SCOPE_CHOICES,
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name', 'local_name']),
+            'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

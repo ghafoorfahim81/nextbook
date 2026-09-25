@@ -32,7 +32,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useSoundPreferences } from '@/composables/useSoundPreferences'
 import { useDebounceFn } from '@vueuse/core'
 import { formatMoney } from '@/utils/money'
-import { Percent, RotateCcw, Save, TrendingDown, TrendingUp } from 'lucide-vue-next'
+import { Filter, Percent, RotateCcw, Save, TrendingDown, TrendingUp } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 const { t, locale } = useI18n()
@@ -42,7 +42,10 @@ const { play } = useSoundPreferences()
 const props = defineProps({
     items: Object,
     filters: Object,
-    perPageChoices: { type: Array, default: () => [10, 25, 50, 100] },
+    perPageChoices: { type: Array, default: () => [10, 25, 50, 100, 250] },
+    scopeChoices: { type: Array, default: () => ['all', 'category', 'brand'] },
+    categories: { type: Array, default: () => [] },
+    brands: { type: Array, default: () => [] },
 })
 
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
@@ -220,10 +223,47 @@ const perPageOptions = computed(() =>
     props.perPageChoices.map((value) => ({ id: value, name: String(value) })),
 )
 
-const reload = (overrides = {}) => {
+/* ------------------------------------------------------------------ *
+ * Scope filter — reprice a whole category or brand
+ * ------------------------------------------------------------------ */
+
+// The same shape a discount rule uses to say what it covers, because the
+// question is the same one: which slice of the catalogue are we touching?
+const scope = ref(props.filters?.scope ?? 'all')
+const scopeId = ref(props.filters?.scope_id ?? null)
+
+const scopeLabels = computed(() => ({
+    all: t('item.pricing_scope_all'),
+    category: t('admin.category.category'),
+    brand: t('admin.brand.brand'),
+}))
+
+const scopeOptions = computed(() =>
+    props.scopeChoices.map((id) => ({ id, name: scopeLabels.value[id] ?? id })),
+)
+
+const scopeTargets = computed(() => ({
+    // Categories carry both labels; the picker prints the one for the locale.
+    category: (props.categories || []).map((c) => ({ id: c.id, name: c.localized_name || c.name })),
+    brand: (props.brands || []).map((b) => ({ id: b.id, name: b.name })),
+}[scope.value] || []))
+
+const needsScopeTarget = computed(() => scope.value !== 'all')
+
+const scopeTargetLabel = computed(() => scopeLabels.value[scope.value] ?? t('general.name'))
+
+// Switching to "all items" drops a target that no longer means anything.
+watch(scope, () => { if (! needsScopeTarget.value) scopeId.value = null })
+
+/** True while the grid is being refilled by an explicit Apply. */
+const pendingScopeSelectAll = ref(false)
+
+const reload = (overrides = {}, options = {}) => {
     router.get(route('item-pricing.index'), {
         search: search.value || undefined,
         perPage: perPage.value,
+        scope: scope.value,
+        scope_id: needsScopeTarget.value ? (scopeId.value || undefined) : undefined,
         ...overrides,
     }, {
         preserveState: true,
@@ -233,8 +273,47 @@ const reload = (overrides = {}) => {
         // leaves the page — so the full-screen navigation loader would just
         // blink over the rows they are reading.
         headers: { 'X-Silent-Loader': '1' },
+        ...options,
     })
 }
+
+const applyScope = () => {
+    if (needsScopeTarget.value && ! scopeId.value) {
+        play('warning')
+        toast.error(t('item.pricing_pick_a_target'))
+        return
+    }
+
+    if (changedRows.value.length && !window.confirm(t('general.unsaved_changes_warning'))) {
+        return
+    }
+
+    // Asking for a category and then having to tick every row of it is the
+    // work the filter was meant to remove; the rows arrive ticked and the
+    // operator unticks the few they want left alone.
+    pendingScopeSelectAll.value = true
+
+    // A request that never lands must not leave the flag armed, or the next
+    // search would tick rows nobody asked for.
+    reload({ page: 1 }, { onError: () => { pendingScopeSelectAll.value = false } })
+}
+
+const clearScope = () => {
+    scope.value = 'all'
+    scopeId.value = null
+    reload({ page: 1 })
+}
+
+// Rows are rebuilt from the server payload, so the tick has to be re-applied
+// once the replacement rows exist rather than on the click.
+watch(rows, () => {
+    if (! pendingScopeSelectAll.value) return
+
+    pendingScopeSelectAll.value = false
+    toggleAll(true)
+})
+
+const scopeIsFiltered = computed(() => needsScopeTarget.value && Boolean(props.filters?.scope_id))
 
 const doSearch = useDebounceFn(() => {
     // Reloading would throw away anything half-typed, so ask first.
@@ -391,12 +470,52 @@ function expiryBadgeDate(dateStr) {
         <FormPageToolbar back-route="items.index" module="item_pricing" />
 
         <!-- Filters & bulk tools ----------------------------------------- -->
-        <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
+        <div class="mb-5 shrink-0 rounded-xl border p-4 shadow-sm border-primary relative">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
                 {{ t('sidebar.inventory.pricing') }}
             </div>
 
-            <div class="grid grid-cols-1 gap-x-4 gap-y-5 mt-3 sm:grid-cols-2 lg:grid-cols-4 items-start">
+            <!-- Which slice of the catalogue to reprice ---------------- -->
+            <div class="mt-3 grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-4 items-start">
+                <NextSelect
+                    v-model="scope"
+                    :options="scopeOptions"
+                    label-key="name"
+                    value-key="id"
+                    :floating-text="t('item.pricing_scope')"
+                    :has-add-button="false"
+                    :clearable="false"
+                />
+                <NextSelect
+                    v-if="needsScopeTarget"
+                    v-model="scopeId"
+                    :options="scopeTargets"
+                    label-key="name"
+                    value-key="id"
+                    :floating-text="scopeTargetLabel"
+                    :has-add-button="false"
+                />
+                <div class="flex items-end gap-2">
+                    <Button type="button" class="h-10 shrink-0 gap-1.5" @click="applyScope">
+                        <Filter class="size-4" />
+                        {{ t('item.pricing_apply_filter') }}
+                    </Button>
+                    <Button
+                        v-if="scopeIsFiltered"
+                        type="button"
+                        variant="ghost"
+                        class="h-10 shrink-0"
+                        @click="clearScope"
+                    >
+                        {{ t('general.clear') }}
+                    </Button>
+                </div>
+                <p class="self-center text-xs text-muted-foreground sm:col-span-2 lg:col-span-1">
+                    {{ t('item.pricing_scope_hint') }}
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-x-4 gap-y-5 mt-5 border-t pt-5 sm:grid-cols-2 lg:grid-cols-4 items-start">
                 <NextInput
                     :label="t('datatable.search')"
                     v-model="search"
@@ -506,12 +625,25 @@ function expiryBadgeDate(dateStr) {
         </div>
 
         <!-- Grid --------------------------------------------------------- -->
-        <div ref="gridRef" class="mb-5 overflow-x-auto rounded-xl border" @keydown="onGridKeydown">
+        <!-- shrink-0 matters: `overflow-x-auto` drops this box's automatic
+             minimum height to zero, so as a flex child of the layout's scroll
+             region a short viewport crushed it down to the header row and the
+             rows had nowhere to go. The page itself scrolls instead. -->
+        <div ref="gridRef" class="mb-5 shrink-0 overflow-x-auto rounded-xl border" @keydown="onGridKeydown">
             <Table>
                 <TableHeader>
                     <TableRow class="border-border bg-primary hover:bg-primary h-9">
-                        <TableHead v-if="canEdit" class="w-10 text-white">
-                            <Checkbox :checked="allSelected" @update:checked="toggleAll" />
+                        <TableHead v-if="canEdit" class="w-12 text-white">
+                            <!-- The default checkbox borders and fills itself in
+                                 `primary`, which on a primary header row is the
+                                 same colour as the header: invisible. -->
+                            <Checkbox
+                                :checked="allSelected"
+                                :aria-label="t('item.pricing_select_all')"
+                                :title="t('item.pricing_select_all')"
+                                class="size-5 border-2 border-white bg-white/20 text-primary data-[state=checked]:bg-white data-[state=checked]:text-primary"
+                                @update:checked="toggleAll"
+                            />
                         </TableHead>
                         <TableHead class="w-10 text-white">#</TableHead>
                         <TableHead class="text-white">{{ t('general.name') }}</TableHead>
@@ -536,7 +668,12 @@ function expiryBadgeDate(dateStr) {
                         :class="isChanged(row) ? 'bg-amber-500/10' : ''"
                     >
                         <TableCell v-if="canEdit">
-                            <Checkbox :checked="row.selected" @update:checked="(v) => (row.selected = Boolean(v))" />
+                            <Checkbox
+                                :checked="row.selected"
+                                :aria-label="row.name"
+                                class="size-5 border-2"
+                                @update:checked="(v) => (row.selected = Boolean(v))"
+                            />
                         </TableCell>
 
                         <TableCell class="text-xs text-muted-foreground">
@@ -619,7 +756,7 @@ function expiryBadgeDate(dateStr) {
         </div>
 
         <!-- Pagination --------------------------------------------------- -->
-        <div v-if="items?.last_page > 1" class="mb-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+        <div v-if="items?.last_page > 1" class="mb-6 flex shrink-0 flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
             <span>{{ t('item.showing_results', { from: items.from, to: items.to, total: items.total }) }}</span>
             <div class="flex flex-wrap gap-1">
                 <Link
