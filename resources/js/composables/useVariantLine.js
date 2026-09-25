@@ -95,3 +95,16 @@ export function resolveVariantOnHand(row) {
   const value = variantOnHand ?? fallback
   return value === undefined || value === null ? null : Number(value)
 }
+
+/**
+ * What the stock on a line is worth per base unit.
+ *
+ * Mirrors SaleController::resolveLineBaseCost so the below-cost warning the
+ * operator sees is measured against the same figure the posting will actually
+ * relieve inventory at. A variant's own average wins; a zero means the variant
+ * has never carried one, and pricing goods at nothing would report the whole
+ * sale as profit, so it falls back to the item.
+ */
+export function resolveVariantAverageCost(item, variant) {
+  return positive(variant?.avg_cost) ?? positive(item?.avg_cost) ?? 0
+}

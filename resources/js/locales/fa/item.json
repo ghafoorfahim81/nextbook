@@ -349,5 +349,11 @@
     "pricing_direction": "جهت",
     "pricing_increase": "افزایش",
     "pricing_decrease": "کاهش",
-    "pricing_direction_hint": "برای «تغییر به فیصدی» و «تغییر به مبلغ» به کار می رود. رقم را مثبت وارد کنید."
+    "pricing_direction_hint": "برای «تغییر به فیصدی» و «تغییر به مبلغ» به کار می رود. رقم را مثبت وارد کنید.",
+    "pricing_scope": "اعمال بر",
+    "pricing_scope_all": "همه اجناس",
+    "pricing_scope_hint": "لیست را به یک دسته‌بندی یا برند محدود کنید، سپس ردیف‌های مورد نظر را انتخاب کرده و از عملیه گروهی پایین استفاده کنید.",
+    "pricing_apply_filter": "اعمال",
+    "pricing_pick_a_target": "ابتدا یک دسته‌بندی یا برند را انتخاب کنید.",
+    "pricing_select_all": "انتخاب همه ردیف‌های این صفحه"
 }

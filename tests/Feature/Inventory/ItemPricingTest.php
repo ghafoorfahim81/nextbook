@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Inventory;
 
+use App\Models\Administration\Brand;
+use App\Models\Administration\Category;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\ItemVariant;
 use App\Services\ItemVariantService;
@@ -164,5 +166,103 @@ class ItemPricingTest extends TestCase
         // ...and by the variant's own SKU.
         $this->get(route('item-pricing.index', ['search' => 'KETTLE-RED']))
             ->assertInertia(fn ($page) => $page->has('items.data', 1));
+    }
+
+    public function test_it_lists_only_the_chosen_category(): void
+    {
+        $drinks = Category::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $snacks = Category::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-CAT-1', ['category_id' => $drinks->id])
+        );
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-CAT-2', ['category_id' => $drinks->id])
+        );
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-CAT-3', ['category_id' => $snacks->id])
+        );
+
+        $this->get(route('item-pricing.index', ['scope' => 'category', 'scope_id' => $drinks->id]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('items.data', 2)
+                ->where('filters.scope', 'category')
+                ->where('filters.scope_id', $drinks->id)
+            );
+    }
+
+    public function test_it_lists_only_the_chosen_brand(): void
+    {
+        $brand = Brand::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $other = Brand::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-BR-1', ['brand_id' => $brand->id])
+        );
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-BR-2', ['brand_id' => $other->id])
+        );
+
+        $this->get(route('item-pricing.index', ['scope' => 'brand', 'scope_id' => $brand->id]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('items.data', 1));
+    }
+
+    public function test_the_all_scope_ignores_a_leftover_target(): void
+    {
+        $category = Category::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-ALL-1', ['category_id' => $category->id])
+        );
+        app(ItemVariantService::class)->ensureDefault($this->makeItem('PR-ALL-2'));
+
+        // A stale id from the category the operator just backed out of must not
+        // keep filtering the grid once they have asked for everything.
+        $this->get(route('item-pricing.index', ['scope' => 'all', 'scope_id' => $category->id]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('items.data', 2)
+                ->where('filters.scope_id', null)
+            );
+    }
+
+    public function test_an_unknown_scope_falls_back_to_all(): void
+    {
+        app(ItemVariantService::class)->ensureDefault($this->makeItem('PR-BAD-SCOPE'));
+
+        $this->get(route('item-pricing.index', ['scope' => 'supplier', 'scope_id' => 'whatever']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('filters.scope', 'all')
+                ->has('items.data', 1)
+            );
+    }
+
+    public function test_the_scope_and_the_search_narrow_together(): void
+    {
+        $category = Category::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-MIX-1', ['name' => 'Mango Juice', 'category_id' => $category->id])
+        );
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-MIX-2', ['name' => 'Apple Juice', 'category_id' => $category->id])
+        );
+        app(ItemVariantService::class)->ensureDefault(
+            $this->makeItem('PR-MIX-3', ['name' => 'Mango Juice Outside'])
+        );
+
+        $this->get(route('item-pricing.index', [
+            'scope' => 'category',
+            'scope_id' => $category->id,
+            'search' => 'Mango',
+        ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('items.data', 1)
+                ->where('items.data.0.name', 'Mango Juice')
+            );
     }
 }

@@ -21,7 +21,7 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { printDocument } from '@/composables/usePrintDocument'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantAverageCost } from '@/composables/useVariantLine'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
@@ -640,7 +640,11 @@ const displayedAverageCost = (row) => {
 
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    return toDocumentCurrency((toNum(row.selected_item?.avg_cost, 0) * selectedUnit) / baseUnit, form.rate)
+    // A selected variant is costed at its own average — the same figure the
+    // posting relieves inventory at — so the below-cost warning cannot fire
+    // against a blended item average the sale will never actually use.
+    const avgCost = resolveVariantAverageCost(row.selected_item, row.selected_item_variant)
+    return toDocumentCurrency((avgCost * selectedUnit) / baseUnit, form.rate)
 }
 
 const getLossWarning = (row) => {
