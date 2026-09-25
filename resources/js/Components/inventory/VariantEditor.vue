@@ -435,10 +435,14 @@ const variantLabel = (variant) => {
                                 />
                             </td>
                             <td class="px-2 py-1.5 text-center">
+                                <!-- This Checkbox speaks `checked`, not `model-value`: bound
+                                     the other way it stays uncontrolled, so a freshly added
+                                     variant rendered as inactive and the toggle never reached
+                                     the form. -->
                                 <Checkbox
-                                    :model-value="variant.is_active !== false"
+                                    :checked="variant.is_active !== false"
                                     :disabled="disabled"
-                                    @update:modelValue="(v) => setField(index, 'is_active', v)"
+                                    @update:checked="(v) => setField(index, 'is_active', v)"
                                 />
                             </td>
                             <td class="px-2 py-1.5 text-center">

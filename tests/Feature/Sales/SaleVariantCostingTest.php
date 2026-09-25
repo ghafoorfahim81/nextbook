@@ -245,6 +245,46 @@ class SaleVariantCostingTest extends TestCase
         $this->assertEqualsWithDelta(2200.0, $this->inventoryCreditFor($sale), 0.01);
     }
 
+    /**
+     * Opening 10 at 50, sell 5, buy 5 at 55, then reverse the sale.
+     *
+     * The running average the sale leaves behind is 52.50, because the purchase
+     * blended against the 5 the sale had taken off the shelf. Undoing the sale
+     * makes that history untrue: the receipts that actually stand are 10 at 50
+     * and 5 at 55, so both the item and its variant must read
+     * (500 + 275) / 15 = 51.6667.
+     */
+    public function test_reversing_a_sale_re_derives_the_item_average_as_well_as_the_variants(): void
+    {
+        $this->useWeightedAverage();
+
+        $this->receive($this->cheapVariant, 10, 50);
+        $this->assertEqualsWithDelta(50.0, (float) $this->item->fresh()->avg_cost, 0.0001);
+
+        $sale = $this->sell($this->cheapVariant, 5);
+
+        $this->receive($this->cheapVariant, 5, 55);
+
+        // The running figure both tables carry while the sale still stands.
+        $this->assertEqualsWithDelta(52.5, (float) $this->item->fresh()->avg_cost, 0.0001);
+
+        $this->post(route('sales.reverse', $sale), ['reason' => 'customer cancelled'])
+            ->assertRedirect();
+
+        $this->assertEqualsWithDelta(
+            51.6667,
+            (float) $this->cheapVariant->fresh()->avg_cost,
+            0.001,
+            'The variant average already replayed correctly.',
+        );
+        $this->assertEqualsWithDelta(
+            51.6667,
+            (float) $this->item->fresh()->avg_cost,
+            0.001,
+            'The item average must agree with the variant it is made of.',
+        );
+    }
+
     public function test_each_variant_on_one_sale_is_costed_separately(): void
     {
         $this->useWeightedAverage();

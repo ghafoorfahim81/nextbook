@@ -422,6 +422,18 @@ const normalize = () => {
             : Number(o.variant_index),
     }))
 }
+/**
+ * Return the page's scroll container to the top.
+ *
+ * The form scrolls inside the layout's `[data-scroll-region]`, not the window,
+ * so window.scrollTo alone does nothing here.
+ */
+const scrollFormToTop = () => {
+    const region = document.querySelector('[data-scroll-region]')
+    region?.scrollTo?.({ top: 0, behavior: 'smooth' })
+    window.scrollTo?.({ top: 0, behavior: 'smooth' })
+}
+
 const handleSubmitAction = (createAndNew = false) => {
     const isCreateAndNew = createAndNew === true;
     submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
@@ -442,7 +454,18 @@ const handleSubmitAction = (createAndNew = false) => {
                 form.transform((d) => d); // Reset transform to identity
             }
         },
-        // Any shared callbacks like onError can go here
+        onError: () => {
+            play('error')
+            toast.error(t('general.error'), {
+                description: t('general.create_error', { name: t('item.item') }),
+                class: 'bg-pink-600 text-white',
+            })
+            // Inertia keeps the scroll where it was on a validation error, which
+            // leaves the operator parked at the submit buttons with the toolbar
+            // — Settings and Info — scrolled out of sight, and with the failing
+            // fields above them. Bring the top of the form back.
+            scrollFormToTop()
+        },
     };
 
     const transformFn = isCreateAndNew

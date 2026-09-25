@@ -226,6 +226,18 @@ const handleSubmit = () => {
                     class: 'bg-green-600',
                 });
             },
+            onError: () => {
+                toast.error(t('general.error'), {
+                    description: t('general.update_error', { name: t('item.item') }),
+                    class: 'bg-pink-600 text-white',
+                })
+                // Inertia keeps the scroll where it was on a validation error,
+                // leaving the toolbar — Settings and Info — and the failing
+                // fields above the fold. Bring the top of the form back.
+                const region = document.querySelector('[data-scroll-region]')
+                region?.scrollTo?.({ top: 0, behavior: 'smooth' })
+                window.scrollTo?.({ top: 0, behavior: 'smooth' })
+            },
         })
 }
 const handleSelectChange = (field, value) => {

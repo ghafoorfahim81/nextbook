@@ -477,6 +477,61 @@ class DiscountRuleTest extends TestCase
         ])->assertSessionHasErrors('value');
     }
 
+    /** 100% is a giveaway, not an overcharge, so the cap includes it. */
+    public function test_a_percentage_of_exactly_one_hundred_is_allowed(): void
+    {
+        $this->post(route('discount-rules.store'), [
+            'name' => 'On the house',
+            'scope' => DiscountScope::ALL->value,
+            'discount_type' => DiscountType::PERCENTAGE->value,
+            'value' => 100,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertEquals(100.0, (float) DiscountRule::query()->firstOrFail()->value);
+    }
+
+    /** The cap is on percentages only; a flat amount can exceed 100 currency units. */
+    public function test_a_currency_rule_may_exceed_one_hundred(): void
+    {
+        $this->post(route('discount-rules.store'), [
+            'name' => 'Flat 500 off',
+            'scope' => DiscountScope::ALL->value,
+            'discount_type' => DiscountType::CURRENCY->value,
+            'value' => 500,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertEquals(500.0, (float) DiscountRule::query()->firstOrFail()->value);
+    }
+
+    /**
+     * Deleting a rule is final. There is no restore endpoint and the rule never
+     * shows up in Trash, so the screen must not offer an undo it cannot honour.
+     */
+    public function test_a_deleted_rule_cannot_be_restored(): void
+    {
+        $rule = DiscountRule::factory()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'scope' => DiscountScope::ALL->value,
+            'scope_id' => null,
+            'discount_type' => DiscountType::PERCENTAGE->value,
+            'value' => 10,
+        ]);
+
+        $this->delete(route('discount-rules.destroy', $rule->id))->assertRedirect();
+        $this->assertSoftDeleted('discount_rules', ['id' => $rule->id]);
+
+        $this->assertFalse(
+            \Illuminate\Support\Facades\Route::has('discount-rules.restore'),
+            'A discount rule delete is not reversible; adding a restore route would make the Undo toast the right call instead.'
+        );
+
+        // Nor does the rule turn up in Trash, where it could be restored by hand.
+        $this->get(route('deleted-records.index'))
+            ->assertInertia(fn ($page) => $page
+                ->where('records.data', fn ($records) => collect($records)
+                    ->doesntContain(fn ($record) => ($record['record_id'] ?? null) === $rule->id)));
+    }
+
     /**
      * 4 x 250 = 1000 so a 10% rule is worth exactly 100.
      *

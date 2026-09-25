@@ -151,6 +151,7 @@
     "pricing_method": "د بیې ټاکلو میتود",
     "accounts": "حسابونه",
     "section": {
+    "transaction_status": "د جنس د راکړې ورکړې عمومي حالت",
         "identity": "پېژندنه",
         "classification": "وېش",
         "pricing": "بیه",

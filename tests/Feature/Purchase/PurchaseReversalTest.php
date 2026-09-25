@@ -128,6 +128,33 @@ class PurchaseReversalTest extends TestCase
         );
     }
 
+    public function test_reversing_a_purchase_re_derives_the_variants_own_average(): void
+    {
+        // A variant keeps an average blended only from its own receipts, and
+        // the item-level unwind above never touched it. A reversed purchase
+        // therefore used to leave the variant priced at a cost the business
+        // never paid — which then became the COGS of every later sale of it.
+        $this->receive(10, 20);
+
+        $variant = app(ItemVariantService::class)->ensureDefault($this->ctx['item']);
+
+        $this->assertEqualsWithDelta(20.0, (float) $variant->fresh()->avg_cost, 0.0001);
+
+        $purchase = $this->buy(5, 30);
+
+        $this->assertEqualsWithDelta(23.3333, (float) $variant->fresh()->avg_cost, 0.001);
+
+        $this->post(route('purchases.reverse', $purchase), ['reason' => 'supplier cancelled'])
+            ->assertRedirect();
+
+        $this->assertEqualsWithDelta(
+            20.0,
+            (float) $variant->fresh()->avg_cost,
+            0.0001,
+            'A reversed purchase must come back out of the variant average too.',
+        );
+    }
+
     public function test_the_purchase_is_marked_reversed_and_its_stock_movement_voided(): void
     {
         $this->receive(10, 20);

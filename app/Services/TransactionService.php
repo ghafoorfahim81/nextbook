@@ -639,6 +639,29 @@ class TransactionService
         foreach ($movements as $movement) {
             $movement->update(['status' => \App\Enums\StockStatus::VOIDED->value]);
         }
+
+        // Both averages are re-derived here rather than unwound arithmetically,
+        // and only once the compensating movements and the voided originals are
+        // all on record, so each replay sees exactly the layers that remain live.
+        //
+        // The variant keeps an average blended only from its own receipts, and
+        // nothing had been unwinding it: a reversed purchase left the variant
+        // priced at a cost the business never paid.
+        //
+        // The item needs the same treatment for a different reason.
+        // unwindAverage() can take a cancelled RECEIPT back out, but it cannot
+        // repair a cancelled ISSUE: every receipt booked after that issue
+        // blended against a shelf the issue had already emptied. Opening 10 at
+        // 50, selling 5, buying 5 at 55 leaves a running 52.50; undo the sale
+        // and the truth is (10 x 50 + 5 x 55) / 15 = 51.6667, which no undo of
+        // the sale alone can reach — only weighing the history again does.
+        foreach ($movements->pluck('variant_id')->filter()->unique() as $variantId) {
+            $this->stockService->recalculateVariantAverage($variantId);
+        }
+
+        foreach ($movements->pluck('item_id')->filter()->unique() as $itemId) {
+            $this->stockService->recalculateItemAverage($itemId);
+        }
     }
 
     /**
@@ -699,6 +722,13 @@ class TransactionService
                 'Reversal of expense #',
                 'برگشتی هزینه #',
                 'د هزینه بیرته راګرځول #',
+            ],
+            \App\Models\ItemTransfer\ItemTransfer::class => [
+                // No '#': an item transfer has no number, so the reference
+                // passed in is the route it took, not a document code.
+                'Reversal of item transfer ',
+                'برگشتی انتقال جنس ',
+                'د جنس د لیږد بیرته راګرځول ',
             ],
             \App\Models\Owner\Drawing::class => [
                 'Reversal of drawing #',

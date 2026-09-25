@@ -24,6 +24,13 @@ export function useDeleteResource() {
             return options.description
         }
 
+        // Some records have no way back: no restore route and no row in Trash.
+        // Promising a recovery window we cannot honour is worse than the blunt
+        // warning, so say plainly that this one is final.
+        if (options.reversible === false) {
+            return t('general.action_cannot_be_undone')
+        }
+
         const module = moduleLabelForRoute(routeName, t)
 
         if (!module) {
@@ -37,9 +44,9 @@ export function useDeleteResource() {
         })
     }
 
-    // Gmail gives you three seconds to change your mind; the ring in the toast
-    // is drawn against this same number.
-    const UNDO_WINDOW_MS = 3000
+    // Five seconds to change your mind; the ring in the toast is drawn against
+    // this same number.
+    const UNDO_WINDOW_MS = 5000
 
     const deleteResource = (routeName, id, options = {}) => {
         const isOpen = ref(true)
@@ -70,6 +77,22 @@ export function useDeleteResource() {
                                 app.unmount()
                                 container.remove()
                                 options?.onError?.()
+                                return
+                            }
+
+                            // Nothing to undo: report the delete and stop,
+                            // rather than offering a button that would call a
+                            // restore route this resource does not have.
+                            if (options.reversible === false) {
+                                toast.success(
+                                    options.trashMessage
+                                        || t('general.delete_success', { name: options.name ?? t('general.record') }),
+                                    { class: 'bg-green-600', duration: 4000 },
+                                )
+
+                                app.unmount()
+                                container.remove()
+                                options?.onSuccess?.()
                                 return
                             }
 

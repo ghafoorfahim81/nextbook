@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Enums\TransactionStatus;
 use App\Enums\TransferStatus;
+use App\Models\Account\Account;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Models\ItemTransfer\ItemTransferItem;
 use Illuminate\Support\Facades\DB;
@@ -349,7 +350,17 @@ class ItemTransferService
                     ->first();
 
                 if ($transaction) {
-                    app(TransactionService::class)->reverse($transaction, 'Item transfer reversal');
+                    // Naming the document and its type is what makes the
+                    // reversal remark come back translated: TransactionService
+                    // keeps the per-language wording keyed by reference type.
+                    $route = $this->transferRouteLabel($transfer);
+
+                    app(TransactionService::class)->reverse(
+                        $transaction,
+                        'Reversal of item transfer ' . $route,
+                        $route,
+                        ItemTransfer::class,
+                    );
                 }
             }
 
@@ -451,14 +462,36 @@ class ItemTransferService
             ]);
         }
 
-        $remark = $transfer->remarks ?: 'Transfer cost for item transfer ' . $transfer->id;
+        // The ledger reads back in the operator's language, and it names the
+        // route the goods took — a bare ULID told nobody anything.
+        $route = $this->transferRouteLabel($transfer);
+        $bankName = Account::find($bankAccountId)?->name ?? '';
+        $bankLocalName = Account::find($bankAccountId)?->local_name ?: $bankName;
+
+        // An operator's own note wins over the generated wording, in every
+        // language: it is their sentence, not ours to translate.
+        $own = trim((string) $transfer->remarks);
+
+        $expenseRemark = $own !== '' ? [$own, $own, $own] : [
+            'Transfer cost for item transfer ' . $route,
+            'هزینه انتقال جنس ' . $route,
+            'د جنس د لیږد لګښت ' . $route,
+        ];
+
+        $bankRemark = $own !== '' ? [$own, $own, $own] : [
+            'Transfer cost paid from ' . $bankName . ' for item transfer ' . $route,
+            'پرداخت هزینه انتقال جنس از حساب ' . $bankLocalName . ' ' . $route,
+            'د جنس د لیږد لګښت تادیه له حساب ' . $bankLocalName . ' ' . $route,
+        ];
 
         app(TransactionService::class)->post(
             header: [
                 'currency_id' => $transfer->currency_id ?? $homeCurrency?->id,
                 'rate' => (float) ($transfer->rate ?? 1) ?: 1,
                 'date' => $this->dateConversionService->toGregorian($transfer->date),
-                'remark' => 'Transfer cost for item transfer ' . $transfer->id,
+                // The header has no per-language columns, so it carries the
+                // English wording; the lines below are what the ledger shows.
+                'remark' => 'Transfer cost for item transfer ' . $route,
                 'reference_type' => ItemTransfer::class,
                 'reference_id' => $transfer->id,
                 'status' => TransactionStatus::POSTED->value,
@@ -469,16 +502,38 @@ class ItemTransferService
                     'account_id' => $bankAccountId,
                     'debit' => 0,
                     'credit' => $amount,
-                    'remark' => $remark,
+                    'remark' => $bankRemark[0],
+                    'remark_fa' => $bankRemark[1],
+                    'remark_ps' => $bankRemark[2],
                 ],
                 [
                     'account_id' => $expenseAccountId,
                     'debit' => $amount,
                     'credit' => 0,
-                    'remark' => $remark,
+                    'remark' => $expenseRemark[0],
+                    'remark_fa' => $expenseRemark[1],
+                    'remark_ps' => $expenseRemark[2],
                 ],
             ],
         );
+    }
+
+    /**
+     * How a transfer is named in a remark: the route, not the primary key.
+     *
+     * Warehouse names are stored once (there is no local_name on warehouses),
+     * so the same label works in all three languages, and the date pins it to
+     * one document without exposing a 26-character ULID to the operator.
+     */
+    private function transferRouteLabel(ItemTransfer $transfer): string
+    {
+        $transfer->loadMissing(['fromWarehouse', 'toWarehouse']);
+
+        $from = $transfer->fromWarehouse?->name ?? '';
+        $to = $transfer->toWarehouse?->name ?? '';
+        $date = $this->dateConversionService->toDisplay($transfer->date);
+
+        return trim(sprintf('%s → %s (%s)', $from, $to, $date));
     }
 
     /**

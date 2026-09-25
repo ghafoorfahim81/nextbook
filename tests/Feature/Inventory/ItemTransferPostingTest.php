@@ -272,6 +272,91 @@ class ItemTransferPostingTest extends TestCase
         $this->assertEqualsWithDelta(14.0, (float) $variant->fresh()->avg_cost, 0.0001);
     }
 
+    public function test_the_transfer_cost_remarks_are_written_in_every_language(): void
+    {
+        $this->seedStock(10, 15);
+
+        $transfer = $this->createTransfer(quantity: 4, unitPrice: 15, extra: [
+            // No operator note: the generated wording is what is under test.
+            'remarks' => null,
+            'has_transfer_cost' => true,
+            'transfer_cost' => 250,
+            'bank_account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+        ]);
+
+        $this->patch(route('item-transfers.complete', $transfer))->assertRedirect();
+
+        $transaction = Transaction::query()
+            ->where('reference_type', ItemTransfer::class)
+            ->where('reference_id', $transfer->id)
+            ->firstOrFail();
+
+        $expenseLine = TransactionLine::query()
+            ->where('transaction_id', $transaction->id)
+            ->where('account_id', $this->ctx['accounts']['item-transfer-expense']->id)
+            ->firstOrFail();
+
+        $bankLine = TransactionLine::query()
+            ->where('transaction_id', $transaction->id)
+            ->where('account_id', $this->ctx['accounts']['cash-in-hand']->id)
+            ->firstOrFail();
+
+        foreach ([$expenseLine, $bankLine] as $line) {
+            $this->assertNotEmpty($line->remark_fa, 'Every posted remark needs its Persian wording.');
+            $this->assertNotEmpty($line->remark_ps, 'Every posted remark needs its Pashto wording.');
+
+            // The ULID told the operator nothing; the route tells them which
+            // document they are looking at.
+            foreach ([$line->remark, $line->remark_fa, $line->remark_ps] as $text) {
+                $this->assertStringNotContainsString($transfer->id, (string) $text);
+                $this->assertStringContainsString($this->toWarehouse->name, (string) $text);
+            }
+        }
+
+        $this->assertStringContainsString('هزینه انتقال جنس', (string) $expenseLine->remark_fa);
+    }
+
+    public function test_the_reversal_remarks_are_written_in_every_language(): void
+    {
+        $this->seedStock(10, 15);
+
+        $transfer = $this->createTransfer(quantity: 4, unitPrice: 15, extra: [
+            'remarks' => null,
+            'has_transfer_cost' => true,
+            'transfer_cost' => 250,
+            'bank_account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+        ]);
+
+        $this->patch(route('item-transfers.complete', $transfer))->assertRedirect();
+        $this->post(route('item-transfers.reverse', $transfer), ['reason' => 'sent to the wrong store'])
+            ->assertRedirect();
+
+        $original = Transaction::query()
+            ->where('reference_type', ItemTransfer::class)
+            ->where('reference_id', $transfer->id)
+            ->firstOrFail();
+
+        $reversalLines = TransactionLine::query()
+            ->whereIn('transaction_id', Transaction::query()
+                ->where('reversal_of_id', $original->id)
+                ->pluck('id'))
+            ->get();
+
+        $this->assertTrue($reversalLines->isNotEmpty(), 'The reversal must post its own lines.');
+
+        foreach ($reversalLines as $line) {
+            // Without a reference type of its own the reversal fell through to
+            // the generic "Reversal of transaction #<ulid>" wording.
+            $this->assertStringContainsString('برگشتی انتقال جنس', (string) $line->remark_fa);
+            $this->assertStringNotContainsString($transfer->id, (string) $line->remark);
+            $this->assertStringContainsString($this->toWarehouse->name, (string) $line->remark_ps);
+        }
+    }
+
     private function seedStock(float $quantity, float $unitCost): void
     {
         app(StockService::class)->post([

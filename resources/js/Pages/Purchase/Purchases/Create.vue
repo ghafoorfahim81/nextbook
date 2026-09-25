@@ -20,7 +20,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantOnHand } from '@/composables/useVariantLine'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
@@ -602,6 +602,10 @@ const handleItemChange = async (index, selected_item) => {
     row.item_variants = selected_item.item_variants || []
     row.selected_variant = pickDefaultVariant(row.item_variants)
     row.variant_id = row.selected_variant?.id || null
+    // On hand belongs to the variant being bought, not to the parent item:
+    // receiving "Red / XL" against the item's total told the operator there
+    // were 40 on the shelf when that size had none.
+    row.on_hand = resolveVariantOnHand(row) ?? selected_item.on_hand
 
     // Set the base unit price - this is the price per base unit
     row.base_unit_price = resolveVariantUnitPrice(selected_item, row.selected_variant, 'purchase')
@@ -623,9 +627,9 @@ const handleVariantChange = (index, variant) => {
     if (!row) return
     row.selected_variant = variant ?? null
     row.variant_id = variant?.id || null
-    // Switching variant moves the price with it — that is what pricing a
-    // variant separately is for.
+    // Switching variant moves the price AND the on-hand figure with it.
     repriceRow(row, variant, 'purchase')
+    row.on_hand = resolveVariantOnHand(row) ?? row.selected_item?.on_hand ?? 0
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
     row.unit_price = toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate)

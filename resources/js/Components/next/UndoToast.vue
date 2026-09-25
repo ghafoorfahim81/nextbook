@@ -17,7 +17,7 @@ const props = defineProps({
     undoLabel: { type: String, required: true },
     closeLabel: { type: String, default: 'Close' },
     // Kept in step with the toast's own duration by the caller.
-    duration: { type: Number, default: 3000 },
+    duration: { type: Number, default: 5000 },
     onUndo: { type: Function, default: null },
     onClose: { type: Function, default: null },
     onExpire: { type: Function, default: null },

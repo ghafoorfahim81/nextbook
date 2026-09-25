@@ -57,6 +57,21 @@ const customerGroupOptions = computed(() => [
     ...(props.options.customerGroups || []),
 ]);
 
+// A percentage over 100 would hand money back to the customer. The server
+// rejects it too, but a discount is typed one digit at a time and the cap is
+// worth saying while the box is still focused rather than after a round trip.
+const PERCENTAGE_MAX = 100;
+const isPercentage = computed(() => form.discount_type === 'percentage');
+const exceedsPercentageMax = computed(
+    () => isPercentage.value && form.value !== '' && Number(form.value) > PERCENTAGE_MAX,
+);
+
+const valueError = computed(() => (
+    exceedsPercentageMax.value
+        ? t('discount_rule.percentage_max', { max: PERCENTAGE_MAX })
+        : form.errors.value
+));
+
 const targetLabel = computed(() => ({
     item: t('item.item'),
     category: t('admin.category.category'),
@@ -76,6 +91,8 @@ watch(open, (value) => emit('update:isDialogOpen', value));
 watch(() => form.scope, () => { if (! needsTarget.value) form.scope_id = null; });
 
 const submit = () => {
+    if (exceedsPercentageMax.value) return;
+
     const options = {
         preserveScroll: true,
         onSuccess: () => { emit('saved'); open.value = false; form.reset(); },
@@ -147,7 +164,8 @@ const submit = () => {
                     inputmode="decimal"
                     :label="t('general.discount')"
                     v-model="form.value"
-                    :error="form.errors.value"
+                    :error="valueError"
+                    :hint="isPercentage ? t('discount_rule.percentage_hint', { max: PERCENTAGE_MAX }) : undefined"
                 />
             </div>
 

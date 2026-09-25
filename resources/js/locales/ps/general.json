@@ -67,6 +67,8 @@
   "no_data_found": "هیڅ معلومات و نه موندل شول",
   "delete_error_message": "د ړنګولو پر مهال ستونزه وشوه.",
   "update_error_message": "د نوي کولو پر مهال ستونزه وشوه.",
+  "update_error": "د {name} په تازه کولو کې ستونزه رامنځته شوه.",
+  "create_error": "د {name} په جوړولو کې ستونزه رامنځته شوه.",
   "create_error_message": "د جوړولو پر مهال ستونزه وشوه.",
   "details": "جزییات",
   "remove": "لرې کول",

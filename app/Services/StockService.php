@@ -512,16 +512,19 @@ class StockService
     }
 
     /**
-     * Weigh every receipt the variant still holds, oldest first.
+     * Public entry point for re-deriving the ITEM's average.
      *
-     * Derived rather than kept running, because a running figure has to be
-     * seeded and there is nothing trustworthy to seed it from: a variant whose
-     * earlier stock arrived before this column was maintained sits at 0 with
-     * goods on the shelf, and blending into that prices those goods at
-     * nothing — 15 pc carrying no average plus 10 pc at 35,000 comes out at
-     * 14,000 rather than 34,400. Deriving also means any figure that is
-     * already wrong is corrected by the next receipt instead of compounding.
+     * The running figure kept by increaseBalance() cannot survive a reversal
+     * that undoes an issue: the receipts that came after that issue blended
+     * against a shelf the issue had already emptied, and no arithmetic undo
+     * puts that back — the whole history has to be weighed again.
      */
+    public function recalculateItemAverage(?string $itemId): void
+    {
+        $this->replayItemAverage($itemId);
+    }
+
+    /** Weigh every receipt the variant still holds, oldest first. */
     private function replayVariantAverage(?string $variantId): void
     {
         $variant = $variantId ? ItemVariant::find($variantId) : null;
@@ -530,8 +533,65 @@ class StockService
             return;
         }
 
-        $movements = StockMovement::query()
-            ->where('variant_id', $variantId)
+        $average = $this->deriveAverage(
+            StockMovement::query()->where('variant_id', $variantId),
+            $variant->item?->unit_measure_id,
+        );
+
+        if ($average === null) {
+            return;
+        }
+
+        $variant->avg_cost = round($average, 4);
+        $variant->save();
+    }
+
+    /**
+     * The item's own average, weighed over every bucket it holds.
+     *
+     * Deliberately identical in method to the variant replay above. When the
+     * two disagree — the item saying 52.50 while its only variant says 51.67 —
+     * the operator has no way to tell which figure prices their stock, and
+     * whichever report reads the item is wrong.
+     */
+    private function replayItemAverage(?string $itemId): void
+    {
+        $item = $itemId ? Item::find($itemId) : null;
+
+        if ($item === null) {
+            return;
+        }
+
+        $average = $this->deriveAverage(
+            StockMovement::query()->where('item_id', $itemId),
+            $item->unit_measure_id,
+        );
+
+        if ($average === null) {
+            return;
+        }
+
+        $item->avg_cost = round($average, 4);
+        $item->save();
+    }
+
+    /**
+     * Blend the receipts a query still returns, oldest first.
+     *
+     * Derived rather than kept running, because a running figure has to be
+     * seeded and there is nothing trustworthy to seed it from: stock whose
+     * earlier receipts predate this column sits at 0 with goods on the shelf,
+     * and blending into that prices those goods at nothing — 15 pc carrying no
+     * average plus 10 pc at 35,000 comes out at 14,000 rather than 34,400.
+     * Deriving also means any figure that is already wrong is corrected by the
+     * next receipt instead of compounding.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $movements  Already scoped to one item or one variant.
+     * @return float|null  Null when nothing is left on the shelf to carry an average.
+     */
+    private function deriveAverage($movements, ?string $itemUnitMeasureId): ?float
+    {
+        $movements = $movements
             // A reversal voids both the original layer and the compensating one
             // it posts back. Replaying either would re-blend the cost of goods
             // the business never ended up owning.
@@ -549,7 +609,7 @@ class StockService
         // that findOrFail()s, and a history can name a unit that has since
         // been retired — which would turn an ordinary purchase into a crash.
         $itemUnit = (float) UnitMeasure::withTrashed()
-            ->whereKey($variant->item?->unit_measure_id)
+            ->whereKey($itemUnitMeasureId)
             ->value('unit') ?: 1.0;
 
         $units = UnitMeasure::withTrashed()
@@ -582,12 +642,7 @@ class StockService
         // An empty shelf keeps the last average it carried: the figure still
         // prices the returns and reversals that can arrive after the stock has
         // gone, and the next receipt derives it afresh anyway.
-        if ($runningQty <= 0) {
-            return;
-        }
-
-        $variant->avg_cost = round($avgCost, 4);
-        $variant->save();
+        return $runningQty > 0 ? $avgCost : null;
     }
 
     /**
