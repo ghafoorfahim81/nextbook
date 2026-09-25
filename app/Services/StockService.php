@@ -500,6 +500,18 @@ class StockService
     }
 
     /**
+     * Public entry point for callers that move stock without re-pricing the
+     * item — an item transfer is the same goods on a different shelf, so it
+     * passes `skip_average_recost` and then asks for the variant figure to be
+     * re-derived here rather than letting increaseBalance() blend the transfer
+     * price into the item's average.
+     */
+    public function recalculateVariantAverage(?string $variantId): void
+    {
+        $this->replayVariantAverage($variantId);
+    }
+
+    /**
      * Weigh every receipt the variant still holds, oldest first.
      *
      * Derived rather than kept running, because a running figure has to be
@@ -520,6 +532,10 @@ class StockService
 
         $movements = StockMovement::query()
             ->where('variant_id', $variantId)
+            // A reversal voids both the original layer and the compensating one
+            // it posts back. Replaying either would re-blend the cost of goods
+            // the business never ended up owning.
+            ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->orderBy('date')
             ->orderBy('id')
             ->get(['movement_type', 'quantity', 'unit_cost', 'unit_measure_id']);

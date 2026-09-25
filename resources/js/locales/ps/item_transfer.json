@@ -13,5 +13,10 @@
   "complete_transfer": "Complete transfer",
   "completed_successfully": "Transfer completed successfully",
   "cancelled_successfully": "Transfer cancelled successfully",
-  "cannot_edit_completed_or_cancelled_transfer": "Cannot edit a completed or cancelled transfer"
+  "cannot_edit_completed_or_cancelled_transfer": "Cannot edit a completed or cancelled transfer",
+  "has_transfer_cost": "دا لیږد د لیږد لګښت لري",
+  "bank_account": "بانکي حساب",
+  "expense_account": "د لګښت حساب",
+  "expense_account_hint": "د خپلو ګودامونو ترمنځ د توکو د لیږد لګښت دلته ثبتېږي. په ډیفالټ ډول د «د جنس د لیږد لګښت» حساب ټاکل کېږي ترڅو دا لګښت په ګټه او زیان کې په جلا کرښه ښکاره شي.",
+  "cannot_delete_completed_transfer": "بشپړ شوي لیږدونه نه شي حذف کېدای"
 }

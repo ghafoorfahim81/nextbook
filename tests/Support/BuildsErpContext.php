@@ -207,6 +207,9 @@ trait BuildsErpContext
             'raw-materials' => ['name' => 'Raw Materials', 'type' => 'other-current-asset', 'number' => '3003'],
             'finished-goods' => ['name' => 'Finished Goods', 'type' => 'other-current-asset', 'number' => '3004'],
             'other-expenses' => ['name' => 'Other Expenses', 'type' => 'expense', 'number' => '9001'],
+            // Freight for moving goods between the company's own warehouses.
+            // An item transfer defaults its expense line here.
+            'item-transfer-expense' => ['name' => 'Item Transfer Expense', 'type' => 'expense', 'number' => '9801'],
             // Realised exchange differences. Resolved by slug everywhere —
             // the names are localised into Dari and Pashto in production.
             'fx-gain' => ['name' => 'Foreign Exchange Gain', 'type' => 'income', 'number' => '9070'],

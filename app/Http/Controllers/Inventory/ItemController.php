@@ -41,6 +41,18 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use App\Support\BranchContext;
 class ItemController extends Controller
 {
+    /**
+     * Statuses that mean "this movement was undone".
+     *
+     * A reversal marks the original layer voided AND posts a compensating one
+     * that is voided too, so anything counting stock history has to skip both
+     * or a reversed document inflates Total In / Total Out by its own quantity.
+     */
+    private const REVERSED_STOCK_STATUSES = [
+        StockStatus::VOIDED->value,
+        StockStatus::CANCELLED->value,
+    ];
+
     public function __construct()
     {
         $this->authorizeResource(Item::class, 'item');
@@ -358,8 +370,12 @@ class ItemController extends Controller
         $filters = (array) $request->input('filters', []);
 
         $items = Item::with(['unitMeasure'])
-            ->withSum(['stocks as total_in' => fn ($q) => $q->where('movement_type', StockMovementType::IN->value)], 'quantity')
-            ->withSum(['stocks as total_out' => fn ($q) => $q->where('movement_type', StockMovementType::OUT->value)], 'quantity')
+            ->withSum(['stocks as total_in' => fn ($q) => $q
+                ->where('movement_type', StockMovementType::IN->value)
+                ->whereNotIn('status', self::REVERSED_STOCK_STATUSES)], 'quantity')
+            ->withSum(['stocks as total_out' => fn ($q) => $q
+                ->where('movement_type', StockMovementType::OUT->value)
+                ->whereNotIn('status', self::REVERSED_STOCK_STATUSES)], 'quantity')
             ->withSum('stockBalances as on_hand', 'quantity')
             ->withSum([
                 'stocks as opening_balance' => function ($q) {
@@ -732,6 +748,10 @@ class ItemController extends Controller
             ])
             ->where('item_id', $item->id)
             ->where('movement_type', $movementType)
+            // A reversal voids both the original layer and the compensating one
+            // it posts back, so a reversed document would otherwise show up
+            // twice in the item's history and cancel itself out on screen.
+            ->whereNotIn('status', self::REVERSED_STOCK_STATUSES)
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc');
     }

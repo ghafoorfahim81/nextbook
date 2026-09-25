@@ -1465,6 +1465,22 @@ class Account extends Model
                 'remark' => 'Non-salary staff benefits',
                 'is_main' => true,
             ],
+
+            // Freight and handling paid to move goods between the company's own
+            // warehouses. It is a period cost, not part of what the stock is
+            // worth: an internal move must not re-price inventory, so it posts
+            // here rather than being capitalised the way a landed cost is.
+            [
+                'name' => 'Item Transfer Expense',
+                'local_name' => 'هزینه انتقال جنس',
+                'parent_slug' => 'other-expenses',
+                'number' => '9801',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'item-transfer-expense',
+                'remark' => 'Cost of moving goods between own warehouses',
+                'is_main' => true,
+            ],
         ];
     }
 }

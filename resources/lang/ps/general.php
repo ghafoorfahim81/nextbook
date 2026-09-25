@@ -116,6 +116,7 @@ return [
     'landed_cost_freight_customs_clearing_account_could_not_be_resolved' => 'Freight/customs clearing account could not be resolved.',
     'landed_cost_home_currency_could_not_be_resolved' => 'Home currency could not be resolved.',
     'cannot_post_insufficient_stock' => 'ثبتول ناشونی: د :item لپاره کافي موجودي نشته. کیدای شي په بل انوایس کې پلورل شوی وي.', 
+    'transfer_cost_accounts_missing' => 'د لیږد لګښت ثبتول ناشونی: د دې څانګې لپاره بانکي حساب یا د جنس د لیږد لګښت حساب نه دی ټاکل شوی.',
     'landed_cost_related_stock_movement_not_found' => 'No related purchase stock movement was found to apply the landed cost.',
     'landed_cost_allocation_must_match_total_cost' => 'Allocated amount must equal the total additional cost before posting.',
     'landed_cost_purchase_already_allocated' => 'د پیرود امر :number لپاره لا دمخه راوړل شوی لګښت شتون لري.',

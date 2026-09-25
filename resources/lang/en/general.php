@@ -142,5 +142,6 @@ return [
     'active' => 'Active',
     'inactive' => 'Inactive',
     'cannot_post_insufficient_stock' => 'Cannot post: not enough stock for :item. It may have been sold on another invoice.',
+    'transfer_cost_accounts_missing' => 'Cannot post the transfer cost: the bank account or the Item Transfer Expense account is not set up for this branch.',
     'invalid_phone_number' => 'Enter a valid international phone number (6 to 15 digits, country code included).',
 ];

@@ -28,7 +28,14 @@ class ItemTransferStoreRequest extends FormRequest
             'from_warehouse_id' => ['required', 'string', 'exists:warehouses,id'],
             'to_warehouse_id' => ['required', 'string', 'exists:warehouses,id', 'different:from_warehouse_id'],
             'status' => ['nullable', 'string', Rule::in(TransferStatus::values())],
-            'transfer_cost' => ['nullable', 'numeric', 'min:0'],
+            // The switch decides whether the freight fields are required: a
+            // transfer without a cost must not be forced to name a bank account.
+            'has_transfer_cost' => ['nullable', 'boolean'],
+            'transfer_cost' => ['nullable', 'required_if:has_transfer_cost,true,1', 'numeric', 'min:0'],
+            'bank_account_id' => ['nullable', 'required_if:has_transfer_cost,true,1', 'string', 'exists:accounts,id'],
+            'expense_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'currency_id' => ['nullable', 'required_if:has_transfer_cost,true,1', 'string', 'exists:currencies,id'],
+            'rate' => ['nullable', 'numeric', 'gt:0'],
             'remarks' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', 'string', 'exists:items,id'],
