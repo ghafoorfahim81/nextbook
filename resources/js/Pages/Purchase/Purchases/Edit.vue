@@ -24,6 +24,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps';
 import { toDocumentCurrency } from '@/utils/currency';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -746,6 +747,8 @@ onUnmounted(() => {
 });
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
@@ -761,7 +764,7 @@ useFormGuard(form)
             :prefs="purchasePrefs"
             :title="t('preferences.tabs.purchase')"
         />
-        <form @submit.prevent="handleSubmitAction">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction">
             <div
                 v-if="stockLocked"
                 class="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200"

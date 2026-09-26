@@ -14,6 +14,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useAccountTransferBalances } from '@/composables/useAccountTransferBalances'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 
 const { t } = useI18n()
 
@@ -99,12 +100,14 @@ const handleSubmitAction = (createAndNew = false) => {
 
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
   <AppLayout :title="t('general.create', { name: t('general.account_transfer') })">
     <FormPageToolbar confirm-module="account_transfer" back-route="account-transfers.index" module="account_transfer" />
-    <form @submit.prevent="handleSubmitAction">
+    <form ref="saveFormRef" @submit.prevent="handleSubmitAction">
       <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('general.account_transfer') }) }}

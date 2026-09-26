@@ -17,6 +17,7 @@ import { Spinner } from '@/Components/ui/spinner'
 import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 import { printDocument } from '@/composables/usePrintDocument'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n()
 
 const page = usePage()
@@ -188,6 +189,7 @@ function submit(action = 'update') {
 
 useFormGuard(form)
 
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
@@ -204,7 +206,7 @@ useFormGuard(form)
       :prefs="rpPrefs"
       :title="t('preferences.tabs.receipt_payment')"
     />
-    <form @submit.prevent="submit('update')">
+    <form ref="saveFormRef" @submit.prevent="submit('update')">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('payment.payment') }) }}

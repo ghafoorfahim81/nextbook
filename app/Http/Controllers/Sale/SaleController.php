@@ -1369,6 +1369,11 @@ class SaleController extends Controller
             ->where('branch_id', $branchId)
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0)
+            // Voided layers are not consumable (StockService::consumeLayers
+            // skips them), so peeking at them costs the line off stock the
+            // business never ended up owning — the ledger then disagrees with
+            // the movement the document actually posted.
+            ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             // Peek at the SAME layers StockService::deductFIFO() will consume —
             // it filters by variant, so leaving this unfiltered costed the line
             // from another variant's receipts and left the GL disagreeing with

@@ -7,6 +7,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import PermissionGroups from '@/Pages/UserManagement/Roles/PermissionGroups.vue';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 const { t } = useI18n();
 const { toast } = useToast();
 
@@ -39,12 +40,14 @@ const goBack = () => {
 };
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('user_mangements.role') })">
         <FormPageToolbar back-route="roles.index" module="user_management" />
-        <form @submit.prevent="handleSubmit()">
+        <form ref="saveFormRef" @submit.prevent="handleSubmit()">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('user_mangements.role') }) }}

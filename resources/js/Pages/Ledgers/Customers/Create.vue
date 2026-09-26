@@ -15,6 +15,7 @@ import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { buildOpeningRows } from '@/utils/ledgerOpenings';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 const { t } = useI18n();
 
 const props = defineProps({
@@ -136,12 +137,14 @@ const handleSubmitAction = (createAndNew = false) => {
 const handleCancel = () => {
     router.visit(route('customers.index'))
 }
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('ledger.customer.customer')">
         <FormPageToolbar back-route="customers.index" module="ledgers" />
-        <form @submit.prevent="handleSubmitAction(false)">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('ledger.customer.customer') }) }}

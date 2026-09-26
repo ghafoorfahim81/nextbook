@@ -16,6 +16,7 @@ import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { buildOpeningRows } from '@/utils/ledgerOpenings';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 const props = defineProps({
     supplier: { type: Object, required: true },
     currencies: { type: Array, required: true },
@@ -91,12 +92,13 @@ const handleCancel = () => {
     router.visit(route('suppliers.index'))
 }
 
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('ledger.supplier.supplier') })">
         <FormPageToolbar back-route="suppliers.index" module="ledgers" />
-        <form @submit.prevent="handleSubmit">
+        <form ref="saveFormRef" @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('ledger.supplier.supplier') }) }}

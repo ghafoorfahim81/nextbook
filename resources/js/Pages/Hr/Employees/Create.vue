@@ -7,6 +7,7 @@ import { useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { todayValueForCalendar } from '@/utils/dateDefaults';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 const page = usePage();
@@ -80,13 +81,15 @@ const submit = (andNew = false) => {
             onFinish: () => { submitAction.value = null; },
         });
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('hr.employee') })">
         <FormPageToolbar back-route="employees.index" module="employees" />
 
-        <form @submit.prevent="submit(false)">
+        <form ref="saveFormRef" @submit.prevent="submit(false)">
             <EmployeeFormFields :form="form" :options="options" />
 
             <SubmitButtons

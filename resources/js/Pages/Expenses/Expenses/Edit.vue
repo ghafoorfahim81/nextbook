@@ -15,6 +15,7 @@ import { useToast } from '@/Components/ui/toast/use-toast';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { Button } from '@/Components/ui/button';
 import { Spinner } from '@/Components/ui/spinner';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -172,12 +173,13 @@ onUnmounted(() => {
 
 useFormGuard(form)
 
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('expense.expense') })" :sidebar-collapsed="true">
         <FormPageToolbar confirm-module="expense" back-route="expenses.index" module="expense" />
-        <form @submit.prevent="handleSubmit()">
+        <form ref="saveFormRef" @submit.prevent="handleSubmit()">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">

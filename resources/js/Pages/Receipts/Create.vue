@@ -40,6 +40,7 @@ const rpFields = computed(() => rpPrefs.visible_fields)
 const showPreferencesPanel = ref(false)
 import { toast } from 'vue-sonner'
 import { printDocument } from '@/composables/usePrintDocument'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
 const billLoading = ref(false)
 useLazyProps(page.props, ['ledgers', 'accounts'])
@@ -224,6 +225,8 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
 }
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
@@ -240,7 +243,7 @@ useFormGuard(form)
       :prefs="rpPrefs"
       :title="t('preferences.tabs.receipt_payment')"
     />
-    <form @submit.prevent="submitActionHandler('create')">
+    <form ref="saveFormRef" @submit.prevent="submitActionHandler('create')">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('receipt.receipt') }) }}

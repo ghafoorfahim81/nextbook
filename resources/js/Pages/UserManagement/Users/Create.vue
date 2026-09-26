@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Input } from "@/Components/ui/input";
 import { useLazyProps } from '@/composables/useLazyProps'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n();
 const { toast } = useToast();
 
@@ -104,12 +105,14 @@ const goBack = () => {
 };
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('user_mangements.user') })">
         <FormPageToolbar back-route="users.index" module="user_management" />
-        <form @submit.prevent="handleSubmitAction(false)">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border p-4 shadow-sm   border-gray-200 relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('user_mangements.user') }) }}

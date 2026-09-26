@@ -13,6 +13,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n'
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n()
 const page = usePage()
@@ -176,12 +177,13 @@ function submit() {
 
 useFormGuard(form)
 
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('journal_entry.journal_entry') })">
     <FormPageToolbar confirm-module="journal_entry" back-route="journal-entries.index" module="journal_entry" />
-    <form @submit.prevent="submit()">
+    <form ref="saveFormRef" @submit.prevent="submit()">
       <!-- MAIN HEADER SECTION -->
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">

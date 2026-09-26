@@ -17,6 +17,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { Trash2, ArrowDownCircle, ArrowUpCircle } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -441,12 +442,14 @@ onUnmounted(() => {
 })
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
   <AppLayout :title="t('general.create', { name: t('adjustment.stock_adjustment') })" :sidebar-collapsed="true">
     <FormPageToolbar confirm-module="stock_adjustment" back-route="stock-adjustments.index" module="adjustment" />
-    <form @submit.prevent="handleSubmitAction(false)">
+    <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
       <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('adjustment.stock_adjustment') }) }}

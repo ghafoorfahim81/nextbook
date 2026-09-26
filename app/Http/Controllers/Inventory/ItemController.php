@@ -272,12 +272,33 @@ class ItemController extends Controller
      * stock already committed to unposted outgoing lines, so the quantity a
      * user can actually sell is quantity - reserved_out.
      *
-     * stock_balances has no per-warehouse cost column, so value is derived
-     * from the item's average cost.
+     * Value comes from the movements, not from quantity x avg_cost.
+     *
+     * avg_cost is a running weighted average, and under FIFO it is not what
+     * the stock on the shelf is worth: sell the cheap layer and the remaining
+     * goods are worth more than the average says. Priced that way, the
+     * warehouse rows contradicted the item's own stock value directly above
+     * them on the same page — 5,142.86 against 6,000 — and only the second
+     * figure agreed with the inventory account.
+     *
+     * Derived exactly as ItemResource::stock_value derives the total, so the
+     * rows always add up to it. Value survives a change of unit (5 cartons at
+     * 600 is 60 pieces at 50), so no conversion is needed here.
      */
     protected function stockByWarehouse(Item $item): array
     {
-        $averageCost = (float) $item->avg_cost;
+        $valueByWarehouse = DB::table('stock_movements')
+            ->where('item_id', $item->id)
+            ->where('branch_id', $item->branch_id)
+            ->whereNull('deleted_at')
+            ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->groupBy('warehouse_id')
+            ->selectRaw('warehouse_id')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN movement_type = ? THEN quantity * unit_cost ELSE -(quantity * unit_cost) END), 0) as total_value',
+                [StockMovementType::IN->value]
+            )
+            ->pluck('total_value', 'warehouse_id');
 
         return StockBalance::query()
             ->where('item_id', $item->id)
@@ -287,7 +308,7 @@ class ItemController extends Controller
             ->groupBy('warehouse_id')
             ->with('warehouse:id,name')
             ->get()
-            ->map(function (StockBalance $balance) use ($averageCost) {
+            ->map(function (StockBalance $balance) use ($valueByWarehouse) {
                 $quantity = (float) $balance->quantity;
                 $reserved = (float) $balance->reserved_out;
 
@@ -297,7 +318,7 @@ class ItemController extends Controller
                     'quantity' => $quantity,
                     'reserved' => $reserved,
                     'available' => $quantity - $reserved,
-                    'stock_value' => $quantity * $averageCost,
+                    'stock_value' => max(0.0, (float) ($valueByWarehouse[$balance->warehouse_id] ?? 0)),
                 ];
             })
             ->sortByDesc('quantity')

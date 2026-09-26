@@ -26,6 +26,7 @@ import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps';
 import { useLineDiscounts } from '@/composables/useLineDiscounts';
 import { toDocumentCurrency } from '@/utils/currency';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -796,6 +797,8 @@ onUnmounted(() => {
 });
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('sale.sale') })" :sidebar-collapsed="true">
@@ -811,7 +814,7 @@ useFormGuard(form)
             :prefs="salePrefs"
             :title="t('preferences.tabs.sale')"
         />
-        <form @submit.prevent="handleSubmitAction('update')">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction('update')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('sale.sale') }) }}

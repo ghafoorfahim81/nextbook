@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 const { toast } = useToast();
 import { useToast } from '@/Components/ui/toast/use-toast';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 const props = defineProps({
     calendarTypes: {
         type: Array,
@@ -124,6 +125,8 @@ const handleSelectChange = (field, value) => {
     }
     form[field] = value;
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
@@ -132,7 +135,7 @@ const handleSelectChange = (field, value) => {
             <div class="sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 bg-white border-b border-gray-200">
-                        <form @submit.prevent="submit" class="space-y-6">
+                        <form ref="saveFormRef" @submit.prevent="submit" class="space-y-6">
                             <div class="mb-5 grid grid-cols-2 gap-x-2 gap-y-5">
                                 <!-- Basic Information -->
                                 <div class="space-y-4">

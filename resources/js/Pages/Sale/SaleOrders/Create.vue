@@ -21,6 +21,7 @@ import { todayValueForCalendar } from '@/utils/dateDefaults'
 import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow } from '@/composables/useVariantLine'
 import { toDocumentCurrency } from '@/utils/currency'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 
 const { t } = useI18n();
 const { toast } = useToast()
@@ -456,6 +457,8 @@ const addRow = () => {
 }
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
@@ -473,7 +476,7 @@ useFormGuard(form)
             :title="t('sale_order.sale_order')"
         />
 
-        <form @submit.prevent="handleSubmitAction('create')">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction('create')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale_order.sale_order') }) }}</div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">

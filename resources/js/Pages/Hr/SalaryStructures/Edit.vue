@@ -7,6 +7,7 @@ import { useForm, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 
@@ -70,13 +71,15 @@ const submit = () => {
         onFinish: () => { updating.value = false; },
     });
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('hr.salary_structure') })">
         <FormPageToolbar back-route="salary-structures.show" :back-route-params="structure.id" module="salary_structures" />
 
-        <form @submit.prevent="submit">
+        <form ref="saveFormRef" @submit.prevent="submit">
             <SalaryStructureFormFields :form="form" :filter-options="filterOptions" :components="components" />
 
             <SubmitButtons
