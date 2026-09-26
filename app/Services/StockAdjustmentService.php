@@ -15,6 +15,7 @@ use App\Models\Account\Account;
 use App\Models\Accounting\FinancialPeriod;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
+use App\Models\Inventory\ItemVariant;
 use App\Models\Inventory\StockAdjustment;
 use App\Models\Inventory\StockAdjustmentItem;
 use App\Models\Inventory\StockMovement;
@@ -310,7 +311,7 @@ class StockAdjustmentService
                 $unitCost = ($allowInCostOverride && $userCost !== null)
                     ? $userCost
                     : $this->convertCostToSelectedUnit(
-                        (float) $itemModel->avg_cost,
+                        $this->variantAverage($variantId) ?? (float) $itemModel->avg_cost,
                         $line['unit_measure_id'],
                         $itemModel->unit_measure_id,
                         $unitValuesById
@@ -512,6 +513,25 @@ class StockAdjustmentService
      * costing method: FIFO/LIFO peek the same layers StockService will
      * consume; weighted average uses the item's running average.
      */
+    /**
+     * What one unit of this variant is worth, or null when it carries no
+     * figure of its own.
+     *
+     * A zero is treated as "none" rather than as free stock: it means the
+     * variant has never been costed, and writing goods off at nothing would
+     * report the loss as costless.
+     */
+    private function variantAverage(?string $variantId): ?float
+    {
+        if ($variantId === null || $variantId === '') {
+            return null;
+        }
+
+        $average = (float) (ItemVariant::query()->whereKey($variantId)->value('avg_cost') ?? 0);
+
+        return $average > 0 ? $average : null;
+    }
+
     private function resolveOutUnitCost(
         Item $itemModel,
         string $selectedUnitMeasureId,
@@ -523,7 +543,11 @@ class StockAdjustmentService
         ?string $expireDate = null,
         ?string $variantId = null,
     ): float {
-        $avgCost = (float) $itemModel->avg_cost;
+        // A variant blends its own receipts, so relieving "grade one" at the
+        // item's figure prices it from stock it never came from — writing off
+        // 10 litres of a 60 variant at the 64 the whole item averages to.
+        // Mirrors SaleController::resolveLineBaseCost.
+        $avgCost = $this->variantAverage($variantId) ?? (float) $itemModel->avg_cost;
 
         // This used to read the global `costing_method` cache key, which nothing
         // writes any more — so a FIFO company silently fell through to weighted

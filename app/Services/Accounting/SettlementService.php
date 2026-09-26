@@ -118,9 +118,19 @@ class SettlementService
             ->where('tl.ledger_id', $ledgerId)
             ->where('tl.account_id', $accountId)
             ->whereNull('tl.deleted_at')
-            // A reversed voucher's claim is gone. Its reversal posts an opposite
-            // line which is not a claim on this side, so it drops out too.
+            // A reversed voucher's claim is gone.
             ->where('t.status', 'posted')
+            // A reversal voucher is not a claim of its own. It exists to undo
+            // another voucher, and the line it mirrors is already out of this
+            // list — the original is marked reversed and filtered above. Left
+            // in, the mirror of a CREDIT (undoing a sale return) reads as a
+            // fresh debt and the receipt form offers cash against it: the
+            // customer appeared to owe the sale in full and the reversal on
+            // top of it.
+            ->where(function ($query) {
+                $query->whereNull('t.reference_type')
+                    ->orWhere('t.reference_type', '!=', 'reversal');
+            })
             ->where("tl.{$claimColumn}", '>', 0)
             // A line that SETTLED something is not itself a claim. Once money
             // can move both ways, a receipt's AR credit sits in the same column
@@ -222,6 +232,13 @@ class SettlementService
             ->whereNull('tl.deleted_at')
             ->whereNull('l.deleted_at')
             ->where('t.status', 'posted')
+            // A reversal voucher is not a claim — same rule as openItems(),
+            // and an ageing report that counted one would age a debt that the
+            // reversal was undoing rather than creating.
+            ->where(function ($query) {
+                $query->whereNull('t.reference_type')
+                    ->orWhere('t.reference_type', '!=', 'reversal');
+            })
             ->where("tl.{$claimColumn}", '>', 0)
             // A line that settled something is not itself a claim — same rule
             // as openItems(), for the same reason.

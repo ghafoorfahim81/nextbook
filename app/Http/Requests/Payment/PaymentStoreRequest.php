@@ -20,7 +20,7 @@ class PaymentStoreRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'number' => ['required', 'integer', 'max:255'],
+            'number' => ['required', 'integer', 'min:1'],
             'date' => ['required', 'date'],
             'ledger_id' => ['required', 'exists:ledgers,id'],
             'payment_mode' => ['nullable', Rule::in(PaymentMode::values())],

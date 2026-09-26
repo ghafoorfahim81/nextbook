@@ -19,6 +19,7 @@ use App\Services\Accounting\SettlementService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
 use App\Models\Administration\Currency;
@@ -529,6 +530,58 @@ class ReceiptController extends Controller
         }
 
         return $redirect;
+    }
+
+    /**
+     * Undo a posted receipt.
+     *
+     * The route and the Reverse button have both been here all along; the
+     * method was not, so the button returned a 500. Beyond mirroring the
+     * ledger, this has to release what the receipt was holding: the invoices it
+     * settled are only closed because its settlement rows point at them, and
+     * leaving those behind would keep an invoice paid by a voucher that has
+     * been undone — and would block the invoice from ever being reversed.
+     */
+    public function reverse(Request $request, Receipt $receipt, TransactionService $transactionService)
+    {
+        $this->authorize('update', $receipt);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($receipt->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
+
+        DB::transaction(function () use ($receipt, $transactionService, $validated) {
+            $transaction = $receipt->transaction()->firstOrFail();
+
+            // Read the documents BEFORE the settlements go, or there is nothing
+            // left to look them up by.
+            $affected = app(PaymentStatusService::class)->documentsSettledBy($transaction->id);
+
+            $transactionService->reverse($transaction, $validated['reason'], $receipt->number, Receipt::class);
+
+            // Soft-deleted, not force-deleted: a reversal keeps its trail,
+            // unlike an edit, which re-posts the voucher from scratch.
+            Settlement::withoutGlobalScopes()
+                ->where('transaction_id', $transaction->id)
+                ->delete();
+
+            app(PaymentStatusService::class)->recalculateSales($affected['sales']);
+            app(PaymentStatusService::class)->recalculatePurchases($affected['purchases']);
+
+            $receipt->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'updated_by' => Auth::id(),
+            ]);
+        });
+
+        return redirect()->back()->with(
+            'success',
+            __('general.updated_successfully', ['resource' => __('general.resource.receipt')])
+        );
     }
 
     public function destroy(Request $request, Receipt $receipt, ActivityLogService $activityLogService)
