@@ -20,7 +20,7 @@ class ReceiptUpdateRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'number' => ['sometimes', 'required', 'integer', 'max:255'],
+            'number' => ['sometimes', 'required', 'integer', 'min:1'],
             'date' => ['sometimes', 'required', 'date'],
             'ledger_id' => ['sometimes', 'required', 'exists:ledgers,id'],
             'payment_mode' => ['sometimes', 'nullable', Rule::in(PaymentMode::values())],

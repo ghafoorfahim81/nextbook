@@ -16,7 +16,7 @@ class CompanySeeder extends Seeder
      * Run the database seeds.
      */
     public function run(): void
-    { 
+    {
         // Resolve base currency (prefer explicit base, fall back to first currency)
         $currencyId = Currency::withoutGlobalScopes()->where('is_base_currency', true)->value('id');
 
@@ -54,7 +54,7 @@ class CompanySeeder extends Seeder
             'calendar_type' => CalendarType::GREGORIAN,
             'locale' => Locale::EN,
             'working_style' => WorkingStyle::NORMAL,
-            'business_type' => BusinessType::PHARMACY,
+            'business_type' => BusinessType::SUPERMARKET,
             'currency_id' => $currencyId,
         ]);
         $user = \App\Models\User::withoutGlobalScopes()->where('name', 'admin')->first();
@@ -62,6 +62,6 @@ class CompanySeeder extends Seeder
             $user->company_id = $company->id;
             $user->save();
         }
-         
+
     }
 }

@@ -1537,6 +1537,47 @@ class SaleController extends Controller
             abort(422, 'Only posted documents can be reversed.');
         }
 
+        // A return is raised against this document and takes its quantities and
+        // costs from it. Reversing the document underneath would leave the
+        // return standing on something that no longer happened — the goods it
+        // sent back were never received, and its ledger entries reference a
+        // voucher that has been undone. The return has to go first.
+        $standingReturns = $sale->returns()
+            ->where('status', '!=', TransactionStatus::REVERSED->value)
+            ->pluck('number');
+
+        if ($standingReturns->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'status' => __('general.cannot_reverse_document_with_returns', [
+                    'numbers' => $standingReturns->implode(', '),
+                ]),
+            ]);
+        }
+
+        // Money taken against this document on a SEPARATE voucher. A receipt
+        // allocated here was taken against this debt specifically; undoing the
+        // debt would leave the receipt allocated to nothing and the party's
+        // balance would stop adding up. (A cash sale settles itself inside
+        // its own voucher and writes no settlement row, so it is untouched by
+        // this.)
+        $paidBy = DB::table('settlements as s')
+            ->join('transaction_lines as tl', 'tl.id', '=', 's.target_line_id')
+            ->join('transactions as target', 'target.id', '=', 'tl.transaction_id')
+            ->join('transactions as settling', 'settling.id', '=', 's.transaction_id')
+            ->where('target.reference_type', Sale::class)
+            ->where('target.reference_id', $sale->id)
+            ->whereNull('s.deleted_at')
+            ->distinct()
+            ->pluck('settling.voucher_number');
+
+        if ($paidBy->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'status' => __('general.cannot_reverse_document_with_payments', [
+                    'numbers' => $paidBy->filter()->implode(', '),
+                ]),
+            ]);
+        }
+
         DB::transaction(function () use ($sale, $transactionService, $validated) {
             $transaction = $sale->transaction()->firstOrFail();
             $transactionService->reverse($transaction, $validated['reason'], $sale->number, Sale::class);
