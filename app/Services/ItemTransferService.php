@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Enums\TransactionStatus;
-use App\Enums\TransferStatus;
 use App\Models\Account\Account;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Models\ItemTransfer\ItemTransferItem;
@@ -43,7 +42,7 @@ class ItemTransferService
                 'date' => $this->dateConversionService->toGregorian($data['date']),
                 'from_warehouse_id' => $data['from_warehouse_id'],
                 'to_warehouse_id' => $data['to_warehouse_id'],
-                'status' => TransferStatus::PENDING,
+                'status' => TransactionStatus::DRAFT,
                 'remarks' => $data['remarks'] ?? null,
                 ...$this->transferCostAttributes($data),
             ]);
@@ -101,14 +100,14 @@ class ItemTransferService
             ];
 
             // If transfer is completed, cannot update
-            if ($transfer->status === TransferStatus::COMPLETED) {
+            if ($transfer->status === TransactionStatus::POSTED) {
                 throw ValidationException::withMessages([
                     'status' => ['Cannot update a completed transfer.'],
                 ]);
             }
 
             // If transfer was cancelled and we're reactivating, validate stock
-            if ($transfer->status === TransferStatus::CANCELLED && isset($data['status']) && $data['status'] === TransferStatus::PENDING->value) {
+            if ($transfer->status === TransactionStatus::REVERSED && isset($data['status']) && $data['status'] === TransactionStatus::DRAFT->value) {
                 $this->validateStockAvailability($data['items'] ?? $transfer->items->toArray(), $data['from_warehouse_id'] ?? $transfer->from_warehouse_id);
             }
 
@@ -169,13 +168,13 @@ class ItemTransferService
     public function completeTransfer(ItemTransfer $transfer): ItemTransfer
     {
         return DB::transaction(function () use ($transfer) {
-            if ($transfer->status === TransferStatus::COMPLETED) {
+            if ($transfer->status === TransactionStatus::POSTED) {
                 throw ValidationException::withMessages([
                     'status' => ['Transfer is already completed.'],
                 ]);
             }
 
-            if ($transfer->status === TransferStatus::CANCELLED) {
+            if ($transfer->status === TransactionStatus::REVERSED) {
                 throw ValidationException::withMessages([
                     'status' => ['Cannot complete a cancelled transfer.'],
                 ]);
@@ -250,7 +249,7 @@ class ItemTransferService
 
             // Update transfer status
             $oldStatus = $transfer->status?->value ?? $transfer->status;
-            $transfer->update(['status' => TransferStatus::COMPLETED]);
+            $transfer->update(['status' => TransactionStatus::POSTED]);
 
             $transfer->load('items');
 
@@ -277,14 +276,14 @@ class ItemTransferService
     public function cancelTransfer(ItemTransfer $transfer): ItemTransfer
     {
         return DB::transaction(function () use ($transfer) {
-            if ($transfer->status === TransferStatus::CANCELLED) {
+            if ($transfer->status === TransactionStatus::REVERSED) {
                 throw ValidationException::withMessages([
                     'status' => ['Transfer is already cancelled.'],
                 ]);
             }
 
             // If transfer was completed, revert stock changes
-            if ($transfer->status === TransferStatus::COMPLETED) {
+            if ($transfer->status === TransactionStatus::POSTED) {
 
                 $movements = StockMovement::query()
                     ->where('reference_type', ItemTransfer::class)
@@ -377,7 +376,7 @@ class ItemTransferService
 
             // Update transfer status
             $oldStatus = $transfer->status?->value ?? $transfer->status;
-            $transfer->update(['status' => TransferStatus::CANCELLED]);
+            $transfer->update(['status' => TransactionStatus::REVERSED]);
 
             $transfer->load('items');
 

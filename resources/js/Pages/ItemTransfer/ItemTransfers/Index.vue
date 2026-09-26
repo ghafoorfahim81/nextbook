@@ -17,7 +17,7 @@ const props = defineProps({
 })
 
 const editItem = (item) => {
- if(item.status === 'completed' || item.status === 'cancelled') {
+ if(item.status === 'posted' || item.status === 'reversed') {
   toast({
     title: t('general.error'),
     description: t('item_transfer.cannot_edit_completed_or_cancelled_transfer'),
@@ -32,7 +32,7 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     const transfer = props.transfers.data.find(t => (t.id==id));
-    if(transfer.status === 'completed') {
+    if(transfer.status === 'posted') {
         toast({
         title: t('general.error'),
         description: t('item_transfer.cannot_delete_completed_transfer'),

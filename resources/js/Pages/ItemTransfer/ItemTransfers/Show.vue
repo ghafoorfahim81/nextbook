@@ -24,25 +24,11 @@ const props = defineProps({
 
 const transfer = computed(() => props.transfer?.data ?? props.transfer ?? {})
 
-/**
- * ShowPageToolbar speaks the shared document vocabulary (draft / posted /
- * reversed) and decides from it that only a draft can be posted and only a
- * posted document can be reversed. A transfer carries its own older set of
- * words, so it is translated here rather than teaching the toolbar a second
- * vocabulary — which also gives this page exactly the standard behaviour:
- * a draft offers Post and no Reverse, a posted transfer offers Reverse.
- */
-const toolbarStatus = computed(() => ({
-  pending: 'draft',
-  completed: 'posted',
-  cancelled: 'reversed',
-}[transfer.value.status] ?? transfer.value.status))
-
 const statusBadgeClasses = computed(() => {
   switch (transfer.value.status) {
-    case 'completed': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300'
-    case 'cancelled': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
-    case 'pending': return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+    case 'posted': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300'
+    case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
+    case 'draft': return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
     default: return 'border-border bg-muted text-foreground'
   }
 })
@@ -96,7 +82,7 @@ const reverseTransfer = (reason) => {
     <div class="space-y-6 min-w-0 max-w-full overflow-x-clip">
       <ShowPageToolbar
         back-route="item-transfers.index"
-        :status="toolbarStatus"
+        :status="transfer.status"
         :edit-route="transfer.id ? route('item-transfers.edit', transfer.id) : null"
         edit-permission="item_transfers.update"
         @post="postDialogOpen = true"

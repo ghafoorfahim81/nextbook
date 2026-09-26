@@ -62,11 +62,6 @@ return [
         'reversed' => 'Reversed',
         'voided' => 'Voided',
     ],
-    'transfer_status' => [
-        'pending' => 'Pending',
-        'completed' => 'Completed',
-        'cancelled' => 'Cancelled',
-    ],
     'opening_type' => [
         'debit' => 'Debit',
         'credit' => 'Credit',

@@ -2,7 +2,7 @@
 
 namespace App\Models\ItemTransfer;
 
-use App\Enums\TransferStatus;
+use App\Enums\TransactionStatus;
 use App\Traits\BranchSpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
@@ -47,7 +47,7 @@ class ItemTransfer extends Model
             'date' => 'date',
             'from_warehouse_id' => 'string',
             'to_warehouse_id' => 'string',
-            'status' => TransferStatus::class,
+            'status' => TransactionStatus::class,
             'has_transfer_cost' => 'boolean',
             'transfer_cost' => 'decimal:4',
             'bank_account_id' => 'string',
