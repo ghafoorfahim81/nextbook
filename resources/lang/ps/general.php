@@ -115,6 +115,8 @@ return [
     'landed_cost_landed_costs_clearing_account_could_not_be_resolved' => 'Landed costs clearing account could not be resolved.',
     'landed_cost_freight_customs_clearing_account_could_not_be_resolved' => 'Freight/customs clearing account could not be resolved.',
     'landed_cost_home_currency_could_not_be_resolved' => 'Home currency could not be resolved.',
+    'insufficient_stock_for_item' => 'د :item موجودي په :warehouse کې کافي نه ده. شته: :available، اړین: :required.',
+    'cannot_reverse_stock_already_gone' => 'دا سند نشي باطلېدای: هغه جنس چې راوړی یې و نور په ګدام کې نشته. لومړی هغه سندونه باطل کړئ چې دا یې ایستلی، یا د پاتې لپاره بیرته راستنیدنه ثبت کړئ.',
     'cannot_post_insufficient_stock' => 'ثبتول ناشونی: د :item لپاره کافي موجودي نشته. کیدای شي په بل انوایس کې پلورل شوی وي.', 
     'transfer_cost_accounts_missing' => 'د لیږد لګښت ثبتول ناشونی: د دې څانګې لپاره بانکي حساب یا د جنس د لیږد لګښت حساب نه دی ټاکل شوی.',
     'landed_cost_related_stock_movement_not_found' => 'No related purchase stock movement was found to apply the landed cost.',

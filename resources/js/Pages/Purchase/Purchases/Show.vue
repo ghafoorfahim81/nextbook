@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue'
 import AttachmentList from '@/Components/AttachmentList.vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -13,6 +14,7 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
+const { submit } = useDocumentAction()
 const { toast } = useToast();
 const { can } = useAuth();
 
@@ -73,12 +75,12 @@ const statusBadgeClasses = computed(() => {
 
 const getStatusLabel = (status) => {
     switch (status) {
-        case 'draft': return 'Draft';
-        case 'posted': return 'Posted';
-        case 'reversed': return 'Reversed';
+        case 'draft': return t('general.status_draft');
+        case 'posted': return t('general.status_posted');
+        case 'reversed': return t('general.status_reversed');
         case 'approved': return t('general.approve');
         case 'rejected': return t('general.reject');
-        case 'pending': return 'Pending';
+        case 'pending': return t('general.status_pending');
         default: return status;
     }
 };
@@ -135,14 +137,14 @@ const updateStatus = (status) => {
 };
 
 const postPurchase = () => {
-    router.post(route('purchases.post', purchaseData.value.id), {}, {
+    submit(route('purchases.post', purchaseData.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => { postDialogOpen.value = false },
     });
 };
 
 const reversePurchase = (reason) => {
-    router.post(route('purchases.reverse', purchaseData.value.id), { reason }, {
+    submit(route('purchases.reverse', purchaseData.value.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => { reverseDialogOpen.value = false },
     });

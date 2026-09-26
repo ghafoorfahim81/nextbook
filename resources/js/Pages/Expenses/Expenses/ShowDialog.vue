@@ -8,10 +8,12 @@ import {
 } from '@/Components/ui/dialog';
 import { Separator } from '@/Components/ui/separator';
 import { useI18n } from 'vue-i18n';
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 
 const { t } = useI18n();
+const { submit } = useDocumentAction()
 
 const props = defineProps({
     open: Boolean,
@@ -51,7 +53,7 @@ const statusLabel = computed(() => {
 
 const postExpense = () => {
     if (!props.expense?.id) return;
-    router.post(route('expenses.post', props.expense.id), {}, {
+    submit(route('expenses.post', props.expense.id), {}, {
         preserveScroll: true,
         onSuccess: () => {
             postDialogOpen.value = false;
@@ -62,7 +64,7 @@ const postExpense = () => {
 
 const reverseExpense = (reason) => {
     if (!props.expense?.id) return;
-    router.post(route('expenses.reverse', props.expense.id), { reason }, {
+    submit(route('expenses.reverse', props.expense.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => {
             reverseDialogOpen.value = false;

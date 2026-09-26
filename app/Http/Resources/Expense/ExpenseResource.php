@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Expense;
 
+use App\Enums\TransactionStatus;
 use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -19,6 +20,8 @@ class ExpenseResource extends JsonResource
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'remarks' => $this->remarks,
             'status' => $this->status ?? $this->transaction?->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status ?? $this->transaction?->status))?->getLabel()
+                ?? (string) ($this->status ?? $this->transaction?->status),
             'category_id' => $this->category_id,
             'category' => $this->whenLoaded('category', fn() => [
                 'id' => $this->category->id,

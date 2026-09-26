@@ -37,7 +37,7 @@ const columns = computed(() => [
         label: t('general.total'),
         render: (row) => `${row.currency?.symbol || ''} ${Number(row.total || 0).toLocaleString()}`,
     },
-    { key: 'status', label: t('general.status'), sortable: true },
+    { key: 'status_label', label: t('general.status') },
     { key: 'remarks', label: t('general.remarks') },
     { key: 'actions', label: t('general.action') },
 ]);

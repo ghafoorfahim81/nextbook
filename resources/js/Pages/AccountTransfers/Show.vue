@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue'
 import AttachmentList from '@/Components/AttachmentList.vue'
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3'
 import { Calendar, DollarSign, FileText, ArrowLeftRight, Banknote, User } from 'lucide-vue-next'
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
@@ -10,6 +11,7 @@ import ShowPageToolbar from '@/Components/ShowPageToolbar.vue'
 import { Badge } from '@/Components/ui/badge'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 
 const props = defineProps({
     transfer: { type: Object, required: true },
@@ -21,14 +23,14 @@ const postDialogOpen = ref(false)
 const reverseDialogOpen = ref(false)
 
 function postTransfer() {
-    router.post(route('account-transfers.post', transferData.value.id), {}, {
+    submit(route('account-transfers.post', transferData.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => { postDialogOpen.value = false },
     })
 }
 
 function reverseTransfer(reason) {
-    router.post(route('account-transfers.reverse', transferData.value.id), { reason }, {
+    submit(route('account-transfers.reverse', transferData.value.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => { reverseDialogOpen.value = false },
     })

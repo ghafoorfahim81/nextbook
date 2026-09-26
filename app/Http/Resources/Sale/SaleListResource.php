@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Sale;
 
+use App\Enums\TransactionStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\SalePurchaseType;
 use App\Services\DateConversionService;
@@ -40,6 +41,8 @@ class SaleListResource extends JsonResource
                 ? $this->type->value
                 : $this->type,
             'status' => $this->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status))?->getLabel()
+                ?? (string) ($this->status),
         ];
     }
 }

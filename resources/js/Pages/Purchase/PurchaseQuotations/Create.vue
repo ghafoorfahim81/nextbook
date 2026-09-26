@@ -9,6 +9,7 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import { useI18n } from 'vue-i18n';
+import { firstServerError } from '@/composables/useDocumentAction'
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
@@ -231,11 +232,11 @@ function handleSubmit({ createAndNew = false } = {}) {
                 class: 'bg-green-600 text-white',
             })
         },
-        onError: () => {
+        onError: (errors) => {
             notifySound('error');
             toast({
                 title: t('general.error'),
-                description: t('general.error_creating_purchase_quotation'),
+                description: firstServerError(errors) ?? t('general.error_creating_purchase_quotation'),
                 variant: 'destructive',
                 class: 'bg-pink-600 text-white',
             })

@@ -12,6 +12,7 @@
   "reversal_placeholder": "لنډ دلیل دننه کړئ...",
   "status_draft": "مسوده",
   "status_posted": "پوسټ شوی",
+  "status_pending": "په تمه",
   "status_reversed": "برعکس شوی",
   "only_draft_can_be_deleted": "یوازې د مسودې سندونه ړنګ کیدی شي.",
   "only_draft_can_be_edited": "یوازې د مسودې سندونه سمول کیدی شي.",
@@ -245,5 +246,8 @@
   "deactivate_description": "{name} په لیست او تاریخچه کې پاتې کېږي، خو نور به د غوره کولو لپاره نه ښکاري. هر وخت یې بیا فعالولی شئ.",
   "activated": "{name} فعال شو",
   "deactivated": "{name} غیرفعال شو",
+  "error_creating_sale": "خرڅلاو ونه ساتل شو.",
+  "error_creating_sale_order": "د خرڅلاو فرمایش ونه ساتل شو.",
+  "error_creating_purchase_order": "د پیرودنې فرمایش ونه ساتل شو.",
   "something_went_wrong": "یوه ستونزه رامنځته شوه. بیا هڅه وکړئ."
 }

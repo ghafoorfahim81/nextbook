@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\AccountTransfer;
 
+use App\Enums\TransactionStatus;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,6 +26,8 @@ class AccountTransferResource extends JsonResource
             'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'status' => $this->status ?? $this->transaction?->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status ?? $this->transaction?->status))?->getLabel()
+                ?? (string) ($this->status ?? $this->transaction?->status),
             'remark' => $this->remark,
             'transaction' => new TransactionResource($this->whenLoaded('transaction')),
             'from_account_name' => $displayName($fromAccount),

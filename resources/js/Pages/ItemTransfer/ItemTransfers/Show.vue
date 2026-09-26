@@ -7,12 +7,14 @@ import { Badge } from '@/Components/ui/badge'
 import { computed, ref } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import {
   ArrowLeftRight, Calendar, Store, DollarSign, FileText, User, Landmark, Coins,
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 const { toast } = useToast()
 const page = usePage()
 
@@ -62,7 +64,7 @@ const processing = ref(false)
 const postTransfer = () => {
   if (processing.value) return
   processing.value = true
-  router.post(route('item-transfers.post', transfer.value.id), {}, {
+  submit(route('item-transfers.post', transfer.value.id), {}, {
     preserveScroll: true,
     onSuccess: () => {
       // A failed post redirects back with a flash error (e.g. stock consumed by
@@ -81,7 +83,7 @@ const postTransfer = () => {
 const reverseTransfer = (reason) => {
   if (processing.value) return
   processing.value = true
-  router.post(route('item-transfers.reverse', transfer.value.id), { reason }, {
+  submit(route('item-transfers.reverse', transfer.value.id), { reason }, {
     preserveScroll: true,
     onSuccess: () => { reverseDialogOpen.value = false },
     onFinish: () => { processing.value = false },

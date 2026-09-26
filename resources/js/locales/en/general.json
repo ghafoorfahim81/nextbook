@@ -12,6 +12,7 @@
   "reversal_placeholder": "Enter a short reason...",
   "status_draft": "Draft",
   "status_posted": "Posted",
+  "status_pending": "Pending",
   "status_reversed": "Reversed",
   "only_draft_can_be_deleted": "Only draft documents can be deleted.",
   "only_draft_can_be_edited": "Only draft documents can be edited.",
@@ -297,5 +298,8 @@
   "deactivate_description": "{name} stays in the list and keeps its history, but stops being offered anywhere it can be selected. You can switch it back on at any time.",
   "activated": "{name} activated",
   "deactivated": "{name} deactivated",
+  "error_creating_sale": "The sale could not be saved.",
+  "error_creating_sale_order": "The sale order could not be saved.",
+  "error_creating_purchase_order": "The purchase order could not be saved.",
   "something_went_wrong": "Something went wrong. Please try again."
 }

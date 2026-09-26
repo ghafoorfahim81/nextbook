@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\JournalEntry;
 
+use App\Enums\TransactionStatus;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -29,6 +30,8 @@ class JournalEntryResource extends JsonResource
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'remark' => $this->remark,
             'status' => $this->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status))?->getLabel()
+                ?? (string) ($this->status),
             'amount' => $debitTotal > 0 ? $debitTotal : $creditTotal,
             'lines' => $lines->values(),
             'transaction' => new TransactionResource($this->whenLoaded('transaction')),

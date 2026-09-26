@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog'
@@ -11,6 +12,7 @@ import { router } from '@inertiajs/vue3'
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 
 const props = defineProps({
     open: Boolean,
@@ -60,7 +62,7 @@ function closeDialog() {
 
 function postTransfer() {
     if (!props.transferId) return
-    router.post(route('account-transfers.post', props.transferId), {}, {
+    submit(route('account-transfers.post', props.transferId), {}, {
         preserveScroll: true,
         onSuccess: () => {
             postDialogOpen.value = false
@@ -71,7 +73,7 @@ function postTransfer() {
 
 function reverseTransfer(reason) {
     if (!props.transferId) return
-    router.post(route('account-transfers.reverse', props.transferId), { reason }, {
+    submit(route('account-transfers.reverse', props.transferId), { reason }, {
         preserveScroll: true,
         onSuccess: () => {
             reverseDialogOpen.value = false

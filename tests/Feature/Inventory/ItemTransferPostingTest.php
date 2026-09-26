@@ -351,7 +351,7 @@ class ItemTransferPostingTest extends TestCase
         foreach ($reversalLines as $line) {
             // Without a reference type of its own the reversal fell through to
             // the generic "Reversal of transaction #<ulid>" wording.
-            $this->assertStringContainsString('برگشتی انتقال جنس', (string) $line->remark_fa);
+            $this->assertStringContainsString('ابطال انتقال جنس', (string) $line->remark_fa);
             $this->assertStringNotContainsString($transfer->id, (string) $line->remark);
             $this->assertStringContainsString($this->toWarehouse->name, (string) $line->remark_ps);
         }

@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue'
 import AttachmentList from '@/Components/AttachmentList.vue'
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3'
 import { Separator } from '@/Components/ui/separator'
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
@@ -10,6 +11,7 @@ import ShowPageToolbar from '@/Components/ShowPageToolbar.vue'
 import { Badge } from '@/Components/ui/badge'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 
 const props = defineProps({
     expense: { type: Object, required: true },
@@ -28,14 +30,14 @@ const total = computed(() => {
 const baseTotal = computed(() => total.value * (expense.value?.rate || 1))
 
 function postExpense() {
-    router.post(route('expenses.post', expense.value.id), {}, {
+    submit(route('expenses.post', expense.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => { postDialogOpen.value = false },
     })
 }
 
 function reverseExpense(reason) {
-    router.post(route('expenses.reverse', expense.value.id), { reason }, {
+    submit(route('expenses.reverse', expense.value.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => { reverseDialogOpen.value = false },
     })

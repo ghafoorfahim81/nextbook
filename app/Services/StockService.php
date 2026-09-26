@@ -7,6 +7,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Models\Administration\UnitMeasure;
+use App\Models\Administration\Warehouse;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\ItemVariant;
 use App\Models\Inventory\StockBalance;
@@ -961,8 +962,17 @@ class StockService
             ->sum(fn ($balance) => (float) $balance->quantity);
 
         if ($available + self::QUANTITY_EPSILON < (float) $data['quantity']) {
+            // Named, translated and numbered: this message is the only thing
+            // the operator gets when a document is refused, and "Insufficient
+            // stock. item_id 01m3... available: 10 required: 999" told them
+            // neither which item nor what to do about it.
             throw ValidationException::withMessages([
-                'stock' => 'Insufficient stock.' . 'item_id ' .$data['item_id']. ' available: ' .$available. ' required: ' .$data['quantity']
+                'stock' => __('general.insufficient_stock_for_item', [
+                    'item' => Item::find($data['item_id'])?->name ?? '',
+                    'warehouse' => Warehouse::find($data['warehouse_id'])?->name ?? '',
+                    'available' => rtrim(rtrim(number_format($available, 2, '.', ''), '0'), '.'),
+                    'required' => rtrim(rtrim(number_format((float) $data['quantity'], 2, '.', ''), '0'), '.'),
+                ]),
             ]);
         }
     }

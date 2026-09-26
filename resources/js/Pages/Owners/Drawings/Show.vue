@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue'
 import AttachmentList from '@/Components/AttachmentList.vue'
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3'
 import { CalendarDays, Landmark, Wallet, User, FileText, ArrowRightLeft, Percent } from 'lucide-vue-next'
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue'
@@ -10,6 +11,7 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 import { Badge } from '@/Components/ui/badge'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 
 const props = defineProps({
     drawing: { type: Object, required: true },
@@ -25,14 +27,14 @@ const reverseDialogOpen = ref(false)
 const postDialogOpen = ref(false)
 
 function postDrawing() {
-    router.post(route('drawings.post', drawing.value.id), {}, {
+    submit(route('drawings.post', drawing.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => { postDialogOpen.value = false },
     })
 }
 
 function reverseDrawing(reason) {
-    router.post(route('drawings.reverse', drawing.value.id), { reason }, {
+    submit(route('drawings.reverse', drawing.value.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => { reverseDialogOpen.value = false },
     })

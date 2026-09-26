@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Purchase;
 
+use App\Enums\TransactionStatus;
 use App\Enums\SalePurchaseType;
 use App\Enums\PaymentStatus;
 use App\Http\Resources\Transaction\TransactionResource;
@@ -57,6 +58,8 @@ class PurchaseResource extends JsonResource
             'bank_account_id' => $this->bank_account_id,
             'description' => $this->description,
             'status' => $this->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status))?->getLabel()
+                ?? (string) ($this->status),
             'payment_status' => $this->payment_status instanceof PaymentStatus
                 ? $this->payment_status->value
                 : $this->payment_status,

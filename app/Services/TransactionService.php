@@ -14,6 +14,7 @@ use App\Support\Decimal;
 use App\Support\TransactionStateMachine;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Exception;
 
 /**
@@ -605,43 +606,57 @@ class TransactionService
             // out, because an issue never moved the average.
             $undoesAReceipt = $movement->movement_type === StockMovementType::IN;
 
-            $this->stockService->post([
-                'branch_id' => $movement->branch_id,
-                'item_id' => $movement->item_id,
-                // The compensating movement has to land in the exact bucket the
-                // original touched, or the restore silently misses it and opens
-                // a second, empty-looking bucket for the same item instead.
-                'variant_id' => $movement->variant_id,
-                'warehouse_id' => $movement->warehouse_id,
-                'unit_measure_id' => $movement->unit_measure_id,
-                'movement_type' => $movement->movement_type === StockMovementType::IN
-                    ? StockMovementType::OUT->value
-                    : StockMovementType::IN->value,
-                'source' => $movement->source,
-                'reference_type' => Transaction::class,
-                'reference_id' => $movement->reference_id,
-                'quantity' => (float) $movement->quantity,
-                'unit_cost' => $movement->unit_cost,
-                'unit_cost_override' => (float) $movement->unit_cost,
-                'batch' => $movement->batch,
-                'expire_date' => $movement->expire_date,
-                'date' => now()->toDateString(),
-                'status' => \App\Enums\StockStatus::VOIDED->value,
-                // This restores stock the business already owned — not a new
-                // receipt at a market price — so it must not shift avg_cost.
-                'skip_average_recost' => true,
-                // ...but a cancelled receipt's cost has to come back OUT of the
-                // average it was blended into when it was posted.
-                'unwind_average_cost' => $undoesAReceipt,
-                // Undoing a receipt takes the goods off the shelf again, and the
-                // ones to take are the ones this document brought in — at the
-                // price it paid. Left to the plain FIFO queue the compensation
-                // would eat the front of the queue instead, emptying layers that
-                // had nothing to do with the document being reversed.
-                'give_back_of' => $undoesAReceipt
-                    ? ['type' => $original->reference_type, 'id' => $original->reference_id]
-                    : null,
-            ]);
+            try {
+                $this->stockService->post([
+                    'branch_id' => $movement->branch_id,
+                    'item_id' => $movement->item_id,
+                    // The compensating movement has to land in the exact bucket the
+                    // original touched, or the restore silently misses it and opens
+                    // a second, empty-looking bucket for the same item instead.
+                    'variant_id' => $movement->variant_id,
+                    'warehouse_id' => $movement->warehouse_id,
+                    'unit_measure_id' => $movement->unit_measure_id,
+                    'movement_type' => $movement->movement_type === StockMovementType::IN
+                        ? StockMovementType::OUT->value
+                        : StockMovementType::IN->value,
+                    'source' => $movement->source,
+                    'reference_type' => Transaction::class,
+                    'reference_id' => $movement->reference_id,
+                    'quantity' => (float) $movement->quantity,
+                    'unit_cost' => $movement->unit_cost,
+                    'unit_cost_override' => (float) $movement->unit_cost,
+                    'batch' => $movement->batch,
+                    'expire_date' => $movement->expire_date,
+                    'date' => now()->toDateString(),
+                    'status' => \App\Enums\StockStatus::VOIDED->value,
+                    // This restores stock the business already owned — not a new
+                    // receipt at a market price — so it must not shift avg_cost.
+                    'skip_average_recost' => true,
+                    // ...but a cancelled receipt's cost has to come back OUT of the
+                    // average it was blended into when it was posted.
+                    'unwind_average_cost' => $undoesAReceipt,
+                    // Undoing a receipt takes the goods off the shelf again, and the
+                    // ones to take are the ones this document brought in — at the
+                    // price it paid. Left to the plain FIFO queue the compensation
+                    // would eat the front of the queue instead, emptying layers that
+                    // had nothing to do with the document being reversed.
+                    'give_back_of' => $undoesAReceipt
+                        ? ['type' => $original->reference_type, 'id' => $original->reference_id]
+                        : null,
+                ]);
+            } catch (ValidationException $e) {
+                // Undoing a receipt takes goods back off the shelf, and they
+                // may already have been sold. "Not enough stock" is true but
+                // unhelpful here — the operator is reversing a document, not
+                // issuing one, and needs to be told what to do instead.
+                if (! $undoesAReceipt) {
+                    throw $e;
+                }
+
+                throw ValidationException::withMessages([
+                    'stock' => __('general.cannot_reverse_stock_already_gone'),
+                ]);
+            }
 
             // Undoing an ISSUE puts the goods back, so the layers it emptied
             // have to be filled again. The compensating movement above restores
@@ -693,71 +708,71 @@ class TransactionService
         $map = [
             \App\Models\AccountTransfer\AccountTransfer::class => [
                 'Reversal of account transfer #',
-                'برگشتی انتقال حساب #',
+                'ابطال انتقال حساب #',
                 'د حساب لیږد بیرته راګرځول #',
             ],
             \App\Models\JournalEntry\JournalEntry::class => [
                 'Reversal of journal entry #',
-                'برگشتی ژورنال #',
+                'ابطال ژورنال #',
                 'د ژورنال داخله بیرته راګرځول #',
             ],
             \App\Models\Purchase\Purchase::class => [
                 'Reversal of purchase #',
-                'برگشتی خریداری #',
+                'ابطال خریداری #',
                 'د پيرودنې بیرته راګرځول #',
             ],
             \App\Models\Sale\Sale::class => [
                 'Reversal of sale #',
-                'برگشتی فروش #',
+                'ابطال فروش #',
                 'د خرڅلاو بیرته راګرځول #',
             ],
             \App\Models\Sale\SaleReturn::class => [
                 'Reversal of sale return #',
-                'برگشتی مسترد فروش #',
+                'ابطال برگشت فروش #',
                 'د خرڅلاو بیرته راستنیدو بیرته راګرځول #',
             ],
             \App\Models\Purchase\PurchaseReturn::class => [
                 'Reversal of purchase return #',
-                'برگشتی مسترد خرید #',
+                'ابطال برگشت خرید #',
                 'د پیرودنې بیرته راستنیدو بیرته راګرځول #',
             ],
             \App\Models\Payment\Payment::class => [
                 'Reversal of payment #',
-                'برگشتی پرداخت #',
+                'ابطال پرداخت #',
                 'د تادیې بیرته راګرځول #',
             ],
             \App\Models\Receipt\Receipt::class => [
                 'Reversal of receipt #',
-                'برگشتی رسید #',
+                'ابطال رسید #',
                 'د رسید بیرته راګرځول #',
             ],
             \App\Models\Inventory\StockAdjustment::class => [
                 'Reversal of stock adjustment #',
-                'برگشتی تعدیل موجودی #',
+                'ابطال تعدیل موجودی #',
                 'د موجودۍ تعدیل بیرته راګرځول #',
             ],
             \App\Models\Expense\Expense::class => [
                 'Reversal of expense #',
-                'برگشتی هزینه #',
+                'ابطال هزینه #',
                 'د هزینه بیرته راګرځول #',
             ],
             \App\Models\ItemTransfer\ItemTransfer::class => [
                 // No '#': an item transfer has no number, so the reference
                 // passed in is the route it took, not a document code.
                 'Reversal of item transfer ',
-                'برگشتی انتقال جنس ',
+                'ابطال انتقال جنس ',
                 'د جنس د لیږد بیرته راګرځول ',
             ],
             \App\Models\Owner\Drawing::class => [
                 'Reversal of drawing #',
-                'برگشتی برداشت #',
+                'ابطال برداشت #',
                 'د اخیستنې بیرته راګرځول #',
             ],
         ];
 
         [$en, $fa, $ps] = $map[$referenceType] ?? [
             'Reversal of transaction #',
-            'برگشت تراکنش #',
+            'ابطال تراکنش #',
             'د تراکنش بیرته راګرځول #',
         ];
 
