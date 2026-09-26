@@ -550,6 +550,11 @@ class StockAdjustmentService
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0)
+            // Voided layers are not consumable (StockService::consumeLayers
+            // skips them), so peeking at them costs the line off stock the
+            // business never ended up owning — the ledger then disagrees with
+            // the movement the document actually posted.
+            ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             // deductFIFO narrows to the batch, the expiry and the variant
             // before it consumes anything. Peeking without the same filters
             // costed a batch-tracked line off whichever layer happened to be

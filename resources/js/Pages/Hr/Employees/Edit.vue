@@ -6,6 +6,7 @@ import EmployeeFormFields from './Partials/EmployeeFormFields.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 
@@ -114,13 +115,15 @@ const submit = () => {
         form.patch(route('employees.update', data.value.id), options);
     }
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('hr.employee') })">
         <FormPageToolbar back-route="employees.index" module="employees" />
 
-        <form @submit.prevent="submit">
+        <form ref="saveFormRef" @submit.prevent="submit">
             <EmployeeFormFields :form="form" :options="options" />
 
             <SubmitButtons

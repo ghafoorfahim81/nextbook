@@ -16,6 +16,7 @@ import { Plus, Trash2, AlertCircle } from 'lucide-vue-next';
 import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import { todayValueForCalendar } from '@/utils/dateDefaults';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 const page = usePage();
@@ -639,12 +640,14 @@ onUnmounted(() => {
     sidebar.setOpen(prevSidebarOpen.value);
   }
 });
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
   <AppLayout :title="pageTitle" :sidebar-collapsed="true">
     <FormPageToolbar back-route="landed-costs.index" module="landed_cost" />
-    <form @submit.prevent="handleSubmitAction(false)">
+    <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
       <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
           {{ pageTitle }}

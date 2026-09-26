@@ -6,6 +6,7 @@ import LeaveRequestFields from './Partials/LeaveRequestFields.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 
@@ -76,13 +77,15 @@ const submit = () => {
     if (hasFiles) form.post(route('leave-requests.update', data.value.id), options);
     else form.patch(route('leave-requests.update', data.value.id), options);
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('hr.leave_request') })">
         <FormPageToolbar back-route="leave-requests.index" module="leave_requests" />
 
-        <form @submit.prevent="submit">
+        <form ref="saveFormRef" @submit.prevent="submit">
             <LeaveRequestFields :form="form" :options="options" />
 
             <SubmitButtons

@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { useLazyProps } from '@/composables/useLazyProps'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n();
 const page = usePage();
 const accounts = computed(() => page.props.accounts?.data || [])
@@ -127,12 +128,14 @@ const filteredParentAccounts = computed(() => {
 });
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
     <AppLayout :title="t('account.chart_of_accounts')">
         <FormPageToolbar confirm-module="account" back-route="chart-of-accounts.index" module="chart_of_accounts" />
-        <form @submit.prevent="handleSubmitAction(false)">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('account.account') }) }}

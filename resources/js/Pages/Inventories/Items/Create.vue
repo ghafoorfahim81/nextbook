@@ -26,6 +26,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/Components/ui/alert'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const nameInputRef = ref(null)
 const { t } = useI18n()
 const { play } = useSoundPreferences()
@@ -543,6 +544,8 @@ onMounted(() => {
 
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
@@ -560,7 +563,7 @@ useFormGuard(form)
             :title="t('preferences.tabs.item_management')"
         />
         <ModuleHelpButton module="inventory_item" triggerless v-model:open="showItemHelp" />
-        <form @submit.prevent="handleSubmitAction">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('item.item') }) }}

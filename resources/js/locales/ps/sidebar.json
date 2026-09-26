@@ -54,6 +54,12 @@
     "chart_of_account": "حسابونو جدول",
     "account_type": "د حساب ډول"
   },
+  "journal_entry": {
+    "journal_entry": "ژورنال",
+    "journal_entries": "ژورنالونه",
+    "journal_class": "د ژورنال ټولګی",
+    "journal_classes": "د ژورنال ټولګي"
+  },
   "purchase": {
     "purchase": "پېرود",
     "purchase_order": "د پیرودنې امر",

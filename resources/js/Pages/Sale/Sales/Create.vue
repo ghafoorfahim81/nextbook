@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import { useFormGuard } from '@/composables/useFormGuard'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios'
@@ -1109,16 +1110,8 @@ const handleScanError = () => {
     focusBarcode()
 }
 
-const submitButtonsRef = ref(null)
-
 const handleGlobalKeydown = (e) => {
-    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault()
-        // Route through SubmitButtons so the confirm-before-save preference is honoured.
-        if (!form.processing) submitButtonsRef.value?.submitCreate?.()
-        return
-    }
-    if (e.key === 'F2' || (e.altKey && (e.key === 'b' || e.key === 'B'))) {
+    if (e.key === 'F2' || (e.altKey && (e.code === 'KeyB' || e.key === 'b' || e.key === 'B'))) {
         e.preventDefault()
         focusBarcode()
     }
@@ -1128,6 +1121,8 @@ onUnmounted(() => window.removeEventListener('keydown', handleGlobalKeydown))
 
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
@@ -1150,7 +1145,7 @@ useFormGuard(form)
             @update:open="(value) => pickerOpen = value"
             @select="handleSaleOrderPicked"
         />
-        <form @submit.prevent="handleSubmitAction('create')">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction('create')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale.sale') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
@@ -1544,7 +1539,7 @@ useFormGuard(form)
                 <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
             </div>
 
-            <SubmitButtons ref="submitButtonsRef" module="sale"
+            <SubmitButtons module="sale"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :save-and-print-label="t('general.save_and_print')"

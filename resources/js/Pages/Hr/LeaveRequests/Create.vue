@@ -6,6 +6,7 @@ import LeaveRequestFields from './Partials/LeaveRequestFields.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 
@@ -46,13 +47,15 @@ const save = (andSubmit) => {
             onFinish: () => { submitAction.value = null; },
         });
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('hr.leave_request') })">
         <FormPageToolbar back-route="leave-requests.index" module="leave_requests" />
 
-        <form @submit.prevent="save(true)">
+        <form ref="saveFormRef" @submit.prevent="save(true)">
             <LeaveRequestFields :form="form" :options="options" />
 
             <SubmitButtons

@@ -323,6 +323,17 @@ class ItemTransferService
                         'reference_id' => $transfer->id,
                     ]);
 
+                    // The OUT leg emptied layers in the source warehouse. The
+                    // compensating IN above puts the quantity back on the shelf
+                    // but writes a voided row, which is no use as a layer — so
+                    // the layers it consumed are refilled directly, or the
+                    // source warehouse ends up holding stock that FIFO cannot
+                    // see. (The IN leg needs nothing: its own layer is voided
+                    // below, which retires it.)
+                    if ($movement->movement_type === StockMovementType::OUT) {
+                        $this->stockService->restoreConsumedLayers($movement);
+                    }
+
                     if ($movement->variant_id) {
                         $movedVariantIds[$movement->variant_id] = $movement->variant_id;
                     }

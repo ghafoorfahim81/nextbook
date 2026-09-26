@@ -633,7 +633,25 @@ class TransactionService
                 // ...but a cancelled receipt's cost has to come back OUT of the
                 // average it was blended into when it was posted.
                 'unwind_average_cost' => $undoesAReceipt,
+                // Undoing a receipt takes the goods off the shelf again, and the
+                // ones to take are the ones this document brought in — at the
+                // price it paid. Left to the plain FIFO queue the compensation
+                // would eat the front of the queue instead, emptying layers that
+                // had nothing to do with the document being reversed.
+                'give_back_of' => $undoesAReceipt
+                    ? ['type' => $original->reference_type, 'id' => $original->reference_id]
+                    : null,
             ]);
+
+            // Undoing an ISSUE puts the goods back, so the layers it emptied
+            // have to be filled again. The compensating movement above restores
+            // the balance but writes a voided row, which is no use as a layer —
+            // without this the live layers sank below the real quantity on the
+            // shelf and eventually reached zero with stock still in the
+            // warehouse, leaving FIFO nothing legitimate to consume.
+            if (! $undoesAReceipt) {
+                $this->stockService->restoreConsumedLayers($movement);
+            }
         }
 
         foreach ($movements as $movement) {

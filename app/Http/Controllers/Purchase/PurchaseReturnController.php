@@ -222,6 +222,7 @@ class PurchaseReturnController extends Controller
 
             if ($postImmediately) {
                 $paymentStatusService->recalculatePurchases([$purchase->id]);
+                $this->refreshAverages($stockPayloads, $stockService);
             }
 
             $activityLogService->logCreate(
@@ -488,6 +489,12 @@ class PurchaseReturnController extends Controller
                 'source' => StockSourceType::PURCHASE_RETURN->value,
                 'unit_cost' => $unitPrice,
                 'unit_cost_override' => $unitPrice,
+                // Goods going back to the supplier, not an ordinary issue: empty
+                // the layers this purchase brought in, at the price it paid. Left
+                // to the plain FIFO queue the return was costed off the oldest
+                // layer on the shelf, so inventory was credited 100 in the ledger
+                // while the movement relieved it at 50.
+                'give_back_of' => ['type' => Purchase::class, 'id' => $purchase->id],
                 'status' => $postImmediately ? StockStatus::POSTED->value : StockStatus::DRAFT->value,
                 'batch' => $purchaseItem->batch,
                 'date' => $date,
@@ -526,6 +533,25 @@ class PurchaseReturnController extends Controller
         return [$lines, $stockPayloads, $totalReturnedValue];
     }
 
+    /**
+     * Re-derive the averages of every item a return has just moved.
+     *
+     * A return un-blends a receipt, and neither the item nor the variant figure
+     * is kept running in a way that can express that — both are replayed from
+     * the movements instead, which is also what a reversal does.
+     *
+     * @param  array<int, array<string, mixed>>  $stockPayloads
+     */
+    private function refreshAverages(array $stockPayloads, StockService $stockService): void
+    {
+        $itemIds = collect($stockPayloads)->pluck('item_id')->filter()->unique();
+
+        foreach ($itemIds as $itemId) {
+            $stockService->recalculateItemAverage($itemId);
+            $stockService->recalculateVariantAverageCosts($itemId);
+        }
+    }
+
     public function post(PurchaseReturn $purchaseReturn, TransactionService $transactionService, StockService $stockService, PaymentStatusService $paymentStatusService)
     {
         $this->authorize('update', $purchaseReturn);
@@ -545,6 +571,11 @@ class PurchaseReturnController extends Controller
                     $stockService->release($payload);
                     $stockService->post($payload);
                 }
+
+                $this->refreshAverages(
+                    (array) data_get($transaction->posting_payload, 'stock_movements', []),
+                    $stockService,
+                );
 
                 $transactionService->postDraft($transaction);
                 $purchaseReturn->update([

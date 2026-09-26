@@ -12,6 +12,7 @@ import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 
 const { t } = useI18n()
 
@@ -156,12 +157,14 @@ function handleSelectChange(field, value) {
 }
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('sidebar.owners.drawing') })">
     <FormPageToolbar confirm-module="drawing" back-route="drawings.index" module="owner" />
-    <form @submit.prevent="handleSubmit">
+    <form ref="saveFormRef" @submit.prevent="handleSubmit">
       <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative bg-card">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
           {{ t('general.edit', { name: t('sidebar.owners.drawing') }) }}

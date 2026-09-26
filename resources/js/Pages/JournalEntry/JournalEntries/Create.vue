@@ -15,6 +15,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n();
 const page = usePage()
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
@@ -285,12 +286,14 @@ onUnmounted(() => {
 });
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('journal_entry.journal_entry') })">
         <FormPageToolbar confirm-module="journal_entry" back-route="journal-entries.index" module="journal_entry" />
-        <form @submit.prevent="handleSubmitAction(false)">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">

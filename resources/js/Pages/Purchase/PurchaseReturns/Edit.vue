@@ -11,6 +11,7 @@ import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 
@@ -100,12 +101,14 @@ const handleSubmit = () => {
 }
 
 useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('purchase_return.purchase_return') })">
         <FormPageToolbar back-route="purchase-returns.index" module="purchase_returns" />
-        <form @submit.prevent="handleSubmit">
+        <form ref="saveFormRef" @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('purchase_return.purchase_return') }) }} #{{ returnData.number }}
