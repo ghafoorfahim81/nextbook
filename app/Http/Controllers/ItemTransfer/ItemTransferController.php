@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\ItemTransfer;
 
-use App\Enums\TransferStatus;
+use App\Enums\TransactionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ItemTransfer\ItemTransferStoreRequest;
 use App\Http\Requests\ItemTransfer\ItemTransferUpdateRequest;
@@ -155,7 +155,7 @@ class ItemTransferController extends Controller
      */
     public function edit(Request $request, ItemTransfer $itemTransfer)
     {
-        if ($itemTransfer->status === TransferStatus::COMPLETED || $itemTransfer->status === TransferStatus::CANCELLED) {
+        if ($itemTransfer->status === TransactionStatus::POSTED || $itemTransfer->status === TransactionStatus::REVERSED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_edit_completed_or_cancelled_transfer')]);
         }
         $itemTransfer->load([
@@ -174,7 +174,7 @@ class ItemTransferController extends Controller
      */
     public function update(ItemTransferUpdateRequest $request, ItemTransfer $itemTransfer, AttachmentService $attachmentService)
     {
-        if ($itemTransfer->status !== TransferStatus::PENDING) {
+        if ($itemTransfer->status !== TransactionStatus::DRAFT) {
             abort(403, 'Only draft documents can be edited.');
         }
 
@@ -202,7 +202,7 @@ class ItemTransferController extends Controller
     public function destroy(Request $request, ItemTransfer $itemTransfer, ActivityLogService $activityLogService)
     {
         // Only allow deletion of pending transfers
-        if ($itemTransfer->status === TransferStatus::COMPLETED) {
+        if ($itemTransfer->status === TransactionStatus::POSTED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_delete_completed_transfer')]);
         }
 
@@ -284,7 +284,7 @@ class ItemTransferController extends Controller
         // Every other module reverses posted documents only — a draft has moved
         // no stock and posted no ledger, so there is nothing to undo. A draft
         // that is no longer wanted is deleted instead.
-        if ($itemTransfer->status !== TransferStatus::COMPLETED) {
+        if ($itemTransfer->status !== TransactionStatus::POSTED) {
             abort(422, 'Only posted documents can be reversed.');
         }
 
@@ -329,7 +329,7 @@ class ItemTransferController extends Controller
             'date'          => $tr->date ? $dateService->toDisplay($tr->date) : '-',
             'from_warehouse'=> $tr->fromWarehouse?->name ?? '-',
             'to_warehouse'  => $tr->toWarehouse?->name ?? '-',
-            'status'        => $tr->status instanceof \App\Enums\TransferStatus ? $tr->status->getLabel() : (string) $tr->status,
+            'status'        => $tr->status instanceof TransactionStatus ? $tr->status->getLabel() : (string) $tr->status,
             'transfer_cost' => (float) ($tr->transfer_cost ?? 0),
         ])->all();
 

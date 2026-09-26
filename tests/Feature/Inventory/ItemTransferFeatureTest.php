@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Inventory;
 
+use App\Enums\TransactionStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
-use App\Enums\TransferStatus;
 use App\Models\Administration\Warehouse;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Services\StockService;
@@ -80,7 +80,7 @@ class ItemTransferFeatureTest extends TestCase
         $completeResponse->assertRedirect();
 
         $transfer->refresh();
-        $this->assertEquals(TransferStatus::COMPLETED->value, $transfer->status->value);
+        $this->assertEquals(TransactionStatus::POSTED->value, $transfer->status->value);
 
         $this->assertDatabaseHas('stock_balances', [
             'item_id' => $this->ctx['item']->id,

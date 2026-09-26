@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\ItemTransfer;
 
-use App\Enums\TransferStatus;
+use App\Enums\TransactionStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +27,7 @@ class ItemTransferUpdateRequest extends FormRequest
             'date' => ['sometimes', 'required', 'date'],
             'from_warehouse_id' => ['sometimes', 'required', 'string', 'exists:warehouses,id'],
             'to_warehouse_id' => ['sometimes', 'required', 'string', 'exists:warehouses,id', 'different:from_warehouse_id'],
-            'status' => ['sometimes', 'nullable', 'string', Rule::in(TransferStatus::values())],
+            'status' => ['sometimes', 'nullable', 'string', Rule::in(TransactionStatus::values())],
             // The switch decides whether the freight fields are required: a
             // transfer without a cost must not be forced to name a bank account.
             'has_transfer_cost' => ['sometimes', 'nullable', 'boolean'],

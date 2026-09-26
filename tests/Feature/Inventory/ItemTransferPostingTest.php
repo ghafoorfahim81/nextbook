@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Inventory;
 
+use App\Enums\TransactionStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
-use App\Enums\TransferStatus;
 use App\Http\Resources\Inventory\ItemResource;
 use App\Models\Administration\Warehouse;
 use App\Models\Inventory\Item;
@@ -75,13 +75,13 @@ class ItemTransferPostingTest extends TestCase
         $this->seedStock(10, 15);
         $transfer = $this->createTransfer(quantity: 4, unitPrice: 15);
 
-        $this->assertEquals(TransferStatus::PENDING, $transfer->status);
+        $this->assertEquals(TransactionStatus::DRAFT, $transfer->status);
 
         $this->post(route('item-transfers.reverse', $transfer), ['reason' => 'mistake'])
             ->assertStatus(422);
 
         $transfer->refresh();
-        $this->assertEquals(TransferStatus::PENDING, $transfer->status);
+        $this->assertEquals(TransactionStatus::DRAFT, $transfer->status);
     }
 
     public function test_reversing_a_posted_transfer_voids_both_legs_and_restores_stock(): void
@@ -94,7 +94,7 @@ class ItemTransferPostingTest extends TestCase
             ->assertRedirect();
 
         $transfer->refresh();
-        $this->assertEquals(TransferStatus::CANCELLED, $transfer->status);
+        $this->assertEquals(TransactionStatus::REVERSED, $transfer->status);
 
         $live = StockMovement::query()
             ->where('reference_type', ItemTransfer::class)
@@ -242,7 +242,7 @@ class ItemTransferPostingTest extends TestCase
         $this->seedStock(10, 15);
         $transfer = $this->createTransfer(quantity: 4, unitPrice: 15);
 
-        $this->assertEquals(TransferStatus::COMPLETED, $transfer->status);
+        $this->assertEquals(TransactionStatus::POSTED, $transfer->status);
 
         $draft = StockMovement::query()
             ->where('reference_type', ItemTransfer::class)

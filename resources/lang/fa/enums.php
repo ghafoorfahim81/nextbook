@@ -66,13 +66,6 @@ return [
         'reversed' => 'باطل شده',
         'voided' => 'لغو شده',
     ],
-    'transfer_status' => [
-        'pending' => 'در انتظار',
-        'completed' => 'تکمیل شده',
-        // The reverse action is what sets this, so it reads as an abatement
-        // rather than a cancellation, matching every other document.
-        'cancelled' => 'باطل شده',
-    ],
     'user_status' => [
         'active' => 'فعال',
         'inactive' => 'غیرفعال',
