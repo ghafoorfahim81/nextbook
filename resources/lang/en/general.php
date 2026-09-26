@@ -141,6 +141,8 @@ return [
     'current_period_profit_loss' => 'Current Period Profit / Loss',
     'active' => 'Active',
     'inactive' => 'Inactive',
+    'insufficient_stock_for_item' => 'Not enough stock for :item in :warehouse. Available: :available, required: :required.',
+    'cannot_reverse_stock_already_gone' => 'This document cannot be reversed: the goods it brought in are no longer on the shelf. Reverse the documents that issued them first, or raise a return for what is left.',
     'cannot_post_insufficient_stock' => 'Cannot post: not enough stock for :item. It may have been sold on another invoice.',
     'transfer_cost_accounts_missing' => 'Cannot post the transfer cost: the bank account or the Item Transfer Expense account is not set up for this branch.',
     'invalid_phone_number' => 'Enter a valid international phone number (6 to 15 digits, country code included).',

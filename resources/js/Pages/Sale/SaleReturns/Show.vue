@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Package2, FileText, User, Calendar, DollarSign, FileCheck } from 'lucide-vue-next';
@@ -10,6 +11,7 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
+const { submit } = useDocumentAction()
 const { toast } = useToast();
 const page = usePage();
 
@@ -40,9 +42,9 @@ const statusBadgeClasses = computed(() => {
 
 const getStatusLabel = (status) => {
     switch (status) {
-        case 'draft': return 'Draft';
-        case 'posted': return 'Posted';
-        case 'reversed': return 'Reversed';
+        case 'draft': return t('general.status_draft');
+        case 'posted': return t('general.status_posted');
+        case 'reversed': return t('general.status_reversed');
         default: return status;
     }
 };
@@ -51,7 +53,7 @@ const postDialogOpen = ref(false);
 const reverseDialogOpen = ref(false);
 
 const postSaleReturn = () => {
-    router.post(route('sale-returns.post', returnData.value.id), {}, {
+    submit(route('sale-returns.post', returnData.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => {
             const flashError = page.props.flash?.error;
@@ -69,7 +71,7 @@ const postSaleReturn = () => {
 };
 
 const reverseSaleReturn = (reason) => {
-    router.post(route('sale-returns.reverse', returnData.value.id), { reason }, {
+    submit(route('sale-returns.reverse', returnData.value.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => { reverseDialogOpen.value = false },
     });

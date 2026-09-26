@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Purchase;
 
+use App\Enums\TransactionStatus;
 use App\Enums\PurchaseReturnReason;
 use App\Services\DateConversionService;
 use Illuminate\Http\Request;
@@ -25,6 +26,8 @@ class PurchaseReturnListResource extends JsonResource
                 : (PurchaseReturnReason::tryFrom((string) $this->reason)?->getLabel() ?? $this->reason),
             'amount' => (float) ($this->items_gross_total ?? 0),
             'status' => $this->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status))?->getLabel()
+                ?? (string) ($this->status),
         ];
     }
 }

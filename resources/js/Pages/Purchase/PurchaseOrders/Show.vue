@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -13,6 +14,7 @@ import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 import { useAuth } from '@/composables/useAuth';
 
 const { t } = useI18n();
+const { submit } = useDocumentAction()
 const { toast } = useToast();
 const page = usePage();
 const { can } = useAuth();
@@ -47,7 +49,7 @@ const postDialogOpen = ref(false);
 const cancelDialogOpen = ref(false);
 
 const postPurchaseOrder = () => {
-    router.post(route('purchase-orders.post', orderData.value.id), {}, {
+    submit(route('purchase-orders.post', orderData.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => {
             const flashError = page.props.flash?.error;
@@ -61,7 +63,7 @@ const postPurchaseOrder = () => {
 };
 
 const cancelPurchaseOrder = () => {
-    router.post(route('purchase-orders.cancel', orderData.value.id), {}, {
+    submit(route('purchase-orders.cancel', orderData.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => { cancelDialogOpen.value = false },
     });

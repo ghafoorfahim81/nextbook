@@ -228,11 +228,16 @@
                                 </span>
                             </template>
                             <template v-else-if="isStatusColumn(column.key)">
+                                <!-- Tone comes from the raw status, text from the
+                                     label. Reading the tone off the displayed text
+                                     worked only while that text was English: a
+                                     translated "باطل شده" matched no case and every
+                                     status came out the same neutral grey. -->
                                 <span
                                     class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize"
-                                    :class="statusBadgeClass(getNestedValue(item, column.key) || item.status)"
+                                    :class="statusBadgeClass(item.status ?? getNestedValue(item, column.key))"
                                 >
-                                    {{ getNestedValue(item, column.key) || item.status || '-' }}
+                                    {{ getNestedValue(item, column.key) || item.status_label || item.status || '-' }}
                                 </span>
                             </template>
                             <template v-else-if="isBalanceColumn(column.key)">
@@ -482,6 +487,7 @@ const statusBadgeClass = (status) => {
         case 'reversed':
         case 'cancelled':
         case 'rejected':
+        case 'voided':
             return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
         default:
             return 'border-border bg-muted text-foreground'

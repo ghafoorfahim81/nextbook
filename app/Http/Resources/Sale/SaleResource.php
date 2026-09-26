@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Sale;
 
+use App\Enums\TransactionStatus;
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
 use App\Http\Resources\AttachmentResource;
@@ -93,6 +94,8 @@ class SaleResource extends JsonResource
             'old_balance_nature' => $oldNetBalance >= 0 ? 'dr' : 'cr',
             'description' => $this->description,
             'status' => $this->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status))?->getLabel()
+                ?? (string) ($this->status),
             'payment_status' => $this->payment_status instanceof PaymentStatus
                 ? $this->payment_status->value
                 : $this->payment_status,

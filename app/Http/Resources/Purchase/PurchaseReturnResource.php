@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Purchase;
 
+use App\Enums\TransactionStatus;
 use App\Enums\PurchaseReturnReason;
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
@@ -30,6 +31,8 @@ class PurchaseReturnResource extends JsonResource
                 : (PurchaseReturnReason::tryFrom((string) $this->reason)?->getLabel() ?? $this->reason),
             'description' => $this->description,
             'status' => $this->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status))?->getLabel()
+                ?? (string) ($this->status),
             'amount' => $items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price),
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
             'items' => $this->whenLoaded('items', fn () => PurchaseReturnItemResource::collection($this->items)),

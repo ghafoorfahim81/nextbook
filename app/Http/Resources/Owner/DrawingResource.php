@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Owner;
 
+use App\Enums\TransactionStatus;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Transaction\TransactionResource;
@@ -59,6 +60,8 @@ class DrawingResource extends JsonResource
             'transaction_id' => $transaction?->id,
             'transaction' => $transaction ? new TransactionResource($transaction) : null,
             'status' => $transaction?->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($transaction?->status))?->getLabel()
+                ?? (string) ($transaction?->status),
             'branch_id' => $this->branch_id,
             'created_by' => $this->createdBy,
             'updated_by' => $this->updatedBy,

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog'
@@ -11,6 +12,7 @@ import { router } from '@inertiajs/vue3'
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 
 const props = defineProps({
     open: Boolean,
@@ -72,7 +74,7 @@ function closeDialog() {
 
 function postJournalEntry() {
     if (!props.journalEntryId) return
-    router.post(route('journal-entries.post', props.journalEntryId), {}, {
+    submit(route('journal-entries.post', props.journalEntryId), {}, {
         preserveScroll: true,
         onSuccess: () => {
             postDialogOpen.value = false
@@ -83,7 +85,7 @@ function postJournalEntry() {
 
 function reverseJournalEntry(reason) {
     if (!props.journalEntryId) return
-    router.post(route('journal-entries.reverse', props.journalEntryId), { reason }, {
+    submit(route('journal-entries.reverse', props.journalEntryId), { reason }, {
         preserveScroll: true,
         onSuccess: () => {
             reverseDialogOpen.value = false

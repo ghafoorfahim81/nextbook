@@ -17,7 +17,7 @@
   "only_draft_can_be_edited": "فقط تعدیلات پیش‌نویس قابل ویرایش هستند.",
   "only_draft_can_be_deleted": "فقط تعدیلات پیش‌نویس قابل حذف هستند.",
   "posted_successfully": "تعدیل موجودی موفقانه ثبت شد.",
-  "reversed_successfully": "تعدیل موجودی موفقانه برگشت داده شد.",
+  "reversed_successfully": "تعدیل موجودی موفقانه باطل شد.",
   "direction": {
     "in": "ورودی",
     "out": "خروجی"

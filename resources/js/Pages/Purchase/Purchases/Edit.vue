@@ -11,6 +11,7 @@ import DiscountField from '@/Components/next/DiscountField.vue';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
+import { firstServerError } from '@/composables/useDocumentAction'
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue';
@@ -700,11 +701,11 @@ const handleSubmit = () => {
                 class: 'bg-green-600 text-white',
             });
         },
-        onError: () => {
+        onError: (errors) => {
             notifySound('error');
             toast({
                 title: t('purchase.error_updating_purchase_variant'),
-                description: t('purchase.error_updating_purchase_description'),
+                description: firstServerError(errors) ?? t('purchase.error_updating_purchase_description'),
                 variant: 'destructive',
                 class: 'bg-pink-600 text-white',
             });

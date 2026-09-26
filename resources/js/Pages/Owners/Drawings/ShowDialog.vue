@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3'
 import {
   Dialog,
@@ -18,6 +19,7 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 import { CalendarDays, Landmark, Wallet, User, FileText, ArrowRightLeft, Percent, RotateCcw } from 'lucide-vue-next'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 
 const props = defineProps({
   open: Boolean,
@@ -41,7 +43,7 @@ const posting = ref(false)
 function postDrawing() {
   if (!props.drawing?.id || posting.value) return
   posting.value = true
-  router.post(route('drawings.post', props.drawing.id), {}, {
+  submit(route('drawings.post', props.drawing.id), {}, {
     preserveScroll: true,
     onSuccess: () => {
       postDialogOpen.value = false
@@ -66,7 +68,7 @@ function closeReverse() {
 function confirmReverse() {
   if (!props.drawing?.id || !reverseReason.value.trim() || reversing.value) return
   reversing.value = true
-  router.post(
+  submit(
     route('drawings.reverse', props.drawing.id),
     { reason: reverseReason.value.trim() },
     {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Payment;
 
+use App\Enums\TransactionStatus;
 use App\Enums\PaymentMode;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
@@ -24,6 +25,8 @@ class PaymentResource extends JsonResource
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'ledger_id' => $this->ledger_id,
             'status' => $this->status ?? $this->transaction?->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status ?? $this->transaction?->status))?->getLabel()
+                ?? (string) ($this->status ?? $this->transaction?->status),
             'payment_mode' => $this->payment_mode instanceof PaymentMode
                 ? $this->payment_mode->value
                 : $this->payment_mode,

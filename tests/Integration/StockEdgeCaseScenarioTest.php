@@ -281,19 +281,25 @@ class StockEdgeCaseScenarioTest extends TestCase
     }
 
     /** Post and report a rejection rather than letting it pass unnoticed. */
+    /** What the last refusal told the operator. */
+    private ?string $lastRefusal = null;
+
     private function act(string $step, string $url, array $payload = []): bool
     {
         $this->post($url, $payload);
 
         $rejected = false;
+        $this->lastRefusal = null;
 
         if (($errors = session('errors')) && count($errors->all()) > 0) {
+            $this->lastRefusal = implode(' | ', $errors->all());
             $this->flag($step, 'REJECTED: ' . implode(' | ', $errors->all()));
             session()->forget('errors');
             $rejected = true;
         }
 
         if (session('error')) {
+            $this->lastRefusal = (string) session('error');
             $this->flag($step, 'REJECTED: ' . session('error'));
             session()->forget('error');
             $rejected = true;
@@ -373,6 +379,15 @@ class StockEdgeCaseScenarioTest extends TestCase
             );
         }
 
+        // A refusal on its own is not enough: it has to say what is wrong and
+        // what to do next, or the screen just appears to ignore the click.
+        $this->assertNotNull($this->lastRefusal, 'The refusal carried no message at all.');
+        $this->assertSame(
+            __('general.cannot_reverse_stock_already_gone'),
+            $this->lastRefusal,
+            'A reversal blocked by missing stock must say so in its own words.',
+        );
+
         // A refusal is the expected answer, so it is not a finding.
         $this->findings = array_values(array_filter(
             $this->findings,
@@ -384,6 +399,45 @@ class StockEdgeCaseScenarioTest extends TestCase
         $this->check('after the refusal', 5, 100);
 
         $this->report();
+    }
+
+    public function test_selling_more_than_the_shelf_holds_says_so_by_name(): void
+    {
+        $this->open(12, 10);
+
+        $this->post(route('sales.store'), [
+            'number' => $this->nextNumber(),
+            'customer_id' => $this->ctx['customer_ledger']->id,
+            'date' => '2026-03-15',
+            'transaction_total' => 999 * 99,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'sale_type' => 'on_loan',
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'item_list' => [[
+                'item_id' => $this->item->id,
+                'batch' => null, 'expire_date' => null,
+                'quantity' => 999,
+                'unit_measure_id' => $this->ctx['unit_measure']->id,
+                'unit_price' => 99,
+                'item_discount' => 0, 'free' => 0, 'tax' => 0,
+            ]],
+        ]);
+
+        $errors = session('errors');
+
+        $this->assertNotNull($errors, 'Over-selling must be refused.');
+
+        $message = implode(' ', $errors->all());
+
+        // The operator needs the item, the warehouse and the two numbers —
+        // this used to read "Insufficient stock. item_id 01m3... available: 12
+        // required: 999", which names the item only by its primary key.
+        $this->assertStringContainsString($this->item->name, $message);
+        $this->assertStringContainsString($this->ctx['warehouse']->name, $message);
+        $this->assertStringContainsString('12', $message);
+        $this->assertStringContainsString('999', $message);
+        $this->assertStringNotContainsString($this->item->id, $message);
     }
 
     public function test_an_emptied_shelf_restocks_at_the_new_price_rather_than_a_blend(): void

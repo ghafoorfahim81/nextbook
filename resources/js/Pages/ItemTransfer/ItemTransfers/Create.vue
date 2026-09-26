@@ -4,6 +4,7 @@ import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { firstServerError } from '@/composables/useDocumentAction'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import axios from 'axios'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -396,6 +397,14 @@ function handleSubmit(createAndNew = false) {
         form.attachments = []
         applyCreateDefaults()
       }
+    },
+    onError: (errors) => {
+        toast({
+            title: t('general.error'),
+            description: firstServerError(errors) ?? t('general.create_error', { name: t('item_transfer.item_transfer') }),
+            variant: 'destructive',
+            class: 'bg-pink-600 text-white',
+        })
     },
   })
 }

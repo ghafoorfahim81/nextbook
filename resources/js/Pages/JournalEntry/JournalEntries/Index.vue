@@ -33,7 +33,7 @@ const columns = computed(() => ([
     { key: 'remark', label: t('general.remark'), sortable: true },
     { key: 'amount', label: t('general.amount'), sortable: true },
     { key: 'date', label: t('general.date'), sortable: true },
-    { key: 'status', label: t('general.status'), sortable: true },
+    { key: 'status_label', label: t('general.status') },
     { key: 'actions', label: t('general.actions') },
 ]))
 

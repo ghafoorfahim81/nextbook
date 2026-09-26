@@ -4,6 +4,7 @@ import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { h, ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { firstServerError } from '@/composables/useDocumentAction'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { ToastAction } from '@/Components/ui/toast'
 import axios from 'axios'
@@ -416,6 +417,14 @@ function handleSubmit(createAndNew = false) {
         form.attachments = []
         applyCreateDefaults()
       }
+    },
+    onError: (errors) => {
+        toast({
+            title: t('general.error'),
+            description: firstServerError(errors) ?? t('general.create_error', { name: t('adjustment.stock_adjustment') }),
+            variant: 'destructive',
+            class: 'bg-pink-600 text-white',
+        })
     },
   })
 }

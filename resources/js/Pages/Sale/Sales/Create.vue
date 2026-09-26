@@ -13,6 +13,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
+import { firstServerError } from '@/composables/useDocumentAction'
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import AttachmentUploader from '@/Components/AttachmentUploader.vue';
@@ -538,12 +539,12 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
                     class:'bg-green-600 text-white',
                 })
             },
-            onError: () => {
+            onError: (errors) => {
                 cleanupPrintWindow();
                 notifySound('error');
                 toast({
                     title: t('general.error'),
-                    description: t('general.error_creating_sale'),
+                    description: firstServerError(errors) ?? t('general.error_creating_sale'),
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
@@ -565,12 +566,12 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
                     class:'bg-green-600 text-white',
                 })
             },
-            onError: () => {
+            onError: (errors) => {
                 cleanupPrintWindow();
                 notifySound('error');
                 toast({
                     title: t('general.error'),
-                    description: t('general.error_creating_sale'),
+                    description: firstServerError(errors) ?? t('general.error_creating_sale'),
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })

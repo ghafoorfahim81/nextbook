@@ -7,10 +7,12 @@ import { Badge } from '@/Components/ui/badge'
 import { Button } from '@/Components/ui/button'
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3'
 import { useAuth } from '@/composables/useAuth'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 const { can } = useAuth()
 
 const props = defineProps({
@@ -25,14 +27,14 @@ const postDialogOpen = ref(false)
 const reverseDialogOpen = ref(false)
 
 function postPayment() {
-    router.post(route('payments.post', payment.value.id), {}, {
+    submit(route('payments.post', payment.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => { postDialogOpen.value = false },
     })
 }
 
 function reversePayment(reason) {
-    router.post(route('payments.reverse', payment.value.id), { reason }, {
+    submit(route('payments.reverse', payment.value.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => { reverseDialogOpen.value = false },
     })

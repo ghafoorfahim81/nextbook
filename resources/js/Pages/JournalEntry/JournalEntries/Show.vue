@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue'
 import AttachmentList from '@/Components/AttachmentList.vue'
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3'
 import { Calendar, DollarSign, ReceiptText } from 'lucide-vue-next'
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
@@ -10,6 +11,7 @@ import ShowPageToolbar from '@/Components/ShowPageToolbar.vue'
 import { Badge } from '@/Components/ui/badge'
 
 const { t } = useI18n()
+const { submit } = useDocumentAction()
 
 const props = defineProps({
     journalEntry: { type: Object, required: true },
@@ -29,14 +31,14 @@ const postDialogOpen = ref(false)
 const reverseDialogOpen = ref(false)
 
 function postEntry() {
-    router.post(route('journal-entries.post', je.value.id), {}, {
+    submit(route('journal-entries.post', je.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => { postDialogOpen.value = false },
     })
 }
 
 function reverseEntry(reason) {
-    router.post(route('journal-entries.reverse', je.value.id), { reason }, {
+    submit(route('journal-entries.reverse', je.value.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => { reverseDialogOpen.value = false },
     })

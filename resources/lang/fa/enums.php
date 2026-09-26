@@ -63,13 +63,15 @@ return [
         'approved' => 'تأیید شده',
         'rejected' => 'رد شده',
         'cancelled' => 'لغو شده',
-        'reversed' => 'معکوس شده',
+        'reversed' => 'باطل شده',
         'voided' => 'لغو شده',
     ],
     'transfer_status' => [
         'pending' => 'در انتظار',
         'completed' => 'تکمیل شده',
-        'cancelled' => 'لغو شده',
+        // The reverse action is what sets this, so it reads as an abatement
+        // rather than a cancellation, matching every other document.
+        'cancelled' => 'باطل شده',
     ],
     'user_status' => [
         'active' => 'فعال',
@@ -315,7 +317,7 @@ return [
         'posted' => 'ثبت شده',
         'paid' => 'پرداخت شده',
         'cancelled' => 'لغو شده',
-        'reversed' => 'برگشت داده شده',
+        'reversed' => 'باطل شده',
     ],
     'payroll_line_payment_status' => [
         'unpaid' => 'پرداخت نشده',
