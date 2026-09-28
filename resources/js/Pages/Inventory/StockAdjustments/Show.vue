@@ -12,7 +12,7 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue'
 
 const { t } = useI18n()
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 const { toast } = useToast()
 const page = usePage()
 
@@ -92,6 +92,7 @@ const reverseAdjustment = (reason) => {
             />
 
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="postDialogOpen"
                 type="post"
                 :title="t('general.post') + ' ' + t('adjustment.stock_adjustment')"
@@ -99,6 +100,7 @@ const reverseAdjustment = (reason) => {
                 @confirm="postAdjustment"
             />
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="reverseDialogOpen"
                 type="reverse"
                 :title="t('general.reverse') + ' ' + t('adjustment.stock_adjustment')"

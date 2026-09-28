@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import {
   AlertTriangle,
@@ -74,6 +74,9 @@ const forceDeleteOpen = ref(false)
 let searchTimer = null
 
 const records = computed(() => props.records?.data || [])
+// Same shared prop useDeleteResource quotes in the undo toast, so the two can
+// never disagree about how long a record is recoverable for.
+const retentionDays = computed(() => usePage().props?.app?.deleted_records_retention_days ?? 30)
 
 const summaryCards = computed(() => [
   { label: t('deleted_records.summary.total'), value: props.summary.total ?? 0 },
@@ -139,6 +142,15 @@ function askForceDelete(record) {
   forceDeleteOpen.value = true
 }
 
+// A record whose parent is still in the trash cannot come back on its own; the
+// server refuses it. Naming the parents here means the row says so before the
+// button is pressed rather than after.
+function blockingParentsLabel(record) {
+  return (record?.blocking_parents || [])
+    .map((parent) => [parent.label, parent.title].filter(Boolean).join(' '))
+    .join(', ')
+}
+
 function restoreRecord() {
   if (!restoreTarget.value) {
     return
@@ -157,8 +169,11 @@ function restoreRecord() {
       restoreOpen.value = false
       closeDetails()
     },
-    onError: () => {
-      toast.error(t('deleted_records.actions.restore_failed'))
+    onError: (errors) => {
+      // The refusal explains which parent is in the way, so show that rather
+      // than the generic failure line.
+      toast.error(errors?.record || t('deleted_records.actions.restore_failed'))
+      restoreOpen.value = false
     },
   })
 }
@@ -210,16 +225,19 @@ function formatValue(value) {
   return String(value)
 }
 
+// The -700 inks are for the light tint; in dark mode they are dark text on a
+// dark panel. The dark: halves were written nowhere here, and until the config
+// fix they would not have applied anyway.
 function daysBadgeClass(daysRemaining) {
   if (daysRemaining <= 3) {
-    return 'bg-red-500/15 text-red-700 ring-1 ring-red-500/20'
+    return 'bg-red-500/15 text-red-700 ring-1 ring-red-500/20 dark:text-red-300'
   }
 
   if (daysRemaining <= 7) {
-    return 'bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/20'
+    return 'bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/20 dark:text-amber-300'
   }
 
-  return 'bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/20'
+  return 'bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-300'
 }
 </script>
 
@@ -228,15 +246,39 @@ function daysBadgeClass(daysRemaining) {
     <Head :title="t('deleted_records.title')" />
 
     <div class="space-y-6 text-foreground">
-      <section class="overflow-hidden rounded-[30px] border border-violet-200/70 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100 p-6 text-foreground shadow-sm dark:border-border/70 dark:from-slate-950 dark:via-slate-900 dark:to-violet-950 dark:text-white dark:shadow-[0_20px_50px_rgba(15,23,42,0.35)]">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <!-- Built from theme tokens only.
+           The old header hard-coded a light violet gradient and relied on
+           `dark:` classes to darken it. Those classes compiled to dead CSS (see
+           tailwind.config.js), so in dark mode it stayed a white slab with the
+           light-on-light title invisible on it. Tokens follow the palette, the
+           colour mode and the surface style on their own, so there is nothing
+           left to keep in sync.
+
+           `!text-2xl` is important on purpose: app.css sizes every h1 from
+           --app-heading-font-size with !important, which is 14px by default and
+           left the page title the same size as the body text. -->
+      <section class="overflow-hidden rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div class="space-y-2">
-            <div class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white/70 px-3 py-1 text-xs font-medium text-violet-700 backdrop-blur dark:border-white/10 dark:bg-white/10 dark:text-white/80">
+            <div class="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <Trash2 class="h-3.5 w-3.5" />
               {{ t('deleted_records.badge') }}
             </div>
-            <h1 class="text-3xl font-semibold tracking-tight">{{ t('deleted_records.title') }}</h1>
-            <p class="max-w-3xl text-sm leading-7 text-muted-foreground dark:text-white/75">{{ t('deleted_records.subtitle') }}</p>
+            <h1 class="!text-2xl font-semibold tracking-tight text-foreground">{{ t('deleted_records.title') }}</h1>
+            <p class="max-w-3xl text-sm leading-6 text-muted-foreground">{{ t('deleted_records.subtitle') }}</p>
+          </div>
+
+          <!-- The retention window is the one number that decides what this
+               screen is for, so it is stated here rather than only inside the
+               sentence above. -->
+          <div class="flex shrink-0 items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3">
+            <Clock3 class="h-5 w-5 text-primary" />
+            <div class="leading-tight">
+              <p class="text-xs text-muted-foreground">{{ t('deleted_records.retention_label') }}</p>
+              <p class="text-sm font-semibold text-foreground">
+                {{ t('deleted_records.retention_value', { days: retentionDays }) }}
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -336,7 +378,16 @@ function daysBadgeClass(daysRemaining) {
               <TableRow v-for="record in records" :key="`${record.module}:${record.record_id}`" class="hover:bg-muted/40">
                 <TableCell class="font-medium">{{ record.module_label }}</TableCell>
                 <TableCell class="font-mono text-xs">{{ record.record_id }}</TableCell>
-                <TableCell class="max-w-[280px] truncate">{{ record.title }}</TableCell>
+                <TableCell class="max-w-[280px] truncate">
+                  {{ record.title }}
+                  <span
+                    v-if="record.blocking_parents?.length"
+                    class="ms-1 inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400"
+                    :title="t('deleted_records.blocked_by_parents', { parents: blockingParentsLabel(record) })"
+                  >
+                    <AlertTriangle class="h-3 w-3" />
+                  </span>
+                </TableCell>
                 <TableCell>{{ record.deleted_by_name || t('deleted_records.system') }}</TableCell>
                 <TableCell>{{ record.deleted_at_display }}</TableCell>
                 <TableCell class="text-right">
@@ -398,6 +449,16 @@ function daysBadgeClass(daysRemaining) {
         </DialogHeader>
 
         <div v-if="activeRecord" class="space-y-5 overflow-y-auto pr-1">
+          <div
+            v-if="activeRecord.blocking_parents?.length"
+            class="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-900 dark:text-red-100"
+          >
+            <div class="flex items-start gap-2">
+              <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{{ t('deleted_records.blocked_by_parents', { parents: blockingParentsLabel(activeRecord) }) }}</p>
+            </div>
+          </div>
+
           <div
             v-if="activeRecord.dependency_warning"
             class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-100"

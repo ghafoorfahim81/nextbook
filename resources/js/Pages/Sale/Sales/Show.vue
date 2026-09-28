@@ -14,7 +14,7 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 const { can } = useAuth();
 const { toast } = useToast();
 const page = usePage();
@@ -165,6 +165,7 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
             />
 
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="postDialogOpen"
                 type="post"
                 :title="t('sale.post_sale')"
@@ -172,6 +173,7 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                 @confirm="postSale"
             />
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="reverseDialogOpen"
                 type="reverse"
                 :title="t('sale.reverse_sale')"

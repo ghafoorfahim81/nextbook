@@ -54,6 +54,7 @@ return [
     'updated_successfully' => ':resource updated successfully.',
     'deleted_successfully' => ':resource deleted successfully.',
     'restored_successfully' => ':resource restored successfully.',
+    'restore_blocked_by_trashed_parents' => 'This record cannot be restored yet because :parents is still in the trash. Restore that first, then try again.',
     'activated_successfully' => ':resource activated successfully.',
     'deactivated_successfully' => ':resource deactivated successfully.',
     'status_updated_successfully' => ':resource status updated successfully.',

@@ -11,7 +11,7 @@ import { useDocumentAction } from '@/composables/useDocumentAction'
 
 const { t } = useI18n()
 const { can } = useAuth()
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 
 const props = defineProps({
   contraSettlement: { type: Object, required: true },
@@ -158,6 +158,7 @@ const statusClass = (status) => {
     <p class="mt-4 text-xs text-muted-foreground">{{ t('contra.no_edit_hint') }}</p>
 
     <TransactionActionDialog
+            :processing="processing"
       v-model:open="reverseDialogOpen"
       type="reverse"
       :title="t('contra.reverse_contra_settlement')"

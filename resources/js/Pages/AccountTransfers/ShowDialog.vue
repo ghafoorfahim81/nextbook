@@ -12,7 +12,7 @@ import { router } from '@inertiajs/vue3'
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 
 const { t } = useI18n()
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 
 const props = defineProps({
     open: Boolean,
@@ -108,6 +108,7 @@ function reverseTransfer(reason) {
             </DialogHeader>
 
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="postDialogOpen"
                 type="post"
                 :title="t('general.post') + ' ' + t('general.account_transfer')"
@@ -115,6 +116,7 @@ function reverseTransfer(reason) {
                 @confirm="postTransfer"
             />
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="reverseDialogOpen"
                 type="reverse"
                 :title="t('general.reverse') + ' ' + t('general.account_transfer')"

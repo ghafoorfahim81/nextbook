@@ -19,6 +19,8 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 import { CalendarDays, Landmark, Wallet, User, FileText, ArrowRightLeft, Percent, RotateCcw } from 'lucide-vue-next'
 
 const { t } = useI18n()
+// This dialog tracks `posting` and `reversing` separately (it has its own
+// reverse dialog), so it keeps its local state rather than the shared ref.
 const { submit } = useDocumentAction()
 
 const props = defineProps({

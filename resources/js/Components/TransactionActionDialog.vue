@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
+import { Spinner } from '@/Components/ui/spinner'
 import { Textarea } from '@/Components/ui/textarea'
 
 const { t } = useI18n()
@@ -45,7 +46,9 @@ const submit = () => {
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="value => emit('update:open', value)">
+  <!-- Not dismissable while the action runs: closing it would leave the
+       operator with no sign the post / reversal is still in flight. -->
+  <Dialog :open="open" @update:open="value => { if (!processing) emit('update:open', value) }">
     <DialogContent class="max-w-md rounded-xl">
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
@@ -74,6 +77,7 @@ const submit = () => {
           :disabled="processing"
           @click="submit"
         >
+          <Spinner v-if="processing" class="me-2 h-4 w-4" />
           {{ type === 'reverse' ? t('general.submit_reversal') : t('general.post_document') }}
         </Button>
       </DialogFooter>

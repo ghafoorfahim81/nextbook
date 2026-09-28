@@ -10,9 +10,11 @@ use App\Models\Administration\Branch;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
 use App\Models\Administration\Currency;
+use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\Department;
 use App\Models\Administration\Designation;
 use App\Models\Administration\LandedCostCategory;
+use App\Models\Administration\PaymentTerm;
 use App\Models\Administration\Quantity;
 use App\Models\Administration\Size;
 use App\Models\Administration\UnitMeasure;
@@ -26,6 +28,7 @@ use App\Models\Hr\EmployeeContract;
 use App\Models\Hr\EmployeeDocument;
 use App\Models\Hr\EmployeeLoan;
 use App\Models\Hr\Holiday;
+use App\Models\Hr\Interview;
 use App\Models\Hr\JobApplication;
 use App\Models\Hr\JobOpening;
 use App\Models\Hr\LeaveAllocation;
@@ -37,7 +40,10 @@ use App\Models\Hr\SalaryPayment;
 use App\Models\Hr\SalaryStructure;
 use App\Models\Hr\Shift;
 use App\Models\Hr\TaxBracketSet;
+use App\Models\Inventory\DiscountRule;
 use App\Models\Inventory\Item;
+use App\Models\Inventory\LandedCost;
+use App\Models\Inventory\StockAdjustment;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use App\Models\ItemTransfer\ItemTransfer;
@@ -53,6 +59,7 @@ use App\Models\Purchase\PurchaseOrder;
 use App\Models\Purchase\PurchaseQuotation;
 use App\Models\Purchase\PurchaseReturn;
 use App\Models\Receipt\Receipt;
+use App\Models\Sale\InvoiceFormat;
 use App\Models\Sale\Sale;
 use App\Models\Sale\SaleItem;
 use App\Models\Sale\SaleOrder;
@@ -67,12 +74,14 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class DeletedRecordService
@@ -90,6 +99,15 @@ class DeletedRecordService
         $perPage = in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 25;
         $page = max(1, (int) ($filters['page'] ?? 1));
 
+        // Two passes on purpose. The first builds only what filtering, sorting
+        // and the summary cards need; the second expands the page the user is
+        // actually looking at.
+        //
+        // Everything used to be expanded up front, and the expensive parts are
+        // per record: getDependencyMessage() runs a count() for every relation
+        // a model declares, and the field list copies every column. On a trash
+        // with a few hundred rows that was hundreds of queries and a full
+        // attribute copy per row, to render twenty-five of them.
         $records = $this->buildRecords($moduleFilter);
 
         if ($search !== '') {
@@ -104,11 +122,15 @@ class DeletedRecordService
             ->sortByDesc('deleted_at_timestamp')
             ->values();
 
-        $records = $this->attachHumanReadableReferences($records);
-
         $total = $records->count();
         $offset = ($page - 1) * $perPage;
-        $items = $records->slice($offset, $perPage)->values();
+
+        $pageRows = $records->slice($offset, $perPage)->values();
+        $blockingParents = $this->resolveTrashedParents($pageRows->pluck('model'));
+
+        $items = $this->attachHumanReadableReferences(
+            $pageRows->map(fn (array $record) => $this->expandRecord($record, $blockingParents))
+        );
 
         return [
             'records' => [
@@ -124,7 +146,10 @@ class DeletedRecordService
             ],
             'summary' => [
                 'total' => $total,
-                'modules' => max(0, $this->moduleOptions($records)->count() - 1),
+                // Modules actually represented in the result, which is what the
+                // card says. It used to count the registry instead, so the page
+                // read "55 modules represented" over an empty table.
+                'modules' => $records->pluck('module')->unique()->count(),
                 'expiring_soon' => $records->filter(fn (array $record) => $record['days_remaining'] <= 7)->count(),
             ],
             'moduleOptions' => $this->moduleOptions($records)->values()->all(),
@@ -143,9 +168,213 @@ class DeletedRecordService
         /** @var Model $record */
         $record = $entry['model']::withTrashed()->findOrFail($id);
 
+        $this->guardTrashedParents($record);
+
         $this->runRestoreStrategy($record, $entry);
 
         return $record->fresh();
+    }
+
+    /**
+     * Refuse a restore that would bring a record back pointing at a parent that
+     * is itself still in the trash.
+     *
+     * Restoring a sale whose customer is deleted leaves an invoice attached to
+     * a ledger that no longer exists: it shows on the sales list, its lines are
+     * in the general ledger, and the party it belongs to cannot be opened. In
+     * an accounting system that is worse than refusing, and the way out is
+     * always the same — restore the parent first — so the message says which.
+     */
+    private function guardTrashedParents(Model $record): void
+    {
+        $parents = $this->trashedParentsOf($record);
+
+        if ($parents === []) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'record' => __('general.restore_blocked_by_trashed_parents', [
+                'parents' => collect($parents)
+                    ->map(fn (array $parent) => trim($parent['label'].' '.$parent['title']))
+                    ->implode(', '),
+            ]),
+        ]);
+    }
+
+    /**
+     * The record's belongs-to parents that are themselves soft deleted.
+     *
+     * Read off the model rather than configured per module: every model already
+     * declares its parents as `public function x(): BelongsTo`, and a registry
+     * of sixty modules would drift from them within a release. Relations whose
+     * parent does not soft delete cannot be trashed, so they are skipped.
+     *
+     * @return list<array{relation: string, label: string, title: string}>
+     */
+    private function trashedParentsOf(Model $record): array
+    {
+        return $this->resolveTrashedParents(collect([$record]))[$this->modelKey($record)] ?? [];
+    }
+
+    /**
+     * The same answer for a whole page, in a handful of queries.
+     *
+     * Asked record by record this is one SELECT per relation per row — about a
+     * hundred for a page of twenty-five, which is the cost the two-pass split
+     * above exists to avoid. Parents are collected first and fetched one query
+     * per parent table instead.
+     *
+     * @param  Collection<int, Model>  $records
+     * @return array<string, list<array{relation: string, label: string, title: string}>>
+     */
+    private function resolveTrashedParents(Collection $records): array
+    {
+        /** @var array<string, list<array{relation: string, class: class-string<Model>, id: string}>> $plan */
+        $plan = [];
+        /** @var array<class-string<Model>, list<string>> $wanted */
+        $wanted = [];
+
+        foreach ($records as $record) {
+            $key = $this->modelKey($record);
+            $plan[$key] = [];
+
+            foreach ($this->belongsToRelationsOf($record) as $relation) {
+                $foreignKey = $record->getAttribute($relation['foreign_key']);
+
+                if (blank($foreignKey)) {
+                    continue;
+                }
+
+                $plan[$key][] = [
+                    'relation' => $relation['name'],
+                    'class' => $relation['class'],
+                    'id' => (string) $foreignKey,
+                ];
+
+                $wanted[$relation['class']][] = (string) $foreignKey;
+            }
+        }
+
+        /** @var array<class-string<Model>, Collection<string, Model>> $parents */
+        $parents = [];
+
+        foreach ($wanted as $class => $ids) {
+            // withoutGlobalScopes so a parent on another branch is still seen:
+            // a parent that is merely out of scope is not a parent that is gone,
+            // and treating it as absent would let the orphan through.
+            $parents[$class] = $class::query()
+                ->withoutGlobalScopes()
+                ->withTrashed()
+                ->whereIn((new $class)->getKeyName(), array_values(array_unique($ids)))
+                ->get()
+                ->keyBy(fn (Model $parent) => (string) $parent->getKey());
+        }
+
+        $blocking = [];
+
+        foreach ($plan as $key => $relations) {
+            $blocking[$key] = [];
+
+            foreach ($relations as $relation) {
+                $parent = $parents[$relation['class']][$relation['id']] ?? null;
+
+                if (! $parent || ! $parent->trashed()) {
+                    continue;
+                }
+
+                $blocking[$key][] = [
+                    'relation' => $relation['relation'],
+                    'label' => $this->moduleLabelForModel($parent::class) ?? Str::headline($relation['relation']),
+                    'title' => $this->fallbackTitle($parent),
+                ];
+            }
+        }
+
+        return $blocking;
+    }
+
+    /**
+     * A model's soft-deleting belongs-to parents, read off its own declarations.
+     *
+     * Every model already writes `public function x(): BelongsTo`, so this stays
+     * true as relations are added; a hand-kept list across sixty modules would
+     * not. Cached per class because a page is mostly rows of the same module and
+     * the reflection is the expensive half.
+     *
+     * @return list<array{name: string, class: class-string<Model>, foreign_key: string}>
+     */
+    private function belongsToRelationsOf(Model $record): array
+    {
+        static $cache = [];
+
+        $class = $record::class;
+
+        if (isset($cache[$class])) {
+            return $cache[$class];
+        }
+
+        $relations = [];
+
+        foreach ((new \ReflectionClass($record))->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->isStatic() || $method->getNumberOfParameters() > 0) {
+                continue;
+            }
+
+            $returnType = $method->getReturnType();
+
+            if (! $returnType instanceof \ReflectionNamedType || $returnType->getName() !== BelongsTo::class) {
+                continue;
+            }
+
+            try {
+                /** @var BelongsTo $relation */
+                $relation = $record->{$method->getName()}();
+                $related = $relation->getRelated();
+
+                // A parent that cannot be soft deleted cannot be in the trash.
+                if (! $this->usesSoftDeletes($related)) {
+                    continue;
+                }
+
+                $relations[] = [
+                    'name' => $method->getName(),
+                    'class' => $related::class,
+                    'foreign_key' => $relation->getForeignKeyName(),
+                ];
+            } catch (Throwable) {
+                // A relation we cannot build says nothing about whether its
+                // parent is trashed, so it must never block a restore.
+                continue;
+            }
+        }
+
+        return $cache[$class] = $relations;
+    }
+
+    private function modelKey(Model $record): string
+    {
+        return $record::class.':'.$record->getKey();
+    }
+
+    private function usesSoftDeletes(Model $model): bool
+    {
+        return in_array(SoftDeletes::class, class_uses_recursive($model), true);
+    }
+
+    /**
+     * The registry's own name for a model, so the message calls a parent what
+     * the trash screen calls it.
+     */
+    private function moduleLabelForModel(string $class): ?string
+    {
+        foreach ($this->registry() as $entry) {
+            if ($entry['model'] === $class && ($entry['listed'] ?? true) !== false) {
+                return $entry['label'];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -172,6 +401,13 @@ class DeletedRecordService
         $deleted = 0;
 
         foreach ($this->registry() as $module => $entry) {
+            // Unlisted aliases point at a table a listed module already sweeps
+            // (`ledgers` is customers + suppliers), so skipping them here only
+            // avoids visiting the same rows twice.
+            if (($entry['listed'] ?? true) === false) {
+                continue;
+            }
+
             $query = $this->applyModuleQuery($entry['model']::onlyTrashed(), $entry);
 
             foreach ($query->where('deleted_at', '<=', $cutoff)->get() as $record) {
@@ -288,6 +524,12 @@ class DeletedRecordService
                 // surfacing it here would let someone with ledger rights bring
                 // back a deleted employee's payable account on its own.
                 'query' => fn (Builder $query) => $query->whereIn('type', LedgerType::commercialValues()),
+                // Not listed, only resolvable by key. Commercial types are
+                // exactly customers + suppliers, both of which have their own
+                // entry below, so listing this one showed every deleted party
+                // twice and counted it twice in the totals. LedgerController
+                // still force-deletes through this key, so it has to stay.
+                'listed' => false,
                 'restore' => fn (Model $record) => $this->restoreLedgerOpeningRecord($record),
                 'force_delete' => fn (Model $record) => $this->forceDeleteLedgerOpeningRecord($record),
             ],
@@ -403,6 +645,65 @@ class DeletedRecordService
                 'query' => fn (Builder $query) => $query->where('type', LedgerType::SUPPLIER->value),
                 'restore' => fn (Model $record) => $this->restoreLedgerOpeningRecord($record),
                 'force_delete' => fn (Model $record) => $this->forceDeleteLedgerOpeningRecord($record),
+            ],
+            'discount_rules' => [
+                'label' => 'Discount Rules',
+                'model' => DiscountRule::class,
+                'title' => fn (Model $record) => trim((string) $record->name),
+            ],
+            'customer_groups' => [
+                'label' => 'Customer Groups',
+                'model' => CustomerGroup::class,
+                'title' => fn (Model $record) => $record->localized_name,
+            ],
+            'payment_terms' => [
+                'label' => 'Payment Terms',
+                'model' => PaymentTerm::class,
+                'title' => fn (Model $record) => trim((string) $record->name),
+            ],
+            'invoice_formats' => [
+                'label' => 'Invoice Formats',
+                'model' => InvoiceFormat::class,
+                'title' => fn (Model $record) => trim(($record->code ? $record->code.' - ' : '').($record->name ?? '')),
+                // This model carries company_id rather than branch_id and has no
+                // global scope, so without this every company's formats would
+                // show in every company's trash. Unfiltered when there is no
+                // user to scope to — the same choice BranchSpecific makes, and
+                // the reason the cleanup job can still reach these rows rather
+                // than matching `company_id is null` and purging nothing.
+                'query' => fn (Builder $query) => ($companyId = auth()->user()?->company_id)
+                    ? $query->where('company_id', $companyId)
+                    : $query,
+            ],
+            'interviews' => [
+                'label' => 'Interviews',
+                'model' => Interview::class,
+                'title' => fn (Model $record) => trim(
+                    ($record->application?->full_name ?? '').($record->round ? ' — round '.$record->round : '')
+                ),
+                'restore' => fn (Model $record) => $this->restoreSimpleRelations($record, ['panelists']),
+                'force_delete' => fn (Model $record) => $this->forceDeleteSimpleRelations($record, ['panelists']),
+            ],
+            'stock_adjustments' => [
+                'label' => 'Stock Adjustments',
+                'model' => StockAdjustment::class,
+                'title' => fn (Model $record) => $record->reference ?: $record->date?->format('Y-m-d') ?: $record->id,
+                // Only drafts can be deleted, and deleting one releases the
+                // stock it had reserved. Restoring brings the document and its
+                // lines back as a draft; the reservation is re-taken when the
+                // draft is posted, which is the same path a new draft follows.
+                'restore' => fn (Model $record) => $this->restoreSimpleRelations($record, ['items']),
+                'force_delete' => fn (Model $record) => $this->forceDeleteSimpleRelations($record, ['items']),
+            ],
+            'landed_costs' => [
+                'label' => 'Landed Costs',
+                'model' => LandedCost::class,
+                'title' => fn (Model $record) => $record->reference ?: $record->date?->format('Y-m-d') ?: $record->id,
+                // Deleting one soft-deletes its voucher, the voucher's lines,
+                // its allocations and its lines, so all four have to come back
+                // together or the document returns without its accounting half.
+                'restore' => fn (Model $record) => $this->restoreTransactionRecord($record, relations: ['items', 'categoryAllocations']),
+                'force_delete' => fn (Model $record) => $this->forceDeleteTransactionRecord($record, relations: ['items', 'categoryAllocations']),
             ],
             'items' => [
                 'label' => 'Items',
@@ -564,6 +865,10 @@ class DeletedRecordService
         $records = collect();
 
         foreach ($this->registry() as $module => $entry) {
+            if (($entry['listed'] ?? true) === false) {
+                continue;
+            }
+
             if ($moduleFilter !== 'all' && $module !== $moduleFilter) {
                 continue;
             }
@@ -597,60 +902,18 @@ class DeletedRecordService
         $title = trim($title) !== '' ? trim($title) : $this->fallbackTitle($record);
 
         $deletedAt = $record->deleted_at ? Carbon::parse($record->deleted_at) : null;
+        // Carbon 3 returns diffInDays SIGNED: now()->diffInDays($past) is
+        // negative, so subtracting it ADDED to the window. A record deleted
+        // five days ago reported 35 days remaining instead of 25, the counter
+        // climbed instead of running down, and "expiring within 7 days" could
+        // never fire. Measure from the deletion forward and subtract.
+        $daysElapsed = $deletedAt
+            ? (int) floor($deletedAt->copy()->startOfDay()->diffInDays(now()->startOfDay()))
+            : 0;
         $daysRemaining = $deletedAt
-            ? max(0, self::RETENTION_DAYS - now()->startOfDay()->diffInDays($deletedAt->copy()->startOfDay()))
+            ? (int) max(0, self::RETENTION_DAYS - $daysElapsed)
             : self::RETENTION_DAYS;
         $forceDeleteAt = $deletedAt?->copy()->addDays(self::RETENTION_DAYS);
-
-        $fields = [];
-        foreach ($attributes as $key => $value) {
-            if (in_array($key, ['deleted_at', 'deleted_by', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'], true)) {
-                continue;
-            }
-
-            $fields[] = [
-                'key' => $key,
-                'label' => Str::headline(str_replace('_', ' ', $key)),
-                'value' => $value,
-                'display_value' => null,
-            ];
-        }
-
-        $metadata = [
-            [
-                'key' => 'deleted_by',
-                'label' => 'Deleted By',
-                'value' => $attributes['deleted_by'] ?? null,
-                'display_value' => null,
-            ],
-            [
-                'key' => 'deleted_at',
-                'label' => 'Deleted At',
-                'value' => $deletedAt?->toDateTimeString(),
-                'display_value' => null,
-            ],
-            [
-                'key' => 'auto_force_delete_at',
-                'label' => 'Auto Force Delete At',
-                'value' => $forceDeleteAt?->toDateTimeString(),
-                'display_value' => null,
-            ],
-            [
-                'key' => 'ip_address',
-                'label' => 'IP Address',
-                'value' => $attributes['ip_address'] ?? $attributes['deleted_ip'] ?? null,
-                'display_value' => null,
-            ],
-        ];
-
-        $dependencyWarning = null;
-        if (method_exists($record, 'getDependencyMessage')) {
-            try {
-                $dependencyWarning = $record->getDependencyMessage();
-            } catch (Throwable) {
-                $dependencyWarning = null;
-            }
-        }
 
         return [
             'module' => $module,
@@ -665,9 +928,11 @@ class DeletedRecordService
             'deleted_at_timestamp' => $deletedAt?->timestamp ?? 0,
             'days_remaining' => $daysRemaining,
             'force_delete_at' => $forceDeleteAt?->toISOString(),
-            'fields' => $fields,
-            'metadata' => $metadata,
-            'dependency_warning' => $dependencyWarning,
+            // Carried, not serialised. expandRecord() reads these for the page
+            // the user is on and drops them; none of them reach Inertia.
+            'model' => $record,
+            'deleted_at_string' => $deletedAt?->toDateTimeString(),
+            'force_delete_at_string' => $forceDeleteAt?->toDateTimeString(),
             'search_blob' => Str::lower(implode(' ', array_filter([
                 $module,
                 $entry['label'],
@@ -686,6 +951,89 @@ class DeletedRecordService
                 }, $attributes)),
             ]))),
         ];
+    }
+
+    /**
+     * Expand one listed row into what the details dialog needs.
+     *
+     * Only ever called for the current page. The field list copies every
+     * column, and getDependencyMessage() runs a count() query per relation the
+     * model declares — doing that for the whole trash to render twenty-five
+     * rows was the bulk of this screen's cost.
+     *
+     * @param  array<string, mixed>  $record
+     * @param  array<string, list<array{relation: string, label: string, title: string}>>  $blockingParents
+     * @return array<string, mixed>
+     */
+    private function expandRecord(array $record, array $blockingParents = []): array
+    {
+        /** @var Model $model */
+        $model = $record['model'];
+        $attributes = $model->getAttributes();
+
+        $fields = [];
+        foreach ($attributes as $key => $value) {
+            if (in_array($key, ['deleted_at', 'deleted_by', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'], true)) {
+                continue;
+            }
+
+            $fields[] = [
+                'key' => $key,
+                'label' => Str::headline(str_replace('_', ' ', $key)),
+                'value' => $value,
+                'display_value' => null,
+            ];
+        }
+
+        $record['fields'] = $fields;
+        $record['metadata'] = [
+            [
+                'key' => 'deleted_by',
+                'label' => 'Deleted By',
+                'value' => $attributes['deleted_by'] ?? null,
+                'display_value' => null,
+            ],
+            [
+                'key' => 'deleted_at',
+                'label' => 'Deleted At',
+                'value' => $record['deleted_at_string'],
+                'display_value' => null,
+            ],
+            [
+                'key' => 'auto_force_delete_at',
+                'label' => 'Auto Force Delete At',
+                'value' => $record['force_delete_at_string'],
+                'display_value' => null,
+            ],
+            [
+                'key' => 'ip_address',
+                'label' => 'IP Address',
+                'value' => $attributes['ip_address'] ?? $attributes['deleted_ip'] ?? null,
+                'display_value' => null,
+            ],
+        ];
+
+        $dependencyWarning = null;
+        if (method_exists($model, 'getDependencyMessage')) {
+            try {
+                $dependencyWarning = $model->getDependencyMessage();
+            } catch (Throwable) {
+                $dependencyWarning = null;
+            }
+        }
+
+        $record['dependency_warning'] = $dependencyWarning;
+        // What a restore would be refused on, said before the button is pressed.
+        $record['blocking_parents'] = $blockingParents[$this->modelKey($model)] ?? [];
+
+        unset(
+            $record['model'],
+            $record['search_blob'],
+            $record['deleted_at_string'],
+            $record['force_delete_at_string'],
+        );
+
+        return $record;
     }
 
     private function attachHumanReadableReferences(Collection $records): Collection
@@ -792,13 +1140,15 @@ class DeletedRecordService
                 'count' => $records->count(),
             ],
         ])->merge(
-            collect($this->registry())->map(function (array $entry, string $module) use ($grouped): array {
-                return [
-                    'value' => $module,
-                    'label' => $entry['label'],
-                    'count' => (int) ($grouped[$module] ?? 0),
-                ];
-            })->values()
+            collect($this->registry())
+                ->filter(fn (array $entry) => ($entry['listed'] ?? true) !== false)
+                ->map(function (array $entry, string $module) use ($grouped): array {
+                    return [
+                        'value' => $module,
+                        'label' => $entry['label'],
+                        'count' => (int) ($grouped[$module] ?? 0),
+                    ];
+                })->values()
         );
     }
 

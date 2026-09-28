@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -18,14 +19,43 @@ export function useDocumentAction() {
     const { t } = useI18n()
 
     /**
+     * True while an action is in flight, for the confirm button's spinner.
+     * One ref per page is enough: only one action dialog can be open at a time.
+     */
+    const processing = ref(false)
+
+    /**
      * @param {string} url
      * @param {object} data
      * @param {object} options  Inertia visit options; `onSuccess` is yours to pass.
      */
     const submit = (url, data = {}, options = {}) => {
+        // A second click while the first is still running would post twice.
+        if (processing.value) return
+
         router.post(url, data, {
             preserveScroll: true,
+            // Posting or reversing does not navigate — the operator stays on the
+            // document and only its status changes. Remounting the page throws
+            // away scroll, open panels and the dialog itself for no reason.
+            preserveState: true,
             ...options,
+            headers: {
+                // The full-screen BookLoader is a *navigation* affordance. These
+                // actions go nowhere, so the overlay just covers the document the
+                // operator is looking at; the confirm button carries the spinner
+                // instead, exactly like deleting a record.
+                'X-Silent-Loader': '1',
+                ...(options.headers ?? {}),
+            },
+            onStart: (visit) => {
+                processing.value = true
+                options.onStart?.(visit)
+            },
+            onFinish: (visit) => {
+                processing.value = false
+                options.onFinish?.(visit)
+            },
             onError: (errors) => {
                 const message = firstServerError(errors)
 
@@ -40,7 +70,7 @@ export function useDocumentAction() {
         })
     }
 
-    return { submit }
+    return { submit, processing }
 }
 
 /**

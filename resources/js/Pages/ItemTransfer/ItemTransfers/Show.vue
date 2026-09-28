@@ -14,7 +14,7 @@ import {
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 const { toast } = useToast()
 const page = usePage()
 
@@ -45,11 +45,9 @@ const totalAmount = computed(() =>
 
 const postDialogOpen = ref(false)
 const reverseDialogOpen = ref(false)
-const processing = ref(false)
 
+// `processing` and the double-submit guard come from useDocumentAction now.
 const postTransfer = () => {
-  if (processing.value) return
-  processing.value = true
   submit(route('item-transfers.post', transfer.value.id), {}, {
     preserveScroll: true,
     onSuccess: () => {
@@ -62,17 +60,13 @@ const postTransfer = () => {
       }
       postDialogOpen.value = false
     },
-    onFinish: () => { processing.value = false },
   })
 }
 
 const reverseTransfer = (reason) => {
-  if (processing.value) return
-  processing.value = true
   submit(route('item-transfers.reverse', transfer.value.id), { reason }, {
     preserveScroll: true,
     onSuccess: () => { reverseDialogOpen.value = false },
-    onFinish: () => { processing.value = false },
   })
 }
 </script>

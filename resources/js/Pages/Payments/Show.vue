@@ -12,7 +12,7 @@ import { router } from '@inertiajs/vue3'
 import { useAuth } from '@/composables/useAuth'
 
 const { t } = useI18n()
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 const { can } = useAuth()
 
 const props = defineProps({
@@ -96,6 +96,7 @@ const statusLabel = (status) => {
         />
 
         <TransactionActionDialog
+            :processing="processing"
             v-model:open="postDialogOpen"
             type="post"
             :title="t('general.post') + ' ' + t('payment.payment')"
@@ -103,6 +104,7 @@ const statusLabel = (status) => {
             @confirm="postPayment"
         />
         <TransactionActionDialog
+            :processing="processing"
             v-model:open="reverseDialogOpen"
             type="reverse"
             :title="t('general.reverse') + ' ' + t('payment.payment')"

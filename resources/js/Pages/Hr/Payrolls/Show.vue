@@ -4,6 +4,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
+import { Spinner } from '@/Components/ui/spinner';
 import ModalDialog from '@/Components/next/Dialog.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Calculator, FileText, Send, CheckCircle2, BookCheck, Undo2, XCircle } from 'lucide-vue-next';
@@ -54,6 +55,11 @@ const pendingStatus = ref(null);
 const reason = ref('');
 const processing = ref(false);
 
+// Which button is running, so the spinner replaces that button's icon rather
+// than every button's. Without the full-screen loader these direct actions
+// (post to ledger, calculate) would otherwise show nothing while they work.
+const activeAction = ref(null);
+
 const startTransition = (item) => {
     if (item.needsReason) {
         pendingStatus.value = item.status;
@@ -67,14 +73,21 @@ const startTransition = (item) => {
 
 const submitTransition = (status, withReason = null) => {
     processing.value = true;
+    activeAction.value = status;
 
     router.patch(route('payrolls.transition', run.value.id), {
         status,
         reason: withReason,
     }, {
         preserveScroll: true,
+        preserveState: true,
+        // Posting or reversing a run stays on this page — only the status
+        // changes. The button carries the spinner, so skip the full-screen
+        // BookLoader that would otherwise cover the run being acted on.
+        headers: { 'X-Silent-Loader': '1' },
         onFinish: () => {
             processing.value = false;
+            activeAction.value = null;
             reasonOpen.value = false;
         },
     });
@@ -82,9 +95,12 @@ const submitTransition = (status, withReason = null) => {
 
 const calculate = () => {
     processing.value = true;
+    activeAction.value = 'calculate';
     router.patch(route('payrolls.calculate', run.value.id), {}, {
         preserveScroll: true,
-        onFinish: () => { processing.value = false; },
+        preserveState: true,
+        headers: { 'X-Silent-Loader': '1' },
+        onFinish: () => { processing.value = false; activeAction.value = null; },
     });
 };
 
@@ -128,7 +144,8 @@ const paymentTone = (status) => ({
                         :disabled="processing"
                         @click="calculate"
                     >
-                        <Calculator class="mr-1.5 h-4 w-4" />
+                        <Spinner v-if="activeAction === 'calculate'" class="mr-1.5 h-4 w-4" />
+                        <Calculator v-else class="mr-1.5 h-4 w-4" />
                         {{ lines.length ? t('hr.recalculate') : t('hr.calculate') }}
                     </Button>
 
@@ -139,7 +156,8 @@ const paymentTone = (status) => ({
                         :disabled="processing"
                         @click="startTransition(item)"
                     >
-                        <component :is="item.icon" class="mr-1.5 h-4 w-4" />
+                        <Spinner v-if="activeAction === item.status" class="mr-1.5 h-4 w-4" />
+                        <component v-else :is="item.icon" class="mr-1.5 h-4 w-4" />
                         {{ t(item.label) }}
                     </Button>
                 </div>

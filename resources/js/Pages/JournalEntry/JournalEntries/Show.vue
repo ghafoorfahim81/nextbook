@@ -11,7 +11,7 @@ import ShowPageToolbar from '@/Components/ShowPageToolbar.vue'
 import { Badge } from '@/Components/ui/badge'
 
 const { t } = useI18n()
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 
 const props = defineProps({
     journalEntry: { type: Object, required: true },
@@ -81,6 +81,7 @@ const statusLabel = (status) => {
             />
 
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="postDialogOpen"
                 type="post"
                 :title="t('general.post') + ' ' + t('sidebar.journal_entry.journal_entries')"
@@ -88,6 +89,7 @@ const statusLabel = (status) => {
                 @confirm="postEntry"
             />
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="reverseDialogOpen"
                 type="reverse"
                 :title="t('general.reverse') + ' ' + t('sidebar.journal_entry.journal_entries')"
