@@ -290,7 +290,7 @@ class SaleReturnController extends Controller
     public function edit(Request $request, SaleReturn $saleReturn)
     {
         if ($saleReturn->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $saleReturn->load([
@@ -318,7 +318,7 @@ class SaleReturnController extends Controller
         ActivityLogService $activityLogService
     ) {
         if ($saleReturn->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $beforeState = [
@@ -548,7 +548,7 @@ class SaleReturnController extends Controller
         $this->authorize('update', $saleReturn);
 
         if ($saleReturn->status !== TransactionStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         try {
@@ -590,7 +590,7 @@ class SaleReturnController extends Controller
         ]);
 
         if ($saleReturn->status !== TransactionStatus::POSTED->value) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         DB::transaction(function () use ($saleReturn, $transactionService, $paymentStatusService, $validated) {
@@ -614,7 +614,7 @@ class SaleReturnController extends Controller
     public function destroy(Request $request, SaleReturn $saleReturn, ActivityLogService $activityLogService, StockService $stockService)
     {
         if ($saleReturn->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         DB::transaction(function () use ($saleReturn, $activityLogService, $stockService) {

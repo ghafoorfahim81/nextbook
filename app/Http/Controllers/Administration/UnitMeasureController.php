@@ -161,7 +161,7 @@ class UnitMeasureController extends Controller
     {
         // Check for dependencies before deletion
         if (!$unitMeasure->canBeDeleted()) {
-            $message = $unitMeasure->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $unitMeasure->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return inertia('Administration/UnitMeasures/Index', [
                 'error' => $message
             ]);

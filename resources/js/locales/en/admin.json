@@ -129,5 +129,12 @@
         "phone": "Phone",
         "country": "Country",
         "province": "Province"
+    },
+    "payment_term": {
+        "payment_term": "Payment Term",
+        "payment_terms": "Payment Terms",
+        "name": "Name",
+        "days": "Days",
+        "type": "Type"
     }
 }

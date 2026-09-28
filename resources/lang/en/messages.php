@@ -1,0 +1,155 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Server-side user-facing messages
+|--------------------------------------------------------------------------
+|
+| Flashes, aborts and validation errors raised from controllers, services
+| and models. Everything here reaches the UI, so every key must also exist
+| in the fa and ps files.
+|
+*/
+
+return [
+    'dependency' => [
+        // :items is a list such as "2 items and 3 subcategories".
+        'cannot_delete_used_in' => "Cannot delete this record because it's used in :items. Please delete those records first.",
+        'cannot_delete_generic' => 'You cannot delete this record because it has dependencies.',
+        'cannot_delete_document' => 'You cannot delete this :document because it has dependencies.',
+        'list_separator' => ', ',
+        'list_last_separator' => ' and ',
+        'models' => [
+            'items' => 'items',
+            'accounts' => 'accounts',
+            'transactions' => 'transactions',
+            'ledgers' => 'customers/suppliers',
+            'subbranches' => 'sub-branches',
+            'employees' => 'employees',
+            'subcategories' => 'subcategories',
+            'users' => 'users',
+            'subdepartments' => 'sub-departments',
+            'designations' => 'designations',
+            'unit_measures' => 'unit measures',
+            'stock_records' => 'stock records',
+            'stocks' => 'stock records',
+            'expenses' => 'expenses',
+            'attendance_device_users' => 'device user mappings',
+            'employee_contracts' => 'employee contracts',
+            'employee_documents' => 'employee documents',
+            'payroll_lines' => 'payslips',
+            'employee_loans' => 'loans or advances',
+            'leave_requests' => 'leave requests',
+            'leave_allocations' => 'leave allocations',
+            'interviews' => 'interviews',
+            'job_applications' => 'job applications',
+            'salary_structure_lines' => 'salary structures',
+            'stock_movements' => 'stock movements',
+            'stock_balances' => 'stock balances',
+            'sale_items' => 'sale items',
+            'landed_cost_items' => 'landed cost items',
+            'purchases' => 'purchases',
+            'journal_entries' => 'journal entries',
+        ],
+        'documents' => [
+            'stock_adjustment' => 'stock adjustment',
+            'item_transfer' => 'transfer',
+            'purchase' => 'purchase',
+            'purchase_order' => 'purchase order',
+            'purchase_quotation' => 'purchase quotation',
+            'purchase_return' => 'purchase return',
+            'sale' => 'sale',
+            'sale_order' => 'sale order',
+            'sale_quotation' => 'sale quotation',
+            'sale_return' => 'sale return',
+        ],
+    ],
+
+    'document' => [
+        'only_draft_can_be_edited' => 'Only draft documents can be edited.',
+        'only_draft_can_be_deleted' => 'Only draft documents can be deleted.',
+        'only_draft_can_be_posted' => 'Only draft documents can be posted.',
+        'only_draft_can_be_cancelled' => 'Only draft documents can be cancelled.',
+        'only_posted_can_be_reversed' => 'Only posted documents can be reversed.',
+        'already_cancelled' => 'Document is already cancelled.',
+        'set_off_already_reversed' => 'This set-off has already been reversed.',
+        'no_settlement_voucher' => 'This draft has no settlement voucher to post.',
+        'no_ledger_for_transfer' => 'No ledger found to associate the transfer transactions.',
+    ],
+
+    'stock' => [
+        'insufficient' => 'Insufficient stock.',
+        'insufficient_for_method' => 'Insufficient stock for :method deduction.',
+        'batch_required' => 'Batch is required for this item.',
+        'negative_not_allowed' => 'Negative stock is not allowed.',
+        'insufficient_for_item' => 'Insufficient stock for item ":item". Available: :available, Required: :required.',
+        'no_inventory_account' => 'No inventory account configured for item ":item".',
+        'offset_account_missing' => 'Offset account ":account" not found. Please seed accounts 9040/9050 first.',
+    ],
+
+    'transfer' => [
+        'cannot_update_completed' => 'Cannot update a completed transfer.',
+        'already_completed' => 'Transfer is already completed.',
+        'cannot_complete_cancelled' => 'Cannot complete a cancelled transfer.',
+        'already_cancelled' => 'Transfer is already cancelled.',
+    ],
+
+    'notifications' => [
+        'all_marked_read' => 'All notifications marked as read.',
+        'bulk_updated' => 'Notifications updated.',
+        'updated' => 'Notification updated.',
+
+        'new_transaction_title' => 'New Posted Transaction',
+        'new_transaction_body' => 'A posted transaction :voucher was created on :date.',
+        'new_transaction_body_no_voucher' => 'A posted transaction was created on :date.',
+        'low_balance_title' => 'Low Balance Alert',
+        'low_balance_body' => 'Account :account has a negative balance of :balance.',
+        'low_stock_title' => 'Low Stock Alert',
+        'low_stock_body' => 'Item :item is below minimum stock. Available: :available, minimum: :minimum.',
+        'expiry_title' => 'Nearest Expiry Alert',
+        'expiry_body' => 'Item :item expires on :date.',
+        'expiry_body_batch' => 'Item :item (batch :batch) expires on :date.',
+        'overdue_purchase_title' => 'Overdue Purchase Alert',
+        'overdue_purchase_body' => 'Purchase #:number is overdue with :amount still payable.',
+        'overdue_sale_title' => 'Overdue Sale Alert',
+        'overdue_sale_body' => 'Sale #:number is overdue with :amount still receivable.',
+        'overdue_invoice_title' => 'Overdue Invoice Alert',
+        'overdue_invoice_body' => 'Invoice #:number is overdue with :amount unpaid.',
+        'sale_paid_title' => 'Sale Paid',
+        'sale_paid_body' => 'Sale #:number has been fully paid.',
+        'purchase_paid_title' => 'Purchase Paid',
+        'purchase_paid_body' => 'Purchase #:number has been fully paid.',
+        'daily_summary_title' => 'Daily Transaction Summary',
+        'daily_summary_body' => 'Posted transactions: :count. Sales: :sales. Purchases: :purchases. Receipts: :receipts. Payments: :payments.',
+        'weekly_summary_title' => 'Weekly Financial Summary',
+        'weekly_summary_body' => 'Sales: :sales. Purchases: :purchases. Profit: :profit.',
+    ],
+
+    'validation' => [
+        'expense_detail_required' => 'At least one expense detail is required.',
+        'expense_detail_amount_required' => 'Amount is required for each detail.',
+        'expense_detail_amount_min' => 'Amount must be greater than 0.',
+        'expense_detail_title_required' => 'Title is required for each detail.',
+        'measure_name_exists' => 'A measure with this name already exists for the selected quantity type.',
+        'quantity_required' => 'Quantity is required.',
+        'unit_cost_required' => 'Unit cost is required.',
+    ],
+
+    'errors' => [
+        'unauthorized' => 'This action is unauthorized.',
+        'unauthorized_company_update' => 'Unauthorized to update this company.',
+        'validation_failed' => 'Validation failed.',
+        'search_failed' => 'Search failed.',
+        'quick_create_failed' => 'Quick create failed.',
+        'unsupported_resource_type' => 'Unsupported resource type: :type',
+        'warehouse_not_found' => 'Warehouse not found.',
+        'currency_not_found' => 'Currency not found.',
+        'unit_not_found' => 'Unit not found.',
+        'units_different_quantity' => 'Units belong to different quantity types.',
+        'city_not_found' => 'City not found.',
+        'weather_unavailable' => 'Weather data unavailable.',
+        'weather_fetch_failed' => 'Failed to fetch weather data.',
+    ],
+
+    'invoice_format_deleted' => 'Invoice format deleted.',
+];

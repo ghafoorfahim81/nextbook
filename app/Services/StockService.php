@@ -131,7 +131,7 @@ class StockService
 
         if ($availableForThis < $quantity) {
             throw ValidationException::withMessages([
-                'stock' => 'Insufficient stock.',
+                'stock' => __('messages.stock.insufficient'),
             ]);
         }
     }
@@ -402,7 +402,7 @@ class StockService
 
         if ($remaining > self::QUANTITY_EPSILON) {
             throw ValidationException::withMessages([
-                'stock' => 'Insufficient stock for ' . $method . ' deduction.',
+                'stock' => __('messages.stock.insufficient_for_method', ['method' => $method]),
             ]);
         }
 
@@ -932,7 +932,7 @@ class StockService
     {
         if ($item->is_batch_tracked && empty($data['batch'])) {
             throw ValidationException::withMessages([
-                'batch' => 'Batch is required for this item.'
+                'batch' => __('messages.stock.batch_required')
             ]);
         }
     }
@@ -1027,7 +1027,7 @@ class StockService
 
         if ($remaining > self::QUANTITY_EPSILON) {
             throw ValidationException::withMessages([
-                    'stock' => 'Negative stock is not allowed.',
+                    'stock' => __('messages.stock.negative_not_allowed'),
                     'allocation' => $allocation['expire_date'] ,
                     'quantity' => $quantity,
             ]);

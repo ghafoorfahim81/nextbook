@@ -117,7 +117,7 @@ class PurchaseOrder extends Model
 
     public function getDependencyMessage(): string
     {
-        return 'You cannot delete this purchase order because it has dependencies.';
+        return __('messages.dependency.cannot_delete_document', ['document' => __('messages.dependency.documents.purchase_order')]);
     }
 
     public function orderTotal(): float

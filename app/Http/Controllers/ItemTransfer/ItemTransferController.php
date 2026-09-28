@@ -175,7 +175,7 @@ class ItemTransferController extends Controller
     public function update(ItemTransferUpdateRequest $request, ItemTransfer $itemTransfer, AttachmentService $attachmentService)
     {
         if ($itemTransfer->status !== TransactionStatus::DRAFT) {
-            abort(403, 'Only draft documents can be edited.');
+            abort(403, __('messages.document.only_draft_can_be_edited'));
         }
 
         $validated = $request->validated();
@@ -285,7 +285,7 @@ class ItemTransferController extends Controller
         // no stock and posted no ledger, so there is nothing to undo. A draft
         // that is no longer wanted is deleted instead.
         if ($itemTransfer->status !== TransactionStatus::POSTED) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         return $this->cancel($request, $itemTransfer);

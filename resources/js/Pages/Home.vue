@@ -544,18 +544,18 @@ const weatherError   = ref('')
 
 // WMO weather code → emoji icon + description
 function wmoInfo(code: number, isDay = true): { emoji: string; label: string } {
-  if (code === 0)              return { emoji: isDay ? '☀️' : '🌙', label: 'Clear sky' }
-  if (code <= 2)               return { emoji: '⛅', label: 'Partly cloudy' }
-  if (code === 3)              return { emoji: '☁️', label: 'Overcast' }
-  if (code <= 48)              return { emoji: '🌫️', label: 'Fog' }
-  if (code <= 57)              return { emoji: '🌦️', label: 'Drizzle' }
-  if (code <= 67)              return { emoji: '🌧️', label: 'Rain' }
-  if (code <= 77)              return { emoji: '❄️', label: 'Snow' }
-  if (code <= 82)              return { emoji: '🌦️', label: 'Rain showers' }
-  if (code <= 86)              return { emoji: '🌨️', label: 'Snow showers' }
-  if (code === 95)             return { emoji: '⛈️', label: 'Thunderstorm' }
-  if (code >= 96)              return { emoji: '⛈️', label: 'Thunderstorm w/ hail' }
-  return { emoji: '🌡️', label: 'Unknown' }
+  if (code === 0)              return { emoji: isDay ? '☀️' : '🌙', label: t('home.weather.conditions.clear') }
+  if (code <= 2)               return { emoji: '⛅', label: t('home.weather.conditions.partly_cloudy') }
+  if (code === 3)              return { emoji: '☁️', label: t('home.weather.conditions.overcast') }
+  if (code <= 48)              return { emoji: '🌫️', label: t('home.weather.conditions.fog') }
+  if (code <= 57)              return { emoji: '🌦️', label: t('home.weather.conditions.drizzle') }
+  if (code <= 67)              return { emoji: '🌧️', label: t('home.weather.conditions.rain') }
+  if (code <= 77)              return { emoji: '❄️', label: t('home.weather.conditions.snow') }
+  if (code <= 82)              return { emoji: '🌦️', label: t('home.weather.conditions.rain_showers') }
+  if (code <= 86)              return { emoji: '🌨️', label: t('home.weather.conditions.snow_showers') }
+  if (code === 95)             return { emoji: '⛈️', label: t('home.weather.conditions.thunderstorm') }
+  if (code >= 96)              return { emoji: '⛈️', label: t('home.weather.conditions.thunderstorm_hail') }
+  return { emoji: '🌡️', label: t('home.weather.conditions.unknown') }
 }
 
 const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']

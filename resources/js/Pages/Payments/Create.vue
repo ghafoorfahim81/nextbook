@@ -253,7 +253,7 @@ const saveFormRef = useSaveShortcut({ form })
             :search-fields="['name', 'email', 'phone_no']"
           />
 
-          <NextInput is-required v-if="rpFields.number" placeholder="Number" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
+          <NextInput is-required v-if="rpFields.number" :placeholder="t('general.number')" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextInput is-required :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect

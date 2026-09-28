@@ -136,7 +136,21 @@
     "no_api_key": "د هوا API کیلي تنظیم نه ده",
     "search": "ښار لټول",
     "forecast": "د ۷ ورځو وړاندوینه",
-    "today": "نن"
+    "today": "نن",
+    "conditions": {
+      "clear": "صاف آسمان",
+      "partly_cloudy": "نیمه ورېځ",
+      "overcast": "ورېځ",
+      "fog": "لړه",
+      "drizzle": "نري باران",
+      "rain": "باران",
+      "snow": "واوره",
+      "rain_showers": "د باران ږلۍ",
+      "snow_showers": "د واورې ورېدل",
+      "thunderstorm": "تندر او برېښنا",
+      "thunderstorm_hail": "تندر له ږلۍ سره",
+      "unknown": "نامعلوم"
+    }
   },
   "date_conversion": {
     "title": "د نیټې بدلون",

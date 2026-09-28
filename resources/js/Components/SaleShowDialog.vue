@@ -121,7 +121,7 @@ const loadSale = async (id) => {
         console.error('Error loading sale:', error);
         toast({
             title: t('general.error'),
-            description: 'Failed to load sale details',
+            description: t('general.failed_to_load_details'),
             variant: 'destructive',
             class: 'bg-red-600 text-white',
         });

@@ -683,7 +683,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :search-options="{ type: 'customer' }"
                 />
 
-                <NextInput placeholder="Number"  v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
+                <NextInput :placeholder="t('general.number')"  v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                 <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                 <NextSelect
                     v-if="general_fields.currency"
@@ -700,7 +700,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     resource-type="currencies"
                     :search-fields="['name', 'code', 'symbol']"
                 />
-                <NextInput placeholder="Rate" v-if="general_fields.currency" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')"/>
+                <NextInput :placeholder="t('general.rate')" v-if="general_fields.currency" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')"/>
                 <NextSelect
                     :options="salePurchaseTypes"
                     v-if="general_fields.type"

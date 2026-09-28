@@ -1,6 +1,6 @@
 <?php
 
 return [
-    'settings_imported' => 'Settings imported successfully.',
+    'settings_imported' => 'تنظیمات په بریالیتوب سره وارد شول.',
 ];
 

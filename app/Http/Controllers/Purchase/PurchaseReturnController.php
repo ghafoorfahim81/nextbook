@@ -290,7 +290,7 @@ class PurchaseReturnController extends Controller
     public function edit(Request $request, PurchaseReturn $purchaseReturn)
     {
         if ($purchaseReturn->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $purchaseReturn->load([
@@ -318,7 +318,7 @@ class PurchaseReturnController extends Controller
         ActivityLogService $activityLogService
     ) {
         if ($purchaseReturn->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $beforeState = [
@@ -557,7 +557,7 @@ class PurchaseReturnController extends Controller
         $this->authorize('update', $purchaseReturn);
 
         if ($purchaseReturn->status !== TransactionStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         try {
@@ -604,7 +604,7 @@ class PurchaseReturnController extends Controller
         ]);
 
         if ($purchaseReturn->status !== TransactionStatus::POSTED->value) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         DB::transaction(function () use ($purchaseReturn, $transactionService, $paymentStatusService, $validated) {
@@ -628,7 +628,7 @@ class PurchaseReturnController extends Controller
     public function destroy(Request $request, PurchaseReturn $purchaseReturn, ActivityLogService $activityLogService, StockService $stockService)
     {
         if ($purchaseReturn->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         DB::transaction(function () use ($purchaseReturn, $activityLogService, $stockService) {

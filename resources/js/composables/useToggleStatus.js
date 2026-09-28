@@ -46,7 +46,7 @@ export function useToggleStatus() {
                             const flashedError = page?.props?.flash?.error || page?.props?.error
 
                             if (flashedError) {
-                                toast.error(flashedError, { class: 'bg-pink-600 text-white', duration: 8000 })
+                                toast.error(t('general.status_change_blocked_title'), { description: flashedError, class: 'bg-pink-600 text-white', duration: 8000 })
                             } else {
                                 toast.success(
                                     active
@@ -61,7 +61,8 @@ export function useToggleStatus() {
                             options?.onSuccess?.()
                         },
                         onError: (errors) => {
-                            toast.error(errors?.message || t('general.something_went_wrong'), {
+                            toast.error(t('general.error'), {
+                                description: errors?.message || t('general.something_went_wrong'),
                                 class: 'bg-pink-600 text-white',
                                 duration: 7000,
                             })

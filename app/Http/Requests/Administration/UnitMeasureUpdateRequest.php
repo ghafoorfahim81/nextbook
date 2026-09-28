@@ -56,7 +56,7 @@ class UnitMeasureUpdateRequest extends FormRequest
                 ->first();
 
             if ($existingMeasure) {
-                $validator->errors()->add('name', 'A measure with this name already exists for the selected quantity type.');
+                $validator->errors()->add('name', __('messages.validation.measure_name_exists'));
             }
         });
     }

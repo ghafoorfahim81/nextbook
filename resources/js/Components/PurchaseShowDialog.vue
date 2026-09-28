@@ -105,7 +105,7 @@ watch(() => props.open, async (isOpen) => {
             console.error('Error fetching purchase:', error);
             toast({
                 title: t('general.error'),
-                description: 'Failed to load purchase details',
+                description: t('general.failed_to_load_details'),
                 variant: 'destructive',
                 class: 'bg-red-600 text-white',
             });
@@ -120,19 +120,17 @@ const updatePurchaseStatus = (status) => {
     form.patch(`/update-purchase-status/${props.purchaseId}/status`, {
         onSuccess: () => {
             purchase.value.status = status;
-            const actionText = status === 'approved' ? 'approved' : 'rejected';
             toast({
                 title: t('general.success'),
-                description: `Purchase ${actionText} successfully`,
+                description: t('general.status_updated'),
                 variant: 'success',
                 class: 'bg-green-600 text-white',
             });
         },
         onError: () => {
-            const actionText = status === 'approved' ? 'approve' : 'reject';
             toast({
                 title: t('general.error'),
-                description: `Failed to ${actionText} purchase`,
+                description: t('general.status_update_failed'),
                 variant: 'destructive',
                 class: 'bg-red-600 text-white',
             });

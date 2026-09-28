@@ -99,7 +99,7 @@ class AccountTransferController extends Controller
             // Since this is an internal transfer, we associate both transactions with the same placeholder ledger.
             $ledger = Ledger::query()->latest()->first();
             if (!$ledger) {
-                abort(422, 'No ledger found to associate the transfer transactions.');
+                abort(422, __('messages.document.no_ledger_for_transfer'));
             }
 
             $fromAccount = Account::findOrFail($fromAccountId);
@@ -207,7 +207,7 @@ class AccountTransferController extends Controller
         $this->authorize('update', $accountTransfer);
 
         if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         DB::transaction(function () use ($accountTransfer, $transactionService) {
@@ -225,7 +225,7 @@ class AccountTransferController extends Controller
         $validated = $request->validate(['reason' => ['required', 'string', 'max:255']]);
 
         if ($accountTransfer->status !== TransactionStatus::POSTED->value) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         DB::transaction(function () use ($accountTransfer, $transactionService, $validated) {
@@ -250,7 +250,7 @@ class AccountTransferController extends Controller
     public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
         if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $before = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
@@ -359,7 +359,7 @@ class AccountTransferController extends Controller
     public function destroy(AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
     {
         if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         $oldValues = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));

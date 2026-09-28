@@ -83,6 +83,20 @@ function isDelete(event) {
     }
 }
 
+// A save or update submitted from a modal keeps the operator on the same page;
+// the dialog's own button already shows "Saving…". Covering the dialog with the
+// book loader hides that and reads as a page change, so any non-GET visit that
+// starts while a dialog is open stays silent.
+function isDialogSubmit(event) {
+    try {
+        const method = String(event?.detail?.visit?.method ?? 'get').toLowerCase()
+        return method !== 'get'
+            && document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]') !== null
+    } catch {
+        return false
+    }
+}
+
 function handleStart(event) {
     if (
         isSamePageReportsRefresh(event)
@@ -90,6 +104,7 @@ function handleStart(event) {
         || isPreferencesMutation(event)
         || isSilentVisit(event)
         || isDelete(event)
+        || isDialogSubmit(event)
     ) return
 
     clearTimeout(hideTimer)

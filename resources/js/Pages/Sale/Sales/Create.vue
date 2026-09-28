@@ -900,8 +900,8 @@ watch(hasDuplicateRows, (hasDuplicates) => {
 const notifyIfDuplicate = (index) => {
     if (isDuplicateRow(index)) {
         const item = form.items[index]
-        const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch'
-        const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry'
+        const batchText = item.batch ? t('general.batch_value', { batch: item.batch }) : t('general.no_batch')
+        const expiryText = item.expire_date ? t('general.expiry_value', { expiry: item.expire_date }) : t('general.no_expiry')
         duplicateToast.value = toast({
             title: t('general.duplicate_item_detected'),
             description: t('general.duplicate_item_detected_description', { batchText: batchText, expiryText: expiryText }),
@@ -1168,7 +1168,7 @@ const saveFormRef = useSaveShortcut({ form })
                     :search-options="{ type: 'customer' }"
                 />
                 <CounterpartHint :ledger="form.selected_ledger" />
-                <NextInput is-required placeholder="Number" v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
+                <NextInput is-required :placeholder="t('general.number')" v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                 <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                 <div class="grid grid-cols-2 gap-2" v-if="general_fields.currency">
                     <NextSelect
@@ -1185,7 +1185,7 @@ const saveFormRef = useSaveShortcut({ form })
                     resource-type="currencies"
                     :search-fields="['name', 'code', 'symbol']"
                 />
-                <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" :disabled="form.selected_currency?.is_base_currency === true" v-model="form.rate" :label="t('general.rate')"/>
+                <NextInput :placeholder="t('general.rate')" :error="form.errors?.rate" type="number" step="any" :disabled="form.selected_currency?.is_base_currency === true" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
 
                 <NextSelect v-if="general_fields.warehouse"

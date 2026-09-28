@@ -192,7 +192,7 @@ class DrawingController extends Controller
     public function edit(Request $request, Drawing $drawing): Response|RedirectResponse
     {
         if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $drawing->load([
@@ -228,7 +228,7 @@ class DrawingController extends Controller
     public function update(DrawingUpdateRequest $request, Drawing $drawing, TransactionService $transactionService, AttachmentService $attachmentService)
     {
         if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $validated = $request->validated();
@@ -303,7 +303,7 @@ class DrawingController extends Controller
         $this->authorize('update', $drawing);
 
         if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         DB::transaction(function () use ($drawing, $transactionService) {
@@ -316,7 +316,7 @@ class DrawingController extends Controller
     public function destroy(Request $request, Drawing $drawing)
     {
         if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         DB::transaction(function () use ($drawing) {
@@ -358,7 +358,7 @@ class DrawingController extends Controller
         $transaction = $drawing->transaction()->firstOrFail();
 
         if ($transaction->status !== TransactionStatus::POSTED->value) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         DB::transaction(function () use ($transactionService, $transaction, $validated, $drawing) {

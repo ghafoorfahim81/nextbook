@@ -194,7 +194,7 @@ class PurchaseOrderController extends Controller
     public function edit(Request $request, PurchaseOrder $purchaseOrder)
     {
         if ($purchaseOrder->status !== PurchaseOrderStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $purchaseOrder->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'supplier', 'currency', 'warehouse']);
@@ -207,7 +207,7 @@ class PurchaseOrderController extends Controller
     public function update(PurchaseOrderUpdateRequest $request, PurchaseOrder $purchaseOrder, ActivityLogService $activityLogService)
     {
         if ($purchaseOrder->status !== PurchaseOrderStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $beforeState = [
@@ -267,7 +267,7 @@ class PurchaseOrderController extends Controller
         $this->authorize('update', $purchaseOrder);
 
         if ($purchaseOrder->status !== PurchaseOrderStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         $purchaseOrder->update([
@@ -292,7 +292,7 @@ class PurchaseOrderController extends Controller
         $this->authorize('update', $purchaseOrder);
 
         if ($purchaseOrder->status !== PurchaseOrderStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be cancelled.');
+            abort(422, __('messages.document.only_draft_can_be_cancelled'));
         }
 
         $purchaseOrder->update([
@@ -315,7 +315,7 @@ class PurchaseOrderController extends Controller
     public function destroy(Request $request, PurchaseOrder $purchaseOrder, ActivityLogService $activityLogService)
     {
         if ($purchaseOrder->status !== PurchaseOrderStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         DB::transaction(function () use ($purchaseOrder, $activityLogService) {

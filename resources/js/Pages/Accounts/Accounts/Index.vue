@@ -246,7 +246,7 @@ const secondaryName = (account) => {
 
 <template>
     <AppLayout :title="t('account.chart_of_accounts')">
-        <div class="flex min-h-0 flex-1 flex-col gap-4">
+        <div class="flex min-h-0 flex-1 flex-col gap-3 lg:gap-4">
             <!-- Toolbar -->
             <div class="shrink-0 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
@@ -321,7 +321,7 @@ const secondaryName = (account) => {
             <!-- Trial-balance strip: Assets = Liabilities + Equity + Income − Expenses -->
             <div
                 v-if="equation"
-                class="shrink-0 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border px-4 py-2.5 text-sm"
+                class="shrink-0 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border px-4 py-2 text-sm"
                 :class="equation.balanced
                     ? 'border-emerald-500/30 bg-emerald-500/5'
                     : 'border-amber-500/40 bg-amber-500/10'"
@@ -376,7 +376,7 @@ const secondaryName = (account) => {
 
             <!-- Grouped table -->
             <div
-                class="min-h-0 flex-1 rounded-md border border-primary overflow-hidden [&>div]:h-full [&>div]:overflow-auto transition-opacity"
+                class="min-h-[22rem] flex-1 rounded-md border border-primary overflow-hidden [&>div]:h-full [&>div]:overflow-auto transition-opacity"
                 :class="{ 'opacity-60 pointer-events-none': loading }"
             >
                 <Table class="min-w-[820px] table-fixed">
@@ -522,11 +522,6 @@ const secondaryName = (account) => {
                         </template>
                     </TableBody>
                 </Table>
-            </div>
-
-            <!-- Footer -->
-            <div class="shrink-0 border-t pt-2 text-xs text-muted-foreground">
-                {{ t('account.total_accounts', { count: totalCount }) }}
             </div>
         </div>
     </AppLayout>

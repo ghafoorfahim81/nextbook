@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'preferences_saved' => 'Preferences saved successfully.',
-    'preferences_reset' => 'Preferences reset successfully.',
-    'invalid_preferences_file' => 'Invalid preferences file.',
+    'preferences_saved' => 'غوره توبونه په بریالیتوب سره خوندي شول.',
+    'preferences_reset' => 'غوره توبونه په بریالیتوب سره بیا تنظیم شول.',
+    'invalid_preferences_file' => 'د غوره توبونو فایل ناسم دی.',
     'tabs' => [
         'transaction' => 'معامله',
     ],

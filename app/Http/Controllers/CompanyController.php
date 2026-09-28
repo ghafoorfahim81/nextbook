@@ -114,7 +114,7 @@ class CompanyController extends Controller
         // dd($request->all());
         // Ensure the user can only update their own company
         if (Auth::user()->company_id !== $company->id) {
-            abort(403, 'Unauthorized to update this company.');
+            abort(403, __('messages.errors.unauthorized_company_update'));
         }
 
         $validated = $request->validated();

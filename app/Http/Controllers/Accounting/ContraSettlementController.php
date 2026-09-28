@@ -199,7 +199,7 @@ class ContraSettlementController extends Controller
         ]);
 
         if ($contraSettlement->status === TransactionStatus::REVERSED->value) {
-            abort(422, 'This set-off has already been reversed.');
+            abort(422, __('messages.document.set_off_already_reversed'));
         }
 
         DB::transaction(function () use ($contraSettlement, $transactions, $validated) {

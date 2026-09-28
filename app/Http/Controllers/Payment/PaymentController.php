@@ -106,7 +106,7 @@ class PaymentController extends Controller
         $this->authorize('update', $payment);
 
         if ($payment->status !== TransactionStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         DB::transaction(function () use ($payment) {
@@ -116,7 +116,7 @@ class PaymentController extends Controller
             $allocations = (array) data_get($draft->posting_payload, 'allocations', []);
 
             if ($voucher === []) {
-                abort(422, 'This draft has no settlement voucher to post.');
+                abort(422, __('messages.document.no_settlement_voucher'));
             }
 
             $draft->delete();
@@ -552,7 +552,7 @@ class PaymentController extends Controller
         ]);
 
         if ($payment->status !== TransactionStatus::POSTED->value) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         DB::transaction(function () use ($payment, $transactionService, $validated) {

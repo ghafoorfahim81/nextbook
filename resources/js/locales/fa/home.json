@@ -136,7 +136,21 @@
     "no_api_key": "کلید API آب و هوا تنظیم نشده",
     "search": "جستجوی شهر",
     "forecast": "پیش‌بینی ۷ روزه",
-    "today": "امروز"
+    "today": "امروز",
+    "conditions": {
+      "clear": "آسمان صاف",
+      "partly_cloudy": "نیمه‌ابری",
+      "overcast": "ابری",
+      "fog": "مه",
+      "drizzle": "نم‌نم باران",
+      "rain": "باران",
+      "snow": "برف",
+      "rain_showers": "رگبار باران",
+      "snow_showers": "بارش برف",
+      "thunderstorm": "رعد و برق",
+      "thunderstorm_hail": "رعد و برق با ژاله",
+      "unknown": "نامعلوم"
+    }
   },
   "date_conversion": {
     "title": "تبدیل تاریخ",

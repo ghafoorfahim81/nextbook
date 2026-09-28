@@ -56,7 +56,7 @@ class ExpenseCategoryController extends Controller
     public function destroy(Request $request, ExpenseCategory $expenseCategory)
     {
         if (!$expenseCategory->canBeDeleted()) {
-            $message = $expenseCategory->getDependencyMessage() ?? 'Cannot delete: category has dependencies.';
+            $message = $expenseCategory->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return redirect()->back()->with('error', $message);
         }
 

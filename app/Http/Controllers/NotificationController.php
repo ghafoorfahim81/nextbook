@@ -141,7 +141,7 @@ class NotificationController extends Controller
             );
         }
 
-        return back()->with('success', 'All notifications marked as read.');
+        return back()->with('success', __('messages.notifications.all_marked_read'));
     }
 
     public function bulk(Request $request): JsonResponse|RedirectResponse
@@ -170,7 +170,7 @@ class NotificationController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Notifications updated.');
+        return back()->with('success', __('messages.notifications.bulk_updated'));
     }
 
     private function baseQuery(User $user): Builder
@@ -205,7 +205,7 @@ class NotificationController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Notification updated.');
+        return back()->with('success', __('messages.notifications.updated'));
     }
 
     /**

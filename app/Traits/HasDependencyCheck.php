@@ -103,14 +103,27 @@ trait HasDependencyCheck
         }
 
         $messages = array_map(function ($dep) {
-            return "{$dep['count']} {$dep['model']}";
+            return "{$dep['count']} " . $this->translateDependencyModel($dep['model']);
         }, $dependencies);
 
         $lastMessage = array_pop($messages);
         $message = empty($messages)
             ? $lastMessage
-            : implode(', ', $messages) . ' and ' . $lastMessage;
+            : implode(__('messages.dependency.list_separator'), $messages)
+                . __('messages.dependency.list_last_separator') . $lastMessage;
 
-        return "Cannot delete this record because it's used in {$message}. Please delete those records first.";
+        return __('messages.dependency.cannot_delete_used_in', ['items' => $message]);
+    }
+
+    /**
+     * Models name their dependents with an English label ("items",
+     * "unit measures"); show it in the user's language when we have one.
+     */
+    protected function translateDependencyModel(string $model): string
+    {
+        $key = 'messages.dependency.models.' . str_replace(' ', '_', $model);
+        $translated = __($key);
+
+        return $translated === $key ? str_replace('_', ' ', $model) : $translated;
     }
 }

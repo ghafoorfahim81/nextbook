@@ -264,8 +264,8 @@ watch(hasDuplicateRows, (hasDuplicates) => {
 const notifyIfDuplicate = (index) => {
   if (isDuplicateRow(index)) {
     const item = form.items[index]
-    const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch'
-    const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry'
+    const batchText = item.batch ? t('general.batch_value', { batch: item.batch }) : t('general.no_batch')
+    const expiryText = item.expire_date ? t('general.expiry_value', { expiry: item.expire_date }) : t('general.no_expiry')
     duplicateToast.value = toast({
       title: t('general.duplicate_item_detected'),
       description: t('general.duplicate_item_detected_description', { batchText: batchText, expiryText: expiryText }),

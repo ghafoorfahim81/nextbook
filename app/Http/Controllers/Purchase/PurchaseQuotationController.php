@@ -193,7 +193,7 @@ class PurchaseQuotationController extends Controller
     public function edit(Request $request, PurchaseQuotation $purchaseQuotation)
     {
         if ($purchaseQuotation->status !== PurchaseQuotationStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $purchaseQuotation->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'supplier', 'currency', 'warehouse']);
@@ -206,7 +206,7 @@ class PurchaseQuotationController extends Controller
     public function update(PurchaseQuotationUpdateRequest $request, PurchaseQuotation $purchaseQuotation, ActivityLogService $activityLogService)
     {
         if ($purchaseQuotation->status !== PurchaseQuotationStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $beforeState = [
@@ -266,7 +266,7 @@ class PurchaseQuotationController extends Controller
         $this->authorize('update', $purchaseQuotation);
 
         if ($purchaseQuotation->status !== PurchaseQuotationStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         $purchaseQuotation->update([
@@ -291,7 +291,7 @@ class PurchaseQuotationController extends Controller
         $this->authorize('update', $purchaseQuotation);
 
         if ($purchaseQuotation->status === PurchaseQuotationStatus::CANCELLED->value) {
-            abort(422, 'Document is already cancelled.');
+            abort(422, __('messages.document.already_cancelled'));
         }
 
         $purchaseQuotation->update([
@@ -343,7 +343,7 @@ class PurchaseQuotationController extends Controller
     public function destroy(Request $request, PurchaseQuotation $purchaseQuotation, ActivityLogService $activityLogService)
     {
         if ($purchaseQuotation->status !== PurchaseQuotationStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         DB::transaction(function () use ($purchaseQuotation, $activityLogService) {

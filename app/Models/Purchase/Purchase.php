@@ -178,7 +178,7 @@ class Purchase extends Model
 
     public function getDependencyMessage(): string
     {
-        return 'You cannot delete this purchase because it has dependencies.';
+        return __('messages.dependency.cannot_delete_document', ['document' => __('messages.dependency.documents.purchase')]);
     }
 
     public function stocks()

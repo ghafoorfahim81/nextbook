@@ -415,7 +415,7 @@ class PurchaseController extends Controller
     public function edit(Request $request, Purchase $purchase)
     {
         if ($purchase->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $bankAccounts = (new Account())->getAccountsByAccountTypeSlug('cash-or-bank');
@@ -447,7 +447,7 @@ class PurchaseController extends Controller
     )
     {
         if ($purchase->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $beforeState = [
@@ -905,7 +905,7 @@ class PurchaseController extends Controller
         $this->authorize('update', $purchase);
 
         if ($purchase->status !== TransactionStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         DB::transaction(function () use ($purchase, $transactionService, $stockService) {
@@ -957,7 +957,7 @@ class PurchaseController extends Controller
         ]);
 
         if ($purchase->status !== TransactionStatus::POSTED->value) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         // A return is raised against this document and takes its quantities and
@@ -1017,7 +1017,7 @@ class PurchaseController extends Controller
     public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService, StockService $stockService)
     {
         if ($purchase->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         $oldValues = [

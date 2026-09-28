@@ -594,7 +594,7 @@ class AccountController extends Controller
         }
 
         if (!$chart_of_account->canBeDeleted()) {
-            $message = $chart_of_account->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $chart_of_account->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return redirect()->route('chart-of-accounts.index')->with('error', $message);
         }
 

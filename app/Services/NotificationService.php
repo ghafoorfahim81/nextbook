@@ -12,6 +12,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Lang;
 
 class NotificationService
 {
@@ -108,12 +109,14 @@ class NotificationService
             $this->notifyUser(
                 user: $user,
                 type: 'new_transaction',
-                title: 'New Posted Transaction',
-                message: sprintf(
-                    'A posted transaction%s was created on %s.',
-                    $transaction->voucher_number ? ' '.$transaction->voucher_number : '',
-                    Carbon::parse($transaction->date)->toDateString()
-                ),
+                title: 'messages.notifications.new_transaction_title',
+                message: $transaction->voucher_number
+                    ? 'messages.notifications.new_transaction_body'
+                    : 'messages.notifications.new_transaction_body_no_voucher',
+                params: [
+                    'voucher' => $transaction->voucher_number,
+                    'date' => Carbon::parse($transaction->date)->toDateString(),
+                ],
                 data: [
                     'transaction_id' => $transaction->id,
                     'reference_type' => $transaction->reference_type,
@@ -138,12 +141,12 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'low_balance',
-                        title: 'Low Balance Alert',
-                        message: sprintf(
-                            'Account %s has a negative balance of %s.',
-                            $account->name,
-                            $this->formatMoney($account->balance)
-                        ),
+                        title: 'messages.notifications.low_balance_title',
+                        message: 'messages.notifications.low_balance_body',
+                        params: [
+                            'account' => $account->name,
+                            'balance' => $this->formatMoney($account->balance),
+                        ],
                         data: [
                             'account_id' => $account->id,
                             'account_name' => $account->name,
@@ -167,13 +170,13 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'low_stock',
-                        title: 'Low Stock Alert',
-                        message: sprintf(
-                            'Item %s is below minimum stock. Available: %s, minimum: %s.',
-                            $item->name,
-                            $this->formatQuantity($item->current_quantity),
-                            $this->formatQuantity($item->minimum_stock)
-                        ),
+                        title: 'messages.notifications.low_stock_title',
+                        message: 'messages.notifications.low_stock_body',
+                        params: [
+                            'item' => $item->name,
+                            'available' => $this->formatQuantity($item->current_quantity),
+                            'minimum' => $this->formatQuantity($item->minimum_stock),
+                        ],
                         data: [
                             'item_id' => $item->id,
                             'item_name' => $item->name,
@@ -198,13 +201,15 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'nearest_expiry',
-                        title: 'Nearest Expiry Alert',
-                        message: sprintf(
-                            'Item %s expires on %s%s.',
-                            $batch->item_name,
-                            $batch->expire_date,
-                            $batch->batch ? ' (batch '.$batch->batch.')' : ''
-                        ),
+                        title: 'messages.notifications.expiry_title',
+                        message: $batch->batch
+                            ? 'messages.notifications.expiry_body_batch'
+                            : 'messages.notifications.expiry_body',
+                        params: [
+                            'item' => $batch->item_name,
+                            'date' => $batch->expire_date,
+                            'batch' => $batch->batch,
+                        ],
                         data: [
                             'stock_balance_id' => $batch->id,
                             'item_id' => $batch->item_id,
@@ -255,12 +260,12 @@ class NotificationService
                         $this->notifyUser(
                             user: $user,
                             type: 'overdue_purchase',
-                            title: 'Overdue Purchase Alert',
-                            message: sprintf(
-                                'Purchase #%s is overdue with %s still payable.',
-                                $purchase['number'],
-                                $this->formatMoney($purchase['outstanding_amount'])
-                            ),
+                            title: 'messages.notifications.overdue_purchase_title',
+                            message: 'messages.notifications.overdue_purchase_body',
+                            params: [
+                                'number' => $purchase['number'],
+                                'amount' => $this->formatMoney($purchase['outstanding_amount']),
+                            ],
                             data: $purchase,
                             dedupeKey: 'overdue-purchase:'.$purchase['id'],
                         );
@@ -280,12 +285,12 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'overdue_sale',
-                        title: 'Overdue Sale Alert',
-                        message: sprintf(
-                            'Sale #%s is overdue with %s still receivable.',
-                            $sale['number'],
-                            $this->formatMoney($sale['outstanding_amount'])
-                        ),
+                        title: 'messages.notifications.overdue_sale_title',
+                        message: 'messages.notifications.overdue_sale_body',
+                        params: [
+                            'number' => $sale['number'],
+                            'amount' => $this->formatMoney($sale['outstanding_amount']),
+                        ],
                         data: $sale,
                         dedupeKey: 'overdue-sale:'.$sale['id'],
                     );
@@ -295,12 +300,12 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'overdue_invoice',
-                        title: 'Overdue Invoice Alert',
-                        message: sprintf(
-                            'Invoice #%s is overdue with %s unpaid.',
-                            $sale['number'],
-                            $this->formatMoney($sale['outstanding_amount'])
-                        ),
+                        title: 'messages.notifications.overdue_invoice_title',
+                        message: 'messages.notifications.overdue_invoice_body',
+                        params: [
+                            'number' => $sale['number'],
+                            'amount' => $this->formatMoney($sale['outstanding_amount']),
+                        ],
                         data: $sale,
                         dedupeKey: 'overdue-invoice:'.$sale['id'],
                     );
@@ -322,8 +327,9 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'sale_paid',
-                        title: 'Sale Paid',
-                        message: sprintf('Sale #%s has been fully paid.', $sale['number']),
+                        title: 'messages.notifications.sale_paid_title',
+                        message: 'messages.notifications.sale_paid_body',
+                        params: ['number' => $sale['number']],
                         data: $sale,
                         dedupeKey: 'sale-paid:'.$sale['id'],
                         dedupeWindow: 'forever',
@@ -346,8 +352,9 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'purchase_paid',
-                        title: 'Purchase Paid',
-                        message: sprintf('Purchase #%s has been fully paid.', $purchase['number']),
+                        title: 'messages.notifications.purchase_paid_title',
+                        message: 'messages.notifications.purchase_paid_body',
+                        params: ['number' => $purchase['number']],
                         data: $purchase,
                         dedupeKey: 'purchase-paid:'.$purchase['id'],
                         dedupeWindow: 'forever',
@@ -369,15 +376,15 @@ class NotificationService
                 $this->notifyUser(
                     user: $user,
                     type: 'daily_summary',
-                    title: 'Daily Transaction Summary',
-                    message: sprintf(
-                        'Posted transactions: %d. Sales: %s. Purchases: %s. Receipts: %s. Payments: %s.',
-                        $summary['transactions_count'],
-                        $this->formatMoney($summary['sales_total']),
-                        $this->formatMoney($summary['purchases_total']),
-                        $this->formatMoney($summary['receipts_total']),
-                        $this->formatMoney($summary['payments_total'])
-                    ),
+                    title: 'messages.notifications.daily_summary_title',
+                    message: 'messages.notifications.daily_summary_body',
+                    params: [
+                        'count' => $summary['transactions_count'],
+                        'sales' => $this->formatMoney($summary['sales_total']),
+                        'purchases' => $this->formatMoney($summary['purchases_total']),
+                        'receipts' => $this->formatMoney($summary['receipts_total']),
+                        'payments' => $this->formatMoney($summary['payments_total']),
+                    ],
                     data: [
                         ...$summary,
                         'branch_id' => $branchId,
@@ -403,13 +410,13 @@ class NotificationService
                 $this->notifyUser(
                     user: $user,
                     type: 'weekly_summary',
-                    title: 'Weekly Financial Summary',
-                    message: sprintf(
-                        'Sales: %s. Purchases: %s. Profit: %s.',
-                        $this->formatMoney($summary['sales_total']),
-                        $this->formatMoney($summary['purchases_total']),
-                        $this->formatMoney($summary['profit'])
-                    ),
+                    title: 'messages.notifications.weekly_summary_title',
+                    message: 'messages.notifications.weekly_summary_body',
+                    params: [
+                        'sales' => $this->formatMoney($summary['sales_total']),
+                        'purchases' => $this->formatMoney($summary['purchases_total']),
+                        'profit' => $this->formatMoney($summary['profit']),
+                    ],
                     data: [
                         ...$summary,
                         'branch_id' => $branchId,
@@ -423,6 +430,12 @@ class NotificationService
         }
     }
 
+    /**
+     * `$title` and `$message` may be translation keys; they are rendered with
+     * `$params` in the recipient's own language. Most notifications are raised
+     * from scheduled jobs, where the app locale is the server default rather
+     * than the language the recipient reads, and the text is stored as-is.
+     */
     public function notifyUser(
         User $user,
         string $type,
@@ -431,6 +444,7 @@ class NotificationService
         array $data = [],
         ?string $dedupeKey = null,
         string $dedupeWindow = 'day',
+        array $params = [],
     ): ?Notification {
         if (! $this->userAllows($user, $type)) {
             return null;
@@ -439,6 +453,10 @@ class NotificationService
         if ($dedupeKey && $this->duplicateExists($user, $type, $dedupeKey, $dedupeWindow)) {
             return null;
         }
+
+        $locale = $this->localeFor($user);
+        $title = $this->translateFor($title, $params, $locale);
+        $message = $this->translateFor($message, $params, $locale);
 
         $notification = Notification::create([
             'user_id' => $user->id,
@@ -456,6 +474,23 @@ class NotificationService
         $this->maybeSendEmail($user, $title, $message);
 
         return $notification;
+    }
+
+    protected function localeFor(User $user): string
+    {
+        $locale = strtolower(trim((string) $user->locale));
+
+        // 'pa' is the historical code for Pashto; see SetLocale.
+        if ($locale === 'pa') {
+            $locale = 'ps';
+        }
+
+        return in_array($locale, ['en', 'fa', 'ps'], true) ? $locale : config('app.locale');
+    }
+
+    protected function translateFor(string $text, array $params, string $locale): string
+    {
+        return Lang::has($text, $locale) ? __($text, $params, $locale) : $text;
     }
 
     protected function userAllows(User $user, string $type): bool

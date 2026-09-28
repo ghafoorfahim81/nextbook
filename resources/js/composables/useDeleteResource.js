@@ -69,7 +69,10 @@ export function useDeleteResource() {
                             const flashedError = page?.props?.flash?.error || page?.props?.error
                             if (flashedError) {
                                 play('warning')
-                                toast.error(flashedError, {
+                                // A short headline, with the server's full
+                                // reason underneath; using the reason for both
+                                // printed the same sentence twice.
+                                toast.error(t('general.delete_blocked_title'), {
                                     description: flashedError,
                                     class: 'bg-pink-600 text-white',
                                     duration: 8000,
@@ -169,30 +172,18 @@ export function useDeleteResource() {
                             options?.onSuccess?.()
                         },
                         onError: (errors) => {
-                            // Determine dependency error for custom messaging/styling
-                            let errorMessage = t('general.delete_error_message')
-                            let isDependencyError = false
-
-                            if (errors?.category) {
-                                errorMessage = errors.category
-                                isDependencyError = true
-                            } else if (errors?.message) {
-                                errorMessage = errors.message
-                                isDependencyError =
-                                    errorMessage.includes('Cannot delete this record') ||
-                                    errorMessage.includes('dependencies') ||
-                                    errorMessage.includes('used in')
-                            } else if (errors?.error) {
-                                errorMessage = errors.error
-                                isDependencyError =
-                                    errorMessage.includes('Cannot delete this record') ||
-                                    errorMessage.includes('dependencies') ||
-                                    errorMessage.includes('used in')
-                            }
+                            // A message from the server is a rule refusing the
+                            // delete (dependencies, posted document, ...), already
+                            // translated. Matching its English wording broke as
+                            // soon as it arrived in Dari or Pashto, so treat any
+                            // server message as a refusal: retrying won't help.
+                            const serverMessage = errors?.category || errors?.message || errors?.error
+                            const isDependencyError = Boolean(serverMessage)
+                            const errorMessage = serverMessage || t('general.delete_error_message')
 
                             if (isDependencyError) play('warning')
 
-                            toast.error(errorMessage?.title ? errorMessage.title : errorMessage, {
+                            toast.error(isDependencyError ? t('general.delete_blocked_title') : t('general.error'), {
                                 description: errorMessage,
                                 class: 'bg-pink-600 text-white',
                                 duration: isDependencyError ? 10000 : 7000,

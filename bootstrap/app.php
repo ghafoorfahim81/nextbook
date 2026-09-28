@@ -26,15 +26,22 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthorizationException $e, $request) {
+            // Laravel fills in its own untranslated English default when a
+            // policy denies without a reason; show ours in the user's language.
+            $message = $e->getMessage();
+            if ($message === '' || $message === 'This action is unauthorized.') {
+                $message = __('messages.errors.unauthorized');
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => $e->getMessage() ?: 'This action is unauthorized.',
+                    'message' => $message,
                 ], 403);
             }
 
             return Inertia::render('Errors/Forbidden', [
                 'status' => 403,
-                'message' => $e->getMessage() ?: 'This action is unauthorized.',
+                'message' => $message,
             ])->toResponse($request)->setStatusCode(403);
         });
     })->create();

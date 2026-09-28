@@ -137,5 +137,9 @@
         "opening": "بست‌های خالی",
         "application": "درخواست‌ها",
         "interview": "مصاحبه‌ها"
+    },
+    "system": {
+        "deleted_records": "رکوردهای حذف‌شده",
+        "activity_logs": "فعالیت‌های کاربران"
     }
 }

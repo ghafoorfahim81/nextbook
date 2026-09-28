@@ -81,8 +81,8 @@ const submit = () => {
         },
         onError: () => {
             toast({
-                title: 'Error',
-                description: 'Something went wrong',
+                title: t('general.error'),
+                description: t('general.something_went_wrong'),
                 variant: 'destructive',
                 class:'bg-red-600 text-white',
                 duration: Infinity,

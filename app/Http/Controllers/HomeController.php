@@ -73,7 +73,7 @@ class HomeController extends Controller
             ->first(['code', 'exchange_rate', 'is_base_currency']);
 
         if (! $from || ! $to) {
-            return response()->json(['error' => 'Currency not found'], 404);
+            return response()->json(['error' => __('messages.errors.currency_not_found')], 404);
         }
 
         // Normalise to base currency first, then convert to target.
@@ -122,11 +122,11 @@ class HomeController extends Controller
             ->first(['id', 'name', 'symbol', 'value', 'quantity_id']);
 
         if (! $from || ! $to) {
-            return response()->json(['error' => 'Unit not found'], 404);
+            return response()->json(['error' => __('messages.errors.unit_not_found')], 404);
         }
 
         if ($from->quantity_id !== $to->quantity_id) {
-            return response()->json(['error' => 'Units belong to different quantity types'], 422);
+            return response()->json(['error' => __('messages.errors.units_different_quantity')], 422);
         }
 
         $fromValue = (float) $from->value ?: 1.0;
@@ -162,7 +162,7 @@ class HomeController extends Controller
             ]);
 
             if ($geoResponse->failed() || empty($geoResponse->json('results'))) {
-                return response()->json(['error' => 'City not found'], 404);
+                return response()->json(['error' => __('messages.errors.city_not_found')], 404);
             }
 
             $location = $geoResponse->json('results.0');
@@ -183,7 +183,7 @@ class HomeController extends Controller
             ]);
 
             if ($forecastResponse->failed()) {
-                return response()->json(['error' => 'Weather data unavailable'], 502);
+                return response()->json(['error' => __('messages.errors.weather_unavailable')], 502);
             }
 
             $data    = $forecastResponse->json();
@@ -216,7 +216,7 @@ class HomeController extends Controller
                 'forecast'    => $forecast,
             ]);
         } catch (\Throwable) {
-            return response()->json(['error' => 'Failed to fetch weather data'], 502);
+            return response()->json(['error' => __('messages.errors.weather_fetch_failed')], 502);
         }
     }
 }

@@ -193,7 +193,7 @@ class SaleQuotationController extends Controller
     public function edit(Request $request, SaleQuotation $saleQuotation)
     {
         if ($saleQuotation->status !== SaleQuotationStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $saleQuotation->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'customer', 'currency', 'warehouse']);
@@ -206,7 +206,7 @@ class SaleQuotationController extends Controller
     public function update(SaleQuotationUpdateRequest $request, SaleQuotation $saleQuotation, ActivityLogService $activityLogService)
     {
         if ($saleQuotation->status !== SaleQuotationStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $beforeState = [
@@ -266,7 +266,7 @@ class SaleQuotationController extends Controller
         $this->authorize('update', $saleQuotation);
 
         if ($saleQuotation->status !== SaleQuotationStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         $saleQuotation->update([
@@ -291,7 +291,7 @@ class SaleQuotationController extends Controller
         $this->authorize('update', $saleQuotation);
 
         if ($saleQuotation->status === SaleQuotationStatus::CANCELLED->value) {
-            abort(422, 'Document is already cancelled.');
+            abort(422, __('messages.document.already_cancelled'));
         }
 
         $saleQuotation->update([
@@ -343,7 +343,7 @@ class SaleQuotationController extends Controller
     public function destroy(Request $request, SaleQuotation $saleQuotation, ActivityLogService $activityLogService)
     {
         if ($saleQuotation->status !== SaleQuotationStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         DB::transaction(function () use ($saleQuotation, $activityLogService) {

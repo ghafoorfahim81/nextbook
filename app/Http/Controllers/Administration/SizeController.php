@@ -60,7 +60,7 @@ class SizeController extends Controller
 
         // Check for dependencies before deletion
         if (!$size->canBeDeleted()) {
-            $message = $size->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $size->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return inertia('Administration/Sizes/Index', [
                 'error' => $message
             ]);

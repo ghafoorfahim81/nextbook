@@ -9,7 +9,6 @@
   "next": "راتلونکی",
   "show": "نمایش",
   "print": "چاپ",
-  "show_filter_options": "د {title} لپاره د فلټر اختیارونه وښایئ"
+  "show_filter_options": "د {title} لپاره د فلټر اختیارونه وښایئ",
+  "page": "{page} پاڼه له {total} څخه"
 }
-
-

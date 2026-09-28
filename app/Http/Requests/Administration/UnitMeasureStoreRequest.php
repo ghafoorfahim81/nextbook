@@ -40,7 +40,7 @@ class UnitMeasureStoreRequest extends FormRequest
                 if ($metric) {
                     $existingMeasure = $metric->measures()->where('name', $measureData['name'])->whereNull('deleted_at')->first();
                     if ($existingMeasure) {
-                        $validator->errors()->add('measure', 'A measure with this name already exists for the selected quantity type.');
+                        $validator->errors()->add('measure', __('messages.validation.measure_name_exists'));
                     }
                 }
             }

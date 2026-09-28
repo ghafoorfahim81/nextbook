@@ -299,7 +299,8 @@
         "start_date": "د پیل نېټه",
         "end_date": "د پای نېټه",
         "days_remaining": "پاتې ورځې",
-        "variant": "ډول"
+        "variant": "ډول",
+        "unit_measure": "د اندازه کولو واحد"
     },
     "view_types": {
         "general": "عمومي لید",

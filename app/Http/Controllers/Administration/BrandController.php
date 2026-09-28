@@ -68,7 +68,7 @@ class BrandController extends Controller
 
         // Check for dependencies before deletion
         if (!$brand->canBeDeleted()) {
-            $message = $brand->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $brand->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return inertia('Administration/Brands/Index', [
                 'error' => $message
             ]);

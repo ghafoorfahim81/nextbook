@@ -14,6 +14,7 @@ import { createInertiaApp, Head, Link, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { ConfigProvider } from 'radix-vue';
+import { ConfigProvider as RekaConfigProvider } from 'reka-ui';
 import vSelect from 'vue-select'; // ✅ Import v-select
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { createI18nInstance } from './lib/i18n'
@@ -106,7 +107,12 @@ createInertiaApp({
             // direction, so every portalled primitive stamps 'rtl' instead of the
             // default. Reading the ref inside render() keeps it live across
             // language switches, which are a POST + redirect, not a remount.
-            render: () => h(ConfigProvider, { dir: documentDirection.value }, () => h(App, props)),
+            // The select, switch and accordion primitives come from reka-ui,
+            // which reads its own ConfigProvider, not radix-vue's; without it
+            // their portalled dropdowns stamped dir='ltr' in Persian and Pashto.
+            render: () => h(ConfigProvider, { dir: documentDirection.value }, () =>
+                h(RekaConfigProvider, { dir: documentDirection.value }, () => h(App, props)),
+            ),
         })
             .use(plugin)
             .use(i18n)

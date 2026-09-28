@@ -102,7 +102,7 @@ class ItemTransferService
             // If transfer is completed, cannot update
             if ($transfer->status === TransactionStatus::POSTED) {
                 throw ValidationException::withMessages([
-                    'status' => ['Cannot update a completed transfer.'],
+                    'status' => [__('messages.transfer.cannot_update_completed')],
                 ]);
             }
 
@@ -170,13 +170,13 @@ class ItemTransferService
         return DB::transaction(function () use ($transfer) {
             if ($transfer->status === TransactionStatus::POSTED) {
                 throw ValidationException::withMessages([
-                    'status' => ['Transfer is already completed.'],
+                    'status' => [__('messages.transfer.already_completed')],
                 ]);
             }
 
             if ($transfer->status === TransactionStatus::REVERSED) {
                 throw ValidationException::withMessages([
-                    'status' => ['Cannot complete a cancelled transfer.'],
+                    'status' => [__('messages.transfer.cannot_complete_cancelled')],
                 ]);
             }
 
@@ -278,7 +278,7 @@ class ItemTransferService
         return DB::transaction(function () use ($transfer) {
             if ($transfer->status === TransactionStatus::REVERSED) {
                 throw ValidationException::withMessages([
-                    'status' => ['Transfer is already cancelled.'],
+                    'status' => [__('messages.transfer.already_cancelled')],
                 ]);
             }
 
@@ -561,7 +561,7 @@ class ItemTransferService
                 $itemModel = \App\Models\Inventory\Item::find($itemId);
                 $itemName = $itemModel->name ?? 'Unknown';
                 throw ValidationException::withMessages([
-                    'items' => ["Insufficient stock for item '{$itemName}'. Available: {$stockLevel['available']}, Required: {$quantity}."],
+                    'items' => [__('messages.stock.insufficient_for_item', ['item' => $itemName, 'available' => $stockLevel['available'], 'required' => $quantity])],
                 ]);
             }
         }

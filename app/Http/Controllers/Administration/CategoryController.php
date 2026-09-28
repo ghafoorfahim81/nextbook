@@ -105,7 +105,7 @@ class CategoryController extends Controller
     {
         // Check for dependencies before deletion
         if (!$category->canBeDeleted()) {
-            $message = $category->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $category->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return inertia('Administration/Categories/Index', [
                 'error' => $message
             ]);
