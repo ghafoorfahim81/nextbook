@@ -54,7 +54,7 @@ const performToggleActive = () => {
         onSuccess: () => {
             const flashError = page.props.flash?.error;
             if (flashError) {
-                toast.error(flashError, { class: 'bg-pink-600 text-white' });
+                toast.error(t('general.status_change_blocked_title'), { description: flashError, class: 'bg-pink-600 text-white' });
                 return;
             }
             toast.success(t('general.success'), {

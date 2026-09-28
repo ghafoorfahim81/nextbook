@@ -430,15 +430,15 @@ watch(hasDuplicateRows, (hasDuplicates) => {
 const notifyIfDuplicate = (index) => {
     if (isDuplicateRow(index)) {
         const item = form.items[index];
-        const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch';
-        const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry';
+        const batchText = item.batch ? t('general.batch_value', { batch: item.batch }) : t('general.no_batch');
+        const expiryText = item.expire_date ? t('general.expiry_value', { expiry: item.expire_date }) : t('general.no_expiry');
         duplicateToast.value = toast({
             title: t('purchase.duplicate_item_detected'),
-            description: `Same item with ${batchText} and ${expiryText} already exists.`,
+            description: t('general.duplicate_item_detected_description', { batchText, expiryText }),
             variant: 'destructive',
             class: 'bg-pink-600 text-white',
             duration: Infinity,
-            action: h(ToastAction, { altText: 'Unselect', onClick: () => resetRow(index) }, { default: () => 'Unselect' }),
+            action: h(ToastAction, { altText: t('general.unselect'), onClick: () => resetRow(index) }, { default: () => t('general.unselect') }),
         });
     }
 };
@@ -799,7 +799,7 @@ const saveFormRef = useSaveShortcut({ form });
                         is-required
                         v-if="general_fields.number"
                         v-model="form.number"
-                        placeholder="Number"
+                        :placeholder="t('general.number')"
                         :error="form.errors?.number"
                         type="number"
                         :label="t('general.bill_number')"
@@ -828,7 +828,7 @@ const saveFormRef = useSaveShortcut({ form });
                         />
                         <NextInput
                             v-model="form.rate"
-                            placeholder="Rate"
+                            :placeholder="t('general.rate')"
                             :error="form.errors?.rate"
                             type="number"
                             step="any"

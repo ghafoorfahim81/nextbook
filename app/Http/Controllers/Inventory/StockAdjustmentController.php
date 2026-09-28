@@ -149,7 +149,7 @@ class StockAdjustmentController extends Controller
     public function edit(Request $request, StockAdjustment $stockAdjustment)
     {
         if ($stockAdjustment->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $stockAdjustment->load([
@@ -173,7 +173,7 @@ class StockAdjustmentController extends Controller
     public function update(StockAdjustmentUpdateRequest $request, StockAdjustment $stockAdjustment, AttachmentService $attachmentService)
     {
         if ($stockAdjustment->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $this->adjustmentService->update($stockAdjustment, $request->validated());
@@ -194,7 +194,7 @@ class StockAdjustmentController extends Controller
     public function destroy(Request $request, StockAdjustment $stockAdjustment, ActivityLogService $activityLogService)
     {
         if ($stockAdjustment->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         DB::transaction(function () use ($stockAdjustment, $activityLogService) {

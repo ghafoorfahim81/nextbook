@@ -24,7 +24,10 @@
         "recruitment": "ګمارنه",
         "trash": "کثافت دانی",
         "expense": "مصارف",
-        "contra_settlement": "تهاتر"
+        "contra_settlement": "تهاتر",
+        "reports": "راپورونه",
+        "system": "سیستم",
+        "deleted_records": "ړنګ شوي ریکارډونه"
     },
     "administration": {
         "category": "کټګوري",
@@ -123,5 +126,19 @@
         "opening": "خالي بستونه",
         "application": "غوښتنې",
         "interview": "مرکې"
+    },
+    "expense": {
+        "expense": "لګښت",
+        "expenses": "لګښتونه",
+        "expense_category": "د لګښت کټګوري"
+    },
+    "reports": {
+        "reports": "راپورونه",
+        "report": "راپور",
+        "activity_logs": "د کاروونکو فعالیت"
+    },
+    "system": {
+        "deleted_records": "ړنګ شوي ریکارډونه",
+        "activity_logs": "د کاروونکو فعالیتونه"
     }
 }

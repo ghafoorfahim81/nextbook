@@ -33,11 +33,11 @@ class ExpenseStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'details.required' => 'At least one expense detail is required.',
-            'details.min' => 'At least one expense detail is required.',
-            'details.*.amount.required' => 'Amount is required for each detail.',
-            'details.*.amount.min' => 'Amount must be greater than 0.',
-            'details.*.title.required' => 'Title is required for each detail.',
+            'details.required' => __('messages.validation.expense_detail_required'),
+            'details.min' => __('messages.validation.expense_detail_required'),
+            'details.*.amount.required' => __('messages.validation.expense_detail_amount_required'),
+            'details.*.amount.min' => __('messages.validation.expense_detail_amount_min'),
+            'details.*.title.required' => __('messages.validation.expense_detail_title_required'),
         ];
     }
 }

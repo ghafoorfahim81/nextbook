@@ -301,5 +301,15 @@
   "error_creating_sale": "The sale could not be saved.",
   "error_creating_sale_order": "The sale order could not be saved.",
   "error_creating_purchase_order": "The purchase order could not be saved.",
-  "something_went_wrong": "Something went wrong. Please try again."
+  "something_went_wrong": "Something went wrong. Please try again.",
+  "batch_value": "Batch: {batch}",
+  "no_batch": "No batch",
+  "expiry_value": "Expiry: {expiry}",
+  "no_expiry": "No expiry",
+  "failed_to_load_details": "Failed to load details.",
+  "status_updated": "Status updated successfully.",
+  "status_update_failed": "Failed to update status.",
+  "please_add_at_least_one_item_to_update_sale": "Please add at least one item to update the sale",
+  "delete_blocked_title": "Related records found!",
+  "status_change_blocked_title": "Status could not be changed"
 }

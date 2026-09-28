@@ -130,5 +130,12 @@
         "phone": "تلفن",
         "country": "کشور",
         "province": "ولایت"
+    },
+    "payment_term": {
+        "payment_term": "شرایط پرداخت",
+        "payment_terms": "شرایط پرداخت",
+        "name": "نام",
+        "days": "روزها",
+        "type": "نوع"
     }
 }

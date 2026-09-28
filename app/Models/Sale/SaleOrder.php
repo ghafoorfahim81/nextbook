@@ -117,7 +117,7 @@ class SaleOrder extends Model
 
     public function getDependencyMessage(): string
     {
-        return 'You cannot delete this sale order because it has dependencies.';
+        return __('messages.dependency.cannot_delete_document', ['document' => __('messages.dependency.documents.sale_order')]);
     }
 
     public function orderTotal(): float

@@ -181,7 +181,7 @@ class Sale extends Model
 
     public function getDependencyMessage(): string
     {
-        return 'You cannot delete this sale because it has dependencies.';
+        return __('messages.dependency.cannot_delete_document', ['document' => __('messages.dependency.documents.sale')]);
     }
     public function warehouse()
     {

@@ -226,7 +226,7 @@ const saveFormRef = useSaveShortcut({ form })
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
              />
-            <NextInput is-required placeholder="Rate" :disabled="form.selected_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+            <NextInput is-required :placeholder="t('general.rate')" :disabled="form.selected_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
             
           </div>
 

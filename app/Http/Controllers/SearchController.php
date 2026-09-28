@@ -54,7 +54,7 @@ class SearchController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => __('messages.errors.validation_failed'),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -105,7 +105,7 @@ class SearchController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Search failed',
+                'message' => __('messages.errors.search_failed'),
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -342,7 +342,7 @@ class SearchController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => __('messages.errors.validation_failed'),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -355,7 +355,7 @@ class SearchController extends Controller
         if (!$warehouseId || !Warehouse::query()->where('id', $warehouseId)->first()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Warehouse not found',
+                'message' => __('messages.errors.warehouse_not_found'),
             ], 404);
         }
 
@@ -375,7 +375,7 @@ class SearchController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Search failed',
+                'message' => __('messages.errors.search_failed'),
                 'error' => $e->getMessage()
             ], 500);
         }

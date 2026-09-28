@@ -67,11 +67,11 @@ class LandedCostRequest extends FormRequest
 
             $items->each(function ($item, $index) use ($validator) {
                 if (blank(data_get($item, 'quantity'))) {
-                    $validator->errors()->add("items.$index.quantity", 'Quantity is required.');
+                    $validator->errors()->add("items.$index.quantity", __('messages.validation.quantity_required'));
                 }
 
                 if (blank(data_get($item, 'unit_cost'))) {
-                    $validator->errors()->add("items.$index.unit_cost", 'Unit cost is required.');
+                    $validator->errors()->add("items.$index.unit_cost", __('messages.validation.unit_cost_required'));
                 }
             });
 

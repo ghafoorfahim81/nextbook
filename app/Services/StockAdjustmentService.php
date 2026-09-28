@@ -94,7 +94,7 @@ class StockAdjustmentService
         return DB::transaction(function () use ($adjustment, $data) {
             if ($adjustment->status !== TransactionStatus::DRAFT->value) {
                 throw ValidationException::withMessages([
-                    'status' => ['Only draft documents can be edited.'],
+                    'status' => [__('messages.document.only_draft_can_be_edited')],
                 ]);
             }
 
@@ -156,7 +156,7 @@ class StockAdjustmentService
         return DB::transaction(function () use ($adjustment) {
             if ($adjustment->status !== TransactionStatus::DRAFT->value) {
                 throw ValidationException::withMessages([
-                    'status' => ['Only draft documents can be posted.'],
+                    'status' => [__('messages.document.only_draft_can_be_posted')],
                 ]);
             }
 
@@ -207,7 +207,7 @@ class StockAdjustmentService
         return DB::transaction(function () use ($adjustment, $reason) {
             if ($adjustment->status !== TransactionStatus::POSTED->value) {
                 throw ValidationException::withMessages([
-                    'status' => ['Only posted documents can be reversed.'],
+                    'status' => [__('messages.document.only_posted_can_be_reversed')],
                 ]);
             }
 
@@ -364,7 +364,7 @@ class StockAdjustmentService
 
             if (!$inventoryAccountId) {
                 throw ValidationException::withMessages([
-                    'items' => ["No inventory account configured for item '{$itemModel->name}'."],
+                    'items' => [__('messages.stock.no_inventory_account', ['item' => $itemModel->name])],
                 ]);
             }
 
@@ -464,7 +464,7 @@ class StockAdjustmentService
 
             if (!$accountId) {
                 throw ValidationException::withMessages([
-                    'reason' => ["Offset account '{$slug}' not found. Please seed accounts 9040/9050 first."],
+                    'reason' => [__('messages.stock.offset_account_missing', ['account' => $slug])],
                 ]);
             }
 

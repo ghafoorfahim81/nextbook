@@ -103,7 +103,7 @@ class InvoiceFormatController extends Controller
 
         $invoiceFormat->delete();
 
-        return response()->json(['message' => 'Invoice format deleted.']);
+        return response()->json(['message' => __('messages.invoice_format_deleted')]);
     }
 
     public function setDefault(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse

@@ -238,7 +238,7 @@ const saveFormRef = useSaveShortcut({ form })
             :search-options="{ types: ['customer', 'supplier'] }"
             :search-fields="['name', 'email', 'phone_no']"
           />
-          <NextInput is-required v-if="rpFields.number" placeholder="Number" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
+          <NextInput is-required v-if="rpFields.number" :placeholder="t('general.number')" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextInput is-required :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
@@ -256,7 +256,7 @@ const saveFormRef = useSaveShortcut({ form })
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput is-required v-if="rpFields.currency" placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput is-required v-if="rpFields.currency" :placeholder="t('general.rate')" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextSelect
             :options="paymentModes"
             v-model="form.payment_mode"
@@ -297,7 +297,7 @@ const saveFormRef = useSaveShortcut({ form })
               {{ form.allocations.length }} {{ t('general.bills_selected') || 'bills selected' }}
             </p>
           </div>
-          <NextInput v-if="rpFields.cheque_number" placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
+          <NextInput v-if="rpFields.cheque_number" :placeholder="t('general.cheque_no')" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
               <NextTextarea :placeholder="t('general.enter', { text: t('general.narration') })" :error="form.errors?.narration" v-model="form.narration" :label="t('general.narration')" />

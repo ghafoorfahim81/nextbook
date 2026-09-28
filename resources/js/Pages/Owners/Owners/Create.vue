@@ -185,10 +185,10 @@ const saveFormRef = useSaveShortcut({ form })
                         resource-type="currencies"
                         :search-fields="['name', 'code', 'symbol']"
                          />
-                        <NextInput placeholder="Rate" :disabled="form.selected_opening_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                        <NextInput :placeholder="t('general.rate')" :disabled="form.selected_opening_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
                         
                       </div>
-                      <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+                      <NextInput :placeholder="t('general.amount')" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                   </div>
               </div>
           </div>

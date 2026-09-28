@@ -309,11 +309,12 @@ class LeaveRequestService
         $this->notifications->notifyUser(
             user: $user,
             type: 'leave_request_pending',
-            title: __('hr.notifications.leave_pending_title'),
-            message: __('hr.notifications.leave_pending_body', [
+            title: 'hr.notifications.leave_pending_title',
+            message: 'hr.notifications.leave_pending_body',
+            params: [
                 'employee' => $request->employee?->full_name ?? '',
                 'days' => (float) $request->days,
-            ]),
+            ],
             data: [
                 'leave_request_id' => $request->id,
                 'employee_id' => $request->employee_id,
@@ -337,11 +338,12 @@ class LeaveRequestService
         $this->notifications->notifyUser(
             user: $user,
             type: $key,
-            title: __("hr.notifications.{$key}_title"),
-            message: __("hr.notifications.{$key}_body", [
+            title: "hr.notifications.{$key}_title",
+            message: "hr.notifications.{$key}_body",
+            params: [
                 'from' => $request->from_date?->toDateString() ?? '',
                 'to' => $request->to_date?->toDateString() ?? '',
-            ]),
+            ],
             data: [
                 'leave_request_id' => $request->id,
                 'from' => (string) ($request->from_date ?? ''),

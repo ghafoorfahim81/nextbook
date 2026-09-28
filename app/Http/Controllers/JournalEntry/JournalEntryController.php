@@ -210,7 +210,7 @@ class JournalEntryController extends Controller
     )
     {
         if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $validated = $request->validated();
@@ -310,7 +310,7 @@ class JournalEntryController extends Controller
     public function destroy(Request $request, JournalEntry $journalEntry, ActivityLogService $activityLogService)
     {
         if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         $oldValues = [
@@ -349,7 +349,7 @@ class JournalEntryController extends Controller
         $this->authorize('update', $journalEntry);
 
         if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         DB::transaction(function () use ($journalEntry, $transactionService) {
@@ -375,7 +375,7 @@ class JournalEntryController extends Controller
         ]);
 
         if ($journalEntry->status !== TransactionStatus::POSTED->value) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         DB::transaction(function () use ($journalEntry, $transactionService, $validated) {

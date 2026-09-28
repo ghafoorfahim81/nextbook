@@ -205,7 +205,7 @@ class ExpenseController extends Controller
         $this->authorize('update', $expense);
 
         if ($expense->status !== TransactionStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         DB::transaction(function () use ($expense, $transactionService) {
@@ -225,7 +225,7 @@ class ExpenseController extends Controller
         ]);
 
         if ($expense->status !== TransactionStatus::POSTED->value) {
-            abort(422, 'Only posted documents can be reversed.');
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
         }
 
         DB::transaction(function () use ($expense, $transactionService, $validated) {
@@ -264,7 +264,7 @@ class ExpenseController extends Controller
     )
     {
         if ($expense->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $beforeState = [
@@ -365,7 +365,7 @@ class ExpenseController extends Controller
     public function destroy(Request $request, Expense $expense, ActivityLogService $activityLogService)
     {
         if ($expense->status !== TransactionStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         $oldValues = [

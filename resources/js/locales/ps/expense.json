@@ -14,6 +14,7 @@
   "create_error": "د مصرف جوړولو کې تېروتنه",
   "update_error": "د مصرف تازه کولو کې تېروتنه",
   "error": "تېروتنه",
-  "at_least_one_detail": "لږ تر لږه یو د مصرف توضیحات ضروري دي"
+  "at_least_one_detail": "لږ تر لږه یو د مصرف توضیحات ضروري دي",
+  "description_remark_placeholder": "د لګښت تشریح، لکه خواړه، کرایه او نور",
+  "expnese_general_description": "د لګښت عمومي تشریح، لکه د فبرورۍ ۲۰۲۶ کرایه"
 }
-

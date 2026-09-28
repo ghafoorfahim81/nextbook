@@ -519,7 +519,7 @@ class ItemController extends Controller
         try {
             // Check for dependencies before deletion
             if (!$item->canBeDeleted()) {
-                $message = $item->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+                $message = $item->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
                 return inertia('Inventories/Items/Index', [
                     'error' => $message
                 ]);

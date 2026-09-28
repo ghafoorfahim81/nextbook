@@ -71,7 +71,7 @@ class WarehouseController extends Controller
     public function destroy(Request $request, Warehouse $warehouse)
     {
         if (!$warehouse->canBeDeleted()) {
-            $message = $warehouse->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $warehouse->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return inertia('Administration/Warehouses/Index', [
                 'error' => $message,
             ]);

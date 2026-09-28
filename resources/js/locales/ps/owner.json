@@ -1,0 +1,18 @@
+{
+  "owner": "مالک",
+  "owners": "مالکان",
+  "drawing": "اخیستنه",
+  "capital": "پانګه",
+  "capital_account": "د پانګې حساب",
+  "drawing_account": "د اخیستنې حساب",
+  "father_name": "د پلار نوم",
+  "nic": "د تذکرې شمېره",
+  "email": "برېښنالیک",
+  "address": "پته",
+  "phone_number": "د تلیفون شمېره",
+  "ownership_percentage": "د ملکیت سلنه",
+  "is_active": "فعال",
+  "capital_contribution": "د پانګې ونډه",
+  "cash_received": "ترلاسه شوې نغدي پیسې",
+  "drawing_history": "د اخیستنې تاریخچه"
+}

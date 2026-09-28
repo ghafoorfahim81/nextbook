@@ -118,6 +118,6 @@ class ItemTransfer extends Model
 
     public function getDependencyMessage(): string
     {
-        return 'You cannot delete this transfer because it has dependencies.';
+        return __('messages.dependency.cannot_delete_document', ['document' => __('messages.dependency.documents.item_transfer')]);
     }
 }

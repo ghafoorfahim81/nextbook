@@ -136,7 +136,21 @@
     "no_api_key": "Weather API key not configured",
     "search": "Search city",
     "forecast": "7-Day Forecast",
-    "today": "Today"
+    "today": "Today",
+    "conditions": {
+      "clear": "Clear sky",
+      "partly_cloudy": "Partly cloudy",
+      "overcast": "Overcast",
+      "fog": "Fog",
+      "drizzle": "Drizzle",
+      "rain": "Rain",
+      "snow": "Snow",
+      "rain_showers": "Rain showers",
+      "snow_showers": "Snow showers",
+      "thunderstorm": "Thunderstorm",
+      "thunderstorm_hail": "Thunderstorm with hail",
+      "unknown": "Unknown"
+    }
   },
   "date_conversion": {
     "title": "Date Conversion",

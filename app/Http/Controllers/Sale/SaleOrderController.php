@@ -194,7 +194,7 @@ class SaleOrderController extends Controller
     public function edit(Request $request, SaleOrder $saleOrder)
     {
         if ($saleOrder->status !== SaleOrderStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $saleOrder->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'customer', 'currency', 'warehouse']);
@@ -207,7 +207,7 @@ class SaleOrderController extends Controller
     public function update(SaleOrderUpdateRequest $request, SaleOrder $saleOrder, ActivityLogService $activityLogService)
     {
         if ($saleOrder->status !== SaleOrderStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be edited.');
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
         $beforeState = [
@@ -267,7 +267,7 @@ class SaleOrderController extends Controller
         $this->authorize('update', $saleOrder);
 
         if ($saleOrder->status !== SaleOrderStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be posted.');
+            abort(422, __('messages.document.only_draft_can_be_posted'));
         }
 
         $saleOrder->update([
@@ -292,7 +292,7 @@ class SaleOrderController extends Controller
         $this->authorize('update', $saleOrder);
 
         if ($saleOrder->status !== SaleOrderStatus::DRAFT->value) {
-            abort(422, 'Only draft documents can be cancelled.');
+            abort(422, __('messages.document.only_draft_can_be_cancelled'));
         }
 
         $saleOrder->update([
@@ -315,7 +315,7 @@ class SaleOrderController extends Controller
     public function destroy(Request $request, SaleOrder $saleOrder, ActivityLogService $activityLogService)
     {
         if ($saleOrder->status !== SaleOrderStatus::DRAFT->value) {
-            return back()->with('error', 'Only draft documents can be deleted.');
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
         }
 
         DB::transaction(function () use ($saleOrder, $activityLogService) {

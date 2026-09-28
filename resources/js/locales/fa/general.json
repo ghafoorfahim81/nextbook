@@ -304,5 +304,15 @@
   "error_creating_sale": "فروش ذخیره نشد.",
   "error_creating_sale_order": "سفارش فروش ذخیره نشد.",
   "error_creating_purchase_order": "سفارش خرید ذخیره نشد.",
-  "something_went_wrong": "مشکلی پیش آمد. دوباره تلاش کنید."
+  "something_went_wrong": "مشکلی پیش آمد. دوباره تلاش کنید.",
+  "batch_value": "بچ: {batch}",
+  "no_batch": "بدون بچ",
+  "expiry_value": "انقضا: {expiry}",
+  "no_expiry": "بدون تاریخ انقضا",
+  "failed_to_load_details": "بارگذاری جزئیات ناموفق بود.",
+  "status_updated": "وضعیت با موفقیت به‌روزرسانی شد.",
+  "status_update_failed": "به‌روزرسانی وضعیت ناموفق بود.",
+  "please_add_at_least_one_item_to_update_sale": "لطفاً برای به‌روزرسانی فروش، حداقل یک جنس اضافه کنید",
+  "delete_blocked_title": "داده‌های مرتبط پیدا شد!",
+  "status_change_blocked_title": "تغییر وضعیت انجام نشد"
 }

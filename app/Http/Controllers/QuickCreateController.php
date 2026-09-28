@@ -76,20 +76,20 @@ class QuickCreateController extends Controller
                 'journal_classes' => $this->createJournalClass($request),
                 default => response()->json([
                     'success' => false,
-                    'message' => "Unsupported resource type: {$resourceType}",
+                    'message' => __('messages.errors.unsupported_resource_type', ['type' => $resourceType]),
                 ], 422),
             };
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => __('messages.errors.validation_failed'),
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Throwable $e) {
             report($e);
             return response()->json([
                 'success' => false,
-                'message' => 'Quick create failed',
+                'message' => __('messages.errors.quick_create_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

@@ -117,7 +117,7 @@ const saveFormRef = useSaveShortcut({ form })
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput is-required placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput is-required :placeholder="t('general.rate')" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-2">
@@ -174,7 +174,7 @@ const saveFormRef = useSaveShortcut({ form })
           </div>
 
           <div class="md:col-span-3">
-            <NextTextarea placeholder="Remark" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
+            <NextTextarea :placeholder="t('general.remark')" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
           </div>
 
           <div class="md:col-span-3">

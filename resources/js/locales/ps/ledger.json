@@ -31,5 +31,15 @@
   "invalid_phone_for_country": "د {country} لپاره د تلیفون شمېرې اوږدوالی سم نه دی",
   "balance_by_currency": "د اسعارو له مخې بیلانس",
   "no_currency_balance": "په هیڅ اسعارو کې بیلانس نشته",
-  "contact_person": "د اړیکې شخص"
+  "contact_person": "د اړیکې شخص",
+  "ledger": "دفتر",
+  "ledgers": "دفترونه",
+  "supplier": {
+    "supplier": "عرضه کوونکی",
+    "suppliers": "عرضه کوونکي"
+  },
+  "customer": {
+    "customer": "پېرودونکی",
+    "customers": "پېرودونکي"
+  }
 }
