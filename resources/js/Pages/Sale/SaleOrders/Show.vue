@@ -14,7 +14,7 @@ import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 import { useAuth } from '@/composables/useAuth';
 
 const { t } = useI18n();
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 const { toast } = useToast();
 const page = usePage();
 const { can } = useAuth();
@@ -88,6 +88,7 @@ const canCancel = computed(() => orderData.value.status === 'draft' && can('sale
             </ShowPageToolbar>
 
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="postDialogOpen"
                 type="post"
                 :title="t('sale_order.post_sale_order')"

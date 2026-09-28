@@ -11,7 +11,7 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 import { Badge } from '@/Components/ui/badge'
 
 const { t } = useI18n()
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 
 const props = defineProps({
     drawing: { type: Object, required: true },
@@ -81,6 +81,7 @@ const statusLabel = (status) => {
             />
 
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="postDialogOpen"
                 type="post"
                 :title="t('general.post') + ' ' + t('sidebar.owners.drawing')"
@@ -88,6 +89,7 @@ const statusLabel = (status) => {
                 @confirm="postDrawing"
             />
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="reverseDialogOpen"
                 type="reverse"
                 :title="t('general.reverse') + ' ' + t('sidebar.owners.drawing')"

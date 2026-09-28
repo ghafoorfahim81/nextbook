@@ -11,7 +11,7 @@ import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 const { toast } = useToast();
 const page = usePage();
 
@@ -91,6 +91,7 @@ const reversePurchaseReturn = (reason) => {
             />
 
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="postDialogOpen"
                 type="post"
                 :title="t('purchase_return.post_purchase_return')"
@@ -98,6 +99,7 @@ const reversePurchaseReturn = (reason) => {
                 @confirm="postPurchaseReturn"
             />
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="reverseDialogOpen"
                 type="reverse"
                 :title="t('purchase_return.reverse_purchase_return')"

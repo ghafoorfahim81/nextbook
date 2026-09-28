@@ -54,6 +54,7 @@ return [
     'updated_successfully' => ':resource updated successfully.',
     'deleted_successfully' => ':resource deleted successfully.',
     'restored_successfully' => ':resource restored successfully.',
+    'restore_blocked_by_trashed_parents' => 'دا ریکارڈ اوس بیرته نه راوړل کېږي ځکه :parents لا هم په کچړدان کې دی. لومړی هغه بیرته راوړئ، بیا بیانو هله وکړئ.',
     'activated_successfully' => ':resource فعال شو.',
     'deactivated_successfully' => ':resource غیرفعال شو.',
     'status_updated_successfully' => ':resource status updated successfully.',

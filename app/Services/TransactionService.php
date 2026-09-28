@@ -66,22 +66,42 @@ class TransactionService
         return DB::transaction(function () use ($header, $lines) {
 
             $this->validateHeader($header);
-            $this->validateLines($lines);
 
             $status = TransactionStatus::tryFrom($header['status'] ?? TransactionStatus::POSTED->value)
                 ?? TransactionStatus::POSTED;
+
+            // A draft may legitimately carry no lines yet. The receipt and
+            // payment forms save one deliberately: the voucher and the
+            // invoices it will relieve are parked on posting_payload, and the
+            // journal is built only when the draft is posted — claiming an
+            // open invoice before the money is real would close one nobody
+            // has paid. Requiring lines here made saving any draft receipt or
+            // payment a 500.
+            //
+            // Only the EMPTY case is exempt. A draft that does carry lines is
+            // held to the same balancing rules as a posted entry, so a
+            // malformed one is caught when it is saved rather than days later
+            // when someone tries to post it.
+            $isLinelessDraft = $status === TransactionStatus::DRAFT && $lines === [];
+
+            if (! $isLinelessDraft) {
+                $this->validateLines($lines);
+            }
 
             $branchId = $this->resolveBranchId($header);
             $baseCurrencyId = $this->resolveBaseCurrencyId($branchId);
 
             // Normalise and validate everything BEFORE a single row is written,
             // so a rejected entry never leaves a half-posted voucher behind.
-            $prepared = $this->prepareLines($lines, $header);
-            $this->assertInvariants(
-                $prepared,
-                $baseCurrencyId,
-                (bool) ($header['cross_currency'] ?? false)
-            );
+            $prepared = $isLinelessDraft ? [] : $this->prepareLines($lines, $header);
+
+            if (! $isLinelessDraft) {
+                $this->assertInvariants(
+                    $prepared,
+                    $baseCurrencyId,
+                    (bool) ($header['cross_currency'] ?? false)
+                );
+            }
 
             $transaction = Transaction::create([
                 'currency_id'       => $header['currency_id'],

@@ -14,7 +14,7 @@ import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 import { useAuth } from '@/composables/useAuth';
 
 const { t } = useI18n();
-const { submit } = useDocumentAction()
+const { submit, processing } = useDocumentAction()
 const { toast } = useToast();
 const page = usePage();
 const { can } = useAuth();
@@ -89,6 +89,7 @@ const printUrl = computed(() => quotationData.value.id ? route('sale-quotations.
             </ShowPageToolbar>
 
             <TransactionActionDialog
+            :processing="processing"
                 v-model:open="postDialogOpen"
                 type="post"
                 :title="t('sale_quotation.post_sale_quotation')"

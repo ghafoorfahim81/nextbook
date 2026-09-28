@@ -54,6 +54,7 @@ return [
     'updated_successfully' => ':resource با موفقیت به‌روزرسانی شد.',
     'deleted_successfully' => ':resource با موفقیت حذف شد.',
     'restored_successfully' => ':resource با موفقیت بازیابی شد.',
+    'restore_blocked_by_trashed_parents' => 'این رکورد فعلاً قابل بازگردانی نیست چون :parents هنوز در سطل زباله است. اول آن را بازگردانید، سپس دوباره تلاش کنید.',
     'activated_successfully' => ':resource با موفقیت فعال شد.',
     'deactivated_successfully' => ':resource با موفقیت غیرفعال شد.',
     'status_updated_successfully' => 'وضعیت :resource با موفقیت به‌روزرسانی شد.',
