@@ -4,6 +4,11 @@
     "save": "Save Changes",
     "saved": "Preferences Saved",
     "saved_description": "Your preferences have been updated successfully",
+    "save_error": "Could not save preferences",
+    "autosave": {
+        "pending": "Unsaved changes…",
+        "saved": "All changes saved"
+    },
     "reset": "Reset",
     "reset_success": "Preferences reset to defaults",
     "confirm_reset": "Are you sure you want to reset these preferences to defaults?",
