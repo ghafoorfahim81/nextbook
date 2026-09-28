@@ -408,11 +408,16 @@ function openFlyout(key: string) {
     flyoutOpenKey.value = key
 }
 
+// The flyout stays open for as long as the pointer is over the icon or the
+// panel. Leaving either only starts a short grace period, long enough to cross
+// the gap between them; entering either one cancels it.
+const FLYOUT_CLOSE_DELAY_MS = 250
+
 function scheduleCloseFlyout(key: string) {
     clearFlyoutCloseTimer()
     flyoutCloseTimer = window.setTimeout(() => {
         if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
-    }, 2000)
+    }, FLYOUT_CLOSE_DELAY_MS)
 }
 
 function closeFlyout() {
@@ -978,8 +983,12 @@ function logout() {
 
                             <template v-else>
                                 <!-- Collapsed (icon-only) sidebar: show submenus as a flyout on hover/click -->
+                                <!-- Not modal: a modal menu disables pointer events on
+                                     everything behind it, so the icon could no longer
+                                     report the pointer coming back to it. -->
                                 <DropdownMenu
                                     v-if="isSidebarCollapsed"
+                                    :modal="false"
                                     :open="flyoutOpenKey === getFlyoutKey(item)"
                                     @update:open="(v) => setFlyoutOpen(getFlyoutKey(item), v)"
                                 >
@@ -987,6 +996,7 @@ function logout() {
                                         <SidebarMenuButton
                                             :tooltip="item.title"
                                             :isActive="shouldExpandParent(item.items)"
+                                            class="cursor-pointer"
                                             @mouseenter="openFlyout(getFlyoutKey(item))"
                                             @mouseleave="scheduleCloseFlyout(getFlyoutKey(item))"
                                         >
@@ -999,22 +1009,31 @@ function logout() {
                                         align="start"
                                         :side-offset="8"
                                         class="min-w-48 rounded-lg"
-                                        @mouseenter="openFlyout(getFlyoutKey(item))"
-                                        @mouseleave="closeFlyout()"
                                     >
-                                        <DropdownMenuLabel class="text-sm font-medium">
-                                            {{ item.title }}
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                            v-for="subItem in item.items"
-                                            :key="subItem.title"
-                                            as-child
+                                        <!-- Hover listeners live on this div, not on
+                                             DropdownMenuContent: that component's root is a
+                                             portal with no element of its own, so listeners
+                                             placed on it were silently dropped and only the
+                                             icon's close timer ever ran. -->
+                                        <div
+                                            @mouseenter="openFlyout(getFlyoutKey(item))"
+                                            @mouseleave="scheduleCloseFlyout(getFlyoutKey(item))"
                                         >
-                                            <Link :href="subItem.url" prefetch cache-for="1m" class="w-full text-sm text-muted-foreground">
-                                                <span>{{ subItem.title }}</span>
-                                            </Link>
-                                        </DropdownMenuItem>
+                                            <DropdownMenuLabel class="text-sm font-medium">
+                                                {{ item.title }}
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                v-for="subItem in item.items"
+                                                :key="subItem.title"
+                                                as-child
+                                                class="cursor-pointer"
+                                            >
+                                                <Link :href="subItem.url" prefetch cache-for="1m" class="w-full text-sm text-muted-foreground" @click="closeFlyout()">
+                                                    <span>{{ subItem.title }}</span>
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        </div>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
 
