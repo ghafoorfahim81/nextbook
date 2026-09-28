@@ -25,7 +25,7 @@ class PurchaseOrderStoreRequest extends FormRequest
             'number' => ['required', 'integer', 'min:1', 'unique:purchase_orders,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'date' => ['nullable', 'date'],
             'delivery_date' => ['nullable', 'date'],
-            'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
+            'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric', 'min:0'],
             'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],

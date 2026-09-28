@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Purchase;
 
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\TransactionStatus;
 class PurchaseStoreRequest extends FormRequest
@@ -21,7 +22,7 @@ class PurchaseStoreRequest extends FormRequest
     {
         return [
             'number' => ['required', 'integer', 'min:1'],
-            'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
+            'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
             'purchase_order_id' => ['nullable', 'string', 'exists:purchase_orders,id'],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],

@@ -25,7 +25,7 @@ class PurchaseQuotationUpdateRequest extends FormRequest
             'number' => ['required', 'integer', 'min:1', Rule::unique('purchase_quotations', 'number')->ignore($this->purchase_quotation)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'date' => ['nullable', 'date'],
             'valid_until' => ['nullable', 'date'],
-            'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
+            'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric', 'min:0'],
             'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],

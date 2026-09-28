@@ -176,6 +176,10 @@ class Ledger extends Model
         'whatsapp_number',
         'is_main',
         'type',
+        // counterpart_ledger_id is deliberately NOT fillable. The link is
+        // symmetric, and mass-assigning one side would leave a pairing that
+        // is true read from here and false read from the other account.
+        // LedgerLinkService writes both sides together.
         'is_active',
         'created_by',
         'updated_by',
@@ -201,6 +205,7 @@ class Ledger extends Model
             'created_by' => 'string',
             'updated_by' => 'string',
             'branch_id' => 'string',
+            'counterpart_ledger_id' => 'string',
             'is_active' => 'boolean',
             'is_main' => 'boolean',
             'type' => LedgerType::class,
@@ -298,6 +303,17 @@ class Ledger extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * The same person's other account — their supplier ledger if this is the
+     * customer one, and the other way round.
+     *
+     * @see \App\Services\Accounting\LedgerLinkService
+     */
+    public function counterpart(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'counterpart_ledger_id');
     }
 
     public function group(): BelongsTo

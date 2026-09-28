@@ -342,6 +342,20 @@ Route::middleware([
         ->withTrashed();
     Route::get('/receipts/{receipt}/print', [\App\Http\Controllers\Receipt\ReceiptController::class, 'print'])->name('receipts.print');
 
+    // Set-offs between the two ledgers of one party. No cash moves, so it sits
+    // beside receipts and payments rather than inside either.
+    Route::resource('/contra-settlements', \App\Http\Controllers\Accounting\ContraSettlementController::class)
+        ->only(['index', 'create', 'store', 'show', 'destroy'])
+        ->parameters(['contra-settlements' => 'contra_settlement']);
+    Route::post('/contra-settlements/{contra_settlement}/reverse', [\App\Http\Controllers\Accounting\ContraSettlementController::class, 'reverse'])
+        ->name('contra-settlements.reverse');
+    Route::patch('/contra-settlements/{contra_settlement}/restore', [\App\Http\Controllers\Accounting\ContraSettlementController::class, 'restore'])
+        ->name('contra-settlements.restore')
+        ->withTrashed();
+    Route::delete('/contra-settlements/{contra_settlement}/force-delete', [\App\Http\Controllers\Accounting\ContraSettlementController::class, 'forceDelete'])
+        ->name('contra-settlements.force-delete')
+        ->withTrashed();
+
     // Payments
     Route::get('/payments/export', [\App\Http\Controllers\Payment\PaymentController::class, 'export'])->name('payments.export');
     Route::resource('/payments', \App\Http\Controllers\Payment\PaymentController::class);

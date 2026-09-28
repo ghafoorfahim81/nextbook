@@ -54,6 +54,7 @@ final class DomainShared
                             'name',
                             'code',
                             'type',
+                            'counterpart_ledger_id',
                             'email',
                             'phone_no',
                             'address',

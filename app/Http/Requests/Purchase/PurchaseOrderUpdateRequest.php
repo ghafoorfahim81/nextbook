@@ -25,7 +25,7 @@ class PurchaseOrderUpdateRequest extends FormRequest
             'number' => ['required', 'integer', 'min:1', Rule::unique('purchase_orders', 'number')->ignore($this->purchase_order)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'date' => ['nullable', 'date'],
             'delivery_date' => ['nullable', 'date'],
-            'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
+            'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric', 'min:0'],
             'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],

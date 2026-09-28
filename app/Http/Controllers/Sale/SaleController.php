@@ -153,6 +153,7 @@ class SaleController extends Controller
                         'name',
                         'code',
                         'type',
+                        'counterpart_ledger_id',
                         'email',
                         'phone_no',
                         'address',
@@ -193,6 +194,7 @@ class SaleController extends Controller
                 'name',
                 'code',
                 'type',
+                'counterpart_ledger_id',
                 'email',
                 'phone_no',
                 'address',
@@ -540,6 +542,7 @@ class SaleController extends Controller
             'createdBy',
             'updatedBy',
             'attachments',
+            'returns.items',
         ]);
 
         $resource = new SaleResource($sale);
@@ -591,6 +594,7 @@ class SaleController extends Controller
                         'name',
                         'code',
                         'type',
+                        'counterpart_ledger_id',
                         'email',
                         'phone_no',
                         'address',

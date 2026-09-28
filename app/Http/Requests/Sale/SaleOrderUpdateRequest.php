@@ -25,7 +25,7 @@ class SaleOrderUpdateRequest extends FormRequest
             'number' => ['required', 'integer', 'min:1', Rule::unique('sale_orders', 'number')->ignore($this->sale_order)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'date' => ['nullable', 'date'],
             'delivery_date' => ['nullable', 'date'],
-            'customer_id' => ['required', 'string', 'exists:ledgers,id'],
+            'customer_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'customer')],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric', 'min:0'],
             'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],

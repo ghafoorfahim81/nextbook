@@ -26,6 +26,9 @@ use App\Services\Accounting\PaymentStatusService;
 use App\Services\Accounting\SettlementService;
 use App\Services\AttachmentService;
 use App\Services\DateConversionService;
+use App\Enums\TransactionStatus;
+use App\Models\Accounting\ContraSettlement;
+use App\Services\Accounting\LedgerLinkService;
 use App\Services\LedgerOpeningService;
 use App\Services\LedgerStatementService;
 use App\Services\TransactionService;
@@ -135,6 +138,11 @@ class SupplierController extends Controller
 
         $ledgerOpeningService->sync($ledger, $validated['openings'] ?? []);
 
+        // The same person's other account, if one was named. Written through
+        // the service because the link is symmetric — both rows point at each
+        // other, and setting one alone leaves a pairing that is only half true.
+        app(LedgerLinkService::class)->sync($ledger, $validated);
+
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
             return to_route('suppliers.create')
@@ -165,9 +173,14 @@ class SupplierController extends Controller
             'openings.transaction.currency',
             'openings.transaction.lines',
             'attachments',
+            'counterpart',
         ]);
 
         $lists = $this->transactionLists($supplier);
+
+        // Both sides of a party who also trades the other way. Null when this
+        // account is not paired, which is the ordinary case.
+        $combinedPosition = app(LedgerLinkService::class)->combinedPosition($supplier);
 
         $ledgerStatement = $statementService->build($supplier, $this->statementFilters($request));
 
@@ -192,6 +205,7 @@ class SupplierController extends Controller
                 'openItems' => $openItems,
                 'settlementHistory' => $settlementHistory,
                 'settlementBalances' => $settlementBalances,
+                'combinedPosition' => $combinedPosition,
             ]);
         }
 
@@ -203,6 +217,7 @@ class SupplierController extends Controller
             'openItems' => $openItems,
             'settlementHistory' => $settlementHistory,
             'settlementBalances' => $settlementBalances,
+            'combinedPosition' => $combinedPosition,
         ]);
     }
 
@@ -265,7 +280,34 @@ class SupplierController extends Controller
             ->orderByDesc('date')->orderByDesc('id')->get()
             ->map(fn ($m) => $mapMovement($m, $m->paidAmount()))->all();
 
-        return compact('purchases', 'receipts', 'payments');
+        // Set-offs move this party's balance without a sale, a purchase or any
+        // cash, so none of the lists above would ever show them — the balance
+        // simply changed and nothing on the page said why. Matched on either
+        // side, because one document touches both accounts of the pair.
+        $contraSettlements = ContraSettlement::query()
+            ->with(['customerLedger', 'supplierLedger', 'currency'])
+            ->where(fn ($query) => $query
+                ->where('customer_ledger_id', $ledger->id)
+                ->orWhere('supplier_ledger_id', $ledger->id))
+            ->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'number' => $c->number,
+                'date' => $dateService->toDisplay($c->date),
+                'amount' => (float) $c->amount,
+                'currency_code' => $c->currency?->code,
+                'rate' => (float) $c->rate,
+                // The OTHER account of the pair, which is the one thing that
+                // explains the entry when read from this party's page.
+                'counterparty' => $c->customer_ledger_id === $ledger->id
+                    ? $c->supplierLedger?->name
+                    : $c->customerLedger?->name,
+                'status' => $c->status,
+                'status_label' => TransactionStatus::tryFrom((string) $c->status)?->getLabel() ?? (string) $c->status,
+                'narration' => $c->narration,
+            ])->all();
+
+        return compact('purchases', 'receipts', 'payments', 'contraSettlements');
     }
 
     /**
@@ -369,7 +411,7 @@ class SupplierController extends Controller
         $supplier->load([
             'currency', 'group', 'paymentTerm', 'country', 'province',
             'openings', 'openings.transaction.currency', 'openings.transaction.lines',
-            'attachments',
+            'attachments', 'counterpart',
         ]);
 
         return inertia('Ledgers/Suppliers/Edit', [
@@ -504,6 +546,8 @@ class SupplierController extends Controller
         // Openings are rebuilt wholesale rather than diffed: the form always posts
         // the party's complete set, one row per currency.
         $ledgerOpeningService->sync($supplier, $validated['openings'] ?? []);
+
+        app(LedgerLinkService::class)->sync($supplier, $validated);
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return to_route('suppliers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.supplier')]));

@@ -5,6 +5,7 @@ import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextPhoneInput from '@/Components/next/NextPhoneInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
+import CounterpartPicker from '@/Components/ledger/CounterpartPicker.vue';
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import LedgerOpeningRows from '@/Components/ledger/LedgerOpeningRows.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
@@ -143,6 +144,12 @@ const saveFormRef = useSaveShortcut({ form });
                         :clearable="false"
                         :floating-text="t('ledger.credit_terms')"
                         :error="form.errors?.credit_terms"
+                    />
+                    <CounterpartPicker
+                        v-model="form.counterpart_ledger_id"
+                        role="customer"
+                        :preselected="props.customer.data?.counterpart"
+                        :error="form.errors?.counterpart_ledger_id"
                     />
                 </div>
 

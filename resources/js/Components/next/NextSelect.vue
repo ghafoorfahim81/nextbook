@@ -379,14 +379,46 @@
     }
   }
 
+
+  /**
+   * The picker already declares the type it wants — `:search-options="{ type:
+   * 'supplier' }"` — but that only reached the SEARCH request. The list shown
+   * before anyone types came straight from the shared, unfiltered ledger prop,
+   * so a supplier picker opened on a list of customers and one click booked a
+   * purchase against a customer account.
+   *
+   * Applied only to options that actually carry a `type`: everything else
+   * (items, currencies, warehouses) passes through untouched, so a picker whose
+   * options have no type is not silently emptied.
+   */
+  const applyDeclaredTypeFilter = (options) => {
+    const params = normalizedSearchOptions.value.additionalParams || {}
+    const wanted = params.types ?? params.type
+
+    if (wanted === undefined || wanted === null) return options
+
+    const allowed = Array.isArray(wanted) ? wanted : [wanted]
+
+    if (allowed.length === 0) return options
+
+    return (options || []).filter((option) => {
+      const type = option?.type
+
+      return type === undefined || type === null || allowed.includes(type)
+    })
+  }
+
   const resetSearchableOptions = () => {
-    searchableOptions.value = [...props.options]
+    searchableOptions.value = applyDeclaredTypeFilter([...props.options])
     ensureSelectedOptionInOptions()
   }
 
   watch(() => props.options, (opts) => {
+    // Cache everything — a previously selected option of another type still
+    // has to be resolvable by ensureSelectedOptionInOptions below — but show
+    // only what this picker asked for.
     cacheOptions(opts)
-    searchableOptions.value = [...opts]
+    searchableOptions.value = applyDeclaredTypeFilter([...opts])
     ensureSelectedOptionInOptions()
   }, { immediate: true })
 

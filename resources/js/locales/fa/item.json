@@ -137,6 +137,7 @@
     "identification_pricing": "شناسه و قیمت‌گذاری",
     "variant_attributes": "ویژگی‌ها",
     "add_variant": "افزودن مشخصه",
+    "load_all_variants": "بارگذاری همه مشخصه‌ها",
     "add_attribute_placeholder": "مثلاً رنگ، رم",
     "default_variant": "پیش‌فرض",
     "make_default_variant": "تعیین به عنوان مشخصهٔ پیش‌فرض",

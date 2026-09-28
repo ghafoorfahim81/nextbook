@@ -4,6 +4,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextPhoneInput from '@/Components/next/NextPhoneInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
+import CounterpartPicker from '@/Components/ledger/CounterpartPicker.vue';
 import LedgerOpeningRows from '@/Components/ledger/LedgerOpeningRows.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
@@ -54,6 +55,8 @@ const form = useForm({
     credit_limit: null,
     credit_limit_enabled: false,
     credit_terms: 'warning',
+    // The same person's other account, when they trade both ways.
+    counterpart_ledger_id: null,
     discount: null,
     attachments: [],
     // One row per currency; blank rows are discarded server-side.
@@ -188,6 +191,12 @@ const saveFormRef = useSaveShortcut({ form });
                         :clearable="false"
                         :floating-text="t('ledger.credit_terms')"
                         :error="form.errors?.credit_terms"
+                    />
+                    <CounterpartPicker
+                        v-model="form.counterpart_ledger_id"
+                        role="supplier"
+                        :preselected="null"
+                        :error="form.errors?.counterpart_ledger_id"
                     />
                 </div>
 

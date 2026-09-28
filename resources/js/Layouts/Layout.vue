@@ -652,6 +652,7 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.main.receipt'), url: '/receipts', permission: 'receipts.view_any' },
             { title: t('sidebar.main.payment'), url: '/payments', permission: 'payments.view_any' },
+            { title: t('sidebar.main.contra_settlement'), url: '/contra-settlements', permission: 'contra_settlements.view_any' },
         ],
     },
 

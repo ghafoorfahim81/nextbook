@@ -101,6 +101,7 @@
     "variant": "ډول",
     "variant_attributes": "ځانګړتیاوې",
     "add_variant": "ډول زیاتول",
+    "load_all_variants": "ټول ډولونه راوړل",
     "add_attribute_placeholder": "لکه رنګ، رم",
     "default_variant": "اصلي",
     "make_default_variant": "د اصلي ډول په توګه وټاکئ",

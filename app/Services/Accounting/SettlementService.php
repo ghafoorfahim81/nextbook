@@ -13,6 +13,7 @@ use App\Models\Transaction\Transaction;
 use App\Services\TransactionService;
 use App\Support\BranchContext;
 use App\Support\Decimal;
+use App\Support\DocumentType;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -1450,11 +1451,10 @@ class SettlementService
      */
     private function documentType(?string $referenceType, ?string $transactionId, array $openingTransactionIds = []): string
     {
-        if ($transactionId !== null && isset($openingTransactionIds[$transactionId])) {
-            return 'Opening Balance';
-        }
-
-        return $referenceType ? class_basename($referenceType) : 'Journal';
+        return DocumentType::label(
+            $referenceType,
+            isOpening: $transactionId !== null && isset($openingTransactionIds[$transactionId]),
+        );
     }
 
     /**

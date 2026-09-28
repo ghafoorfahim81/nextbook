@@ -49,6 +49,7 @@ final class BranchContext
         // Freight for moving goods between the company's own warehouses. An
         // item transfer defaults its expense line to this account.
         'item-transfer-expense',
+        'contra-clearing',
         // Realised exchange differences and unapplied money, both resolved by
         // slug only — the names are localised into Dari and Pashto, so any
         // lookup by name breaks the moment someone switches language.

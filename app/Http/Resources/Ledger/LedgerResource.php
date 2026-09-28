@@ -42,6 +42,16 @@ class LedgerResource extends JsonResource
             'discount' => $this->discount,
             'branch' => $this->branch,
             'type' => $this->type,
+            // The same person's other account. The edit form needs the id to
+            // render the picker; the show page needs the name to offer the
+            // combined view without loading the whole ledger again.
+            'counterpart_ledger_id' => $this->counterpart_ledger_id,
+            'counterpart' => $this->whenLoaded('counterpart', fn () => [
+                'id' => $this->counterpart?->id,
+                'name' => $this->counterpart?->name,
+                'code' => $this->counterpart?->code,
+                'type' => $this->counterpart?->type,
+            ]),
             'is_active' => $this->is_active,
             'created_at' => $this->created_at,
             'created_by' => $this->whenLoaded('createdBy'),

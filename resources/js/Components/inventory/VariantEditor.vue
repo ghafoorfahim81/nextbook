@@ -174,6 +174,31 @@ onMounted(() => {
     )
 })
 
+/**
+ * Enter walks to the next field instead of submitting the item.
+ *
+ * The grid is filled across, not down — SKU, barcode, cost, margin, price —
+ * and Enter is the key a hand already on the keypad reaches for. Without this
+ * it submitted the whole form from the first cell.
+ *
+ * The order is the DOM's, read off the container the listener sits on, so it
+ * follows the columns as they are rendered (attributes first, and only the
+ * ones that exist) and rolls onto the next row at the end of one. Nothing is
+ * indexed by hand, so adding a column here needs no bookkeeping there.
+ */
+const focusNextField = (event) => {
+    const fields = Array.from(
+        event.currentTarget.querySelectorAll('input:not([disabled]):not([type="hidden"])')
+    )
+
+    const next = fields[fields.indexOf(event.target) + 1]
+    if (!fields.includes(event.target) || !next) return
+
+    next.focus()
+    // Land on a selected value rather than a caret, so typing replaces it.
+    if (typeof next.select === 'function') next.select()
+}
+
 const errorFor = (index, field) => props.errors?.[`variants.${index}.${field}`]
 
 const variantLabel = (variant) => {
@@ -191,7 +216,11 @@ const variantLabel = (variant) => {
         </legend>
 
         <!-- Simple trades: one row, no grid. -->
-        <div v-if="!enabled" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 pt-2">
+        <div
+            v-if="!enabled"
+            class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 pt-2"
+            @keydown.enter.prevent="focusNextField"
+        >
             <NextInput
                 :label="t('item.sku')"
                 :model-value="modelValue[0]?.sku ?? ''"
@@ -297,7 +326,12 @@ const variantLabel = (variant) => {
             </div>
 
             <div class="overflow-x-auto rounded-lg border border-border">
-                <table class="w-full text-xs">
+                <!-- Enter is a "next field" key here; see focusNextField. The
+                     listener sits on the table rather than on each input so it
+                     can read the whole grid's tab order in one place, and it
+                     deliberately excludes the attribute-name box above, which
+                     has its own Enter binding. -->
+                <table class="w-full text-xs" @keydown.enter.prevent="focusNextField">
                     <thead class="bg-violet-500 text-white">
                         <tr>
                             <th class="px-2 py-2 text-center font-medium w-10">

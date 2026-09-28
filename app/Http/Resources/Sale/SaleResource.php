@@ -137,6 +137,18 @@ class SaleResource extends JsonResource
             'total_cost' => $totalCostValue,
             'total_profit' => $totalProfitValue,
             'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
+            // Same shape PurchaseResource returns, so the two show pages render
+            // their returns table from one set of keys.
+            'returns' => $this->whenLoaded('returns', fn () => $this->returns->map(function ($return) {
+                return [
+                    'id' => $return->id,
+                    'number' => $return->number,
+                    'date' => $return->date?->toDateString(),
+                    'status' => $return->status,
+                    'quantity' => $return->items->sum(fn ($item) => (float) $item->quantity),
+                    'amount' => $return->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price),
+                ];
+            })),
         ];
     }
 }

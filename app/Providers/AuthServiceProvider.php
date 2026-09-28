@@ -54,6 +54,7 @@ use App\Policies\BrandPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\CurrencyPolicy;
+use App\Policies\ContraSettlementPolicy;
 use App\Policies\CustomerSupplierPolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\DesignationPolicy;
@@ -164,6 +165,7 @@ class AuthServiceProvider extends ServiceProvider
 
         // Receipts & Payments & Transfers
         Receipt::class => ReceiptPolicy::class,
+        \App\Models\Accounting\ContraSettlement::class => ContraSettlementPolicy::class,
         Payment::class => PaymentPolicy::class,
         AccountTransfer::class => AccountTransferPolicy::class,
 

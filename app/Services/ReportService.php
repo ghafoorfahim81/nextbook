@@ -22,6 +22,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use App\Support\DocumentType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -4611,17 +4612,13 @@ class ReportService
         return number_format(abs($amount), 2, '.', '').' '.($amount >= 0 ? 'Dr' : 'Cr');
     }
 
+    /**
+     * Named and translated in one place, so a report, a statement and an
+     * exported sheet all call the same document by the same name.
+     */
     protected function referenceLabel(?string $referenceType): string
     {
-        if (! $referenceType) {
-            return '-';
-        }
-
-        if (str_contains($referenceType, '\\')) {
-            return class_basename($referenceType);
-        }
-
-        return str($referenceType)->headline()->toString();
+        return $referenceType ? DocumentType::label($referenceType) : '-';
     }
 
     protected function sourceLabel(?string $sourceType): string

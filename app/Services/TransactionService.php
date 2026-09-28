@@ -768,6 +768,11 @@ class TransactionService
                 'ابطال برداشت #',
                 'د اخیستنې بیرته راګرځول #',
             ],
+            \App\Models\Accounting\ContraSettlement::class => [
+                'Reversal of set-off #',
+                'ابطال تهاتر #',
+                'د تهاتر بیرته راګرځول #',
+            ],
         ];
 
         [$en, $fa, $ps] = $map[$referenceType] ?? [

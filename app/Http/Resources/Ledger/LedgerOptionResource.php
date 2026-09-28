@@ -31,6 +31,11 @@ class LedgerOptionResource extends JsonResource
             'credit_limit' => $this->credit_limit,
             'credit_limit_enabled' => (bool) $this->credit_limit_enabled,
             'credit_terms' => $this->credit_terms?->value,
+            // The same person's other account. Carried on the option itself so
+            // a picker can say "this party also has a supplier account" without
+            // a second round trip, and so the set-off form can fill the other
+            // side the moment one is chosen.
+            'counterpart_ledger_id' => $this->counterpart_ledger_id,
             'statement' => [
                 'balance' => $balanceAmount,
                 'balance_amount' => $balanceAmount,

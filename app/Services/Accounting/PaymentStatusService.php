@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Support\BranchContext;
 use App\Support\Decimal;
 use Illuminate\Support\Collection;
+use App\Support\DocumentType;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -202,7 +203,7 @@ class PaymentStatusService
                 'id' => (string) $row->id,
                 'date' => $row->date,
                 'voucher_number' => $row->voucher_number,
-                'document_type' => $row->reference_type ? class_basename($row->reference_type) : 'Journal',
+                'document_type' => DocumentType::label($row->reference_type),
                 'currency_code' => $row->currency_code,
                 'amount_applied' => (float) $row->amount_applied,
                 'target_rate' => (float) $row->target_rate,
