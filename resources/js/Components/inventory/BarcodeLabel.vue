@@ -71,7 +71,10 @@ const variantLabel = computed(() => String(props.item?.variant_label ?? '').trim
 const showItemVariant = computed(() => props.showVariant && Boolean(variantLabel.value))
 
 const formattedPrice = computed(() => {
-  const value = Number(props.item?.sale_price ?? 0)
+  const raw = props.item?.sale_price
+  if (raw === null || raw === undefined || raw === '') return null
+
+  const value = Number(raw)
   if (!Number.isFinite(value)) return null
 
   const output = value.toLocaleString(undefined, {

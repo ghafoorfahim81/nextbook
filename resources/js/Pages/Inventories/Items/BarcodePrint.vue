@@ -186,6 +186,14 @@ const sheetGridStyle = computed(() => ({
  * with its own barcode — while a plain product yields exactly one. An item made
  * before variants existed falls back to its own mirrored columns.
  */
+// An item with no sale price has nothing to put on the sticker; turning it into
+// 0 printed "Price: 0.00" on goods that are not free.
+const priceOrNull = (value) => {
+  if (value === null || value === undefined || value === '') return null
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : null
+}
+
 function labelsForItem(item) {
   const variants = Array.isArray(item.variants) ? item.variants : []
 
@@ -199,7 +207,7 @@ function labelsForItem(item) {
       category: item.category ?? '',
       variant_label: '',
       barcode: String(item.barcode ?? '').trim(),
-      sale_price: Number(item.sale_price ?? 0),
+      sale_price: priceOrNull(item.sale_price),
     }]
   }
 
@@ -216,7 +224,7 @@ function labelsForItem(item) {
     category: item.category ?? '',
     variant_label: isSingle ? '' : String(variant.display_name ?? variant.name ?? '').trim(),
     barcode: String(variant.barcode ?? item.barcode ?? '').trim(),
-    sale_price: Number(variant.sale_price ?? item.sale_price ?? 0),
+    sale_price: priceOrNull(variant.sale_price ?? item.sale_price),
   }))
 }
 
@@ -364,44 +372,59 @@ function printLabels() {
     return
   }
 
-  const kind = selectedPaperKind.value
-  const { left, right, top, bottom } = margins.value
-
-  // A label roll has no page size of its own: the stock is exactly as wide as
-  // its columns, and as long as the job needs.
-  const rollWidthMm = geometry.value.widthMm * kind.columns
-    + spacing.value.h * Math.max(0, kind.columns - 1)
-    + left + right
-
-  const pageSize = kind.columns === null
-    ? `${kind.pageWidthMm}mm ${kind.pageHeightMm}mm`
-    : `${rollWidthMm}mm auto`
-
-  const headingHtml = layout.value.heading.trim()
-    ? `<h1 class="barcode-heading">${escapeHtml(layout.value.heading.trim())}</h1>`
+  const pages = paginate()
+  const { top, right, bottom, left } = margins.value
+  const heading = layout.value.heading.trim()
+  const headingHtml = heading && !isLabelRoll.value
+    ? `<h1 class="barcode-heading">${escapeHtml(heading)}</h1>`
     : ''
+
+  // Each page is drawn at its exact size with the margins as padding, and the
+  // printer's own page margin is zero. With a non-zero @page margin the browser
+  // fills that strip with its header and footer (the date, "about:blank", the
+  // page count), which printed straight onto the label stock.
+  const pagesHtml = pages.chunks
+    .map((chunk) => `<section class="barcode-page">${headingHtml}<div class="barcode-print-sheet">${chunk.join('')}</div></section>`)
+    .join('')
 
   popup.document.write(`<!DOCTYPE html>
 <html dir="${document.documentElement.dir || 'ltr'}">
   <head>
-    <title>${escapeHtml(layout.value.heading.trim() || t('item.print_barcode'))}</title>
+    <title>${escapeHtml(heading || t('item.print_barcode'))}</title>
     <style>
       @page {
-        size: ${pageSize};
-        margin: ${top}mm ${right}mm ${bottom}mm ${left}mm;
+        size: ${pages.widthMm}mm ${pages.heightMm}mm;
+        margin: 0;
       }
       * { box-sizing: border-box; }
-      body {
+      html, body {
         margin: 0;
+        padding: 0;
         font-family: Poppins, Arial, sans-serif;
         background: white;
-        color: black;
+        color: #000;
+      }
+      .barcode-page {
+        width: ${pages.widthMm}mm;
+        /* A hair under the page so rounding never spills onto a blank page. */
+        height: ${pages.heightMm - 0.3}mm;
+        padding: ${top}mm ${right}mm ${bottom}mm ${left}mm;
+        overflow: hidden;
+        break-after: page;
+        page-break-after: always;
+      }
+      .barcode-page:last-child {
+        break-after: auto;
+        page-break-after: auto;
       }
       .barcode-heading {
-        font-size: 14pt;
+        height: ${HEADING_MM - 3}mm;
+        line-height: ${HEADING_MM - 3}mm;
+        font-size: 13pt;
         font-weight: 600;
         text-align: center;
-        margin: 0 0 4mm;
+        margin: 0 0 3mm;
+        overflow: hidden;
       }
       .barcode-print-sheet {
         display: grid;
@@ -411,19 +434,20 @@ function printLabels() {
         justify-content: start;
         align-content: start;
       }
-      .barcode-label {
-        page-break-inside: avoid;
-        break-inside: avoid;
+      .barcode-label, .barcode-label * {
+        color: #000;
       }
-      @media print {
-        body {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
+      .barcode-label {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
     </style>
   </head>
-  <body>${headingHtml}${printArea.value.innerHTML}</body>
+  <body>${pagesHtml}</body>
 </html>`)
   popup.document.close()
   popup.focus()
@@ -432,6 +456,52 @@ function printLabels() {
     popup.print()
     popup.close()
   }, 250)
+}
+
+// Space the optional heading takes at the top of each sheet (text + gap).
+const HEADING_MM = 10
+
+/**
+ * Split the rendered labels into printed pages.
+ *
+ * A sheet (A4/A5) holds as many rows as fit between its top and bottom
+ * margins. A label roll is fed one row at a time, so each page is exactly one
+ * row of labels plus its margins; the gap between rows is the stock's own
+ * gap, which the printer's sensor handles.
+ */
+function paginate() {
+  const kind = selectedPaperKind.value
+  const { top, right, bottom, left } = margins.value
+  const { widthMm, heightMm } = geometry.value
+  const columns = columnsPerRow.value
+  const rowWidthMm = widthMm * columns + spacing.value.h * Math.max(0, columns - 1)
+
+  let pageWidthMm
+  let pageHeightMm
+  let rowsPerPage
+
+  if (isLabelRoll.value) {
+    pageWidthMm = rowWidthMm + left + right
+    pageHeightMm = heightMm + top + bottom
+    rowsPerPage = 1
+  } else {
+    pageWidthMm = kind.pageWidthMm
+    pageHeightMm = kind.pageHeightMm
+    const headingMm = layout.value.heading.trim() ? HEADING_MM : 0
+    const usableMm = pageHeightMm - top - bottom - headingMm
+    rowsPerPage = Math.max(1, Math.floor((usableMm + spacing.value.v) / (heightMm + spacing.value.v)))
+  }
+
+  // outerHTML, not the sheet's innerHTML: the grid lives on the sheet element,
+  // and copying only its children is what printed every label in one column.
+  const labels = Array.from(printArea.value.children).map((el) => el.outerHTML)
+  const perPage = columns * rowsPerPage
+  const chunks = []
+  for (let i = 0; i < labels.length; i += perPage) {
+    chunks.push(labels.slice(i, i + perPage))
+  }
+
+  return { widthMm: pageWidthMm, heightMm: pageHeightMm, chunks }
 }
 
 function escapeHtml(value) {
@@ -659,7 +729,7 @@ function escapeHtml(value) {
               <TableCell class="text-muted-foreground">{{ row.category || '—' }}</TableCell>
               <TableCell class="font-medium">{{ row.name }}</TableCell>
               <TableCell v-if="hasVariantRows" class="text-muted-foreground">{{ row.variant_label || '—' }}</TableCell>
-              <TableCell class="text-end">{{ row.sale_price }}</TableCell>
+              <TableCell class="text-end">{{ row.sale_price ?? '—' }}</TableCell>
               <TableCell>
                 <NextInput
                   label=""
