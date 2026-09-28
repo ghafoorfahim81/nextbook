@@ -86,6 +86,11 @@ const getStatusLabel = (status) => {
 };
 
 const currencySymbol = computed(() => purchaseData.value.transaction?.currency?.symbol || '');
+// The supplier's page is behind suppliers.view, so without it the name stays
+// plain text rather than becoming a link into a 403.
+const canOpenSupplier = computed(() =>
+    Boolean(purchaseData.value.supplier_id && purchaseData.value.supplier_name) && can(['suppliers.view', 'ledgers.view'])
+);
 const purchaseReturns = computed(() => purchaseData.value.returns || []);
 const returnStatusBadgeClasses = (status) => {
     switch (status) {
@@ -234,7 +239,16 @@ const reversePurchase = (reason) => {
                     </div>
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground"><User class="h-3 w-3" />{{ t('ledger.supplier.supplier') }}</div>
-                        <div class="text-sm font-medium text-foreground">{{ purchaseData.supplier_name || '-' }}</div>
+                        <div class="text-sm font-medium text-foreground">
+                            <!-- The name is the way through to the ledger, where the
+                                 rest of this supplier's balance and history is. -->
+                            <a
+                                v-if="canOpenSupplier"
+                                :href="route('suppliers.show', purchaseData.supplier_id)"
+                                class="text-violet-600 hover:underline dark:text-violet-400"
+                            >{{ purchaseData.supplier_name }}</a>
+                            <template v-else>{{ purchaseData.supplier_name || '-' }}</template>
+                        </div>
                     </div>
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground"><FileCheck class="h-3 w-3" />{{ t('general.type') }}</div>

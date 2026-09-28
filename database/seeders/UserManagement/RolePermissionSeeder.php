@@ -91,6 +91,11 @@ class RolePermissionSeeder extends Seeder
 
             'receipts',
             'payments',
+            // Offsetting one party's two ledgers against each other. Granted
+            // apart from receipts and payments on purpose: a set-off moves two
+            // parties' balances at once and settles no cash, so whoever may
+            // enter a receipt is not automatically trusted with one.
+            'contra_settlements',
             'expenses',
             'expense_categories',
 

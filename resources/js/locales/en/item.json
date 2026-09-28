@@ -137,6 +137,7 @@
     "identification_pricing": "Identification & Pricing",
     "variant_attributes": "Attributes",
     "add_variant": "Add Variant",
+    "load_all_variants": "Load All Variants",
     "add_attribute_placeholder": "e.g. color, ram",
     "default_variant": "Default",
     "make_default_variant": "Set as default variant",

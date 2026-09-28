@@ -8,6 +8,7 @@ use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use App\Support\DocumentType;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -482,19 +483,10 @@ class LedgerStatementService
         ];
     }
 
+    /** Named and translated in one place, so every screen agrees. */
     private function referenceLabel(?string $referenceType): string
     {
-        if (! $referenceType) {
-            return '-';
-        }
-
-        // reference_type is written inconsistently across the codebase: some
-        // writers store a FQCN, others a bare slug. Normalise both.
-        if (str_contains($referenceType, '\\')) {
-            return str(class_basename($referenceType))->headline()->toString();
-        }
-
-        return str($referenceType)->headline()->toString();
+        return $referenceType ? DocumentType::label($referenceType) : '-';
     }
 
     private function formatBalance(mixed $value): string

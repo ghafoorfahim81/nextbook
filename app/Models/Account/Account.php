@@ -1481,6 +1481,24 @@ class Account extends Model
                 'remark' => 'Cost of moving goods between own warehouses',
                 'is_main' => true,
             ],
+            // Where a set-off passes through. Offsetting what a party owes us
+            // against what we owe them is two settlements, not one: the
+            // customer's invoices are relieved and the supplier's bills are
+            // paid, and each needs its own voucher so each side gets its own
+            // settlement rows. This account is what the two vouchers hand
+            // between them, and it is always left at zero — which is exactly
+            // what makes a set-off auditable: a non-zero balance here means one
+            // half of an offset went missing.
+            [
+                'name' => 'Set-off Clearing',
+                'local_name' => 'تهاتر',
+                'number' => '3070',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'contra-clearing',
+                'remark' => 'Passes between the two halves of a set-off; always nets to zero',
+                'is_main' => true,
+            ],
         ];
     }
 }

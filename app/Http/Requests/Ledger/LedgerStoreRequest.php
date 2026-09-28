@@ -53,6 +53,7 @@ class LedgerStoreRequest extends FormRequest
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
+            'counterpart_ledger_id' => ['nullable', 'string', 'exists:ledgers,id'],
             ...$this->openingRules(),
         ];
     }

@@ -7,7 +7,7 @@ import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, Coins, Printer, SquarePen, Download } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, RotateCcw, Coins, Printer, SquarePen, Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
@@ -90,6 +90,20 @@ const getStatusLabel = (status) => {
 };
 
 const currencySymbol = computed(() => saleData.value.transaction?.currency?.symbol || '');
+// The customer's page is behind customers.view, so without it the name stays
+// plain text rather than becoming a link into a 403.
+const canOpenCustomer = computed(() =>
+    Boolean(saleData.value.customer_id && saleData.value.customer_name) && can(['customers.view', 'ledgers.view'])
+);
+const saleReturns = computed(() => saleData.value.returns || []);
+const returnStatusBadgeClasses = (status) => {
+    switch (status) {
+        case 'draft': return 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-300';
+        case 'posted': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
+        case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
+        default: return 'border-border bg-muted text-foreground';
+    }
+};
 const postDialogOpen = ref(false);
 const reverseDialogOpen = ref(false);
 
@@ -198,7 +212,16 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
                             <User class="h-3 w-3" />{{ t('ledger.customer.customer') }}
                         </div>
-                        <div class="text-sm font-medium text-foreground">{{ saleData.customer_name || '-' }}</div>
+                        <div class="text-sm font-medium text-foreground">
+                            <!-- The name is the way through to the ledger, where the
+                                 rest of this customer's balance and history is. -->
+                            <a
+                                v-if="canOpenCustomer"
+                                :href="route('customers.show', saleData.customer_id)"
+                                class="text-violet-600 hover:underline dark:text-violet-400"
+                            >{{ saleData.customer_name }}</a>
+                            <template v-else>{{ saleData.customer_name || '-' }}</template>
+                        </div>
                     </div>
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
@@ -425,6 +448,40 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                                 </td>
                             </tr>
                         </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sale returns -->
+            <div v-if="saleReturns.length" class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <div class="border-b border-border bg-muted/30 px-4 py-3 flex items-center gap-2">
+                    <RotateCcw class="h-5 w-5 text-violet-500" />
+                    <h3 class="text-base font-semibold text-foreground">{{ t('sale_return.sale_returns') }}</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="border-b border-border bg-muted/40">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.number') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.date') }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.qty') }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.total') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            <tr v-for="ret in saleReturns" :key="ret.id"
+                                class="cursor-pointer bg-background/40 transition-colors hover:bg-muted/40"
+                                @click="router.visit(route('sale-returns.show', ret.id))">
+                                <td class="px-3 py-3 text-violet-600 underline dark:text-violet-400">#{{ ret.number }}</td>
+                                <td class="px-3 py-3 text-foreground">{{ ret.date }}</td>
+                                <td class="px-3 py-3 text-right text-foreground">{{ ret.quantity }}</td>
+                                <td class="px-3 py-3 text-right font-semibold text-foreground">{{ currencySymbol }} {{ formatLineValue(ret.amount) }}</td>
+                                <td class="px-3 py-3">
+                                    <Badge :class="returnStatusBadgeClasses(ret.status)">{{ getStatusLabel(ret.status) }}</Badge>
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>

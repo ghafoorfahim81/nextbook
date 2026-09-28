@@ -207,6 +207,7 @@ class ReceiptController extends Controller
                 'name',
                 'code',
                 'type',
+                'counterpart_ledger_id',
                 'email',
                 'phone_no',
                 'address',

@@ -473,8 +473,19 @@ html[data-surface='glass'] .bg-primary:hover {
    the variant's own bg-background. Matching bare .border-input also repainted
    outline buttons that were given a fill of their own (the header quick-add
    button is variant="outline" plus bg-primary with a white icon), turning
-   them into blank white pills. */
-html[data-surface='glass'] .border-input.bg-background {
+   them into blank white pills.
+
+   :not(.next-field-control) for the same reason the control rule above carries
+   it, and it has to be spelled out here too: the shadcn <input> ships
+   `border border-input bg-background`, so a NextInput matched this pair and
+   this selector scores (0,3,1) — over the (0,2,0) of the
+   `.next-field .next-field-control { border-color: transparent }` that is
+   supposed to strip it. The border came back everywhere the fieldset's own
+   outline already covers it, invisible except inside the legend's gap, where
+   it surfaced as the hairline struck through the floated label. Only the
+   input showed it: the textarea ships bg-transparent, and the select and date
+   picker build their own control. */
+html[data-surface='glass'] .border-input.bg-background:not(.next-field-control) {
   background-color: hsl(var(--card) / 0.45);
   border-color: hsl(var(--glass-edge-control) / var(--glass-edge-control-alpha));
   backdrop-filter: blur(10px) saturate(150%);

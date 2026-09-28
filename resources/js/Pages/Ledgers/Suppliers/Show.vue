@@ -14,6 +14,7 @@ import PhotoUpload from '@/Components/next/PhotoUpload.vue';
 import LedgerStatement from '@/Components/ledger/LedgerStatement.vue';
 import LedgerCurrencyBalances from '@/Components/ledger/LedgerCurrencyBalances.vue';
 import LedgerOpenItems from '@/Components/ledger/LedgerOpenItems.vue';
+import CombinedPositionCard from '@/Components/ledger/CombinedPositionCard.vue';
 import { printDocument } from '@/composables/usePrintDocument';
 
 const props = defineProps({
@@ -28,6 +29,12 @@ const props = defineProps({
     openItems: { type: Array, required: false, default: () => [] },
     settlementHistory: { type: Object, required: false, default: () => ({}) },
     settlementBalances: { type: Object, required: false, default: () => ({ currencies: [], base_total: '0' }) },
+    // Both sides of a party who also trades the other way. Null when this
+    // account is not paired with another, which is the ordinary case.
+    combinedPosition: { type: Object, required: false, default: null },
+    // Set-offs touching this party. They move the balance without a sale,
+    // a purchase or any cash, so no other tab would ever show them.
+    contraSettlements: { type: Array, required: false, default: () => [] },
 });
 
 const { t } = useI18n();
@@ -148,6 +155,28 @@ const supplierPurchaseColumns = computed(() => [
     { key: 'description', label: t('general.description') },
 ]);
 
+const supplierContraTableRows = computed(() => (props.contraSettlements || []).map((row) => ({
+    id: row.id,
+    number: row.number,
+    date: row.date,
+    counterparty: row.counterparty || '-',
+    amount: row.amount,
+    currency: row.currency_code || '',
+    status: row.status_label || row.status || '-',
+    description: row.narration || '-',
+    showRoute: 'contra-settlements.show',
+})));
+
+const supplierContraColumns = computed(() => [
+    { key: 'number', label: t('general.number') },
+    { key: 'date', label: t('general.date') },
+    { key: 'counterparty', label: t('contra.same_person_other_account') },
+    { key: 'amount', label: t('contra.offset_amount'), type: 'money', align: 'right' },
+    { key: 'currency', label: t('admin.currency.currency') },
+    { key: 'status', label: t('general.status') },
+    { key: 'description', label: t('general.description') },
+]);
+
 const supplierMovementColumns = computed(() => [
     { key: 'number', label: t('general.number') },
     { key: 'date', label: t('general.date') },
@@ -237,6 +266,12 @@ const supplierMovementColumns = computed(() => [
 
             <!-- GENERAL TAB -->
             <div v-if="activeMainTab === 'general'" class="space-y-4">
+                <CombinedPositionCard
+                    :position="combinedPosition"
+                    :counterpart="supplierData.counterpart"
+                    role="supplier"
+                    :ledger-id="supplierData.id"
+                />
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:items-start">
                     <!-- Left column: profile, contact and statement cards -->
                     <div class="space-y-4 lg:self-start">
@@ -484,6 +519,17 @@ const supplierMovementColumns = computed(() => [
                         >
                             {{ t('payment.payments') }}
                         </button>
+                        <button
+                            v-if="contraSettlements.length"
+                            type="button"
+                            class="px-3 py-1.5 text-sm rounded-full transition-colors"
+                            :class="activeTxnTab === 'contra'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'"
+                            @click="activeTxnTab = 'contra'"
+                        >
+                            {{ t('contra.contra_settlements') }}
+                        </button>
                     </div>
 
                     <LedgerListTable
@@ -528,6 +574,17 @@ const supplierMovementColumns = computed(() => [
                             </Button>
                         </template>
                     </LedgerListTable>
+                    <LedgerListTable
+                        v-else-if="activeTxnTab === 'contra'"
+                        :title="t('contra.contra_settlements')"
+                        :rows="supplierContraTableRows"
+                        :columns="supplierContraColumns"
+                        :empty-message="t('general.no_data_found')"
+                        :row-number-label="t('report.columns.no')"
+                        default-sort-key="date"
+                        default-sort-direction="desc"
+                        @row-click="openTransaction($event.showRoute, $event.id)"
+                    />
                     <LedgerListTable
                         v-else
                         :title="t('payment.payments')"

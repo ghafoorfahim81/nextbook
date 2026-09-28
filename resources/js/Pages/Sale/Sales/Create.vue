@@ -8,6 +8,7 @@ import axios from 'axios'
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
+import CounterpartHint from '@/Components/ledger/CounterpartHint.vue'
 import BarcodeSearchInput from '@/Components/next/BarcodeSearchInput.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
@@ -1166,6 +1167,7 @@ const saveFormRef = useSaveShortcut({ form })
                     :search-fields="['name', 'email', 'phone_no']"
                     :search-options="{ type: 'customer' }"
                 />
+                <CounterpartHint :ledger="form.selected_ledger" />
                 <NextInput is-required placeholder="Number" v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                 <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                 <div class="grid grid-cols-2 gap-2" v-if="general_fields.currency">

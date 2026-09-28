@@ -481,6 +481,16 @@ class DeletedRecordService
                 'restore' => fn (Model $record) => $this->restoreTransactionRecord($record),
                 'force_delete' => fn (Model $record) => $this->forceDeleteTransactionRecord($record),
             ],
+            'contra_settlements' => [
+                'label' => 'Set-offs',
+                'model' => \App\Models\Accounting\ContraSettlement::class,
+                'title' => fn (Model $record) => $record->number ?: $record->narration ?: $record->id,
+                // Two vouchers, not one, so the generic transaction helpers do
+                // not apply: a set-off relieves the customer on one and the
+                // supplier on the other.
+                'restore' => fn (Model $record) => $this->restoreContraSettlement($record),
+                'force_delete' => fn (Model $record) => $this->forceDeleteContraSettlement($record),
+            ],
             'account_transfers' => [
                 'label' => 'Account Transfers',
                 'model' => AccountTransfer::class,
@@ -883,6 +893,52 @@ class DeletedRecordService
     {
         $this->forceDeleteSimpleRelations($record, $relations);
         $this->forceDeleteTransaction($record);
+    }
+
+    /**
+     * Both halves of a set-off come back together, or the clearing account is
+     * left holding one side of an offset with nothing to cancel it.
+     */
+    private function restoreContraSettlement(Model $record): void
+    {
+        $record->restore();
+
+        foreach ($record->transactionIds() as $transactionId) {
+            $transaction = \App\Models\Transaction\Transaction::withTrashed()->find($transactionId);
+
+            if (! $transaction) {
+                continue;
+            }
+
+            $transaction->restore();
+            $transaction->lines()->withTrashed()->restore();
+
+            \App\Models\Accounting\Settlement::withoutGlobalScopes()
+                ->onlyTrashed()
+                ->where('transaction_id', $transactionId)
+                ->restore();
+        }
+    }
+
+    private function forceDeleteContraSettlement(Model $record): void
+    {
+        foreach ($record->transactionIds() as $transactionId) {
+            \App\Models\Accounting\Settlement::withoutGlobalScopes()
+                ->withTrashed()
+                ->where('transaction_id', $transactionId)
+                ->forceDelete();
+
+            $transaction = \App\Models\Transaction\Transaction::withTrashed()->find($transactionId);
+
+            if (! $transaction) {
+                continue;
+            }
+
+            $transaction->lines()->withTrashed()->forceDelete();
+            $transaction->forceDelete();
+        }
+
+        $record->forceDelete();
     }
 
     private function restoreItemRecord(Item $item): void

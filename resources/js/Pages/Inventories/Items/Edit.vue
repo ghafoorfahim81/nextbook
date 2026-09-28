@@ -12,7 +12,7 @@ import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import VariantEditor from '@/Components/inventory/VariantEditor.vue'
 import ItemDetailFields from '@/Components/inventory/ItemDetailFields.vue'
 import { useBusinessProfile } from '@/composables/useBusinessProfile'
-import { Trash2, AlertCircleIcon, Plus } from 'lucide-vue-next'
+import { Trash2, AlertCircleIcon, Plus, ListPlus } from 'lucide-vue-next'
 import { Button } from '@/Components/ui/button'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner';
@@ -162,6 +162,67 @@ const onOpeningVariantChange = (index, value) => {
     if (Number.isFinite(price) && price > 0) {
         form.openings[index].unit_price = price
     }
+
+    // Picking a variant on the last row opens the next one. Entering an opening
+    // per variant is the normal case once variants are on, and the old flow made
+    // it a click on "add opening" between every one of them.
+    addRow(index)
+}
+
+/**
+ * An opening the user has not put anything into — the starter row, usually.
+ * A saved row is never untouched: it carries an id, and a locked one has stock
+ * behind it.
+ */
+const isUntouchedOpening = (opening) =>
+    !opening.id
+    && !opening.is_locked
+    && !opening.batch
+    && !opening.expire_date
+    && !Number(opening.quantity)
+    && (opening.variant_index === null || opening.variant_index === undefined || opening.variant_index === '')
+
+/**
+ * One opening row per variant, in one click.
+ *
+ * An item with a dozen variants otherwise means a dozen trips through the
+ * variant picker before any quantity can be typed. Variants already sitting on
+ * a row are skipped, so on an existing item this adds only what the openings
+ * are still missing, and the untouched starter row is dropped instead of being
+ * left empty above the generated ones.
+ */
+const loadAllVariants = () => {
+    const assigned = new Set(
+        form.openings
+            .map(o => o.variant_index)
+            .filter(v => v !== null && v !== undefined && v !== '')
+            .map(String)
+    )
+
+    // The warehouse the rest of the table is on, so a generated row is ready to
+    // take a quantity and nothing else. This picker reduces to the object.
+    const warehouse = form.openings.find(o => o.selected_warehouse)?.selected_warehouse ?? null
+
+    const rows = []
+    form.variants.forEach((variant, index) => {
+        if (assigned.has(String(index))) return
+
+        const row = blankOpening()
+        // String, to match variantOptions ids — NextSelect reads a numeric 0 as
+        // "no selection".
+        row.variant_index = String(index)
+        row.selected_warehouse = warehouse
+        row.warehouse_id = warehouse?.id ?? null
+
+        const price = Number(variant.purchase_price)
+        if (Number.isFinite(price) && price > 0) row.unit_price = price
+
+        rows.push(row)
+    })
+
+    if (!rows.length) return
+
+    form.openings = [...form.openings.filter(o => !isUntouchedOpening(o)), ...rows]
 }
 
 const existingAttachments = ref(props.item.data.attachments || [])
@@ -179,10 +240,20 @@ const onPhotoChange = (e) => {
 }
 
 // Rows
+//
+// The follow-on row keeps the warehouse of the one it grew out of. Openings are
+// entered a warehouse at a time, warehouse_id is required on every row, and
+// since a variant pick now opens the next row on its own, re-picking the same
+// warehouse down the whole table would be the bulk of the typing saved.
 const addRow = (index) => {
-    if (index === form.openings.length - 1) {
-        form.openings.push(blankOpening())
-    }
+    if (index !== form.openings.length - 1) return
+
+    const row = blankOpening()
+    const warehouse = form.openings[index]?.selected_warehouse ?? null
+    row.selected_warehouse = warehouse
+    row.warehouse_id = warehouse?.id ?? null
+
+    form.openings.push(row)
 }
 const addOpeningRow = () => {
     form.openings.push(blankOpening())
@@ -488,10 +559,26 @@ const saveFormRef = useSaveShortcut({ form })
                     <div class="pt-2">
                         <div class="flex items-center justify-between">
                             <span class="font-bold">{{ t('item.opening') }}</span>
-                            <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addOpeningRow">
-                                <Plus class="h-3.5 w-3.5" />
-                                {{ t('general.add', { title: t('item.opening') }) }}
-                            </Button>
+                            <div class="flex items-center gap-2">
+                                <!-- Only worth offering once the variants grid is
+                                     on: with it off there is a single default
+                                     variant and the column beside it is hidden. -->
+                                <Button
+                                    v-if="showsSection('variants')"
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="gap-1.5"
+                                    @click="loadAllVariants"
+                                >
+                                    <ListPlus class="h-3.5 w-3.5" />
+                                    {{ t('item.load_all_variants') }}
+                                </Button>
+                                <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addOpeningRow">
+                                    <Plus class="h-3.5 w-3.5" />
+                                    {{ t('general.add', { title: t('item.opening') }) }}
+                                </Button>
+                            </div>
                         </div>
                         <div class="rounded-md border border-primary overflow-hidden overflow-x-auto">
                             <table class="w-full text-sm">

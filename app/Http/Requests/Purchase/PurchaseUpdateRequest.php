@@ -23,7 +23,7 @@ class PurchaseUpdateRequest extends FormRequest
     {
         return [
             'number' => ['required', 'integer', 'min:1', Rule::unique('purchases', 'number')->ignore($this->purchase)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
-            'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
+            'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
             'date' => ['required', 'date'],
             'warehouse_id' => ['required', 'string', 'exists:warehouses,id'],
             'discount' => ['nullable', 'numeric'],

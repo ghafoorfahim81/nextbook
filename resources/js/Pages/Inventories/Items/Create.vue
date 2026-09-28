@@ -18,7 +18,7 @@ import { useBusinessProfile } from '@/composables/useBusinessProfile'
 import { useSoundPreferences } from '@/composables/useSoundPreferences'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
-import { Trash2, AlertCircleIcon, Plus } from 'lucide-vue-next'
+import { Trash2, AlertCircleIcon, Plus, ListPlus } from 'lucide-vue-next'
 import { Button } from '@/Components/ui/button'
 import { Checkbox } from '@/Components/ui/checkbox'
 import {
@@ -219,6 +219,76 @@ const onOpeningVariantChange = (index, value) => {
     if (Number.isFinite(price) && price > 0) {
         form.openings[index].unit_price = price
     }
+
+    // Picking a variant on the last row opens the next one. Entering an opening
+    // per variant is the normal case once variants are on, and the old flow made
+    // it a click on "add opening" between every one of them.
+    addRow(index)
+}
+
+/** An opening the user has not put anything into — the starter row, usually. */
+const isUntouchedOpening = (opening) =>
+    !opening.batch
+    && !opening.expire_date
+    && !Number(opening.quantity)
+    && (opening.variant_index === null || opening.variant_index === undefined || opening.variant_index === '')
+
+/**
+ * The picker reduces to an id while createOpeningRow seeds the whole object, so
+ * a row can be holding either — resolve both back to the object.
+ */
+const warehouseObjectFor = (value) => {
+    if (!value) return null
+    if (typeof value === 'object') return value
+
+    return (warehouses.value || []).find(w => w.id === value) ?? null
+}
+
+/**
+ * The warehouse a generated row should carry: whatever the table is already
+ * using, else this branch's main one.
+ */
+const openingSeedWarehouse = () =>
+    warehouseObjectFor(form.openings.find(o => o.selected_warehouse)?.selected_warehouse)
+    ?? resolveDefaultWarehouse()
+
+/**
+ * One opening row per variant, in one click.
+ *
+ * An item with a dozen variants otherwise means a dozen trips through the
+ * variant picker before any quantity can be typed. Variants already sitting on
+ * a row are skipped, so this also completes a half-finished table rather than
+ * duplicating it, and the untouched starter row is dropped instead of being
+ * left empty above the generated ones.
+ */
+const loadAllVariants = () => {
+    const assigned = new Set(
+        form.openings
+            .map(o => o.variant_index)
+            .filter(v => v !== null && v !== undefined && v !== '')
+            .map(String)
+    )
+
+    const warehouse = openingSeedWarehouse()
+
+    const rows = []
+    form.variants.forEach((variant, index) => {
+        if (assigned.has(String(index))) return
+
+        const row = createOpeningRow(warehouse)
+        // String, to match variantOptions ids — NextSelect reads a numeric 0 as
+        // "no selection".
+        row.variant_index = String(index)
+
+        const price = Number(variant.purchase_price)
+        if (Number.isFinite(price) && price > 0) row.unit_price = price
+
+        rows.push(row)
+    })
+
+    if (!rows.length) return
+
+    form.openings = [...form.openings.filter(o => !isUntouchedOpening(o)), ...rows]
 }
 
 const findBySlugOrName = (list, want) => {
@@ -393,10 +463,17 @@ const onPhotoChange = (e) => {
 }
 
 // rows
+//
+// The follow-on row keeps the warehouse of the one it grew out of. Openings are
+// entered a warehouse at a time, warehouse_id is required on every row, and
+// since a variant pick now opens the next row on its own, re-picking the same
+// warehouse down the whole table would be the bulk of the typing saved.
 const addRow = (index) => {
-    if (index === form.openings.length - 1) {
-        form.openings.push(createOpeningRow())
-    }
+    if (index !== form.openings.length - 1) return
+
+    form.openings.push(createOpeningRow(
+        warehouseObjectFor(form.openings[index]?.selected_warehouse) ?? resolveDefaultWarehouse()
+    ))
 }
 const addOpeningRow = () => {
     form.openings.push(createOpeningRow())
@@ -750,12 +827,28 @@ const saveFormRef = useSaveShortcut({ form })
                 <div class="pt-2">
                     <div class="flex items-center justify-between mb-3">
                         <span class="font-bold">{{ t('item.opening') }}</span>
-                        <!-- `btn btn-outline-primary` is Bootstrap; this app has
-                             no such classes, so this rendered as bare text. -->
-                        <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addOpeningRow">
-                            <Plus class="h-3.5 w-3.5" />
-                            {{ t('general.add', { title: t('item.opening') }) }}
-                        </Button>
+                        <div class="flex items-center gap-2">
+                            <!-- Only worth offering once the variants grid is on:
+                                 with it off there is a single default variant and
+                                 the column beside it is hidden anyway. -->
+                            <Button
+                                v-if="showsSection('variants')"
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                class="gap-1.5"
+                                @click="loadAllVariants"
+                            >
+                                <ListPlus class="h-3.5 w-3.5" />
+                                {{ t('item.load_all_variants') }}
+                            </Button>
+                            <!-- `btn btn-outline-primary` is Bootstrap; this app has
+                                 no such classes, so this rendered as bare text. -->
+                            <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addOpeningRow">
+                                <Plus class="h-3.5 w-3.5" />
+                                {{ t('general.add', { title: t('item.opening') }) }}
+                            </Button>
+                        </div>
                     </div>
                     <div class="rounded-md border border-primary overflow-hidden overflow-x-auto">
                         <table class="w-full text-sm">
