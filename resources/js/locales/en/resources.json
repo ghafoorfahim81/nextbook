@@ -73,5 +73,6 @@
     "discount_rules": "Discount Rules",
     "landed_costs": "Landed Costs",
     "landed_cost_categories": "Landed Cost Categories",
-    "payment_terms": "Payment Terms"
+    "payment_terms": "Payment Terms",
+    "activity_logs": "Activity Logs"
 }

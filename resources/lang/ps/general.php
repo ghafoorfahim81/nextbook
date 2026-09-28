@@ -2,6 +2,7 @@
 
 return [
     'resource' => [
+        'journal_class' => 'د ژورنال ټولګی',
         'account' => 'حساب',
         'account_transfer' => 'د حساب لېږد',
         'account_type' => 'د حساب ډول',

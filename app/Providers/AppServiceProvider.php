@@ -17,7 +17,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One instance per request, so the observer and the controllers add to
+        // the same batch of activity entries (see ActivityLogService::$batch).
+        $this->app->scoped(\App\Services\ActivityLogService::class);
     }
 
     /**
@@ -81,7 +83,12 @@ class AppServiceProvider extends ServiceProvider
         // behaviour and must run even where audit logging is switched off.
         Employee::observe(EmployeeObserver::class);
 
-        foreach (config('activity_log.observer.models', []) as $modelClass) {
+        $auditedModels = array_unique([
+            ...config('activity_log.observer.models', []),
+            ...config('activity_log.observer.detail_models', []),
+        ]);
+
+        foreach ($auditedModels as $modelClass) {
             if (class_exists($modelClass)) {
                 $modelClass::observe(ModelActivityObserver::class);
             }

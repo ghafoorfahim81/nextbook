@@ -35,7 +35,7 @@ class JournalClassController extends Controller
     {
         $journalClass = JournalClass::create($request->validated());
 
-        return redirect()->route('journal-classes.index')->with('success', __('general.created_successfully', ['resource' => __('sidebar.journal_entry.journal_class')]));
+        return redirect()->route('journal-classes.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.journal_class')]));
     }
 
     public function show(Request $request, JournalClass $journalClass)
@@ -48,13 +48,14 @@ class JournalClassController extends Controller
     public function update(JournalClassUpdateRequest $request, JournalClass $journalClass)
     {
         $journalClass->update($request->validated());
-        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('sidebar.journal_entry.journal_class')]));
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.journal_class')]));
     }
 
     public function destroy(Request $request, JournalClass $journalClass)
     {
         $journalClass->delete();
 
-        return redirect()->route('journal-types.index')->with('success', __('general.deleted_successfully', ['resource' => __('sidebar.journal_entry.journal_type')]));
+        // journal-types.index does not exist; redirecting there threw on every delete.
+        return redirect()->route('journal-classes.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.journal_class')]));
     }
 }
