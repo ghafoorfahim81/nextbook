@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useForm, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useColorMode } from '@vueuse/core'
@@ -20,7 +20,7 @@ import { toast } from 'vue-sonner';
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
-    Save, Plug, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText
+    Save, Plug, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText, Check
 } from 'lucide-vue-next'
 import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode, resolveSurfaceStyle } from '@/lib/theme'
 import { vHighlightSearch } from '@/directives/highlightSearch'
@@ -300,7 +300,9 @@ const tabSearchTerms = {
     ],
 }
 
-const isPreferencesLoading = computed(() => form.processing || pluginForm.processing || importLoading.value || Boolean(resettingCategory.value))
+// Auto-save runs `form` in the background and reports through the header status,
+// so it is left out here to keep the banner from flashing on every edit.
+const isPreferencesLoading = computed(() => pluginForm.processing || importLoading.value || Boolean(resettingCategory.value))
 
 const form = useForm({ ...props.preferences })
 const previewColorMode = useColorMode({
@@ -516,19 +518,71 @@ const removeSoundUpload = (category) => {
     })
 }
 
-const save = () => {
+// Every change is saved in the background: edits are debounced so typing into a
+// number field sends one request, and preserveState keeps the page (active tab,
+// search, scroll) in place instead of remounting it.
+const AUTO_SAVE_DELAY = 800
+const snapshotForm = () => JSON.stringify(form.data())
+let lastSavedSnapshot = snapshotForm()
+let autoSaveTimer = null
+const autoSaveStatus = ref('idle') // idle | pending | saving | saved | error
+
+const save = ({ silent = false } = {}) => {
+    clearTimeout(autoSaveTimer)
+    const snapshot = snapshotForm()
+    autoSaveStatus.value = 'saving'
     form.put(route('preferences.update'), {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => {
-            toast.success(t('preferences.saved'), {
-                description: t('preferences.saved_description'),
-                class: 'bg-green-600',
-            })
-        // Store form values to local storage after a successful save
-        localStorage.setItem('user_preferences', JSON.stringify(form));
+            lastSavedSnapshot = snapshot
+            autoSaveStatus.value = 'saved'
+            if (!silent) {
+                toast.success(t('preferences.saved'), {
+                    description: t('preferences.saved_description'),
+                    class: 'bg-green-600',
+                })
+            }
+            // Store form values to local storage after a successful save
+            try { localStorage.setItem('user_preferences', JSON.stringify(form.data())) } catch {}
+        },
+        onError: () => {
+            autoSaveStatus.value = 'error'
+            toast.error(t('preferences.save_error'))
+        },
+        onFinish: () => {
+            // A change made while this request was in flight still needs saving.
+            if (autoSaveStatus.value === 'saved' && snapshotForm() !== lastSavedSnapshot) {
+                scheduleAutoSave()
+            }
         },
     })
 }
+
+const scheduleAutoSave = () => {
+    clearTimeout(autoSaveTimer)
+    autoSaveStatus.value = 'pending'
+    autoSaveTimer = setTimeout(() => {
+        if (form.processing) return // onFinish reschedules once the current save lands
+        if (snapshotForm() === lastSavedSnapshot) {
+            autoSaveStatus.value = 'saved'
+            return
+        }
+        save({ silent: true })
+    }, AUTO_SAVE_DELAY)
+}
+
+watch(snapshotForm, (snapshot) => {
+    if (snapshot !== lastSavedSnapshot) scheduleAutoSave()
+})
+
+// Flush a pending edit instead of dropping it when the user navigates away.
+onBeforeUnmount(() => {
+    if (autoSaveStatus.value === 'pending' && snapshotForm() !== lastSavedSnapshot) {
+        clearTimeout(autoSaveTimer)
+        save({ silent: true })
+    }
+})
 
 const resetCategory = (category) => {
     if (confirm(t('preferences.confirm_reset'))) {
@@ -946,7 +1000,23 @@ watch(normalizedMenuSearch, (query) => {
                         <Download class="w-4 h-4 mr-2" />
                         {{ t('preferences.export') }}
                     </Button>
-                    <Button @click="save" :disabled="form.processing" size="sm" class="bg-primary text-white hover:bg-primary/90" :class="form.processing ? 'bg-primary/90' : 'bg-primary'">
+                    <span
+                        v-if="autoSaveStatus !== 'idle'"
+                        class="flex items-center gap-1.5 px-1 text-xs"
+                        :class="autoSaveStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'"
+                        aria-live="polite"
+                    >
+                        <Spinner v-if="autoSaveStatus === 'saving'" class="h-3.5 w-3.5" />
+                        <CircleX v-else-if="autoSaveStatus === 'error'" class="h-3.5 w-3.5" />
+                        <Check v-else-if="autoSaveStatus === 'saved'" class="h-3.5 w-3.5" />
+                        {{ {
+                            pending: t('preferences.autosave.pending'),
+                            saving: t('general.saving'),
+                            saved: t('preferences.autosave.saved'),
+                            error: t('preferences.save_error'),
+                        }[autoSaveStatus] }}
+                    </span>
+                    <Button @click="save()" :disabled="form.processing" size="sm" class="bg-primary text-white hover:bg-primary/90" :class="form.processing ? 'bg-primary/90' : 'bg-primary'">
                         <Spinner v-if="form.processing" class="w-4 h-4 mr-2" />
                         <Save v-else class="w-4 h-4 mr-2" />
                         {{ form.processing ? t('general.saving') : t('preferences.save') }}
