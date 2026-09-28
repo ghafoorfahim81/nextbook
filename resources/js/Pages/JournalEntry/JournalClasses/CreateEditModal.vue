@@ -29,17 +29,20 @@ watch(() => localDialogOpen.value, (val) => {
 
 const isEditing = computed(() => !!props.editingItem?.id);
 
+// The inputs bind code and description. They were missing here (the form
+// declared remarks/is_active, which journal classes do not have), so useForm
+// never submitted them and both were silently dropped on create and edit.
 const form = useForm({
     name: '',
-    remarks: '',
-    is_active: true,
+    code: '',
+    description: '',
 });
 
 watch(() => props.editingItem, (item) => {
     if (item) {
         form.name = item.name || '';
-        form.remarks = item.remarks || '';
-        form.is_active = item.is_active ?? true;
+        form.code = item.code || '';
+        form.description = item.description || '';
     } else {
         form.reset();
     }

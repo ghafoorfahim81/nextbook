@@ -706,7 +706,7 @@ const navMain = computed(() => [
         icon: FileChartLine,
         items: [
             { title: t('sidebar.reports.report'), url: '/reports' },
-            { title: t('sidebar.reports.activity_logs'), url: '/activity-logs', icon: History },
+            { title: t('sidebar.reports.activity_logs'), url: '/activity-logs', icon: History, permission: 'activity_logs.view_any' },
         ],
     },
 ])

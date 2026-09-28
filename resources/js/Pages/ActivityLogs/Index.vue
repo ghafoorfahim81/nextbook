@@ -19,8 +19,10 @@ import {
 } from '@/Components/ui/table'
 import { Badge } from '@/Components/ui/badge'
 import { Eye, Filter, RotateCcw } from 'lucide-vue-next'
+import { useActivityLogLabels } from '@/composables/useActivityLogLabels'
 
 const { t } = useI18n()
+const { eventLabel, moduleLabel, describe, eventVariant } = useActivityLogLabels()
 
 const props = defineProps({
   logs: Object,
@@ -46,14 +48,14 @@ const moduleOptions = computed(() => ([
   { id: 'all', name: t('general.all') },
   ...(props.filterOptions?.modules || []).map(module => ({
     id: module,
-    name: module,
+    name: moduleLabel(module),
   })),
 ]))
 const eventTypeOptions = computed(() => ([
   { id: 'all', name: t('general.all') },
   ...(props.filterOptions?.event_types || []).map(eventType => ({
     id: eventType,
-    name: eventType,
+    name: eventLabel(eventType),
   })),
 ]))
 const userOptions = computed(() => ([
@@ -112,14 +114,6 @@ function visitPage(url) {
   })
 }
 
-function eventVariant(eventType) {
-  const type = String(eventType || '').toLowerCase()
-
-  if (['deleted', 'rejected', 'cancelled'].includes(type)) return 'destructive'
-  if (['approved', 'posted', 'completed', 'created'].includes(type)) return 'default'
-
-  return 'secondary'
-}
 </script>
 
 <template>
@@ -136,6 +130,7 @@ function eventVariant(eventType) {
           <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <NextInput
               v-model="form.search"
+              @keydown.enter.prevent="applyFilters(1)"
               :label="t('general.search')"
               :placeholder="t('general.search_placeholder', { name: t('activity_log.activity_logs') })"
             />
@@ -173,7 +168,7 @@ function eventVariant(eventType) {
               :searchable="true"
               :show-arrow="true"
               :has-add-button="false"
-              :floating-text="t('general.created_by')"
+              :floating-text="t('activity_log.user')"
             />
 
             <div class="space-y-2">
@@ -193,24 +188,12 @@ function eventVariant(eventType) {
                 :show-icon="true"
               />
             </div>
-
-            <NextInput
-              v-model="form.reference_type"
-              :label="t('activity_log.reference_type')"
-              placeholder="sale"
-            />
-
-            <NextInput
-              v-model="form.reference_id"
-              :label="t('activity_log.reference_id')"
-              placeholder="01H..."
-            />
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
             <Button @click="applyFilters(1)">{{ t('general.filter') }}</Button>
             <Button variant="outline" @click="resetFilters">
-              <RotateCcw class="mr-2 h-4 w-4" />
+              <RotateCcw class="me-2 h-4 w-4" />
               {{ t('general.reset') }}
             </Button>
           </div>
@@ -229,8 +212,8 @@ function eventVariant(eventType) {
                   <TableHead>#</TableHead>
                   <TableHead>{{ t('activity_log.event_type') }}</TableHead>
                   <TableHead>{{ t('activity_log.module') }}</TableHead>
-                  <TableHead>{{ t('activity_log.reference_id') }}</TableHead>
-                  <TableHead>{{ t('general.created_by') }}</TableHead>
+                  <TableHead>{{ t('activity_log.reference') }}</TableHead>
+                  <TableHead>{{ t('activity_log.user') }}</TableHead>
                   <TableHead>{{ t('general.branch') }}</TableHead>
                   <TableHead>{{ t('general.date') }}</TableHead>
                   <TableHead>{{ t('general.description') }}</TableHead>
@@ -248,19 +231,24 @@ function eventVariant(eventType) {
                   <TableCell>{{ ((meta.current_page || 1) - 1) * (meta.per_page || 25) + index + 1 }}</TableCell>
                   <TableCell>
                     <Badge :variant="eventVariant(log.event_type)">
-                      {{ log.event_type }}
+                      {{ eventLabel(log.event_type) }}
                     </Badge>
                   </TableCell>
-                  <TableCell>{{ log.module || '-' }}</TableCell>
-                  <TableCell class="font-mono text-xs">{{ log.reference_id || '-' }}</TableCell>
+                  <TableCell>{{ moduleLabel(log.module) }}</TableCell>
+                  <TableCell class="font-mono text-xs" dir="ltr">{{ log.subject || '-' }}</TableCell>
                   <TableCell>{{ log.user?.name || '-' }}</TableCell>
                   <TableCell>{{ log.branch?.name || '-' }}</TableCell>
-                  <TableCell>{{ log.created_at ? new Date(log.created_at).toLocaleString() : '-' }}</TableCell>
-                  <TableCell class="max-w-[340px] truncate">{{ log.description || '-' }}</TableCell>
+                  <TableCell><span dir="ltr">{{ log.created_at_display || '-' }}</span></TableCell>
+                  <TableCell class="max-w-[340px]" :title="log.description || ''">
+                    <div class="flex items-center gap-2">
+                      <span class="truncate">{{ describe(log) }}</span>
+                      <Badge v-if="log.related_count" variant="secondary" class="shrink-0" :title="t('activity_log.related_records')">+{{ log.related_count }}</Badge>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Button as-child variant="outline" size="sm">
                       <Link :href="route('activity-logs.show', log.id)">
-                        <Eye class="mr-2 h-4 w-4" />
+                        <Eye class="me-2 h-4 w-4" />
                         {{ t('activity_log.view_details') }}
                       </Link>
                     </Button>

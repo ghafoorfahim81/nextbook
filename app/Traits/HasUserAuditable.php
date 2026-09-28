@@ -65,7 +65,12 @@ trait HasUserAuditable
                     } elseif (static::auditColumnExists($model, 'deleted_by')) {
                         $model->deleted_by = $user->id;
                     }
-                    $model->save();
+                    // Quietly, like restored() below: stamping who deleted the
+                    // row is part of the delete, not an edit. A plain save()
+                    // fired "updated" too, so every delete left a second
+                    // "edited" entry in the activity log — often sorted after
+                    // the delete itself, since both land in the same second.
+                    $model->saveQuietly();
                 }
             });
             

@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // Used by HandleInertiaRequests to compute branch-scoped data.
             SetActiveBranch::class,
             HandleInertiaRequests::class,
+            // One activity log entry per request, not one per saved row.
+            \App\Http\Middleware\BatchActivityLog::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

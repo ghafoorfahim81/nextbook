@@ -95,6 +95,12 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            // Laravel writes timestamps as plain strings in the app timezone.
+            // Left to the server default, Postgres read those strings in its
+            // own zone — on a machine set to Los Angeles every timestamptz
+            // (the activity log) came back 7 hours out. Keep the session on
+            // the app's timezone so what is written is what is read.
+            'timezone' => env('DB_TIMEZONE', 'UTC'),
         ],
 
         'sqlsrv' => [

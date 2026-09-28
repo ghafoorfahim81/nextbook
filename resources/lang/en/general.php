@@ -2,6 +2,7 @@
 
 return [
     'resource' => [
+        'journal_class' => 'Journal class',
         'account' => 'Account',
         'account_transfer' => 'Account transfer',
         'account_type' => 'Account type',

@@ -188,6 +188,10 @@ class RolePermissionSeeder extends Seeder
             $this->ensurePermission("deleted_records.{$action}");
         }
 
+        foreach (['view_any', 'view'] as $action) {
+            $this->ensurePermission("activity_logs.{$action}");
+        }
+
         /*
         |--------------------------------------------------------------------------
         | 4. Create Roles
@@ -322,12 +326,13 @@ class RolePermissionSeeder extends Seeder
 
         $accountant->syncPermissions($accountantPermissions);
 
-        // Clerk → view-only access
+        // Clerk → view-only access. The audit trail is not "view-only data":
+        // it shows every colleague's actions, so it stays with admins.
         $clerk->syncPermissions(
             Permission::where(function ($query) {
                 $query->where('name', 'like', '%.view')
                     ->orWhere('name', 'like', '%.view_any');
-            })->get()
+            })->where('name', 'not like', 'activity_logs.%')->get()
         );
 
         /*

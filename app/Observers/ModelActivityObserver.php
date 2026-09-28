@@ -111,19 +111,33 @@ class ModelActivityObserver
             return true;
         }
 
-        if ($model instanceof Transaction && $model->reference_type === Account::class) {
-            return true;
-        }
+        $batching = $this->activityLogService->isBatching();
 
-        if ($model instanceof LedgerOpening) {
-            $transaction = $model->transaction()->withTrashed()->first();
-
-            if ($transaction?->reference_type === Account::class) {
+        // An account's opening balance is saved as a transaction. On its own it
+        // is noise, but inside a request it joins the account's entry as a
+        // related record — which is how the opening amount shows up in the log
+        // for the account it belongs to.
+        if (! $batching) {
+            if ($model instanceof Transaction && $model->reference_type === Account::class) {
                 return true;
+            }
+
+            if ($model instanceof LedgerOpening) {
+                $transaction = $model->transaction()->withTrashed()->first();
+
+                if ($transaction?->reference_type === Account::class) {
+                    return true;
+                }
             }
         }
 
-        if (! $this->observerEnabledFor($model::class)) {
+        // Detail rows (sale lines, item variants, journal lines) only make
+        // sense inside their document's entry, never as rows of their own.
+        if ($this->isDetailModel($model::class)) {
+            if (! $batching) {
+                return true;
+            }
+        } elseif (! $this->observerEnabledFor($model::class)) {
             return true;
         }
 
@@ -141,6 +155,11 @@ class ModelActivityObserver
     protected function observerEnabledFor(string $modelClass): bool
     {
         return in_array($modelClass, config('activity_log.observer.models', []), true);
+    }
+
+    protected function isDetailModel(string $modelClass): bool
+    {
+        return in_array($modelClass, config('activity_log.observer.detail_models', []), true);
     }
 
     protected function excludedAttributes(): array
