@@ -31,6 +31,25 @@ function normalizeText(value) {
     .trim()
 }
 
+/*
+ * One colour per report group, so a report's family is readable at a glance
+ * and every card in a section agrees. Colour marks the group, not the single
+ * report — forty differently coloured cards would read as noise. Class names
+ * are written out in full so Tailwind generates them; each has a lighter
+ * shade for dark mode.
+ */
+const GROUP_TONES = {
+  financial: { tile: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300', dot: 'bg-emerald-500', hover: 'hover:border-emerald-500/40' },
+  cash_flow: { tile: 'bg-sky-500/15 text-sky-600 dark:text-sky-300', dot: 'bg-sky-500', hover: 'hover:border-sky-500/40' },
+  party: { tile: 'bg-violet-500/15 text-violet-600 dark:text-violet-300', dot: 'bg-violet-500', hover: 'hover:border-violet-500/40' },
+  inventory: { tile: 'bg-amber-500/15 text-amber-600 dark:text-amber-300', dot: 'bg-amber-500', hover: 'hover:border-amber-500/40' },
+  expenses: { tile: 'bg-rose-500/15 text-rose-600 dark:text-rose-300', dot: 'bg-rose-500', hover: 'hover:border-rose-500/40' },
+  hr: { tile: 'bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-300', dot: 'bg-fuchsia-500', hover: 'hover:border-fuchsia-500/40' },
+  operations: { tile: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300', dot: 'bg-indigo-500', hover: 'hover:border-indigo-500/40' },
+  management: { tile: 'bg-teal-500/15 text-teal-600 dark:text-teal-300', dot: 'bg-teal-500', hover: 'hover:border-teal-500/40' },
+}
+const toneFor = (groupKey) => GROUP_TONES[groupKey] ?? GROUP_TONES.party
+
 const normalizedSearch = computed(() => normalizeText(search.value))
 const totalReports = computed(() => props.sections.reduce((total, section) => total + (section.reports?.length || 0), 0))
 
@@ -105,7 +124,10 @@ function clearSearch() {
     <div v-if="filteredSections.length" class="space-y-8">
       <section v-for="section in filteredSections" :key="section.key" class="space-y-4">
         <div>
-          <h3 class="text-xl font-semibold tracking-tight text-foreground">{{ section.label }}</h3>
+          <h3 class="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
+            <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="toneFor(section.key).dot" aria-hidden="true" />
+            {{ section.label }}
+          </h3>
           <p v-if="section.description" class="text-sm text-muted-foreground">{{ section.description }}</p>
         </div>
 
@@ -117,13 +139,13 @@ function clearSearch() {
             class="group rounded-2xl border px-5 py-5 text-left shadow-sm transition-all duration-200 rtl:text-right"
             :class="report.key === activeReport
               ? 'border-emerald-500/50 bg-violet-950 text-white shadow-[0_14px_40px_rgba(6,78,59,0.35)] dark:border-violet-400/30 dark:bg-violet-950'
-              : 'border-border bg-card hover:-translate-y-0.5 hover:border-violet-500/30 hover:shadow-md'"
+              : ['border-border bg-card hover:-translate-y-0.5 hover:shadow-md', toneFor(section.key).hover]"
             @click="emit('select', report.key)"
           >
             <div class="flex items-start gap-4">
               <div
                 class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg shadow-sm"
-                :class="report.key === activeReport ? 'bg-white/12 text-white' : 'bg-violet-500/12 text-violet-600 dark:text-violet-300'"
+                :class="report.key === activeReport ? 'bg-white/12 text-white' : toneFor(section.key).tile"
               >
                 <component :is="report.icon" class="h-6 w-6" />
               </div>
