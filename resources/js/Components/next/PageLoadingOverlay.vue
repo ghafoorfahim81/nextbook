@@ -15,23 +15,10 @@ let showTimer = null
 let hideTimer = null
 let shownAt = 0
 
-// The reports page refreshes itself in place (changing report/filter/page)
-// and renders its own skeleton for the result area. Showing this full-screen
-// loader on top of that would double up, so skip it for same-page reports
-// refreshes. Navigating INTO reports from elsewhere still shows the overlay.
-function isSamePageReportsRefresh(event) {
-    try {
-        const target = event?.detail?.visit?.url?.pathname ?? ''
-        return target === '/reports' && window.location.pathname === '/reports'
-    } catch {
-        return false
-    }
-}
-
-// The DataTable component refreshes itself in place for search, sort, filter and
-// pagination, and renders its own skeleton loader for those. It tags those
-// requests with an X-DataTable-Refresh header so we can skip the full-screen
-// BookLoader overlay and avoid doubling up two loaders.
+// The DataTable component tags its refreshes with an X-DataTable-Refresh
+// header. Its GETs are already covered by isSamePageRefresh; the header still
+// matters for the in-place PATCH requests (e.g. activate/deactivate on a
+// show page) that reuse it to stay silent.
 function isDataTableRefresh(event) {
     try {
         const headers = event?.detail?.visit?.headers ?? {}
@@ -97,9 +84,30 @@ function isDialogSubmit(event) {
     }
 }
 
+// A GET back to the page already on screen is an in-place refresh — search,
+// filters, sorting, pagination, a partial reload of some props. The operator
+// is not leaving, the page shows its own loading state, and a full-screen
+// book over it hid the list being searched. Only ~12 of the ~100 places that
+// refresh this way sent a header to opt out, so it is decided here instead:
+// the overlay is only for moving to a different page.
+function isSamePageRefresh(event) {
+    try {
+        const visit = event?.detail?.visit ?? {}
+        const method = String(visit.method ?? 'get').toLowerCase()
+        if (method !== 'get') return false
+
+        const isPartialReload = Array.isArray(visit.only) && visit.only.length > 0
+        const targetPath = visit.url?.pathname ?? ''
+
+        return isPartialReload || targetPath === window.location.pathname
+    } catch {
+        return false
+    }
+}
+
 function handleStart(event) {
     if (
-        isSamePageReportsRefresh(event)
+        isSamePageRefresh(event)
         || isDataTableRefresh(event)
         || isPreferencesMutation(event)
         || isSilentVisit(event)
