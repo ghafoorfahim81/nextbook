@@ -39,38 +39,33 @@ class PreferencesController extends Controller
             ->orderBy('name')
             ->get();
 
-        $unitMeasures = UnitMeasureResource::collection(
-            UnitMeasure::query()
-                ->orderBy('name')
-                ->get()
-        );
-
-        $categories = CategoryResource::collection(Category::query()->orderBy('name')->get());
-        $warehouses = WarehouseResource::collection(Warehouse::query()->orderBy('name')->get());
-        $sizes = SizeResource::collection(Size::query()->orderBy('name')->get());
-        $currencies = CurrencyResource::collection(Currency::query()->orderBy('name')->get());
-
-        $ledgers = LedgerResource::collection(
-            Ledger::query()
-                ->whereIn('type', ['customer', 'supplier'])
-                ->orderBy('name')
-                ->limit(500)
-                ->get()
-        );
-
         return Inertia::render('Preferences/Index', [
             'preferences' => $preferences,
             'defaultPreferences' => User::DEFAULT_PREFERENCES,
+            // Kept on first load: small, and the settings search matches
+            // account names and timezones to jump to their tab.
             'cashAccounts' => $cashAccounts,
             'sidebarMenus' => $this->getSidebarMenuOptions(),
             'timezones' => $this->getTimezones(),
-            'unitMeasures' => $unitMeasures,
-            'categories' => $categories,
-            'warehouses' => $warehouses,
-            'sizes' => $sizes,
-            'currencies' => $currencies,
-            'ledgers' => $ledgers,
             'soundOptions' => SoundOptions::grouped(),
+
+            // Only the "Install plugins" tab uses these, and they were the
+            // bulk of the page. Lazy: not queried until that tab asks for them
+            // with a partial reload the first time it is opened.
+            'unitMeasures' => Inertia::lazy(fn () => UnitMeasureResource::collection(
+                UnitMeasure::query()->orderBy('name')->get()
+            )),
+            'categories' => Inertia::lazy(fn () => CategoryResource::collection(Category::query()->orderBy('name')->get())),
+            'warehouses' => Inertia::lazy(fn () => WarehouseResource::collection(Warehouse::query()->orderBy('name')->get())),
+            'sizes' => Inertia::lazy(fn () => SizeResource::collection(Size::query()->orderBy('name')->get())),
+            'currencies' => Inertia::lazy(fn () => CurrencyResource::collection(Currency::query()->orderBy('name')->get())),
+            'ledgers' => Inertia::lazy(fn () => LedgerResource::collection(
+                Ledger::query()
+                    ->whereIn('type', ['customer', 'supplier'])
+                    ->orderBy('name')
+                    ->limit(500)
+                    ->get()
+            )),
         ]);
     }
 

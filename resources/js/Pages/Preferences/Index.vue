@@ -49,6 +49,23 @@ const tOr = (key, fallback, params = {}) => {
 }
 
 const activeTab = ref('appearance')
+
+// Tabs are built the first time they are opened, not all fourteen at once.
+// Opened tabs stay mounted (v-show), so switching back is instant and any
+// unsaved edits in them survive.
+const visitedTabs = ref(new Set([activeTab.value]))
+watch(activeTab, (tab) => {
+    if (!visitedTabs.value.has(tab)) {
+        visitedTabs.value = new Set([...visitedTabs.value, tab])
+    }
+
+    // This tab's lists are lazy on the server; fetch them on first open.
+    if (tab === 'install_plugins' && !pluginLists.value) {
+        loadPluginLists()
+    }
+})
+const isTabBuilt = (tab) => visitedTabs.value.has(tab)
+
 const menuSearchQuery = ref('')
 const normalizedMenuSearch = computed(() => menuSearchQuery.value.trim().toLowerCase())
 const resettingCategory = ref('')
@@ -401,26 +418,82 @@ watch(
     { immediate: true },
 )
 
-const allUnitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
-const allCategories = computed(() => props.categories?.data ?? props.categories ?? [])
-const allWarehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
-const allSizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
-const allCurrencies = computed(() => props.currencies?.data ?? props.currencies ?? [])
-const allLedgers = computed(() => props.ledgers?.data ?? props.ledgers ?? [])
+/*
+ * The "Install plugins" lists are lazy props: the server leaves them out of
+ * the first load and sends them when that tab asks (see loadPluginLists).
+ * They are copied into local state because any later visit to this page —
+ * the auto-save redirects back here — omits lazy props again, and reading
+ * them straight from props would empty the tab.
+ */
+const PLUGIN_PROPS = ['unitMeasures', 'categories', 'warehouses', 'sizes', 'currencies', 'ledgers']
+const pluginLists = ref(null)
+const pluginListsLoading = ref(false)
+
+const unwrapList = (value) => value?.data ?? value ?? []
+
+const pluginForm = useForm({
+    unit_measures: [],
+    categories: [],
+    warehouses: [],
+    sizes: [],
+    currencies: [],
+    ledgers: [],
+})
+
+watch(
+    () => PLUGIN_PROPS.map((key) => props[key]),
+    (values) => {
+        if (values.every((value) => value === undefined)) return
+
+        pluginLists.value = Object.fromEntries(PLUGIN_PROPS.map((key, index) => [key, unwrapList(values[index])]))
+        syncPluginForm()
+    },
+    { immediate: true },
+)
+
+const allUnitMeasures = computed(() => pluginLists.value?.unitMeasures ?? [])
+const allCategories = computed(() => pluginLists.value?.categories ?? [])
+const allWarehouses = computed(() => pluginLists.value?.warehouses ?? [])
+const allSizes = computed(() => pluginLists.value?.sizes ?? [])
+const allCurrencies = computed(() => pluginLists.value?.currencies ?? [])
+const allLedgers = computed(() => pluginLists.value?.ledgers ?? [])
 
 const customerLedgers = computed(() => allLedgers.value.filter(l => l.type === 'customer'))
 const supplierLedgers = computed(() => allLedgers.value.filter(l => l.type === 'supplier'))
 
 const activeIds = (list) => (Array.isArray(list) ? list : []).filter(x => x?.is_active === true).map(x => x.id)
 
-const pluginForm = useForm({
-    unit_measures: activeIds(allUnitMeasures.value),
-    categories: activeIds(allCategories.value),
-    warehouses: activeIds(allWarehouses.value),
-    sizes: activeIds(allSizes.value),
-    currencies: activeIds(allCurrencies.value),
-    ledgers: activeIds(allLedgers.value),
-})
+// Seed the checkboxes from what is currently active once the lists arrive.
+// A function declaration, so the immediate watcher above can call it.
+function syncPluginForm() {
+    const lists = pluginLists.value
+    if (!lists) return
+
+    // Self-contained on purpose: the watcher runs before the helpers below exist.
+    const active = (list) => (Array.isArray(list) ? list : []).filter(x => x?.is_active === true).map(x => x.id)
+    const selection = {
+        unit_measures: active(lists.unitMeasures),
+        categories: active(lists.categories),
+        warehouses: active(lists.warehouses),
+        sizes: active(lists.sizes),
+        currencies: active(lists.currencies),
+        ledgers: active(lists.ledgers),
+    }
+    Object.assign(pluginForm, selection)
+    pluginForm.defaults(selection)
+}
+
+function loadPluginLists() {
+    if (pluginListsLoading.value) return
+
+    pluginListsLoading.value = true
+    router.reload({
+        only: PLUGIN_PROPS,
+        preserveState: true,
+        preserveScroll: true,
+        onFinish: () => { pluginListsLoading.value = false },
+    })
+}
 const pluginSaving = computed(() => pluginForm.processing)
 
 const togglePluginIds = (field, id, checked) => {
@@ -438,6 +511,9 @@ const savePlugins = () => {
                 description: t('preferences.install_plugins.saved_description'),
                 class: 'bg-green-600',
             });
+            // The redirect back omits lazy props; refetch so the lists
+            // reflect what was just activated.
+            loadPluginLists()
         },
     })
 }
@@ -1083,7 +1159,7 @@ watch(normalizedMenuSearch, (query) => {
                 <!-- Content Area -->
                 <div class="flex-1 min-w-0">
                     <!-- Appearance preferences -->
-                    <Card v-show="activeTab === 'appearance'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('appearance')" v-show="activeTab === 'appearance'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.appearance') }}</CardTitle>
@@ -1272,7 +1348,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Item Management preferences -->
-                    <Card v-show="activeTab === 'item_management'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('item_management')" v-show="activeTab === 'item_management'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.item_management') }}</CardTitle>
@@ -1312,7 +1388,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Sale preferences -->
-                    <Card v-show="activeTab === 'sale'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('sale')" v-show="activeTab === 'sale'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.sale') }}</CardTitle>
@@ -1485,7 +1561,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Purchase preferences -->
-                    <Card v-show="activeTab === 'purchase'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('purchase')" v-show="activeTab === 'purchase'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.purchase') }}</CardTitle>
@@ -1621,7 +1697,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Receipt & Payment preferences -->
-                    <Card v-show="activeTab === 'receipt_payment'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('receipt_payment')" v-show="activeTab === 'receipt_payment'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.receipt_payment') }}</CardTitle>
@@ -1695,7 +1771,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Transaction posting preferences -->
-                    <Card v-show="activeTab === 'transaction'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('transaction')" v-show="activeTab === 'transaction'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.transaction') }}</CardTitle>
@@ -1768,7 +1844,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Stock adjustment preferences -->
-                    <Card v-show="activeTab === 'stock_adjustment'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('stock_adjustment')" v-show="activeTab === 'stock_adjustment'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.stock_adjustment.title') }}</CardTitle>
@@ -1862,7 +1938,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Tax & Currency preferences -->
-                    <Card v-show="activeTab === 'tax_currency'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('tax_currency')" v-show="activeTab === 'tax_currency'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.tax_currency') }}</CardTitle>
@@ -1902,7 +1978,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Notification preferences -->
-                    <Card v-show="activeTab === 'notifications'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('notifications')" v-show="activeTab === 'notifications'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.notifications') }}</CardTitle>
@@ -2118,7 +2194,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Security preferences -->
-                    <Card v-show="activeTab === 'security'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('security')" v-show="activeTab === 'security'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.security') }}</CardTitle>
@@ -2179,19 +2255,24 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Install Plugins -->
-                    <Card v-show="activeTab === 'install_plugins'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('install_plugins')" v-show="activeTab === 'install_plugins'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.install_plugins') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.install_plugins.description') }}</CardDescription>
                             </div>
-                            <Button variant="default" size="sm" @click="savePlugins" :disabled="pluginSaving">
-                                <Spinner v-if="pluginSaving" class="w-4 h-4 mr-2" />
-                                <Save v-else class="w-4 h-4 mr-2" />
+                            <Button variant="default" size="sm" @click="savePlugins" :disabled="pluginSaving || !pluginLists">
+                                <Spinner v-if="pluginSaving" class="w-4 h-4 me-2" />
+                                <Save v-else class="w-4 h-4 me-2" />
                                 {{ pluginSaving ? t('general.loading') : t('preferences.install_plugins.save') }}
                             </Button>
                         </CardHeader>
-                        <CardContent class="space-y-6">
+                        <!-- The lists load when this tab is first opened. -->
+                        <CardContent v-if="!pluginLists" class="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+                            <Spinner class="h-4 w-4" />
+                            {{ t('general.loading') }}
+                        </CardContent>
+                        <CardContent v-else class="space-y-6">
                             <div class="space-y-2">
                                 <Label class="text-base font-medium">{{ t('preferences.install_plugins.measures_title') }}</Label>
                                 <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.measures_hint') }}</p>
@@ -2356,7 +2437,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Backup preferences -->
-                    <Card v-show="activeTab === 'backup'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('backup')" v-show="activeTab === 'backup'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.backup') }}</CardTitle>
@@ -2443,7 +2524,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Localization preferences -->
-                    <Card v-show="activeTab === 'localization'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('localization')" v-show="activeTab === 'localization'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.localization') }}</CardTitle>
@@ -2542,7 +2623,7 @@ watch(normalizedMenuSearch, (query) => {
                     </Card>
 
                     <!-- Display preferences -->
-                    <Card v-show="activeTab === 'display'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('display')" v-show="activeTab === 'display'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.display') }}</CardTitle>
