@@ -11,6 +11,7 @@ return [
             'items' => 'جنس',
             'accounts' => 'حساب',
             'transactions' => 'تراکنش',
+            'opening_balances' => 'بیلانس افتتاحیه',
             'ledgers' => 'مشتری/تأمین‌کننده',
             'subbranches' => 'زیرشعبه',
             'employees' => 'کارمند',

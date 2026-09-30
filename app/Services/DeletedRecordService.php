@@ -80,6 +80,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -187,15 +188,21 @@ class DeletedRecordService
      */
     private function guardTrashedParents(Model $record): void
     {
-        $parents = $this->trashedParentsOf($record);
+        // Required parents only. A nullable foreign key means the record is
+        // valid without that parent — a sale whose sale order was deleted is
+        // still a complete sale — and refusing there would trap the record in
+        // the trash over something the schema says is optional.
+        $parents = collect($this->trashedParentsOf($record))
+            ->where('required', true)
+            ->values();
 
-        if ($parents === []) {
+        if ($parents->isEmpty()) {
             return;
         }
 
         throw ValidationException::withMessages([
             'record' => __('general.restore_blocked_by_trashed_parents', [
-                'parents' => collect($parents)
+                'parents' => $parents
                     ->map(fn (array $parent) => trim($parent['label'].' '.$parent['title']))
                     ->implode(', '),
             ]),
@@ -249,6 +256,7 @@ class DeletedRecordService
                 $plan[$key][] = [
                     'relation' => $relation['name'],
                     'class' => $relation['class'],
+                    'required' => $relation['required'],
                     'id' => (string) $foreignKey,
                 ];
 
@@ -285,6 +293,7 @@ class DeletedRecordService
 
                 $blocking[$key][] = [
                     'relation' => $relation['relation'],
+                    'required' => $relation['required'],
                     'label' => $this->moduleLabelForModel($parent::class) ?? Str::headline($relation['relation']),
                     'title' => $this->fallbackTitle($parent),
                 ];
@@ -337,10 +346,16 @@ class DeletedRecordService
                     continue;
                 }
 
+                $foreignKey = $relation->getForeignKeyName();
+
                 $relations[] = [
                     'name' => $method->getName(),
                     'class' => $related::class,
-                    'foreign_key' => $relation->getForeignKeyName(),
+                    'foreign_key' => $foreignKey,
+                    // The schema decides whether the parent is required. A NOT
+                    // NULL foreign key means the record cannot stand without
+                    // it; a nullable one means it can.
+                    'required' => ! $this->foreignKeyIsNullable($record->getTable(), $foreignKey),
                 ];
             } catch (Throwable) {
                 // A relation we cannot build says nothing about whether its
@@ -350,6 +365,31 @@ class DeletedRecordService
         }
 
         return $cache[$class] = $relations;
+    }
+
+    /**
+     * Whether a column may be null, read from the database and cached per table.
+     *
+     * A missing column (a relation keyed on something that is not a column, a
+     * table the connection cannot describe) is treated as nullable: the strict
+     * reading would block restores over something we could not actually check.
+     */
+    private function foreignKeyIsNullable(string $table, string $column): bool
+    {
+        static $cache = [];
+
+        if (! array_key_exists($table, $cache)) {
+            try {
+                $cache[$table] = collect(Schema::getColumns($table))
+                    ->keyBy('name')
+                    ->map(fn (array $definition) => (bool) ($definition['nullable'] ?? true))
+                    ->all();
+            } catch (Throwable) {
+                $cache[$table] = [];
+            }
+        }
+
+        return $cache[$table][$column] ?? true;
     }
 
     private function modelKey(Model $record): string

@@ -18,7 +18,12 @@ const accounts = computed(() => page.props.accounts?.data || [])
 const accountTypes = computed(() => page.props.accountTypes?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const homeCurrency = computed(() => page.props.homeCurrency || {})
-const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
+const { loading: lazyLoading, fetchLazyProps } = useLazyProps(() => page.props, ['accounts'])
+
+const transactionTypeOptions = computed(() => [
+    { id: 'debit', name: t('general.debit') },
+    { id: 'credit', name: t('general.credit') },
+])
 
 // When opened from a chart-of-accounts category header (?nature=…), narrow the
 // account-type picker to that nature and preselect the type when it is the only
@@ -47,16 +52,18 @@ const form = useForm({
     currency_id: null,
     rate: 1,
     amount: 0,
+    transaction_type: 'debit',
     selected_account_type: preselectType.value,
     account_type_id: preselectType.value?.id ?? null,
 });
-watch(homeCurrency, (list) => {
+const applyHomeCurrency = () => {
     if (homeCurrency.value && !form.currency_id) {
         form.selected_currency = homeCurrency.value
         form.currency_id = homeCurrency.value.id
         form.rate = homeCurrency.value.exchange_rate
     }
-}, { immediate: true })
+}
+watch(homeCurrency, applyHomeCurrency, { immediate: true })
 
 const submitAction = ref(null);
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
@@ -79,6 +86,11 @@ const handleSubmitAction = (createAndNew = false) => {
                     form.openings = buildOpenings();
                 }
                 form.transform((d) => d); // Reset transform to identity
+                applyHomeCurrency();
+                // The redirect back to this page drops the lazily loaded
+                // accounts, and the preserved component never remounts, so
+                // fetch them again (they now include the account just created).
+                fetchLazyProps();
             }
         },
         // Any shared callbacks like onError can go here
@@ -201,11 +213,11 @@ const saveFormRef = useSaveShortcut({ form })
                         class="md:col-span-3"
                     />
                 </div>
-                <div class="md:col-span-3 mt-4" v-if="form?.selected_account_type?.slug=='cash-or-bank'">
+                <div class="md:col-span-3 mt-4" v-if="form?.selected_account_type?.allows_opening">
                     <div class="pt-2">
                         <span class="font-bold">{{ t('item.opening') }} </span>
                         <div class="mt-3">
-                            <div class="grid grid-cols-3 gap-2">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
                                 <NextSelect
                                 :options="currencies"
                                 v-model="form.selected_currency"
@@ -220,6 +232,17 @@ const saveFormRef = useSaveShortcut({ form })
                                 :search-fields="['name', 'code', 'symbol']"
                                  />
                                 <NextInput :placeholder="t('general.rate')" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                                <NextSelect
+                                :options="transactionTypeOptions"
+                                v-model="form.transaction_type"
+                                label-key="name"
+                                value-key="id"
+                                :reduce="(o) => o?.id"
+                                :clearable="false"
+                                :quick-create="false"
+                                :floating-text="t('general.type')"
+                                :error="form.errors?.transaction_type"
+                                />
                                 <NextInput :placeholder="t('general.amount')" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                             </div>
                         </div>

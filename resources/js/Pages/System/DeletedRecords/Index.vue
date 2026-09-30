@@ -142,11 +142,16 @@ function askForceDelete(record) {
   forceDeleteOpen.value = true
 }
 
-// A record whose parent is still in the trash cannot come back on its own; the
-// server refuses it. Naming the parents here means the row says so before the
-// button is pressed rather than after.
+// A record whose REQUIRED parent is still in the trash cannot come back on its
+// own; the server refuses it. Naming the parents here means the row says so
+// before the button is pressed rather than after. A trashed optional parent is
+// not an obstacle, so it is not reported.
+function requiredTrashedParents(record) {
+  return (record?.blocking_parents || []).filter((parent) => parent.required)
+}
+
 function blockingParentsLabel(record) {
-  return (record?.blocking_parents || [])
+  return requiredTrashedParents(record)
     .map((parent) => [parent.label, parent.title].filter(Boolean).join(' '))
     .join(', ')
 }
@@ -381,7 +386,7 @@ function daysBadgeClass(daysRemaining) {
                 <TableCell class="max-w-[280px] truncate">
                   {{ record.title }}
                   <span
-                    v-if="record.blocking_parents?.length"
+                    v-if="requiredTrashedParents(record).length"
                     class="ms-1 inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400"
                     :title="t('deleted_records.blocked_by_parents', { parents: blockingParentsLabel(record) })"
                   >
@@ -450,7 +455,7 @@ function daysBadgeClass(daysRemaining) {
 
         <div v-if="activeRecord" class="space-y-5 overflow-y-auto pr-1">
           <div
-            v-if="activeRecord.blocking_parents?.length"
+            v-if="requiredTrashedParents(activeRecord).length"
             class="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-900 dark:text-red-100"
           >
             <div class="flex items-start gap-2">
