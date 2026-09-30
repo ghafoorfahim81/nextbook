@@ -196,6 +196,36 @@ class DeletedRecordsAuditTest extends TestCase
         $this->assertNotSoftDeleted('sales', ['id' => $sale->id]);
     }
 
+    public function test_an_optional_trashed_parent_does_not_block_a_restore(): void
+    {
+        // sales.sale_order_id is nullable, so a sale whose order was deleted is
+        // still a complete sale and must not be trapped in the trash.
+        $customer = Ledger::factory()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'type' => \App\Enums\LedgerType::CUSTOMER->value,
+        ]);
+
+        $saleOrder = \App\Models\Sale\SaleOrder::factory()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'customer_id' => $customer->id,
+        ]);
+
+        $sale = Sale::factory()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'customer_id' => $customer->id,
+            'sale_order_id' => $saleOrder->id,
+        ]);
+
+        $sale->delete();
+        $saleOrder->delete();
+
+        $this->patch(route('deleted-records.restore', ['module' => 'sales', 'record' => $sale->id]))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertNotSoftDeleted('sales', ['id' => $sale->id]);
+    }
+
     public function test_the_listing_only_expands_the_page_it_returns(): void
     {
         // The heavy per-record work (field list, dependency counts, blocking

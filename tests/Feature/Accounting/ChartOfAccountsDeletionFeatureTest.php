@@ -98,7 +98,7 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
         $this->assertSoftDeleted('accounts', ['id' => $account->id]);
     }
 
-    public function test_it_deletes_an_account_and_opening_transaction_when_opening_is_the_only_transaction(): void
+    public function test_it_does_not_delete_an_account_that_has_an_opening_balance(): void
     {
         $account = $this->makeAccount();
         $openingTransaction = $this->createOpeningTransaction($account, 125);
@@ -106,31 +106,81 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
         $response = $this->delete(route('chart-of-accounts.destroy', $account));
 
         $response->assertRedirect(route('chart-of-accounts.index'));
-        $response->assertSessionHas('success');
+        $response->assertSessionHas('error');
 
-        $this->assertSoftDeleted('accounts', ['id' => $account->id]);
-        $this->assertSoftDeleted('ledger_openings', [
+        $this->assertNotSoftDeleted('accounts', ['id' => $account->id]);
+        $this->assertNotSoftDeleted('ledger_openings', [
             'ledgerable_id' => $account->id,
             'ledgerable_type' => $account->getMorphClass(),
             'transaction_id' => $openingTransaction->id,
         ]);
-        $this->assertSoftDeleted('transactions', ['id' => $openingTransaction->id]);
-        $this->assertEquals(
-            2,
-            Transaction::withTrashed()
-                ->findOrFail($openingTransaction->id)
-                ->lines()
-                ->withTrashed()
-                ->count()
-        );
-        $this->assertSoftDeleted('transaction_lines', [
-            'transaction_id' => $openingTransaction->id,
-            'account_id' => $account->id,
-        ]);
-        $this->assertSoftDeleted('transaction_lines', [
-            'transaction_id' => $openingTransaction->id,
-            'account_id' => $this->ctx['accounts']['opening-balance-equity']->id,
-        ]);
+        $this->assertNotSoftDeleted('transactions', ['id' => $openingTransaction->id]);
+    }
+
+    public function test_it_posts_a_credit_opening_on_the_credit_side(): void
+    {
+        $response = $this->post(route('chart-of-accounts.store'), $this->accountPayload('account-payable', [
+            'transaction_type' => 'credit',
+            'amount' => 300,
+        ]));
+
+        $response->assertRedirect(route('chart-of-accounts.index'));
+        $account = Account::where('number', '77001')->firstOrFail();
+        $lines = $account->opening->transaction->lines;
+
+        $this->assertEquals(300, (float) $lines->firstWhere('account_id', $account->id)->credit);
+        $this->assertEquals(0, (float) $lines->firstWhere('account_id', $account->id)->debit);
+        $this->assertEquals(300, (float) $lines->firstWhere('account_id', $this->ctx['accounts']['opening-balance-equity']->id)->debit);
+    }
+
+    public function test_it_posts_a_debit_opening_by_default(): void
+    {
+        $this->post(route('chart-of-accounts.store'), $this->accountPayload('other-current-asset', ['amount' => 80]));
+
+        $account = Account::where('number', '77001')->firstOrFail();
+        $line = $account->opening->transaction->lines->firstWhere('account_id', $account->id);
+
+        $this->assertEquals(80, (float) $line->debit);
+    }
+
+    public function test_it_skips_the_opening_for_income_expense_and_cogs_accounts(): void
+    {
+        foreach (['income', 'expense', 'cost-of-goods-sold'] as $i => $slug) {
+            $number = (string) (77001 + $i);
+            $this->post(route('chart-of-accounts.store'), array_merge(
+                $this->accountPayload($slug, ['amount' => 50]),
+                ['name' => 'No Opening '.$slug, 'number' => $number],
+            ))->assertSessionHasNoErrors();
+
+            $this->assertNull(Account::where('number', $number)->firstOrFail()->opening, $slug);
+        }
+    }
+
+    public function test_it_updates_the_opening_side(): void
+    {
+        $this->post(route('chart-of-accounts.store'), $this->accountPayload('other-current-asset', ['amount' => 80]));
+        $account = Account::where('number', '77001')->firstOrFail();
+
+        $this->patch(route('chart-of-accounts.update', $account), $this->accountPayload('other-current-asset', [
+            'transaction_type' => 'credit',
+            'amount' => 90,
+        ]))->assertSessionHasNoErrors();
+
+        $line = $account->fresh()->opening->transaction->lines->firstWhere('account_id', $account->id);
+        $this->assertEquals(90, (float) $line->credit);
+        $this->assertEquals(0, (float) $line->debit);
+    }
+
+    private function accountPayload(string $typeSlug, array $overrides = []): array
+    {
+        return array_merge([
+            'name' => 'Opening Test Account',
+            'number' => '77001',
+            'account_type_id' => $this->ctx['account_types'][$typeSlug]->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'amount' => 0,
+        ], $overrides);
     }
 
     public function test_it_does_not_delete_an_account_that_has_non_opening_transactions(): void

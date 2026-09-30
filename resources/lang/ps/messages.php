@@ -11,6 +11,7 @@ return [
             'items' => 'جنس',
             'accounts' => 'حساب',
             'transactions' => 'راکړه ورکړه',
+            'opening_balances' => 'پیلنی بیلانس',
             'ledgers' => 'پېرودونکي/عرضه کوونکي',
             'subbranches' => 'فرعي څانګې',
             'employees' => 'کارکوونکي',
