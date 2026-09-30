@@ -14,11 +14,14 @@ const hasData = (value) => {
   return Boolean(value)
 }
 
+// `source` may be a getter (e.g. () => page.props) so a later fetchLazyProps()
+// checks the props of the current visit, not the ones seen at setup.
 export const useLazyProps = (source, keys) => {
   const loading = ref(false)
 
   const fetchLazyProps = () => {
-    const only = keys.filter((key) => !hasData(source?.[key]))
+    const props = typeof source === 'function' ? source() : source
+    const only = keys.filter((key) => !hasData(props?.[key]))
     if (!only.length) return
     loading.value = true
     router.reload({
