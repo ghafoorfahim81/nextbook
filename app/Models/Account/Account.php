@@ -352,6 +352,17 @@ class Account extends Model
             ];
         }
 
+        // An opening balance is a posted amount against opening-balance equity;
+        // deleting the account would silently take it off the books.
+        if ($this->opening()->exists()) {
+            $dependencies[] = [
+                'relation' => 'opening',
+                'count' => 1,
+                'model' => 'opening_balances',
+                'message' => 'This account has an opening balance',
+            ];
+        }
+
         return $dependencies;
     }
 

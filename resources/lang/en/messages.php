@@ -23,6 +23,7 @@ return [
             'items' => 'items',
             'accounts' => 'accounts',
             'transactions' => 'transactions',
+            'opening_balances' => 'opening balance',
             'ledgers' => 'customers/suppliers',
             'subbranches' => 'sub-branches',
             'employees' => 'employees',

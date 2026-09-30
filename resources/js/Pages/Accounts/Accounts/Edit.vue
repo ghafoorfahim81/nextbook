@@ -21,18 +21,29 @@ const currencies = computed(() => page.props.currencies?.data || [])
 const homeCurrency = computed(() => page.props.homeCurrency || {})
 const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
 
+const transactionTypeOptions = computed(() => [
+    { id: 'debit', name: t('general.debit') },
+    { id: 'credit', name: t('general.credit') },
+])
+
+// Which side the existing opening sits on for this account.
+const openingLine = (account.value?.opening?.lines || []).find((line) => line.account_id === account.value.id)
+const openingType = openingLine && Number(openingLine.credit) > 0 ? 'credit' : 'debit'
+
 const form = useForm({
     ...account.value,
     name: account.value.english_name,
     account_type_id: account.value.account_type_id,
     parent_id: account.value.parent_id,
     selected_parent_account: account.value.parent,
-    selected_account_type: account.value.account_type,
+    // Taken from the typed list so it carries allows_opening.
+    selected_account_type: accountTypes.value.find((type) => type.id === account.value.account_type_id) || account.value.account_type,
     currency_id: account.value.currency_id,
     selected_currency: account.value?.opening?.currency,
     currency_id: account.value?.opening?.currency_id,
     rate: account.value?.opening?.rate??null,
     amount: account.value?.opening?.amount??0,
+    transaction_type: openingType,
 });
 
 const handleUpdate = () => {
@@ -151,11 +162,11 @@ const saveFormRef = useSaveShortcut({ form });
                         class="md:col-span-3"
                     />
                 </div>
-                <div class="md:col-span-3 mt-4" v-if="form?.selected_account_type?.slug=='cash-or-bank'">
+                <div class="md:col-span-3 mt-4" v-if="form?.selected_account_type?.allows_opening">
                     <div class="pt-2">
                         <span class="font-bold">{{ t('item.opening') }}  </span>
                         <div class="mt-3">
-                            <div class="grid grid-cols-3 gap-2">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
                                 <NextSelect
                                 :options="currencies"
                                 v-model="form.selected_currency"
@@ -170,6 +181,17 @@ const saveFormRef = useSaveShortcut({ form });
                                 :search-fields="['name', 'code', 'symbol']"
                                  />
                                 <NextInput :placeholder="t('general.rate')" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                                <NextSelect
+                                :options="transactionTypeOptions"
+                                v-model="form.transaction_type"
+                                label-key="name"
+                                value-key="id"
+                                :reduce="(o) => o?.id"
+                                :clearable="false"
+                                :quick-create="false"
+                                :floating-text="t('general.type')"
+                                :error="form.errors?.transaction_type"
+                                />
                                 <NextInput :placeholder="t('general.amount')" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                             </div>
                         </div>

@@ -38,7 +38,7 @@ class AccountUpdateRequest extends FormRequest
             'parent_id' => ['nullable', 'string', 'exists:accounts,id'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric','required_with:currency_id'],
-            'amount' => ['nullable', 'numeric','required_with:transaction_type'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'required_with:transaction_type'],
             'transaction_type' => ['nullable', 'string', Rule::in(TransactionType::values())],
         ];
     }
