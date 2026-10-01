@@ -139,6 +139,7 @@ return [
     'total_cost_of_goods_sold' => 'هزینه محصولات فروخته شد',
     'total_expenses' => 'هزینه ها کل',
     'current_period_profit_loss' => 'سود/زیان دوره جاری',
+    'prior_periods_profit_loss' => 'سود/زیان انباشته سال‌های قبل',
     'active' => 'فعال',
     'inactive' => 'غیرفعال',
     'insufficient_stock_for_item' => 'موجودی :item در :warehouse کافی نیست. موجود: :available، مورد نیاز: :required.',

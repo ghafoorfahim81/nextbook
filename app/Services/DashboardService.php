@@ -15,6 +15,12 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    /** Statuses that make up the books: a reversed original and its posted mirror net to zero. */
+    private const LEDGER_STATUSES = [
+        TransactionStatus::POSTED->value,
+        TransactionStatus::REVERSED->value,
+    ];
+
     /**
      * Fiscal-year and season presets are omitted: this system has no fiscal
      * year / season concept, only calendar week / month / year.
@@ -504,7 +510,7 @@ class DashboardService
         $unpostedTransactions = DB::table('transactions')
             ->where('branch_id', $branchId)
             ->whereNull('deleted_at')
-            ->where('status', '!=', TransactionStatus::POSTED->value)
+            ->where('status', TransactionStatus::DRAFT->value)
             ->orderByDesc('date')
             ->orderByDesc('created_at')
             ->limit(5)
@@ -569,7 +575,7 @@ class DashboardService
                 'count' => DB::table('transactions')
                     ->where('branch_id', $branchId)
                     ->whereNull('deleted_at')
-                    ->where('status', '!=', TransactionStatus::POSTED->value)
+                    ->where('status', TransactionStatus::DRAFT->value)
                     ->count(),
                 'items' => $unpostedTransactions->map(fn ($row) => [
                     'id' => $row->id,
@@ -594,7 +600,7 @@ class DashboardService
             ->join('transactions as t', function ($join) use ($branchId, $today) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $branchId)
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at')
                     ->where('t.date', '<=', $today->toDateString());
             })
@@ -639,7 +645,7 @@ class DashboardService
 
     protected function cashBankBalance(string $branchId): float
     {
-        $row = $this->postedTransactionLines($branchId)
+        $row = $this->postedTransactionLines($branchId, forBalances: true)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
                     ->where('a.branch_id', '=', $branchId)
@@ -669,7 +675,7 @@ class DashboardService
 
     protected function accountTypeBalanceTotal(string $branchId, array $accountTypeSlugs, bool $reverseSign = false): float
     {
-        $row = $this->postedTransactionLines($branchId)
+        $row = $this->postedTransactionLines($branchId, forBalances: true)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
                     ->where('a.branch_id', '=', $branchId)
@@ -997,7 +1003,7 @@ class DashboardService
      */
     protected function netProfitForDate(string $branchId, Carbon $date): float
     {
-        $row = $this->postedTransactionLines($branchId)
+        $row = $this->postedTransactionLines($branchId, forBalances: true)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
                     ->where('a.branch_id', '=', $branchId)
@@ -1022,7 +1028,7 @@ class DashboardService
             ->join('transactions as t', function ($join) use ($branchId) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $branchId)
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->join('ledgers as l', function ($join) use ($branchId, $ledgerType) {
@@ -1046,7 +1052,7 @@ class DashboardService
             ->join('transactions as t', function ($join) use ($branchId) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $branchId)
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->join('accounts as a', function ($join) use ($branchId) {
@@ -1098,7 +1104,16 @@ class DashboardService
             ->selectRaw('item_id, COALESCE(SUM(quantity), 0) as quantity');
     }
 
-    protected function postedTransactionLines(string $branchId)
+    /**
+     * Live transaction lines of the branch.
+     *
+     * A reversal flips the original to `reversed` and posts its mirror as
+     * `posted`. Balances ($forBalances) read both halves so they net to zero;
+     * flows (today's sales, cash in/out) read neither, so a voided document is
+     * simply absent. `posted` alone kept the mirror and dropped the original,
+     * which turned every void into a negative movement.
+     */
+    protected function postedTransactionLines(string $branchId, bool $forBalances = false)
     {
         return DB::table('transactions as t')
             ->join('transaction_lines as tl', function ($join) {
@@ -1106,7 +1121,12 @@ class DashboardService
                     ->whereNull('tl.deleted_at');
             })
             ->where('t.branch_id', $branchId)
-            ->where('t.status', TransactionStatus::POSTED->value)
+            ->when(
+                $forBalances,
+                fn ($q) => $q->whereIn('t.status', self::LEDGER_STATUSES),
+                fn ($q) => $q->where('t.status', TransactionStatus::POSTED->value)
+                    ->where(fn ($q) => $q->whereNull('t.reference_type')->orWhere('t.reference_type', '!=', 'reversal')),
+            )
             ->whereNull('t.deleted_at');
     }
 
@@ -1117,6 +1137,7 @@ class DashboardService
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $branchId)
                     ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->where(fn ($q) => $q->whereNull('t.reference_type')->orWhere('t.reference_type', '!=', 'reversal'))
                     ->whereNull('t.deleted_at');
             })
             ->join('accounts as a', function ($join) use ($branchId) {

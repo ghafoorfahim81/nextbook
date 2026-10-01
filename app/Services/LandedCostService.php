@@ -273,9 +273,11 @@ class LandedCostService
                 'status' => LandedCostStatus::Posted->value,
             ]);
 
-            $transaction->update([
-                'status' => TransactionStatus::POSTED->value,
-            ]);
+            // postDraft(), not a status flip: a draft keeps its lines only in
+            // posting_payload, so flipping the status alone left a "posted"
+            // voucher with no lines — the cost reached the item layers but the
+            // GL never debited inventory or credited the cash account.
+            $this->transactionService->postDraft($transaction);
 
             return [
                 'landed_cost' => $landedCost->fresh(['purchases.items.item', 'items.item', 'transaction']),

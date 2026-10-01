@@ -161,6 +161,7 @@ return [
     'total_cost_of_goods_sold' => 'د پلورل شویو اجناسو ټول لګښت',
     'total_expenses' => 'ټول لګښتونه',
     'current_period_profit_loss' => 'د اوسنۍ دورې ګټه / زیان',
+    'prior_periods_profit_loss' => 'د تېرو کلونو راټول شوې ګټه / زیان',
     'active' => 'فعال',
     'inactive' => 'غیرفعال',
 ];

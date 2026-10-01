@@ -142,6 +142,7 @@ return [
     'total_cost_of_goods_sold' => 'Total Cost of Goods Sold',
     'total_expenses' => 'Total Expenses',
     'current_period_profit_loss' => 'Current Period Profit / Loss',
+    'prior_periods_profit_loss' => 'Retained Profit / Loss (Prior Years)',
     'active' => 'Active',
     'inactive' => 'Inactive',
     'insufficient_stock_for_item' => 'Not enough stock for :item in :warehouse. Available: :available, required: :required.',

@@ -444,6 +444,90 @@ class SettlementService
     }
 
     /**
+     * How much of a document's own claim is still open, in its currency.
+     *
+     * Used by returns to decide how much of their credit relieves the document
+     * they return against; the rest is not a claim on that document and goes
+     * to the party's advance account.
+     */
+    public function openOnDocument(string $ledgerId, string $direction, string $transactionId): string
+    {
+        return $this->openItems($ledgerId, null, $direction)
+            ->where('transaction_id', $transactionId)
+            ->reduce(fn (string $carry, array $item) => Decimal::add($carry, $item['remaining_amount']), '0');
+    }
+
+    /**
+     * Settle a return against the document it returns.
+     *
+     * The return voucher carries a line on the party's control account on the
+     * opposite side of the claim (a credit to receivables for a sale return, a
+     * debit to payables for a purchase return). That line relieves the original
+     * document's open claim, oldest line first, exactly as a receipt would —
+     * so the document's paid status, the open-items list and the aged reports
+     * all see the return. Same currency and rate as the document, so there is
+     * never an exchange difference to post.
+     */
+    public function settleReturnAgainstDocument(
+        Transaction $returnTransaction,
+        string $ledgerId,
+        string $direction,
+        string $documentTransactionId,
+    ): void {
+        $ledger = $this->resolveLedger($ledgerId);
+        $controlAccountId = $this->partyAccountId($ledger, (string) $returnTransaction->branch_id);
+        $reliefColumn = $direction === self::DIRECTION_IN ? 'credit' : 'debit';
+
+        $settlingLine = $returnTransaction->lines()
+            ->where('account_id', $controlAccountId)
+            ->where('ledger_id', $ledgerId)
+            ->where($reliefColumn, '>', 0)
+            ->first();
+
+        if (! $settlingLine) {
+            return;
+        }
+
+        $available = Decimal::amount($settlingLine->{$reliefColumn});
+
+        $targets = $this->openItems($ledgerId, (string) $settlingLine->currency_id, $direction)
+            ->where('transaction_id', $documentTransactionId)
+            ->values();
+
+        foreach ($targets as $item) {
+            if (! Decimal::isPositive($available)) {
+                break;
+            }
+
+            $apply = Decimal::cmp($available, $item['remaining_amount']) < 0 ? $available : $item['remaining_amount'];
+
+            Settlement::create([
+                'transaction_id' => $returnTransaction->id,
+                'settling_line_id' => $settlingLine->id,
+                'target_line_id' => $item['target_line_id'],
+                'ledger_id' => $ledgerId,
+                'currency_id' => $item['currency_id'],
+                'amount_applied' => $apply,
+                'target_rate' => $item['target_rate'],
+                'settlement_rate' => $item['target_rate'],
+                'base_relieved' => Decimal::toBase($apply, $item['target_rate']),
+                'forex_amount' => '0',
+                'is_cross_currency' => false,
+                'branch_id' => $returnTransaction->branch_id,
+                'created_by' => Auth::id(),
+            ]);
+
+            $available = Decimal::sub($available, $apply);
+        }
+    }
+
+    /** The party's advance account (customer-advances / supplier-advances). */
+    public function advanceAccountFor(string $ledgerId, string $branchId): string
+    {
+        return $this->advanceAccountId($this->resolveLedger($ledgerId), $branchId);
+    }
+
+    /**
      * Spread an amount of cash across open claims, oldest first.
      *
      * The distinction that matters, and the one that was wrong:

@@ -24,10 +24,13 @@ class SeedDemoData extends Command
         {--tenant= : Company id, English/Dari name or abbreviation}
         {--scale=1 : Volume multiplier; 0.1 = 10% of the full data set}
         {--seed=20240930 : Random seed; the same seed on the same starting data gives the same run}
+        {--from= : First day, Gregorian Y-m-d (default: two years before --to)}
+        {--to= : Last day, Gregorian Y-m-d (default: today)}
+        {--calendar=gregorian : Calendar the company and the forms use: gregorian or jalali}
         {--verify-only : Only run the final checks}
         {--force : Run even if the company already has sales}';
 
-    protected $description = 'Seed two years of realistic supermarket demo data through the application\'s own posting logic';
+    protected $description = 'Seed a period of realistic supermarket demo data through the application\'s own posting logic';
 
     public function handle(): int
     {
@@ -63,15 +66,22 @@ class SeedDemoData extends Command
             return self::FAILURE;
         }
 
-        $end = CarbonImmutable::today();
-        $start = $end->subYears(2);
+        $end = $this->option('to') ? CarbonImmutable::parse($this->option('to'))->startOfDay() : CarbonImmutable::today();
+        $start = $this->option('from') ? CarbonImmutable::parse($this->option('from'))->startOfDay() : $end->subYears(2);
+        $calendar = (string) $this->option('calendar');
+
+        if ($start->gte($end) || ! in_array($calendar, ['gregorian', 'jalali'], true)) {
+            $this->error('--from must be before --to, and --calendar must be gregorian or jalali.');
+
+            return self::FAILURE;
+        }
 
         $this->info(sprintf('شرکت: %s | مقیاس: %s | seed: %s | بازه: %s تا %s',
             $company->name_fa ?: $company->name_en, $scale, $this->option('seed'), $start->toDateString(), $end->toDateString()));
 
         @unlink(storage_path('logs/demo-seed-failures.log'));
         $started = microtime(true);
-        $simulator = new DemoSimulator($this, $company, $scale, (int) $this->option('seed'), $start, $end);
+        $simulator = new DemoSimulator($this, $company, $scale, (int) $this->option('seed'), $start, $end, $calendar);
 
         try {
             $simulator->run();
