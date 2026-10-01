@@ -551,5 +551,13 @@
         "days_90": "۶۱ تر ۹۰ ورځې",
         "days_90_plus": "له ۹۰ ورځو ډېر",
         "unapplied_credit": "نه ځانګړی شوی کریډیټ"
+    },
+    "chart": {
+        "income_statement_title": "د عاید، لګښت او ګټې پرتله",
+        "revenue": "عاید",
+        "cost_of_goods_sold": "د پلور لګښت",
+        "gross_profit": "ناخالصه ګټه",
+        "expenses": "لګښتونه",
+        "net_profit": "خالصه ګټه"
     }
 }

@@ -6,6 +6,7 @@ import {
   BookOpenText,
   FileSpreadsheet,
   Landmark,
+  Scale,
   ArrowLeftRight,
   Receipt,
   Wallet,
@@ -48,6 +49,7 @@ import ReportDataTable from '@/Components/reports/ReportDataTable.vue'
 import ReportStatement from '@/Components/reports/ReportStatement.vue'
 import ReportGroupedTable from '@/Components/reports/ReportGroupedTable.vue'
 import ReportUserActivity from '@/Components/reports/ReportUserActivity.vue'
+import ReportBarChart from '@/Components/reports/ReportBarChart.vue'
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
 
 const props = defineProps({
@@ -198,7 +200,7 @@ const reportDefinitions = computed(() => ({
     description: t('report.reports.balance_sheet.description'),
     filters: [],
     group: 'financial',
-    icon: Landmark,
+    icon: Scale,
     summary: [
       { key: 'total_assets', label: t('report.summary.total_assets'), type: 'money' },
       { key: 'total_liabilities', label: t('report.summary.total_liabilities'), type: 'money' },
@@ -491,6 +493,7 @@ const reportDefinitions = computed(() => ({
     group: 'inventory',
     icon: Package,
     summary: [
+      { key: 'total_items', label: t('report.summary.total_items'), type: 'integer' },
       { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
       { key: 'total_value', label: t('report.summary.total_value'), type: 'money' },
     ],
@@ -1146,6 +1149,24 @@ const emptyMessage = computed(() => {
 const isStatementLayout = computed(() => props.result.meta?.layout === 'statement')
 const isUserActivityLayout = computed(() => props.result.meta?.layout === 'user_activity')
 
+// Profit & loss at a glance: what came in, what it cost, what was left.
+// Shown only once the report has run (its summary is present).
+const incomeChartBars = computed(() => {
+  const summary = props.result.summary || {}
+  if (localFilters.value.report !== 'income_statement' || summary.net_profit === undefined) return []
+
+  const netProfit = Number(summary.net_profit || 0)
+
+  return [
+    { key: 'revenue', label: t('report.chart.revenue'), value: summary.total_revenue, tone: 'emerald' },
+    { key: 'cogs', label: t('report.chart.cost_of_goods_sold'), value: summary.total_cost_of_goods_sold, tone: 'amber' },
+    { key: 'gross', label: t('report.chart.gross_profit'), value: summary.gross_profit, tone: 'sky' },
+    { key: 'expenses', label: t('report.chart.expenses'), value: summary.total_expenses, tone: 'rose' },
+    // A loss is drawn below zero in the warning colour.
+    { key: 'net', label: t('report.chart.net_profit'), value: netProfit, tone: netProfit < 0 ? 'rose' : 'violet' },
+  ]
+})
+
 function compactFilters(filters) {
   return Object.fromEntries(
     Object.entries(filters).filter(([, value]) => value !== '' && value !== null && value !== undefined),
@@ -1282,13 +1303,15 @@ function exportReport() {
     <Head :title="t('report.title')" />
 
     <div class="space-y-6 text-foreground">
-      <section class="overflow-hidden rounded-[30px] border border-emerald-800/30 bg-gradient-to-br from-violet-500 via-violet-900 to-violet-950 p-6 text-white shadow-[0_20px_50px_rgba(6,78,59,0.35)]">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div class="space-y-2">
-            <h1 class="text-3xl font-semibold tracking-tight">{{ t('report.title') }}</h1>
-            <p class="max-w-3xl text-sm leading-7 text-emerald-100/85">{{ t('report.subtitle') }}</p>
+      <!-- A slim header: the page's title and where you are, without taking a
+           third of the screen above the report itself. -->
+      <section class="overflow-hidden rounded-xl border border-emerald-800/30 bg-gradient-to-br from-violet-500 via-violet-900 to-violet-950 px-5 py-3 text-white shadow-[0_8px_24px_rgba(6,78,59,0.25)]">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h1 class="text-lg font-semibold leading-7 tracking-tight">{{ t('report.title') }}</h1>
+            <p class="truncate text-xs leading-5 text-emerald-100/85">{{ t('report.subtitle') }}</p>
           </div>
-          <div class="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-emerald-50/85 backdrop-blur">
+          <div class="shrink-0 rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm text-emerald-50/90 backdrop-blur">
             {{ heroBadgeLabel }}
           </div>
         </div>
@@ -1407,6 +1430,12 @@ function exportReport() {
           />
 
           <ReportSummaryCards v-if="!isUserActivityLayout" :cards="summaryCards" />
+
+          <ReportBarChart
+            v-if="incomeChartBars.length"
+            :title="t('report.chart.income_statement_title')"
+            :bars="incomeChartBars"
+          />
 
           <section class="space-y-3">
             <div>

@@ -966,17 +966,15 @@
    DATE PICKER INPUT – DARK MODE
    ========================= */
 
-    /* Input wrapper */
-    .dark .vpd-input-group {
-        background-color: hsl(var(--input)) !important;
-        border: 2px solid hsl(var(--border)) !important;
-        border-radius: 6px;
-    }
+    /* No frame, fill or hover border on the wrapper here. Every picker is a
+       NextDatePicker, whose visible frame is the notched fieldset of
+       next-field.css; this wrapper is kept transparent on purpose. A border
+       painted on it (and a primary-coloured one on hover) drew a second,
+       uncut outline whose top edge ran straight through the floated label. */
 
     /* Actual input */
     .dark .vpd-input-group input,
     .dark .vpd-input-group .vpd-input {
-        background-color: hsl(var(--input)) !important;
         color: #e5e7eb !important;
         border: none !important;
     }
@@ -996,11 +994,6 @@
     /* Clear (X) button */
     .dark .vpd-input-group .vpd-clear-btn {
         color: hsl(var(--primary)) !important;
-    }
-
-    /* Hover & focus */
-    .dark .vpd-input-group:hover {
-        border-color: hsl(var(--primary)) !important;
     }
 
     .dark .vpd-input-group input:focus {
