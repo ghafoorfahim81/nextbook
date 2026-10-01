@@ -23,6 +23,8 @@ use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
 use App\Services\ActivityLogService;
 use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
+use App\Models\Accounting\Settlement;
 use App\Services\DateConversionService;
 use App\Services\StockService;
 use App\Services\TransactionService;
@@ -222,6 +224,7 @@ class SaleReturnController extends Controller
             );
 
             if ($postImmediately) {
+                $this->settleAgainstDocument($transaction, $sale);
                 $paymentStatusService->recalculateSales([$sale->id]);
             }
 
@@ -419,6 +422,26 @@ class SaleReturnController extends Controller
      *
      * @return array{0: array, 1: array, 2: float}
      */
+    /**
+     * Relieve the sale this return was raised against by the part of the
+     * return's credit that went to the party's control account.
+     */
+    private function settleAgainstDocument(\App\Models\Transaction\Transaction $returnTransaction, $document): void
+    {
+        $documentTransactionId = $document?->transaction?->id;
+
+        if (! $documentTransactionId) {
+            return;
+        }
+
+        app(SettlementService::class)->settleReturnAgainstDocument(
+            $returnTransaction,
+            (string) $document->customer_id,
+            SettlementService::DIRECTION_IN,
+            (string) $documentTransactionId,
+        );
+    }
+
     private function buildReturnItemsAndLines(
         SaleReturn $saleReturn,
         Sale $sale,
@@ -481,6 +504,11 @@ class SaleReturnController extends Controller
             $unitCost = (float) $saleItem->net_unit_cost;
             $lineGrossTotal = $quantity * (float) $saleItem->unit_price;
             $totalCost = $unitCost * $quantity;
+            // Stock cost is home currency; the voucher is in the sale's currency and
+            // is multiplied by its rate, so the GL lines take the cost divided back
+            // down — as SaleController does for the original COGS line.
+            $saleRate = (float) ($sale->transaction?->rate ?: 1) ?: 1.0;
+            $totalCostInTransactionCurrency = $totalCost / $saleRate;
             $totalReturnedValue += $lineGrossTotal;
 
             $stockPayload = [
@@ -520,25 +548,51 @@ class SaleReturnController extends Controller
                 'account_id' => $itemModel->cost_account_id,
                 'ledger_id' => null,
                 'debit' => 0,
-                'credit' => $totalCost,
+                'credit' => $totalCostInTransactionCurrency,
                 'remark' => 'Sale return COGS reversal for item: ' . $itemModel->name . ' #' . $saleReturn->number,
             ];
             $lines[] = [
                 'account_id' => $itemModel->asset_account_id,
                 'ledger_id' => null,
-                'debit' => $totalCost,
+                'debit' => $totalCostInTransactionCurrency,
                 'credit' => 0,
                 'remark' => 'Sale return inventory restock for item: ' . $itemModel->name . ' #' . $saleReturn->number,
             ];
         }
 
-        $lines[] = [
-            'account_id' => $glAccounts['account-receivable'],
-            'ledger_id' => $sale->customer_id,
-            'debit' => 0,
-            'credit' => $totalReturnedValue,
-            'remark' => 'Sale return credit for return #' . $saleReturn->number . ' (Sale #' . $sale->number . ')',
-        ];
+        // The credit relieves what is still open on this sale; that part is
+        // settled against the sale once posted (SettlementService::
+        // settleReturnAgainstDocument). Anything beyond it — a cash sale, or one
+        // already paid — is money owed back to the customer, which is an
+        // advance, not a negative receivable nobody can match to an invoice.
+        $settlements = app(SettlementService::class);
+        $open = (float) $settlements->openOnDocument(
+            $sale->customer_id,
+            SettlementService::DIRECTION_IN,
+            (string) $sale->transaction?->id,
+        );
+        $againstSale = round(min($totalReturnedValue, max($open, 0)), 4);
+        $excess = round($totalReturnedValue - $againstSale, 4);
+
+        if ($againstSale > 0) {
+            $lines[] = [
+                'account_id' => $glAccounts['account-receivable'],
+                'ledger_id' => $sale->customer_id,
+                'debit' => 0,
+                'credit' => $againstSale,
+                'remark' => 'Sale return credit for return #' . $saleReturn->number . ' (Sale #' . $sale->number . ')',
+            ];
+        }
+
+        if ($excess > 0) {
+            $lines[] = [
+                'account_id' => $settlements->advanceAccountFor($sale->customer_id, (string) $saleReturn->branch_id),
+                'ledger_id' => $sale->customer_id,
+                'debit' => 0,
+                'credit' => $excess,
+                'remark' => 'Sale return credit held for customer, return #' . $saleReturn->number . ' (Sale #' . $sale->number . ')',
+            ];
+        }
 
         return [$lines, $stockPayloads, $totalReturnedValue];
     }
@@ -564,6 +618,7 @@ class SaleReturnController extends Controller
                 }
 
                 $transactionService->postDraft($transaction);
+                $this->settleAgainstDocument($transaction->refresh(), $saleReturn->sale);
                 $saleReturn->update([
                     'status' => TransactionStatus::POSTED->value,
                     'updated_by' => Auth::id(),
@@ -596,6 +651,9 @@ class SaleReturnController extends Controller
         DB::transaction(function () use ($saleReturn, $transactionService, $paymentStatusService, $validated) {
             $transaction = $saleReturn->transaction()->firstOrFail();
             $transactionService->reverse($transaction, $validated['reason'], $saleReturn->number, SaleReturn::class);
+
+            // The return no longer relieves the document it was settled against.
+            Settlement::withoutGlobalScopes()->where('transaction_id', $transaction->id)->delete();
 
             $saleReturn->update([
                 'status' => TransactionStatus::REVERSED->value,

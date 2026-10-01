@@ -309,7 +309,7 @@
     "reports": {
         "trial_balance": {
             "label": "Trial balance",
-            "description": "Posted debit, credit, and net balance by ledger."
+            "description": "Debit or credit balance of every account as of the report date; the two columns must be equal."
         },
         "balance_sheet": {
             "label": "Balance sheet",

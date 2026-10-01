@@ -29,6 +29,23 @@ use Illuminate\Support\Str;
 
 class ReportService
 {
+    /**
+     * Statuses that make up the books.
+     *
+     * TransactionService::reverse() flips the original to `reversed` and posts
+     * its mirror as `posted`. Balance-type reports must read both halves so they
+     * net to nothing; `posted` alone kept the mirror and dropped the original,
+     * so every voided sale reduced revenue instead of cancelling out. Same rule
+     * as LedgerStatementService::baseQuery().
+     *
+     * Document lists (sales, purchases, receipts, payments) keep `posted` only
+     * and leave out the reversal entry, so a voided document is simply absent.
+     */
+    private const LEDGER_STATUSES = [
+        TransactionStatus::POSTED->value,
+        TransactionStatus::REVERSED->value,
+    ];
+
     public const REPORT_KEYS = [
         'trial_balance',
         'balance_sheet',
@@ -200,44 +217,58 @@ class ReportService
         };
     }
 
+    /**
+     * Trial balance: every account of the chart with its balance as of the
+     * report date, shown in the debit or the credit column by its sign.
+     *
+     * Built on accounts, not on parties. It used to group lines by customer and
+     * supplier ledger, which leaves out cash, inventory, revenue and expenses —
+     * a list that can never balance. Here the debit and credit columns must be
+     * equal; a difference means an unbalanced voucher in the books.
+     */
     public function getTrialBalance(array $filters): array
     {
-        $baseQuery = DB::table('transaction_lines as tl')
+        $accountName = app()->getLocale() === 'en' ? 'a.name' : 'COALESCE(a.local_name, a.name)';
+
+        $balances = DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
-            ->join('ledgers as l', function ($join) use ($filters) {
-                $join->on('l.id', '=', 'tl.ledger_id')
-                    ->where('l.branch_id', '=', $filters['branch_id'])
-                    ->whereNull('l.deleted_at');
-            })
-            ->whereNull('tl.deleted_at');
+            ->whereNull('tl.deleted_at')
+            ->whereDate('t.date', '<=', $filters['date_to'])
+            ->groupBy('tl.account_id')
+            ->selectRaw('tl.account_id, COALESCE(SUM(tl.base_debit - tl.base_credit), 0) as balance');
 
-        $this->applyDateFilter($baseQuery, 't.date', $filters);
+        $query = DB::table('accounts as a')
+            ->joinSub($balances, 'b', fn ($join) => $join->on('b.account_id', '=', 'a.id'))
+            ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->where('a.branch_id', $filters['branch_id'])
+            ->whereRaw('ABS(b.balance) >= 0.005')
+            ->orderByRaw($this->accountTypeNatureOrderExpression('at'))
+            ->orderBy('a.number')
+            ->orderBy('a.name')
+            ->selectRaw('a.id as account_id')
+            ->selectRaw("{$accountName} as account_name")
+            ->selectRaw('a.number as account_number')
+            ->selectRaw('CASE WHEN b.balance > 0 THEN b.balance ELSE 0 END as total_debit')
+            ->selectRaw('CASE WHEN b.balance < 0 THEN -b.balance ELSE 0 END as total_credit')
+            ->selectRaw('b.balance');
 
-        $query = (clone $baseQuery)
-            ->groupBy('l.id', 'l.name')
-            ->orderBy('l.name')
-            ->selectRaw('l.id as ledger_id, l.name as ledger_name')
-            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as balance');
-
-        $totals = (clone $baseQuery)
-            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as balance')
+        $totals = DB::query()->fromSub(clone $query, 'tb')
+            ->selectRaw('COALESCE(SUM(total_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(total_credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM(balance), 0) as balance')
             ->first();
 
         return $this->paginateReport(
             $query,
             $filters,
             fn ($row) => [
-                'ledger_id' => $row->ledger_id,
-                'ledger_name' => $row->ledger_name,
+                'account_id' => $row->account_id,
+                'account_name' => trim(($row->account_number ? $row->account_number . ' - ' : '') . $row->account_name),
                 'total_debit' => $this->moneyValue($row->total_debit),
                 'total_credit' => $this->moneyValue($row->total_credit),
                 'balance' => $this->moneyValue($row->balance),
@@ -377,7 +408,7 @@ class ReportService
             ->leftJoin('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->where('t.date', '<=', $filters['date_to'])
                     ->whereNull('t.deleted_at');
 
@@ -567,6 +598,7 @@ class ReportService
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
                     ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->where(fn ($q) => $q->whereNull('t.reference_type')->orWhere('t.reference_type', '!=', 'reversal'))
                     ->whereNull('t.deleted_at');
             })
             ->join('accounts as a', function ($join) use ($filters) {
@@ -626,6 +658,7 @@ class ReportService
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
                     ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->where(fn ($q) => $q->whereNull('t.reference_type')->orWhere('t.reference_type', '!=', 'reversal'))
                     ->whereNull('t.deleted_at');
             })
             ->join('accounts as a', function ($join) use ($filters) {
@@ -688,7 +721,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->join('accounts as a', function ($join) use ($filters) {
@@ -767,7 +800,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->join('accounts as a', function ($join) use ($filters) {
@@ -2235,7 +2268,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->join('accounts as a', function ($join) use ($filters) {
@@ -2345,7 +2378,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->whereNull('tl.deleted_at')
@@ -2532,7 +2565,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->whereNull('tl.deleted_at')
@@ -2548,7 +2581,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->whereNull('tl.deleted_at')
@@ -2586,11 +2619,24 @@ class ReportService
 
         $equity = $this->statementSectionRows($balances, ['equity'], true);
 
-        $retainedEarnings = $this->yearToDateNetProfit($filters);
-        if (abs($retainedEarnings) > 0.0001) {
+        // Income and expense accounts are never closed into retained earnings,
+        // so the balance sheet has to carry ALL profit to date, not only this
+        // year's — otherwise every earlier year's result drops out of equity and
+        // assets stop equalling liabilities + equity.
+        $yearStart = $this->fiscalYearStart($filters);
+        $priorProfit = $this->netProfitBetween($filters, null, Carbon::parse($yearStart)->subDay()->toDateString());
+        $currentProfit = $this->netProfitBetween($filters, $yearStart, $filters['date_to']);
+
+        if (abs($priorProfit) > 0.0001) {
+            $equity[] = [
+                'account_name' => __('general.prior_periods_profit_loss'),
+                'balance' => $this->moneyValue($priorProfit),
+            ];
+        }
+        if (abs($currentProfit) > 0.0001) {
             $equity[] = [
                 'account_name' => __('general.current_period_profit_loss'),
-                'balance' => $this->moneyValue($retainedEarnings),
+                'balance' => $this->moneyValue($currentProfit),
             ];
         }
 
@@ -2659,7 +2705,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->join('ledgers as l', function ($join) use ($filters, $ledgerId, $ledgerType) {
@@ -2697,7 +2743,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->join('ledgers as l', function ($join) use ($filters, $ledgerId, $ledgerType) {
@@ -2735,7 +2781,7 @@ class ReportService
             ->join('transactions as t2', function ($join) use ($filters) {
                 $join->on('t2.id', '=', 'tl2.transaction_id')
                     ->where('t2.branch_id', '=', $filters['branch_id'])
-                    ->where('t2.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t2.status', self::LEDGER_STATUSES)
                     ->whereNull('t2.deleted_at');
             })
             ->join('accounts as a2', function ($join) use ($filters) {
@@ -2779,7 +2825,7 @@ class ReportService
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
             ->join('accounts as a', function ($join) use ($filters) {
@@ -2814,14 +2860,52 @@ class ReportService
             ->all();
     }
 
-    protected function yearToDateNetProfit(array $filters): float
+    /**
+     * First day of the financial year that contains the report date: the
+     * branch's financial period when one covers it, otherwise the calendar year
+     * of the company's calendar (1 Hamal for Jalali, 1 January for Gregorian).
+     */
+    protected function fiscalYearStart(array $filters): string
     {
-        $yearStart = Carbon::parse($filters['date_to'])->startOfYear()->toDateString();
-        $yearFilters = array_merge($filters, [
-            'date_from' => $yearStart,
-        ]);
+        $date = Carbon::parse($filters['date_to'])->toDateString();
 
-        $balances = $this->accountBalancesForPeriod($yearFilters);
+        $periodStart = DB::table('financial_periods')
+            ->where('branch_id', $filters['branch_id'])
+            ->whereNull('deleted_at')
+            ->whereDate('start_date', '<=', $date)
+            ->where(fn ($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', $date))
+            ->orderByDesc('start_date')
+            ->value('start_date');
+
+        if ($periodStart) {
+            return Carbon::parse($periodStart)->toDateString();
+        }
+
+        $calendar = auth()->user()?->company?->calendar_type;
+        $calendar = $calendar instanceof \BackedEnum ? $calendar->value : $calendar;
+
+        if ($calendar === 'jalali') {
+            $jalali = \Morilog\Jalali\Jalalian::fromCarbon(Carbon::parse($date));
+
+            return (new \Morilog\Jalali\Jalalian($jalali->getYear(), 1, 1))->toCarbon()->toDateString();
+        }
+
+        return Carbon::parse($date)->startOfYear()->toDateString();
+    }
+
+    /** Net profit (income − COGS − expenses) between two dates; null $from = since the start. */
+    protected function netProfitBetween(array $filters, ?string $from, string $to): float
+    {
+        $query = $this->accountBalanceQuery($filters)->whereDate('t.date', '<=', $to);
+        if ($from !== null) {
+            $query->whereDate('t.date', '>=', $from);
+        }
+
+        return $this->netProfitFromBalances($query->get());
+    }
+
+    protected function netProfitFromBalances($balances): float
+    {
 
         $revenue = collect($balances)
             ->filter(fn ($row) => $row->account_type_slug === 'income')

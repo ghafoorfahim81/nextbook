@@ -39,6 +39,9 @@ class Ledger extends Model
 {
     use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
+    /** Transaction statuses that count toward a party's balance. */
+    private const STATEMENT_STATUSES = ['posted', 'reversed'];
+
     // ... your existing code ...
 
     /**
@@ -68,12 +71,14 @@ class Ledger extends Model
                     $totalDebit  = (float) $this->attributes['statement_total_debit'];
                     $totalCredit = (float) $this->attributes['statement_total_credit'];
                 } else {
-                    // Calculate total debit and credit, multiplying each by its transaction's rate
-                    $totals = TransactionLine::whereHas('transaction', function ($query) {
-                            $query->where('ledger_id', $this->id);
-                            //->where('status', 'posted');
-                        })
+                    // Same rule as scopeWithStatementTotals(): this party's lines on
+                    // posted and reversed transactions of its branch, in base currency.
+                    $totals = TransactionLine::query()
                         ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
+                        ->where('transaction_lines.ledger_id', $this->id)
+                        ->where('transactions.branch_id', $this->branch_id)
+                        ->whereIn('transactions.status', self::STATEMENT_STATUSES)
+                        ->whereNull('transactions.deleted_at')
                         ->selectRaw('
                             SUM(transaction_lines.base_debit) as total_debit,
                             SUM(transaction_lines.base_credit) as total_credit
@@ -276,6 +281,9 @@ class Ledger extends Model
             ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
             ->whereColumn('transaction_lines.ledger_id', 'ledgers.id')
             ->whereColumn('transactions.branch_id', 'ledgers.branch_id')
+            // Drafts are not owed yet; a reversed original and its posted
+            // mirror are both kept so they cancel out.
+            ->whereIn('transactions.status', self::STATEMENT_STATUSES)
             ->whereNull('transaction_lines.deleted_at')
             ->whereNull('transactions.deleted_at');
 

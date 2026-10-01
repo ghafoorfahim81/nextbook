@@ -23,6 +23,8 @@ use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
 use App\Services\ActivityLogService;
 use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
+use App\Models\Accounting\Settlement;
 use App\Services\DateConversionService;
 use App\Services\StockService;
 use App\Services\TransactionService;
@@ -221,6 +223,7 @@ class PurchaseReturnController extends Controller
             );
 
             if ($postImmediately) {
+                $this->settleAgainstDocument($transaction, $purchase);
                 $paymentStatusService->recalculatePurchases([$purchase->id]);
                 $this->refreshAverages($stockPayloads, $stockService);
             }
@@ -419,6 +422,26 @@ class PurchaseReturnController extends Controller
      *
      * @return array{0: array, 1: array, 2: float}
      */
+    /**
+     * Relieve the purchase this return was raised against by the part of the
+     * return's credit that went to the party's control account.
+     */
+    private function settleAgainstDocument(\App\Models\Transaction\Transaction $returnTransaction, $document): void
+    {
+        $documentTransactionId = $document?->transaction?->id;
+
+        if (! $documentTransactionId) {
+            return;
+        }
+
+        app(SettlementService::class)->settleReturnAgainstDocument(
+            $returnTransaction,
+            (string) $document->supplier_id,
+            SettlementService::DIRECTION_OUT,
+            (string) $documentTransactionId,
+        );
+    }
+
     private function buildReturnItemsAndLines(
         PurchaseReturn $purchaseReturn,
         Purchase $purchase,
@@ -481,14 +504,21 @@ class PurchaseReturnController extends Controller
             $totalCost = $unitPrice * $quantity;
             $totalReturnedValue += $totalCost;
 
+            // unit_price is in the purchase's currency, and so are the GL lines
+            // (the voucher carries the purchase's rate). Stock is always costed
+            // in home currency — the purchase stored unit_price × rate — so the
+            // return has to relieve it at the same figure. Using the raw price
+            // relieved a dollar purchase at ~1/70th of its cost.
+            $homeUnitCost = $unitPrice * $this->purchaseRate($purchase);
+
             $stockPayload = [
                 'item_id' => $purchaseItem->item_id,
                 'movement_type' => StockMovementType::OUT->value,
                 'unit_measure_id' => $purchaseItem->unit_measure_id,
                 'quantity' => $quantity,
                 'source' => StockSourceType::PURCHASE_RETURN->value,
-                'unit_cost' => $unitPrice,
-                'unit_cost_override' => $unitPrice,
+                'unit_cost' => $homeUnitCost,
+                'unit_cost_override' => $homeUnitCost,
                 // Goods going back to the supplier, not an ordinary issue: empty
                 // the layers this purchase brought in, at the price it paid. Left
                 // to the plain FIFO queue the return was costed off the oldest
@@ -522,15 +552,47 @@ class PurchaseReturnController extends Controller
             ];
         }
 
-        $lines[] = [
-            'account_id' => $glAccounts['account-payable'],
-            'ledger_id' => $purchase->supplier_id,
-            'debit' => $totalReturnedValue,
-            'credit' => 0,
-            'remark' => 'Purchase return debit for return #' . $purchaseReturn->number . ' (Purchase #' . $purchase->number . ')',
-        ];
+        // The debit relieves what is still owed on this purchase and is settled
+        // against it once posted. Beyond that — a cash purchase, or one already
+        // paid — the supplier owes us the money back: a supplier advance.
+        $settlements = app(SettlementService::class);
+        $open = (float) $settlements->openOnDocument(
+            $purchase->supplier_id,
+            SettlementService::DIRECTION_OUT,
+            (string) $purchase->transaction?->id,
+        );
+        $againstPurchase = round(min($totalReturnedValue, max($open, 0)), 4);
+        $excess = round($totalReturnedValue - $againstPurchase, 4);
+
+        if ($againstPurchase > 0) {
+            $lines[] = [
+                'account_id' => $glAccounts['account-payable'],
+                'ledger_id' => $purchase->supplier_id,
+                'debit' => $againstPurchase,
+                'credit' => 0,
+                'remark' => 'Purchase return debit for return #' . $purchaseReturn->number . ' (Purchase #' . $purchase->number . ')',
+            ];
+        }
+
+        if ($excess > 0) {
+            $lines[] = [
+                'account_id' => $settlements->advanceAccountFor($purchase->supplier_id, (string) $purchaseReturn->branch_id),
+                'ledger_id' => $purchase->supplier_id,
+                'debit' => $excess,
+                'credit' => 0,
+                'remark' => 'Purchase return refund due from supplier, return #' . $purchaseReturn->number . ' (Purchase #' . $purchase->number . ')',
+            ];
+        }
 
         return [$lines, $stockPayloads, $totalReturnedValue];
+    }
+
+    /** The rate the purchase was booked at (1 for home-currency purchases). */
+    private function purchaseRate(Purchase $purchase): float
+    {
+        $rate = (float) ($purchase->transaction?->rate ?? 1);
+
+        return $rate > 0 ? $rate : 1.0;
     }
 
     /**
@@ -578,6 +640,7 @@ class PurchaseReturnController extends Controller
                 );
 
                 $transactionService->postDraft($transaction);
+                $this->settleAgainstDocument($transaction->refresh(), $purchaseReturn->purchase);
                 $purchaseReturn->update([
                     'status' => TransactionStatus::POSTED->value,
                     'updated_by' => Auth::id(),
@@ -610,6 +673,9 @@ class PurchaseReturnController extends Controller
         DB::transaction(function () use ($purchaseReturn, $transactionService, $paymentStatusService, $validated) {
             $transaction = $purchaseReturn->transaction()->firstOrFail();
             $transactionService->reverse($transaction, $validated['reason'], $purchaseReturn->number, PurchaseReturn::class);
+
+            // The return no longer relieves the document it was settled against.
+            Settlement::withoutGlobalScopes()->where('transaction_id', $transaction->id)->delete();
 
             $purchaseReturn->update([
                 'status' => TransactionStatus::REVERSED->value,

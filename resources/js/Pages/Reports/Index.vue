@@ -187,7 +187,7 @@ const reportDefinitions = computed(() => ({
       { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
     ],
     columns: [
-      { key: 'ledger_name', label: t('report.columns.ledger_name') },
+      { key: 'account_name', label: t('report.columns.account_name') },
       { key: 'total_debit', label: t('report.columns.total_debit'), type: 'money', align: 'right' },
       { key: 'total_credit', label: t('report.columns.total_credit'), type: 'money', align: 'right' },
       { key: 'balance', label: t('report.columns.balance'), type: 'money', align: 'right' },

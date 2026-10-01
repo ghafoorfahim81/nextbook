@@ -30,8 +30,12 @@ final class DemoCalendar
     /** @var array<int, float> AFN per PKR */
     public array $pkr = [];
 
-    public function __construct(public CarbonImmutable $start, public CarbonImmutable $end, DemoRandom $random)
-    {
+    public function __construct(
+        public CarbonImmutable $start,
+        public CarbonImmutable $end,
+        DemoRandom $random,
+        public string $calendarType = 'gregorian',
+    ) {
         for ($day = $start; $day->lte($end); $day = $day->addDay()) {
             $this->days[] = $day;
         }
@@ -39,7 +43,7 @@ final class DemoCalendar
         $total = count($this->days);
 
         foreach ($this->days as $index => $day) {
-            // Slow growth over the two years, on top of the calendar effects.
+            // Slow growth over the period, on top of the calendar effects.
             $this->weights[$index] = $this->calendarFactor($day) * (0.9 + 0.2 * $index / max($total - 1, 1));
 
             // Days the application cannot record anything on (see isBlocked()).
@@ -199,15 +203,17 @@ final class DemoCalendar
     public function isBlocked(int $index): bool
     {
         return $this->blocked[$index] ??= \Illuminate\Support\Facades\Validator::make(
-            ['date' => $this->jalali($this->days[$index])],
+            ['date' => $this->formDate($this->days[$index])],
             ['date' => 'date']
         )->fails();
     }
 
-    /** Jalali date as the date picker submits it. */
-    public function jalali(CarbonImmutable $day): string
+    /** The date as the date picker submits it, in the company's calendar. */
+    public function formDate(CarbonImmutable $day): string
     {
-        return Jalalian::fromCarbon($day->toMutable())->format('Y-m-d');
+        return $this->calendarType === 'jalali'
+            ? Jalalian::fromCarbon($day->toMutable())->format('Y-m-d')
+            : $day->format('Y-m-d');
     }
 
     public function at(int $dayIndex, int $minuteOfDay): CarbonImmutable

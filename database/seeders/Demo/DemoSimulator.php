@@ -169,10 +169,11 @@ final class DemoSimulator
         int $seed,
         CarbonImmutable $start,
         CarbonImmutable $end,
+        private string $calendarType = "gregorian",
     ) {
         $this->random = new DemoRandom($seed);
         $this->people = new DemoPeople($this->random);
-        $this->calendar = new DemoCalendar($start, $end, $this->random);
+        $this->calendar = new DemoCalendar($start, $end, $this->random, $calendarType);
         $this->client = new DemoClient(app());
     }
 
@@ -306,16 +307,16 @@ final class DemoSimulator
         return $candidates === [] ? $this->owner : $this->random->pick($candidates);
     }
 
-    private function jalali(CarbonImmutable $at): string
+    private function formDate(CarbonImmutable $at): string
     {
-        return $this->calendar->jalali($at);
+        return $this->calendar->formDate($at);
     }
 
     /** A Jalali date $days ahead that the forms will accept (see DemoCalendar::isBlocked()). */
-    private function jalaliAfter(CarbonImmutable $at, int $days): string
+    private function formDateAfter(CarbonImmutable $at, int $days): string
     {
         do {
-            $date = $this->jalali($at->addDays($days++));
+            $date = $this->formDate($at->addDays($days++));
         } while (\Illuminate\Support\Facades\Validator::make(['d' => $date], ['d' => 'date'])->fails());
 
         return $date;
@@ -352,11 +353,11 @@ final class DemoSimulator
 
         $start = $this->calendar->at(0, 7 * 60);
 
-        // Calendar: the company asked for Jalali. A settings flag, changed the
-        // way CompanyController does it (update + refresh the profile cache).
+        // Calendar the forms are filled in. A settings flag, changed the way
+        // CompanyController does it (update + refresh the profile cache).
         $calendar = $this->company->calendar_type;
-        if (($calendar instanceof \BackedEnum ? $calendar->value : $calendar) !== 'jalali') {
-            $this->company->update(['calendar_type' => 'jalali']);
+        if (($calendar instanceof \BackedEnum ? $calendar->value : $calendar) !== $this->calendarType) {
+            $this->company->update(['calendar_type' => $this->calendarType]);
             \App\Jobs\RefreshCompanyProfileCache::dispatch($this->company->id);
         }
 
@@ -576,7 +577,7 @@ final class DemoSimulator
 
         $this->attempt('opening_journal', fn () => $this->send($this->owner, $at, 'journal-entries.store', [
             'number' => $this->next('journal', JournalEntry::class),
-            'date' => $this->jalali($at),
+            'date' => $this->formDate($at),
             'currency_id' => $this->currency['AFN'],
             'rate' => 1,
             'remarks' => 'بیلانس افتتاحیه صندوق‌ها و حساب بانکی',
@@ -1059,17 +1060,17 @@ final class DemoSimulator
     {
         $at = $this->calendar->at(0, 12 * 60);
         $brandIds = Brand::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'name')->all();
-        $j = fn (string $gregorian) => $this->jalali(CarbonImmutable::parse($gregorian));
+        $j = fn (string $gregorian) => $this->formDate(CarbonImmutable::parse($gregorian));
 
         $rules = [
             ['name' => 'تخفیف عمده‌فروشی برنج و آرد ۳٪', 'scope' => 'category', 'scope_id' => $this->categoryIds['grain'],
                 'discount_type' => 'percentage', 'value' => 3, 'customer_group_id' => $this->groups['wholesale'] ?? null, 'min_quantity' => 5],
             ['name' => 'تخفیف مشتریان ویژه ۵٪', 'scope' => 'all', 'discount_type' => 'percentage', 'value' => 5,
                 'customer_group_id' => $this->groups['vip'] ?? null],
-            ['name' => 'تخفیف رمضان ۱۴۰۴ – لبنیات', 'scope' => 'category', 'scope_id' => $this->categoryIds['dairy'],
+            ['name' => 'تخفیف رمضان ۲۰۲۵ – لبنیات', 'scope' => 'category', 'scope_id' => $this->categoryIds['dairy'],
                 'discount_type' => 'percentage', 'value' => 7, 'starts_at' => $j('2025-02-25'), 'ends_at' => $j('2025-03-29'), 'is_priority' => true],
-            ['name' => 'تخفیف نوروزی ۱۴۰۵ – خشکبار', 'scope' => 'category', 'scope_id' => $this->categoryIds['dried'],
-                'discount_type' => 'percentage', 'value' => 8, 'starts_at' => $j('2026-03-01'), 'ends_at' => $j('2026-03-25'), 'is_priority' => true],
+            ['name' => 'تخفیف نوروزی ۲۰۲۵ – خشکبار', 'scope' => 'category', 'scope_id' => $this->categoryIds['dried'],
+                'discount_type' => 'percentage', 'value' => 8, 'starts_at' => $j('2025-03-01'), 'ends_at' => $j('2025-03-25'), 'is_priority' => true],
             ['name' => 'تخفیف برند الکوزی ۴٪', 'scope' => 'brand', 'scope_id' => $brandIds['الکوزی'] ?? ($brandIds['تپال'] ?? array_values($brandIds)[0] ?? null),
                 'discount_type' => 'percentage', 'value' => 4, 'min_quantity' => 4],
         ];
@@ -1129,7 +1130,7 @@ final class DemoSimulator
             }
 
             $bar->setMessage(sprintf('%s | فروش %d | خرید %d | خطا %d',
-                $this->jalali($this->calendar->days[$day]),
+                $this->formDate($this->calendar->days[$day]),
                 $this->stats['sale']['ok'] ?? 0,
                 $this->stats['purchase']['ok'] ?? 0,
                 count($this->failures)));
@@ -1353,7 +1354,7 @@ final class DemoSimulator
             'number' => $number,
             'customer_id' => $customerId,
             'sale_order_id' => $fromOrder['id'] ?? null,
-            'date' => $this->jalali($at),
+            'date' => $this->formDate($at),
             'currency_id' => $this->currency[$code],
             'rate' => $rate,
             'sale_type' => $type,
@@ -1491,8 +1492,8 @@ final class DemoSimulator
         $number = $this->next('sale_order', SaleOrder::class);
         $payload = [
             'number' => $number,
-            'date' => $this->jalali($at),
-            'delivery_date' => $this->jalaliAfter($at, $this->random->int(1, 7)),
+            'date' => $this->formDate($at),
+            'delivery_date' => $this->formDateAfter($at, $this->random->int(1, 7)),
             'customer_id' => $customer['id'],
             'currency_id' => $this->currency[$code],
             'rate' => $rate,
@@ -1581,8 +1582,8 @@ final class DemoSimulator
             $user = $this->actor($model);
             $this->send($user, $at, "{$route}.store", $party + [
                 'number' => $number,
-                'date' => $this->jalali($at),
-                'valid_until' => $this->jalaliAfter($at, 15),
+                'date' => $this->formDate($at),
+                'valid_until' => $this->formDateAfter($at, 15),
                 'currency_id' => $this->currency[$code],
                 'rate' => $rate,
                 'warehouse_id' => $this->warehouseId,
@@ -1726,7 +1727,7 @@ final class DemoSimulator
             'number' => $number,
             'supplier_id' => $supplier['id'],
             'purchase_order_id' => $fromOrder['id'] ?? null,
-            'date' => $this->jalali($at),
+            'date' => $this->formDate($at),
             'currency_id' => $this->currency[$code],
             'rate' => $rate,
             'purchase_type' => $type,
@@ -1812,8 +1813,8 @@ final class DemoSimulator
             $user = $this->actor(PurchaseOrder::class);
             $this->send($user, $at, 'purchase-orders.store', [
                 'number' => $number,
-                'date' => $this->jalali($at),
-                'delivery_date' => $this->jalaliAfter($at, $this->random->int(3, 10)),
+                'date' => $this->formDate($at),
+                'delivery_date' => $this->formDateAfter($at, $this->random->int(3, 10)),
                 'supplier_id' => $supplier['id'],
                 'currency_id' => $this->currency[$code],
                 'rate' => $rate,
@@ -1889,7 +1890,7 @@ final class DemoSimulator
         $ok = $this->attempt('sale_return', fn () => $this->send($this->actor(SaleReturn::class), $at, 'sale-returns.store', [
             'number' => $number,
             'sale_id' => $sale['id'],
-            'date' => $this->jalali($at),
+            'date' => $this->formDate($at),
             'reason' => $this->random->pick(['damaged', 'expired', 'wrong_item', 'customer_changed_mind', 'defective']),
             'description' => 'برگشت جنس از مشتری',
             'item_list' => array_map(fn ($l) => ['sale_item_id' => $l['sale_item_id'], 'quantity' => $l['quantity']], $lines),
@@ -1944,7 +1945,7 @@ final class DemoSimulator
         $ok = $this->attempt('purchase_return', fn () => $this->send($this->actor(PurchaseReturn::class), $at, 'purchase-returns.store', [
             'number' => $number,
             'purchase_id' => $purchase['id'],
-            'date' => $this->jalali($at),
+            'date' => $this->formDate($at),
             'reason' => $this->random->pick(['damaged', 'expired', 'quality_rejection', 'over_ordered', 'wrong_item']),
             'description' => 'برگشت جنس به تأمین‌کننده',
             'item_list' => array_map(fn ($l) => ['purchase_item_id' => $l['purchase_item_id'], 'quantity' => $l['quantity']], $lines),
@@ -2124,7 +2125,7 @@ final class DemoSimulator
         $number = $this->next($kind, $model);
         $payload = [
             'number' => $number,
-            'date' => $this->jalali($at),
+            'date' => $this->formDate($at),
             'ledger_id' => $partyId,
             'payment_mode' => $mode,
             'amount' => $cashAmount,
@@ -2173,7 +2174,7 @@ final class DemoSimulator
     {
         // Rent, salaries, power and internet fall due around the start of each
         // Jalali month; everything else is drawn by how often it happens.
-        $jalaliDay = (int) explode('-', $this->jalali($at))[2];
+        $jalaliDay = (int) explode('-', $this->formDate($at))[2];
         if ($jalaliDay <= 3 && $this->random->chance(0.8)) {
             $name = $this->random->pick(['کرایه دکان و گدام', 'معاش کارمندان', 'برق', 'انترنت']);
         } else {
@@ -2216,8 +2217,8 @@ final class DemoSimulator
         $expense = $this->attempt('expense', function () use ($name, $accountKey, $till, $code, $day, $details, $at, $number) {
             $this->send($this->actor(Expense::class), $at, 'expenses.store', [
                 'number' => (string) $number,
-                'date' => $this->jalali($at),
-                'remarks' => $name . ' - ' . $this->jalali($at),
+                'date' => $this->formDate($at),
+                'remarks' => $name . ' - ' . $this->formDate($at),
                 'category_id' => $this->expenseCategories[$name],
                 'expense_account_id' => $this->accounts[$accountKey],
                 'bank_account_id' => $this->cash[$till]['id'],
@@ -2270,7 +2271,7 @@ final class DemoSimulator
         $transfer = $this->attempt('transfer', function () use ($from, $to, $code, $amount, $day, $at, $number) {
             $this->send($this->actor(AccountTransfer::class), $at, 'account-transfers.store', [
                 'number' => (string) $number,
-                'date' => $this->jalali($at),
+                'date' => $this->formDate($at),
                 'from_account_id' => $this->cash[$from]['id'],
                 'to_account_id' => $this->cash[$to]['id'],
                 'amount' => $amount,
@@ -2407,7 +2408,7 @@ final class DemoSimulator
         $journal = $this->attempt('journal', function () use ($lines, $remark, $code, $day, $at, $number) {
             $this->send($this->actor(JournalEntry::class), $at, 'journal-entries.store', [
                 'number' => $number,
-                'date' => $this->jalali($at),
+                'date' => $this->formDate($at),
                 'currency_id' => $this->currency[$code],
                 'rate' => $code === 'USD' ? $this->rate('USD', $day) : 1,
                 'remarks' => $remark,
@@ -2468,7 +2469,7 @@ final class DemoSimulator
         ][$reason];
 
         $ok = $this->attempt('adjustment', fn () => $this->send($this->actor(StockAdjustment::class), $at, 'stock-adjustments.store', [
-            'date' => $this->jalali($at),
+            'date' => $this->formDate($at),
             'reason' => $reason,
             'warehouse_id' => $this->warehouseId,
             'notes' => $notes,

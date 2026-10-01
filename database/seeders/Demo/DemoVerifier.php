@@ -27,6 +27,7 @@ final class DemoVerifier
         $this->stock();
         $this->ledgers();
         $this->settlements();
+        $this->reports();
         $this->mix();
 
         $this->console->newLine();
@@ -40,6 +41,71 @@ final class DemoVerifier
     private function check(string $name, bool $ok, string $detail): void
     {
         $this->checks[] = [$name, $ok, $detail];
+    }
+
+    /** Balance of GL accounts (posted + reversed, so each reversal pair nets to zero). */
+    private function gl(string $where): float
+    {
+        return (float) DB::selectOne("
+            SELECT COALESCE(SUM(tl.base_debit - tl.base_credit), 0) b
+            FROM transaction_lines tl
+            JOIN transactions t ON t.id = tl.transaction_id AND t.deleted_at IS NULL AND t.status IN ('posted','reversed') AND t.branch_id = ?
+            JOIN accounts a ON a.id = tl.account_id
+            JOIN account_types at ON at.id = a.account_type_id
+            WHERE tl.deleted_at IS NULL AND {$where}", [$this->branchId])->b;
+    }
+
+    /**
+     * Run the financial reports the way the UI does and hold each one to the
+     * general ledger. The earlier checks read the database directly; these
+     * catch a report that reads it wrongly.
+     */
+    private function reports(): void
+    {
+        $user = \App\Models\User::query()->where('branch_id', $this->branchId)
+            ->whereHas('roles', fn ($q) => $q->where('slug', 'super-admin'))->first();
+        auth()->login($user);
+        app()->instance('active_branch_id', $this->branchId);
+
+        $first = DB::table('transactions')->where('branch_id', $this->branchId)->min('date');
+        $last = DB::table('transactions')->where('branch_id', $this->branchId)->max('date');
+        $service = app(\App\Services\ReportService::class);
+        $run = fn (string $report) => $service->getPageData($user, [
+            'report' => $report, 'branch_id' => $this->branchId,
+            'date_from' => substr((string) $first, 0, 10), 'date_to' => substr((string) $last, 0, 10), 'per_page' => 100000,
+        ])['result'];
+        $f = fn ($v) => number_format((float) $v, 2);
+        $near = fn ($a, $b) => abs((float) $a - (float) $b) < 0.05;
+
+        $empty = DB::selectOne("SELECT COUNT(*) n FROM transactions t WHERE t.deleted_at IS NULL AND t.status IN ('posted','reversed')
+            AND NOT EXISTS (SELECT 1 FROM transaction_lines tl WHERE tl.transaction_id = t.id AND tl.deleted_at IS NULL)")->n;
+        $this->check('هیچ سند ثبت‌شدهٔ بدون سطر حسابداری نیست', (int) $empty === 0, "{$empty} سند");
+
+        $tb = $run('trial_balance')['summary'];
+        $this->check('گزارش تراز آزمایشی: بدهکار = بستانکار', $near($tb['total_debit'], $tb['total_credit']),
+            "بدهکار {$f($tb['total_debit'])} | بستانکار {$f($tb['total_credit'])}");
+
+        $bs = $run('balance_sheet')['summary'];
+        $assets = $this->gl("at.slug IN ('cash-or-bank','account-receivable','other-current-asset','fixed-asset')");
+        $this->check('گزارش بیلانس‌شیت: دارایی = بدهی + سرمایه', $near($bs['total_assets'], $bs['equation_total']) && $near($bs['total_assets'], $assets),
+            "دارایی {$f($bs['total_assets'])} | بدهی+سرمایه {$f($bs['equation_total'])} | دارایی در دفتر کل {$f($assets)}");
+
+        $is = $run('income_statement')['summary'];
+        $profit = -$this->gl("at.slug IN ('income','cost-of-goods-sold','expense')");
+        $this->check('گزارش سود و زیان = دفتر کل', $near($is['net_profit'], $profit), "گزارش {$f($is['net_profit'])} | دفتر کل {$f($profit)}");
+
+        $stock = $run('inventory_stock')['summary']['total_value'] ?? null;
+        $inventory = $this->gl("a.slug = 'inventory-stock'");
+        $this->check('ارزش گزارش موجودی کالا = حساب موجودی در دفتر کل', $near($stock, $inventory),
+            "گزارش {$f($stock)} | دفتر کل {$f($inventory)} | تفاوت {$f((float) $stock - $inventory)}");
+
+        $ar = $run('aged_receivables')['summary']['total_outstanding'] ?? null;
+        $arGl = $this->gl("a.slug = 'account-receivable'");
+        $this->check('گزارش سنی دریافتنی‌ها = حساب دریافتنی', $near($ar, $arGl), "گزارش {$f($ar)} | دفتر کل {$f($arGl)}");
+
+        $ap = $run('aged_payables')['summary']['total_outstanding'] ?? null;
+        $apGl = -$this->gl("a.slug = 'account-payable'");
+        $this->check('گزارش سنی پرداختنی‌ها = حساب پرداختنی', $near($ap, $apGl), "گزارش {$f($ap)} | دفتر کل {$f($apGl)}");
     }
 
     private function counts(): void
