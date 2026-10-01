@@ -551,5 +551,13 @@
         "days_90": "61-90 days",
         "days_90_plus": "90+ days",
         "unapplied_credit": "Unapplied credit"
+    },
+    "chart": {
+        "income_statement_title": "Revenue, costs and profit",
+        "revenue": "Revenue",
+        "cost_of_goods_sold": "Cost of sales",
+        "gross_profit": "Gross profit",
+        "expenses": "Expenses",
+        "net_profit": "Net profit"
     }
 }

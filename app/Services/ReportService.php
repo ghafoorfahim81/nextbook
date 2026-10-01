@@ -1366,25 +1366,50 @@ class ReportService
 
         // Only aggregate over (item, warehouse) pairs that actually have positive stock.
         // This keeps the totals consistent with what is shown in the detail rows.
+        // The variant filter applies here too: the rows honoured it but the totals
+        // did not, so filtering to one variant still summed every variant.
         $positiveStockPairs = DB::table('stock_balances as sb')
             ->where('sb.branch_id', $branchId)
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sb.item_id', $id))
+            ->when($variantId, fn ($q, $id) => $q->where('sb.variant_id', $id))
             ->groupBy('sb.item_id', 'sb.warehouse_id')
             ->havingRaw('SUM(sb.quantity) > 0')
             ->selectRaw('sb.item_id, sb.warehouse_id');
 
         $totalQty = DB::query()
             ->fromSub($positiveStockPairs, 'ps')
-            ->join('stock_balances as sb2', function ($join) use ($branchId, $voided, $cancelled) {
+            ->join('stock_balances as sb2', function ($join) use ($branchId, $voided, $cancelled, $variantId) {
                 $join->on('sb2.item_id', '=', 'ps.item_id')
                     ->on('sb2.warehouse_id', '=', 'ps.warehouse_id')
                     ->where('sb2.branch_id', $branchId)
                     ->whereNull('sb2.deleted_at')
                     ->whereNotIn('sb2.status', [$voided, $cancelled]);
+
+                if ($variantId) {
+                    $join->where('sb2.variant_id', $variantId);
+                }
             })
             ->sum('sb2.quantity');
+
+        // Distinct items in stock, counted over the same (item, warehouse) pairs
+        // and the same live items and warehouses as the rows. An item held in two
+        // warehouses is two rows but one item.
+        $totalItems = DB::query()
+            ->fromSub($positiveStockPairs, 'ps')
+            ->join('items as i', function ($join) use ($branchId) {
+                $join->on('i.id', '=', 'ps.item_id')
+                    ->where('i.branch_id', '=', $branchId)
+                    ->whereNull('i.deleted_at');
+            })
+            ->join('warehouses as w', function ($join) use ($branchId) {
+                $join->on('w.id', '=', 'ps.warehouse_id')
+                    ->where('w.branch_id', '=', $branchId)
+                    ->whereNull('w.deleted_at');
+            })
+            ->distinct()
+            ->count('ps.item_id');
 
         $totalValue = DB::table('stock_movements as sm')
             ->joinSub($positiveStockPairs, 'ps', function ($join) {
@@ -1395,6 +1420,7 @@ class ReportService
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sm.item_id', $id))
+            ->when($variantId, fn ($q, $id) => $q->where('sm.variant_id', $id))
             ->selectRaw(
                 "COALESCE(SUM(CASE WHEN sm.movement_type = ? THEN sm.quantity * sm.unit_cost ELSE -(sm.quantity * sm.unit_cost) END), 0) as total_value",
                 [$inValue]
@@ -1412,6 +1438,7 @@ class ReportService
                 'total_value' => $this->moneyValue($row->total_value),
             ],
             [
+                'total_items' => $totalItems,
                 'total_quantity' => $this->quantityValue($totalQty),
                 'total_value' => $this->moneyValue($totalValue),
             ],

@@ -131,29 +131,33 @@ function clearSearch() {
           <p v-if="section.description" class="text-sm text-muted-foreground">{{ section.description }}</p>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <!-- Compact cards: some forty reports, so four across and one line of
+             description keeps far more of the catalogue on screen. The full
+             description is on the card's tooltip. -->
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <button
             v-for="report in section.reports"
             :key="report.key"
             type="button"
-            class="group rounded-2xl border px-5 py-5 text-left shadow-sm transition-all duration-200 rtl:text-right"
+            class="group rounded-lg border px-5 py-4 text-left shadow-sm transition-all duration-200 rtl:text-right"
             :class="report.key === activeReport
-              ? 'border-emerald-500/50 bg-violet-950 text-white shadow-[0_14px_40px_rgba(6,78,59,0.35)] dark:border-violet-400/30 dark:bg-violet-950'
+              ? 'border-emerald-500/50 bg-violet-950 text-white shadow-[0_10px_30px_rgba(6,78,59,0.35)] dark:border-violet-400/30 dark:bg-violet-950'
               : ['border-border bg-card hover:-translate-y-0.5 hover:shadow-md', toneFor(section.key).hover]"
+            :title="report.description"
             @click="emit('select', report.key)"
           >
-            <div class="flex items-start gap-4">
+            <div class="flex items-center gap-3">
               <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg shadow-sm"
-                :class="report.key === activeReport ? 'bg-white/12 text-white' : toneFor(section.key).tile"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                :class="report.key === activeReport ? 'bg-white/15 text-white' : toneFor(section.key).tile"
               >
-                <component :is="report.icon" class="h-6 w-6" />
+                <component :is="report.icon" class="h-5 w-5" />
               </div>
-              <div class="min-w-0">
-                <div class="text-lg font-semibold leading-6" :class="report.key === activeReport ? 'text-white' : 'text-card-foreground'">
+              <div class="min-w-0 flex-1">
+                <div class="truncate text-base font-semibold leading-6" :class="report.key === activeReport ? 'text-white' : 'text-card-foreground'">
                   {{ report.label }}
                 </div>
-                <div class="mt-1 text-sm leading-6" :class="report.key === activeReport ? 'text-violet-100/85' : 'text-muted-foreground'">
+                <div class="mt-0.5 truncate text-[13px] leading-5" :class="report.key === activeReport ? 'text-violet-100/85' : 'text-muted-foreground'">
                   {{ report.description }}
                 </div>
               </div>
