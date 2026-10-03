@@ -99,7 +99,33 @@ class ReportService
     ) {
     }
 
-    public function getPageData(?Authenticatable $user = null, array $rawFilters = []): array
+    /**
+     * Picker lists that grow with the business (hundreds to thousands of rows),
+     * keyed to the reports whose filters use them. Each is loaded only when the
+     * selected report shows that picker — shipping all of them on every request
+     * made the page payload close to a megabyte. Keep in step with the
+     * `filters` arrays in resources/js/Pages/Reports/Index.vue.
+     */
+    private const LARGE_FILTER_OPTIONS = [
+        'ledgers' => ['general_ledger'],
+        'customers' => ['customer_statement', 'aged_receivables', 'sales_report'],
+        'suppliers' => ['supplier_statement', 'aged_payables', 'purchase_report'],
+        'items' => self::ITEM_FILTER_REPORTS,
+        'variants' => self::ITEM_FILTER_REPORTS,
+        'employees' => [
+            'payroll_register', 'tax_withholding_report', 'employee_loan_statement', 'attendance_summary',
+            'attendance_register', 'leave_balance_report', 'leave_register', 'contract_expiry_report',
+        ],
+    ];
+
+    private const ITEM_FILTER_REPORTS = [
+        'sales_report', 'purchase_report', 'inventory_stock', 'stock_movement', 'stock_adjustment_report',
+        'low_stock', 'inventory_valuation', 'batch_wise_report', 'expiry_wise_report', 'variant_wise_report',
+        'zero_on_hand_report', 'fast_moving_report', 'slow_moving_report',
+        'today_sale_purchase_closing_stock_report', 'near_expiry_report', 'maximum_stock_report',
+    ];
+
+    public function getPageData(?Authenticatable $user = null, array $rawFilters = [], bool $reportSelected = true): array
     {
         $filters = $this->normalizeFilters($rawFilters, $user);
 
@@ -110,8 +136,15 @@ class ReportService
             // the next request and normalizeFilters() converts them to Gregorian again.
             'filters' => $this->filtersForDisplay($filters),
             'reportOptions' => $this->reportOptions(),
-            'filterOptions' => $this->filterOptions($filters['branch_id']),
-            'result' => $this->getReportData($filters),
+            // The catalog only lists the reports: it shows no filters and no
+            // figures, so it skips both rather than running a trial balance
+            // nobody sees.
+            'filterOptions' => $reportSelected
+                ? $this->filterOptions($filters['branch_id'], $filters['report'], $filters['view_type'])
+                : (object) [],
+            'result' => $reportSelected
+                ? $this->getReportData($filters)
+                : $this->emptyResult('select_report'),
         ];
     }
 
@@ -257,28 +290,27 @@ class ReportService
             ->selectRaw('CASE WHEN b.balance < 0 THEN -b.balance ELSE 0 END as total_credit')
             ->selectRaw('b.balance');
 
-        $totals = DB::query()->fromSub(clone $query, 'tb')
-            ->selectRaw('COALESCE(SUM(total_debit), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(total_credit), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM(balance), 0) as balance')
-            ->first();
+        // One row per account with a balance — a chart of accounts, not a
+        // ledger — so fetch it once and total and page it here. Totals, the
+        // paginator's count and the page each re-ran the aggregate over every
+        // transaction line in the branch, tripling the report's cost.
+        $accounts = $query->get();
 
-        return $this->paginateReport(
-            $query,
-            $filters,
-            fn ($row) => [
+        return $this->paginateCollection(
+            $accounts->map(fn ($row) => [
                 'account_id' => $row->account_id,
                 'account_name' => trim(($row->account_number ? $row->account_number . ' - ' : '') . $row->account_name),
                 'total_debit' => $this->moneyValue($row->total_debit),
                 'total_credit' => $this->moneyValue($row->total_credit),
                 'balance' => $this->moneyValue($row->balance),
                 'balance_label' => $this->formatBalance($row->balance),
-            ],
+            ]),
+            $filters,
             [
-                'total_debit' => $this->moneyValue($totals?->total_debit),
-                'total_credit' => $this->moneyValue($totals?->total_credit),
-                'balance' => $this->moneyValue($totals?->balance),
-                'balance_label' => $this->formatBalance($totals?->balance),
+                'total_debit' => $this->moneyValue($accounts->sum('total_debit')),
+                'total_credit' => $this->moneyValue($accounts->sum('total_credit')),
+                'balance' => $this->moneyValue($accounts->sum('balance')),
+                'balance_label' => $this->formatBalance($accounts->sum('balance')),
             ],
         );
     }
@@ -4475,8 +4507,31 @@ class ReportService
         ];
     }
 
-    protected function filterOptions(string $branchId): array
+    /**
+     * @param string|null $report Limits the large picker lists to the ones this
+     *                            report's filters use; null loads every list.
+     */
+    protected function filterOptions(string $branchId, ?string $report = null, ?string $viewType = null): array
     {
+        $needs = function (string $list) use ($report, $viewType): bool {
+            if ($report === null) {
+                return true;
+            }
+
+            // Sales and purchase reports pick a party in the general view and
+            // an item in the item-wise one; switching views reloads the page.
+            if (in_array($report, ['sales_report', 'purchase_report'], true)) {
+                $partyList = in_array($list, ['customers', 'suppliers'], true);
+                $itemList = in_array($list, ['items', 'variants'], true);
+
+                if (($partyList && $viewType !== 'general') || ($itemList && $viewType !== 'itemwise')) {
+                    return false;
+                }
+            }
+
+            return in_array($report, self::LARGE_FILTER_OPTIONS[$list], true);
+        };
+
         return [
             'branches' => Branch::query()
                 ->whereNull('deleted_at')
@@ -4484,14 +4539,14 @@ class ReportService
                 ->get(['id', 'name'])
                 ->map(fn ($branch) => ['id' => $branch->id, 'name' => $branch->name])
                 ->all(),
-            'ledgers' => DB::table('ledgers')
+            'ledgers' => ! $needs('ledgers') ? [] : DB::table('ledgers')
                 ->where('branch_id', $branchId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
-            'customers' => DB::table('ledgers')
+            'customers' => ! $needs('customers') ? [] : DB::table('ledgers')
                 ->where('branch_id', $branchId)
                 ->where('type', LedgerType::CUSTOMER->value)
                 ->whereNull('deleted_at')
@@ -4499,7 +4554,7 @@ class ReportService
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
-            'suppliers' => DB::table('ledgers')
+            'suppliers' => ! $needs('suppliers') ? [] : DB::table('ledgers')
                 ->where('branch_id', $branchId)
                 ->where('type', LedgerType::SUPPLIER->value)
                 ->whereNull('deleted_at')
@@ -4507,7 +4562,7 @@ class ReportService
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
-            'items' => DB::table('items')
+            'items' => ! $needs('items') ? [] : DB::table('items')
                 ->where('branch_id', $branchId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
@@ -4517,7 +4572,7 @@ class ReportService
             // Every variant in the branch, each carrying its item_id. The
             // variant picker is filtered client-side to whichever item is
             // selected, so choosing an item never costs a round trip.
-            'variants' => DB::table('item_variants as iv')
+            'variants' => ! $needs('variants') ? [] : DB::table('item_variants as iv')
                 ->join('items as i', 'i.id', '=', 'iv.item_id')
                 ->where('iv.branch_id', $branchId)
                 ->whereNull('iv.deleted_at')
@@ -4599,7 +4654,7 @@ class ReportService
                 ->get(['a.id', 'a.name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
-            'employees' => DB::table('employees')
+            'employees' => ! $needs('employees') ? [] : DB::table('employees')
                 ->where('branch_id', $branchId)
                 ->whereNull('deleted_at')
                 ->orderBy('full_name')
