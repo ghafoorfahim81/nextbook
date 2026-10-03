@@ -20,6 +20,7 @@ import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { createI18nInstance } from './lib/i18n'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { applyAppearanceTheme } from './lib/theme'
+import { installGuestPageGuard } from './lib/guestPageGuard'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Nextbook';
 
@@ -101,6 +102,7 @@ createInertiaApp({
         // "success" fires after any successful Inertia visit (GET/POST/etc) and includes the updated page props.
         router.on('navigate', (event) => applyFromPage(event.detail.page))
         router.on('success', (event) => applyFromPage(event.detail.page))
+        installGuestPageGuard()
 
         return createApp({
             // ConfigProvider renders no element of its own — it only provides the
