@@ -104,8 +104,9 @@
         "activity_logs": "User Activity"
     },
     "system": {
+        "trash": "Trash",
         "deleted_records": "Deleted Records",
-        "activity_logs": "Activity Logs"
+        "activity_logs": "User Activity"
     },
     "hr": {
         "employee": "Employees",

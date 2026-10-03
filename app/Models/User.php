@@ -97,8 +97,8 @@ class User extends Authenticatable
                 'sale',
                 'cash_transactions',
                 'user_management',
-                'trash',
                 'reports',
+                'system',
             ],
         ],
         'item_management' => [
@@ -561,7 +561,8 @@ class User extends Authenticatable
         // sidebar menus still gets ~20 back). Restore the sidebar menu list
         // from the raw stored value so the user's exact selection is honoured,
         // and fold away legacy keys (receipt/payment were merged into the
-        // cash_transactions group; transfer moved under the Account menu).
+        // cash_transactions group; transfer moved under the Account menu;
+        // the standalone trash menu moved into the system group).
         $storedMenus = data_get($this->preferences, 'appearance.sidebar_menus');
 
         if (is_array($storedMenus)) {
@@ -570,6 +571,7 @@ class User extends Authenticatable
             foreach ($storedMenus as $menu) {
                 $menu = match ($menu) {
                     'receipt', 'payment' => 'cash_transactions',
+                    'trash' => 'system',
                     default => $menu,
                 };
 

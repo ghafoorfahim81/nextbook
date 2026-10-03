@@ -327,8 +327,8 @@ class PreferencesController extends Controller
             ['value' => 'cash_transactions', 'label' => 'sidebar.main.cash_transactions'],
             ['value' => 'user_management', 'label' => 'sidebar.main.user_management'],
             ['value' => 'administration', 'label' => 'sidebar.main.administration'],
-            ['value' => 'trash', 'label' => 'sidebar.main.trash'],
             ['value' => 'reports', 'label' => 'sidebar.main.reports'],
+            ['value' => 'system', 'label' => 'sidebar.main.system'],
         ];
     }
 
