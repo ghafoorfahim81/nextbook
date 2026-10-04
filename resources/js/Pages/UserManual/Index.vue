@@ -364,30 +364,30 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <!-- Compact, single-row cards — same shape as the report catalog's
-                         tiles, so the liquid-glass surface style turns these into
-                         clean pills instead of squashing a taller paragraph card. The
-                         full summary stays available as a tooltip and, of course,
-                         inside the guide once opened. -->
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        <button
+                    <!-- A plain div, not a <button> — glass.css forces every <button>
+                         into a 9999px capsule, which is right for real buttons but
+                         wrong for a card this size. .bg-card already picks up the
+                         glass tint, sheen and specular edge on its own, so a div gets
+                         the "liquid glass" look without the pill shape. -->
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        <div
                             v-for="guide in filteredGuides"
                             :key="guide.id"
-                            type="button"
-                            class="group rounded-lg border border-border bg-card px-4 py-3.5 text-start shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-                            :title="guide.summary"
+                            role="button"
+                            tabindex="0"
+                            class="group flex cursor-pointer flex-col gap-2 rounded-2xl border border-border bg-card p-4 text-start shadow-sm transition hover:border-primary/50 hover:shadow-md"
                             @click="openGuide(guide.id)"
+                            @keydown.enter.prevent="openGuide(guide.id)"
+                            @keydown.space.prevent="openGuide(guide.id)"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="flex size-10 shrink-0 items-center justify-center rounded-lg" :class="accentFor(guide)">
-                                    <component :is="iconFor(guide)" class="size-5" />
+                                <span class="flex size-9 shrink-0 items-center justify-center rounded-lg" :class="accentFor(guide)">
+                                    <component :is="iconFor(guide)" class="size-4.5" />
                                 </span>
-                                <div class="min-w-0 flex-1">
-                                    <p class="truncate text-base font-semibold leading-6 text-card-foreground">{{ guide.title }}</p>
-                                    <p class="mt-0.5 truncate text-[13px] leading-5 text-muted-foreground">{{ guide.summary }}</p>
-                                </div>
+                                <h3 class="min-w-0 flex-1 truncate text-base font-semibold text-card-foreground">{{ guide.title }}</h3>
                             </div>
-                        </button>
+                            <p class="line-clamp-2 text-sm leading-6 text-muted-foreground">{{ guide.summary }}</p>
+                        </div>
                     </div>
                 </section>
             </div>
