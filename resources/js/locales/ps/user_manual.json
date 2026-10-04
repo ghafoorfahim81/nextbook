@@ -10,5 +10,16 @@
     "open_chapter": "لارښود پرانیستل",
     "all_guides": "ټول لارښودونه",
     "figure_placeholder": "سکرین‌شاټ به وروسته اضافه شي",
-    "back_to_top": "بېرته پورته"
+    "back_to_top": "بېرته پورته",
+    "global_search_placeholder": "په ټولو لارښودونو کې لټون — هر ماژول، هره ژبه…",
+    "search_scope_all": "ټولې ژبې",
+    "search_min_chars": "د لټون لپاره لږ تر لږه {count} توري ولیکئ.",
+    "results_summary": "په {guides} لارښودونو کې {total} پایلې",
+    "results_capped": "د {shown} غوره پایلو ښودل",
+    "search_hint_keys": "↑ ↓ د حرکت لپاره · Enter د پرانیستلو لپاره · Esc د پاکولو لپاره",
+    "search_all_instead": "پر ځای یې په ټولو ژبو کې لټون وکړئ",
+    "guide_overview": "د لارښود پېژندنه",
+    "clear_search": "پاکول",
+    "filtered_banner": "هغه څپرکي ښودل کېږي چې «{query}» لري",
+    "chapters_matching": "له {total} څپرکو {count}"
 }
