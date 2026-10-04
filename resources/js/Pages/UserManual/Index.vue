@@ -5,7 +5,6 @@ import { usePage } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
 import {
-    ArrowLeft,
     ArrowUp,
     Banknote,
     BarChart3,
@@ -365,32 +364,30 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        <div
+                    <!-- Compact, single-row cards — same shape as the report catalog's
+                         tiles, so the liquid-glass surface style turns these into
+                         clean pills instead of squashing a taller paragraph card. The
+                         full summary stays available as a tooltip and, of course,
+                         inside the guide once opened. -->
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <button
                             v-for="guide in filteredGuides"
                             :key="guide.id"
-                            role="button"
-                            tabindex="0"
-                            class="group flex cursor-pointer flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-start shadow-sm transition hover:border-primary/50 hover:shadow-md"
+                            type="button"
+                            class="group rounded-lg border border-border bg-card px-4 py-3.5 text-start shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                            :title="guide.summary"
                             @click="openGuide(guide.id)"
-                            @keydown.enter.prevent="openGuide(guide.id)"
-                            @keydown.space.prevent="openGuide(guide.id)"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="flex size-10 shrink-0 items-center justify-center rounded-xl" :class="accentFor(guide)">
+                                <span class="flex size-10 shrink-0 items-center justify-center rounded-lg" :class="accentFor(guide)">
                                     <component :is="iconFor(guide)" class="size-5" />
                                 </span>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-bold text-primary">{{ guide.number }}</p>
-                                    <h3 class="truncate text-base font-semibold text-card-foreground">{{ guide.title }}</h3>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-base font-semibold leading-6 text-card-foreground">{{ guide.title }}</p>
+                                    <p class="mt-0.5 truncate text-[13px] leading-5 text-muted-foreground">{{ guide.summary }}</p>
                                 </div>
                             </div>
-                            <p class="text-sm leading-6 text-muted-foreground">{{ guide.summary }}</p>
-                            <p class="mt-auto flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition group-hover:opacity-100">
-                                {{ t('user_manual.open_chapter') }}
-                                <component :is="isRtl ? ArrowLeft : ChevronRight" class="size-3.5" />
-                            </p>
-                        </div>
+                        </button>
                     </div>
                 </section>
             </div>
