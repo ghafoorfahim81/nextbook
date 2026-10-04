@@ -366,12 +366,15 @@ onBeforeUnmount(() => {
                     </div>
 
                     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        <button
+                        <div
                             v-for="guide in filteredGuides"
                             :key="guide.id"
-                            type="button"
-                            class="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-start shadow-sm transition hover:border-primary/50 hover:shadow-md"
+                            role="button"
+                            tabindex="0"
+                            class="group flex cursor-pointer flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-start shadow-sm transition hover:border-primary/50 hover:shadow-md"
                             @click="openGuide(guide.id)"
+                            @keydown.enter.prevent="openGuide(guide.id)"
+                            @keydown.space.prevent="openGuide(guide.id)"
                         >
                             <div class="flex items-center gap-3">
                                 <span class="flex size-10 shrink-0 items-center justify-center rounded-xl" :class="accentFor(guide)">
@@ -387,7 +390,7 @@ onBeforeUnmount(() => {
                                 {{ t('user_manual.open_chapter') }}
                                 <component :is="isRtl ? ArrowLeft : ChevronRight" class="size-3.5" />
                             </p>
-                        </button>
+                        </div>
                     </div>
                 </section>
             </div>
