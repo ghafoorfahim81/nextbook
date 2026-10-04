@@ -18,10 +18,13 @@ import {
     ArrowLeftRight,
     Image as ImageIcon,
     Info,
+    Languages,
     Lightbulb,
     List,
     Palmtree,
     ReceiptText,
+    Search,
+    SearchX,
     Sigma,
     ShoppingCart,
     TriangleAlert,
@@ -31,8 +34,10 @@ import {
     UserPlus,
     X,
 } from 'lucide-vue-next'
-import { getMeta, getGuides, getGuide, MANUAL_LOCALES } from './content'
+import { getMeta, getGuides, getGuide, getGuidesByLocale, MANUAL_LOCALES } from './content'
+import { buildSearchIndex, chapterMatches, normalize, searchIndex } from './content/search'
 import TocPanel from './TocPanel.vue'
+import ManualHighlight from './ManualHighlight.vue'
 
 const { t, locale } = useI18n()
 
@@ -97,6 +102,9 @@ const currentLocaleMeta = computed(
     () => MANUAL_LOCALES.find((item) => item.id === manualLocale.value) || MANUAL_LOCALES[0],
 )
 const isRtl = computed(() => currentLocaleMeta.value.dir === 'rtl')
+// Direction of the interface language (what the search bar's own text is in),
+// which can differ from the guide language's direction.
+const uiDir = computed(() => (['fa', 'ps'].includes(String(locale.value)) ? 'rtl' : 'ltr'))
 const backIcon = computed(() => (isRtl.value ? ChevronRight : ChevronLeft))
 
 const meta = computed(() => getMeta(manualLocale.value))
@@ -105,42 +113,104 @@ const activeGuide = computed(() =>
     activeGuideId.value ? getGuide(manualLocale.value, activeGuideId.value) : null,
 )
 
-const guideQuery = computed(() => (activeGuideId.value ? '' : query.value))
-
-const filteredGuides = computed(() => {
-    const needle = guideQuery.value.trim().toLowerCase()
-    if (!needle) return guides.value
-    return guides.value.filter((guide) =>
-        [guide.title, guide.subtitle, guide.summary].join(' ').toLowerCase().includes(needle),
-    )
-})
-
 const filteredChapters = computed(() => {
     const guide = activeGuide.value
     if (!guide) return []
-    const needle = query.value.trim().toLowerCase()
-    if (!needle) return guide.chapters
+    if (!query.value.trim()) return guide.chapters
+    return guide.chapters.filter((chapter) => chapterMatches(chapter, query.value))
+})
 
-    return guide.chapters.filter((chapter) => {
-        const haystack = [
-            chapter.title,
-            chapter.number,
-            ...chapter.blocks.flatMap((block) => {
-                if (block.text) return [block.text]
-                if (block.label) return [block.label]
-                if (block.caption) return [block.caption]
-                if (block.items) return block.items
-                if (block.steps) return block.steps
-                if (block.headers) return block.headers
-                if (block.rows) return block.rows.flat()
-                return []
-            }),
-        ]
-            .join(' ')
-            .toLowerCase()
-        return haystack.includes(needle)
+/* ---------------------------------------------------------------------------
+   Global search — every guide, every chapter, every language
+   --------------------------------------------------------------------------- */
+
+// The content is static, so the index is built once per page load.
+const searchIndexData = buildSearchIndex(getGuidesByLocale())
+const MIN_QUERY = 2
+
+const globalQuery = ref('')
+const globalScope = ref('all')
+const activeResult = ref(0)
+const globalInputRef = ref(null)
+const resultsRef = ref(null)
+
+const globalQueryReady = computed(() => normalize(globalQuery.value).length >= MIN_QUERY)
+
+const globalSearch = computed(() => {
+    if (!globalQueryReady.value) return null
+    return searchIndex(searchIndexData, globalQuery.value, {
+        locales: globalScope.value === 'all' ? null : [globalScope.value],
+        preferLocale: manualLocale.value,
+        limit: 60,
     })
 })
+
+const localeMetaById = Object.fromEntries(MANUAL_LOCALES.map((item) => [item.id, item]))
+
+watch([globalQuery, globalScope], () => {
+    activeResult.value = 0
+    resultsRef.value?.scrollTo?.({ top: 0 })
+})
+
+function clearGlobalSearch() {
+    globalQuery.value = ''
+    globalInputRef.value?.focus()
+}
+
+function moveActiveResult(step) {
+    const count = globalSearch.value?.items.length ?? 0
+    if (!count) return
+    activeResult.value = (activeResult.value + step + count) % count
+    nextTick(() => {
+        document
+            .querySelector(`[data-result-index="${activeResult.value}"]`)
+            ?.scrollIntoView({ block: 'nearest' })
+    })
+}
+
+function onGlobalKeydown(event) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        moveActiveResult(1)
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        moveActiveResult(-1)
+    } else if (event.key === 'Enter') {
+        const result = globalSearch.value?.items[activeResult.value]
+        if (result) {
+            event.preventDefault()
+            openResult(result)
+        }
+    } else if (event.key === 'Escape' && globalQuery.value) {
+        event.preventDefault()
+        globalQuery.value = ''
+    }
+}
+
+/**
+ * Open a hit in its own language, at its chapter, with the search terms
+ * carried into the reader so they stay highlighted there.
+ */
+async function openResult(result) {
+    const carry = globalQuery.value
+    if (result.locale !== manualLocale.value) {
+        setManualLocale(result.locale)
+        // Let the locale watcher run (it resets the in-guide query) first.
+        await nextTick()
+    }
+    openGuide(result.guide.id, result.chapter?.id ?? null, carry)
+}
+
+// "/" focuses the global search from anywhere on the guide picker.
+function onWindowKeydown(event) {
+    if (event.key !== '/' || activeGuideId.value) return
+    const target = event.target
+    const typing = target instanceof HTMLElement
+        && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+    if (typing) return
+    event.preventDefault()
+    globalInputRef.value?.focus()
+}
 
 const chapterIds = computed(() => ['guide-top', ...filteredChapters.value.map((c) => `ch-${c.id}`)])
 
@@ -172,10 +242,21 @@ function syncHash() {
     history.replaceState(null, '', `#${activeGuideId.value}${chapterPart}`)
 }
 
-function openGuide(id, chapterId = null) {
+function openGuide(id, chapterId = null, carryQuery = '') {
     activeGuideId.value = id
     activeChapterId.value = chapterId ? `ch-${chapterId}` : 'guide-top'
-    query.value = ''
+    // Carry a global search into the reader only when it would leave the
+    // target visible: the opened chapter must match it, or — for a hit on the
+    // guide's own title/summary — at least one chapter must. Otherwise the
+    // reader's filter would hide exactly what the user clicked.
+    const guide = getGuide(manualLocale.value, id)
+    let keep = false
+    if (carryQuery && guide) {
+        keep = chapterId
+            ? guide.chapters.some((c) => c.id === chapterId && chapterMatches(c, carryQuery))
+            : guide.chapters.some((c) => chapterMatches(c, carryQuery))
+    }
+    query.value = keep ? carryQuery : ''
     tocOpen.value = false
     nextTick(() => {
         const target = chapterId ? document.getElementById(`ch-${chapterId}`) : articleRef.value
@@ -192,6 +273,11 @@ function backToGuides() {
     tocOpen.value = false
     sectionObserver?.disconnect()
     syncHash()
+}
+
+function jumpToFirstMatch() {
+    const first = filteredChapters.value[0]
+    if (first) scrollToChapter(`ch-${first.id}`)
 }
 
 function scrollToChapter(chapterId) {
@@ -279,6 +365,7 @@ onMounted(async () => {
 
     articleRef.value?.addEventListener('scroll', updateActiveFromScroll, { passive: true })
     window.addEventListener('hashchange', onHashChange)
+    window.addEventListener('keydown', onWindowKeydown)
     await nextTick()
     readHash()
 })
@@ -287,6 +374,7 @@ onBeforeUnmount(() => {
     sectionObserver?.disconnect()
     articleRef.value?.removeEventListener('scroll', updateActiveFromScroll)
     window.removeEventListener('hashchange', onHashChange)
+    window.removeEventListener('keydown', onWindowKeydown)
 })
 </script>
 
@@ -345,7 +433,164 @@ onBeforeUnmount(() => {
                     </div>
                 </section>
 
-                <section class="mt-4 space-y-3">
+                <!-- ======================== GLOBAL SEARCH ======================== -->
+                <section class="mt-4 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Same anatomy as the header's global search (GlobalSearch.vue):
+                             one row, thin primary outline, translucent fill, primary icon,
+                             muted kbd badge. It follows the interface language's direction,
+                             not the guide's, so the placeholder reads correctly. A <label>
+                             so a click anywhere on the bar focuses the input. -->
+                        <label
+                            :dir="uiDir"
+                            class="flex h-10 min-w-0 flex-1 basis-[22rem] cursor-text items-center gap-2 rounded-md border border-primary bg-background/60 px-3 text-muted-foreground transition-colors focus-within:ring-2 focus-within:ring-primary/25 hover:text-foreground"
+                        >
+                            <Search class="size-4 shrink-0 text-primary opacity-80" />
+                            <input
+                                ref="globalInputRef"
+                                v-model="globalQuery"
+                                type="search"
+                                autocomplete="off"
+                                spellcheck="false"
+                                :dir="globalQuery ? 'auto' : uiDir"
+                                :placeholder="t('user_manual.global_search_placeholder')"
+                                class="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-start text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground focus:outline-none focus:ring-0 [&::-webkit-search-cancel-button]:hidden"
+                                :aria-label="t('user_manual.global_search_placeholder')"
+                                @keydown="onGlobalKeydown"
+                            />
+                            <span
+                                v-if="globalQuery"
+                                role="button"
+                                tabindex="0"
+                                class="flex shrink-0 cursor-pointer items-center text-muted-foreground hover:text-foreground"
+                                :aria-label="t('user_manual.clear_search')"
+                                @click.prevent="clearGlobalSearch"
+                                @keydown.enter.prevent="clearGlobalSearch"
+                            >
+                                <X class="size-4" />
+                            </span>
+                            <kbd
+                                v-else
+                                dir="ltr"
+                                class="hidden h-5 shrink-0 select-none items-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] opacity-60 sm:inline-flex"
+                            >/</kbd>
+                        </label>
+
+                        <!-- Which languages to search — separate from the language
+                             the guides are shown in. Wraps instead of scrolling, so a
+                             chip is never clipped. -->
+                        <div class="flex flex-wrap items-center gap-1">
+                            <Languages class="me-1 size-4 shrink-0 text-muted-foreground" />
+                            <span
+                                v-for="scope in [{ id: 'all', label: t('user_manual.search_scope_all') }, ...MANUAL_LOCALES]"
+                                :key="scope.id"
+                                role="button"
+                                tabindex="0"
+                                class="cursor-pointer whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium transition"
+                                :class="globalScope === scope.id
+                                    ? 'border-primary bg-primary text-primary-foreground'
+                                    : 'border-border bg-muted text-foreground hover:bg-accent'"
+                                @click="globalScope = scope.id"
+                                @keydown.enter.prevent="globalScope = scope.id"
+                            >
+                                {{ scope.label }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <p
+                        v-if="globalQuery.trim() && !globalQueryReady"
+                        dir="auto"
+                        class="px-1 text-start text-xs text-muted-foreground"
+                    >
+                        {{ t('user_manual.search_min_chars', { count: MIN_QUERY }) }}
+                    </p>
+                </section>
+
+                <!-- Results replace the guide grid while a search is active. -->
+                <section v-if="globalSearch" class="mt-3 space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+                        <p class="text-sm text-muted-foreground" dir="auto">
+                            <template v-if="globalSearch.total">
+                                {{ t('user_manual.results_summary', { total: globalSearch.total, guides: globalSearch.guides }) }}
+                                <template v-if="globalSearch.total > globalSearch.items.length">
+                                    · {{ t('user_manual.results_capped', { shown: globalSearch.items.length }) }}
+                                </template>
+                            </template>
+                        </p>
+                        <p v-if="globalSearch.total" dir="auto" class="hidden text-xs text-muted-foreground md:block">
+                            {{ t('user_manual.search_hint_keys') }}
+                        </p>
+                    </div>
+
+                    <div
+                        v-if="!globalSearch.total"
+                        class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-card px-4 py-10 text-center"
+                    >
+                        <SearchX class="size-8 text-muted-foreground" />
+                        <p class="text-sm text-muted-foreground">{{ t('user_manual.no_results') }}</p>
+                        <Button
+                            v-if="globalScope !== 'all'"
+                            variant="outline"
+                            size="sm"
+                            @click="globalScope = 'all'"
+                        >
+                            {{ t('user_manual.search_all_instead') }}
+                        </Button>
+                    </div>
+
+                    <!-- role="list"/"button", not listbox/option: glass.css paints every
+                         [role='listbox'] as a blurred popover pane. -->
+                    <div v-else ref="resultsRef" class="space-y-2" role="list" :aria-label="t('user_manual.global_search_placeholder')">
+                        <div
+                            v-for="(result, index) in globalSearch.items"
+                            :key="result.key"
+                            :data-result-index="index"
+                            role="button"
+                            tabindex="-1"
+                            :aria-current="index === activeResult ? 'true' : undefined"
+                            :dir="localeMetaById[result.locale]?.dir"
+                            class="group flex cursor-pointer items-start gap-3 rounded-xl border bg-card px-3.5 py-3 text-start shadow-sm transition"
+                            :class="index === activeResult
+                                ? 'border-primary/60 ring-2 ring-primary/20'
+                                : 'border-border hover:border-primary/40'"
+                            @click="openResult(result)"
+                            @mousemove="activeResult = index"
+                        >
+                            <!-- mousemove, not mouseenter: a result list re-rendering under a
+                                 resting cursor fires mouseenter and stole the keyboard
+                                 selection; mousemove only fires on real movement. -->
+                            <span class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg" :class="accentFor(result.guide)">
+                                <component :is="iconFor(result.guide)" class="size-4.5" />
+                            </span>
+                            <div class="min-w-0 flex-1 space-y-1">
+                                <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm">
+                                    <span class="font-semibold text-card-foreground">
+                                        <ManualHighlight :text="result.chapter ? result.chapter.title : result.guide.title" :query="globalQuery" />
+                                    </span>
+                                    <span class="text-xs text-muted-foreground">
+                                        ·
+                                        <ManualHighlight
+                                            :text="result.chapter ? result.guide.title : t('user_manual.guide_overview')"
+                                            :query="result.chapter ? globalQuery : ''"
+                                        />
+                                    </span>
+                                    <span
+                                        v-if="globalScope === 'all'"
+                                        class="rounded-full border border-border bg-muted px-1.5 py-px text-[10px] font-medium leading-4 text-muted-foreground"
+                                    >
+                                        {{ localeMetaById[result.locale]?.label }}
+                                    </span>
+                                </div>
+                                <p class="line-clamp-2 text-[13px] leading-6 text-muted-foreground">
+                                    <ManualHighlight :text="result.snippet" :query="globalQuery" />
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section v-else class="mt-4 space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <p class="text-sm text-muted-foreground">{{ meta.howToRead }}</p>
                         <div class="flex flex-wrap gap-1.5">
@@ -371,7 +616,7 @@ onBeforeUnmount(() => {
                          the "liquid glass" look without the pill shape. -->
                     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <div
-                            v-for="guide in filteredGuides"
+                            v-for="guide in guides"
                             :key="guide.id"
                             role="button"
                             tabindex="0"
@@ -405,6 +650,7 @@ onBeforeUnmount(() => {
                         @update:query="query = $event"
                         @set-locale="setManualLocale"
                         @go="scrollToChapter"
+                        @submit="jumpToFirstMatch"
                     />
                 </aside>
 
@@ -426,6 +672,23 @@ onBeforeUnmount(() => {
                         <p class="text-sm leading-6 text-card-foreground">{{ activeGuide.summary }}</p>
                     </section>
 
+                    <div
+                        v-if="query.trim()"
+                        class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-foreground"
+                    >
+                        <span class="inline-flex min-w-0 items-center gap-2">
+                            <Search class="size-4 shrink-0 text-amber-500" />
+                            <span class="truncate" dir="auto">
+                                {{ t('user_manual.filtered_banner', { query: query.trim() }) }}
+                                · {{ t('user_manual.chapters_matching', { count: filteredChapters.length, total: activeGuide.chapters.length }) }}
+                            </span>
+                        </span>
+                        <Button variant="ghost" size="sm" class="h-7 gap-1" @click="query = ''">
+                            <X class="size-3.5" />
+                            {{ t('user_manual.clear_search') }}
+                        </Button>
+                    </div>
+
                     <p
                         v-if="query && !filteredChapters.length"
                         class="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground"
@@ -441,7 +704,7 @@ onBeforeUnmount(() => {
                     >
                         <header class="border-b border-border bg-muted/50 px-6 py-4">
                             <p class="text-xs font-bold tracking-wide text-primary">{{ chapter.number }}</p>
-                            <h3 class="text-xl font-bold text-card-foreground">{{ chapter.title }}</h3>
+                            <h3 class="text-xl font-bold text-card-foreground"><ManualHighlight :text="chapter.title" :query="query" /></h3>
                         </header>
 
                         <div class="space-y-5 px-6 py-6 text-base leading-8 text-card-foreground">
@@ -450,32 +713,32 @@ onBeforeUnmount(() => {
                                     v-if="block.type === 'h3'"
                                     class="pt-2 text-lg font-semibold text-primary"
                                 >
-                                    {{ block.text }}
+                                    <ManualHighlight :text="block.text" :query="query" />
                                 </h4>
 
                                 <p
                                     v-else-if="block.type === 'h4'"
                                     class="pt-1 text-base font-semibold text-card-foreground"
                                 >
-                                    {{ block.text }}
+                                    <ManualHighlight :text="block.text" :query="query" />
                                 </p>
 
                                 <p v-else-if="block.type === 'p'" class="text-card-foreground">
-                                    {{ block.text }}
+                                    <ManualHighlight :text="block.text" :query="query" />
                                 </p>
 
                                 <ul
                                     v-else-if="block.type === 'list'"
                                     class="list-disc space-y-1.5 text-card-foreground marker:text-primary ltr:pl-5 rtl:pr-5"
                                 >
-                                    <li v-for="item in block.items" :key="item">{{ item }}</li>
+                                    <li v-for="item in block.items" :key="item"><ManualHighlight :text="item" :query="query" /></li>
                                 </ul>
 
                                 <ol
                                     v-else-if="block.type === 'ol'"
                                     class="list-decimal space-y-1.5 text-card-foreground marker:font-semibold marker:text-primary ltr:pl-5 rtl:pr-5"
                                 >
-                                    <li v-for="item in block.items" :key="item">{{ item }}</li>
+                                    <li v-for="item in block.items" :key="item"><ManualHighlight :text="item" :query="query" /></li>
                                 </ol>
 
                                 <div
@@ -484,9 +747,9 @@ onBeforeUnmount(() => {
                                 >
                                     <p class="mb-1 inline-flex items-center gap-1.5 font-semibold text-foreground">
                                         <Info class="size-3.5 shrink-0 text-sky-500" />
-                                        {{ block.label }}
+                                        <ManualHighlight :text="block.label" :query="query" />
                                     </p>
-                                    <p class="text-foreground">{{ block.text }}</p>
+                                    <p class="text-foreground"><ManualHighlight :text="block.text" :query="query" /></p>
                                 </div>
 
                                 <div
@@ -495,9 +758,9 @@ onBeforeUnmount(() => {
                                 >
                                     <p class="mb-1 inline-flex items-center gap-1.5 font-semibold text-foreground">
                                         <Lightbulb class="size-3.5 shrink-0 text-emerald-500" />
-                                        {{ block.label }}
+                                        <ManualHighlight :text="block.label" :query="query" />
                                     </p>
-                                    <p class="text-foreground">{{ block.text }}</p>
+                                    <p class="text-foreground"><ManualHighlight :text="block.text" :query="query" /></p>
                                 </div>
 
                                 <div
@@ -506,9 +769,9 @@ onBeforeUnmount(() => {
                                 >
                                     <p class="mb-1 inline-flex items-center gap-1.5 font-semibold text-foreground">
                                         <TriangleAlert class="size-3.5 shrink-0 text-red-500" />
-                                        {{ block.label }}
+                                        <ManualHighlight :text="block.label" :query="query" />
                                     </p>
-                                    <p class="text-foreground">{{ block.text }}</p>
+                                    <p class="text-foreground"><ManualHighlight :text="block.text" :query="query" /></p>
                                 </div>
 
                                 <p
@@ -516,7 +779,7 @@ onBeforeUnmount(() => {
                                     class="flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 border-s-4 border-s-amber-500 bg-amber-500/10 px-4 py-3 text-center font-medium text-foreground"
                                 >
                                     <Sigma class="size-4 shrink-0 text-amber-500" />
-                                    <span>{{ block.text }}</span>
+                                    <span><ManualHighlight :text="block.text" :query="query" /></span>
                                 </p>
 
                                 <figure
@@ -539,7 +802,7 @@ onBeforeUnmount(() => {
                                         <span class="text-xs">{{ block.hint || t('user_manual.figure_placeholder') }}</span>
                                     </div>
                                     <figcaption class="border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground">
-                                        {{ block.caption }}
+                                        <ManualHighlight :text="block.caption" :query="query" />
                                     </figcaption>
                                 </figure>
 
@@ -549,7 +812,7 @@ onBeforeUnmount(() => {
                                 >
                                     <template v-for="(step, stepIndex) in block.steps" :key="step">
                                         <div class="min-w-[8rem] flex-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-3 text-center text-sm font-medium text-foreground">
-                                            {{ step }}
+                                            <ManualHighlight :text="step" :query="query" />
                                         </div>
                                         <div
                                             v-if="stepIndex < block.steps.length - 1"
@@ -570,7 +833,7 @@ onBeforeUnmount(() => {
                                                     :key="header"
                                                     class="border-b border-border px-3 py-2 font-semibold ltr:text-left rtl:text-right"
                                                 >
-                                                    {{ header }}
+                                                    <ManualHighlight :text="header" :query="query" />
                                                 </th>
                                             </tr>
                                         </thead>
@@ -586,7 +849,7 @@ onBeforeUnmount(() => {
                                                     class="border-t border-border px-3 py-2 align-top text-card-foreground"
                                                     :class="cellIndex === 0 ? 'font-semibold text-foreground' : ''"
                                                 >
-                                                    {{ cell }}
+                                                    <ManualHighlight :text="cell" :query="query" />
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -640,6 +903,7 @@ onBeforeUnmount(() => {
                             @update:query="query = $event"
                             @set-locale="setManualLocale"
                             @go="scrollToChapter"
+                            @submit="jumpToFirstMatch"
                         />
                     </div>
                 </div>
