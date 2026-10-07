@@ -1,6 +1,12 @@
 # Multi-Company Plan
 
-Status: **approved, not started**
+Status: **SUPERSEDED** — this is v1, a single-level model (rename `branch` →
+`company`, dropping the branch level). It was rejected because it cannot provide
+transfers or shared data between branches of one company, which is a firm
+requirement. The current plan is v2, in
+[multi-company-plan-fa.md](multi-company-plan-fa.md): a two-level
+company > branch model plus the SaaS tenancy layer. Kept for decision history.
+
 Decided: 2026-10-03
 Branch at time of writing: `refactor-items-and-company-wise`
 
