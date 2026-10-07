@@ -51,6 +51,7 @@ import ReportGroupedTable from '@/Components/reports/ReportGroupedTable.vue'
 import ReportUserActivity from '@/Components/reports/ReportUserActivity.vue'
 import ReportBarChart from '@/Components/reports/ReportBarChart.vue'
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
+import { ensureCatalogBehind, hasCatalogBehind } from '@/lib/reportHistory'
 
 const props = defineProps({
   filters: { type: Object, required: true },
@@ -1173,13 +1174,31 @@ function compactFilters(filters) {
   )
 }
 
-function visitReports(filters, { preserveScroll = true } = {}) {
+// Opening a report from the catalog adds a history entry, so the back button
+// returns to the catalog; filter, paging and view changes inside a report
+// replace it, so back never steps through them one at a time.
+let openingFromCatalog = false
+
+watch(
+  () => props.reportSelected,
+  (selected) => {
+    if (!selected) return
+    // After Inertia has written this page's history entry.
+    setTimeout(() => {
+      ensureCatalogBehind({ openedFromCatalog: openingFromCatalog })
+      openingFromCatalog = false
+    })
+  },
+  { immediate: true },
+)
+
+function visitReports(filters, { preserveScroll = true, replace = true } = {}) {
   isLoadingReport.value = true
 
   router.get('/reports', compactFilters(filters), {
     preserveState: true,
     preserveScroll,
-    replace: true,
+    replace,
     onFinish: () => {
       isLoadingReport.value = false
     },
@@ -1264,7 +1283,8 @@ function selectReport(reportKey) {
     page: 1,
   }
 
-  visitReports({ ...localFilters.value, report: reportKey, page: 1 }, { preserveScroll: false })
+  openingFromCatalog = true
+  visitReports({ ...localFilters.value, report: reportKey, page: 1 }, { preserveScroll: false, replace: false })
 }
 
 function switchViewType(viewType) {
@@ -1284,6 +1304,13 @@ function switchViewType(viewType) {
 }
 
 function goBackToCatalog() {
+  // The catalog is the entry right behind the report: step back to it, the
+  // same as the browser's back button, instead of stacking another copy.
+  if (hasCatalogBehind()) {
+    window.history.back()
+    return
+  }
+
   visitReports({
     branch_id: localFilters.value.branch_id,
     date_from: localFilters.value.date_from,

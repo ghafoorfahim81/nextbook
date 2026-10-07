@@ -10,5 +10,16 @@
     "open_chapter": "Open guide",
     "all_guides": "All guides",
     "figure_placeholder": "Screenshot to be added",
-    "back_to_top": "Back to top"
+    "back_to_top": "Back to top",
+    "global_search_placeholder": "Search every guide — any module, any language…",
+    "search_scope_all": "All languages",
+    "search_min_chars": "Type at least {count} characters to search.",
+    "results_summary": "{total} results in {guides} guides",
+    "results_capped": "showing the top {shown}",
+    "search_hint_keys": "↑ ↓ to move · Enter to open · Esc to clear",
+    "search_all_instead": "Search all languages instead",
+    "guide_overview": "Guide overview",
+    "clear_search": "Clear",
+    "filtered_banner": "Showing chapters that match “{query}”",
+    "chapters_matching": "{count} of {total} chapters"
 }

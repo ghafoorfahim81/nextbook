@@ -40,3 +40,20 @@ export function getGuides(locale) {
 export function getGuide(locale, guideId) {
     return getGuides(locale).find((g) => g.id === guideId) || null
 }
+
+/**
+ * Each locale's own guides — no English fallback — keyed by locale. The global
+ * search indexes this, so a guide a locale hasn't translated never shows up
+ * as a second, English copy under that locale's label.
+ */
+export function getGuidesByLocale() {
+    return Object.fromEntries(
+        MANUAL_LOCALES.map(({ id }) => [
+            id,
+            GUIDE_ORDER.map((guideId) => {
+                const guide = manualFor(id).guides.find((g) => g.id === guideId)
+                return guide ? { ...guide, ...guideMeta(guideId) } : null
+            }).filter(Boolean),
+        ]),
+    )
+}

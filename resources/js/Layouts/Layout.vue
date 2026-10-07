@@ -88,6 +88,7 @@ import {
     SlidersHorizontal,
     Tag,
     Trash2,
+    Settings2,
     History,
     Rocket,
     ChartNoAxesCombined
@@ -693,20 +694,19 @@ const navMain = computed(() => [
     },
 
     {
-        key: 'trash',
-        title: t('sidebar.main.trash'),
-        url: '/deleted-records',
-        icon: Trash2,
-        permission: 'deleted_records.view_any',
-    },
-    {
         key: 'reports',
         title: t('sidebar.main.reports'),
-        url: '#',
+        url: '/reports',
         icon: FileChartLine,
+    },
+    {
+        key: 'system',
+        title: t('sidebar.main.system'),
+        url: '#',
+        icon: Settings2,
         items: [
-            { title: t('sidebar.reports.report'), url: '/reports' },
-            { title: t('sidebar.reports.activity_logs'), url: '/activity-logs', icon: History, permission: 'activity_logs.view_any' },
+            { title: t('sidebar.system.trash'), url: '/deleted-records', icon: Trash2, permission: 'deleted_records.view_any' },
+            { title: t('sidebar.system.activity_logs'), url: '/activity-logs', icon: History, permission: 'activity_logs.view_any' },
         ],
     },
 ])
@@ -721,6 +721,10 @@ const selectedSidebarMenus = computed<Set<string> | null>(() => {
     // Legacy: 'receipt' / 'payment' were merged into the 'cash_transactions' group.
     if (normalized.has('receipt') || normalized.has('payment')) {
         normalized.add('cash_transactions')
+    }
+    // Legacy: the standalone 'trash' menu moved into the 'system' group.
+    if (normalized.has('trash')) {
+        normalized.add('system')
     }
 
     return normalized

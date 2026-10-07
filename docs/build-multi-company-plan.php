@@ -3,8 +3,8 @@
 /**
  * Renders docs/multi-company-plan-fa.md into a Persian PDF.
  *
- * Re-run after editing the markdown — the PDF is a build artifact, the markdown
- * is the source.
+ * Re-run this after editing the markdown — the PDF is a build artifact, the
+ * markdown is the source.
  *
  * Font handling follows docs/build-hr-guide.php and PdfExportService: mPDF's
  * bundled fonts carry no Arabic-script coverage, and `useOTL` is what drives
@@ -60,13 +60,13 @@ $body = (new MarkdownConverter($environment))->convert($markdown)->getContent();
 /**
  * Preformatted blocks come in two kinds and cannot share one treatment.
  *
- * A block of pure code is Latin and wants a monospace font, left to right. A
- * block that is really a diagram carries Persian labels, and a Latin monospace
- * font has no glyphs for those at all — it would render as empty boxes. So each
- * block is classified by whether it contains Arabic-script characters, and the
- * box-drawing characters are flattened to ASCII: column alignment is already
- * lost once a proportional Persian font is used, so guaranteed glyphs are worth
- * more than the lines.
+ * A block of pure code (a query, a pivot definition) is Latin and wants a
+ * monospace font, left to right. A block that is really a diagram carries
+ * Persian labels, and a Latin monospace font has no glyphs for those at all —
+ * it would render as empty boxes. So each block is classified by whether it
+ * contains Arabic-script characters, and the box-drawing characters are
+ * flattened to ASCII: column alignment is already lost once a proportional
+ * Persian font is used, so guaranteed glyphs are worth more than the lines.
  */
 $body = preg_replace_callback(
     '#<pre><code([^>]*)>(.*?)</code></pre>#su',
@@ -212,7 +212,7 @@ $mpdf = new Mpdf([
 $mpdf->useSubstitutions = true;
 $mpdf->showImageErrors = false;
 
-$mpdf->SetTitle('طرح چند-کمپنی و چند-مشتری — نکست‌بوک');
+$mpdf->SetTitle('پلان چند-کمپنی — نکست‌بوک');
 $mpdf->SetAuthor('Nextbook');
 $mpdf->SetCreator('Nextbook');
 
@@ -221,7 +221,7 @@ $mpdf->SetCreator('Nextbook');
 $mpdf->SetHTMLHeader(
     '<div dir="rtl" style="direction:rtl;text-align:right;font-size:7.5pt;color:#9ca3af;'
     .'border-bottom:0.5px solid #e5e7eb;padding-bottom:2pt;">'
-    .'طرح چند-کمپنی و چند-مشتری — نکست‌بوک</div>'
+    .'پلان چند-کمپنی — نکست‌بوک</div>'
 );
 
 $mpdf->SetHTMLFooter(
