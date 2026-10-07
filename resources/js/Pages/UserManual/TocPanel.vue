@@ -1,7 +1,8 @@
 <script setup>
-import { BookOpen, Search } from 'lucide-vue-next'
+import { BookOpen, Search, X } from 'lucide-vue-next'
 import { Input } from '@/Components/ui/input'
 import { MANUAL_LOCALES } from './content'
+import ManualHighlight from './ManualHighlight.vue'
 
 defineProps({
     t: { type: Function, required: true },
@@ -12,7 +13,7 @@ defineProps({
     filteredChapters: { type: Array, required: true },
 })
 
-const emit = defineEmits(['update:query', 'set-locale', 'go'])
+const emit = defineEmits(['update:query', 'set-locale', 'go', 'submit'])
 </script>
 
 <template>
@@ -37,14 +38,34 @@ const emit = defineEmits(['update:query', 'set-locale', 'go'])
             </div>
         </div>
 
-        <div class="relative">
-            <Search class="pointer-events-none absolute top-2.5 size-3.5 text-muted-foreground ltr:left-2.5 rtl:right-2.5" />
-            <Input
-                :model-value="query"
-                :placeholder="t('user_manual.search_placeholder')"
-                class="h-9 bg-background ltr:pl-8 rtl:pr-8"
-                @update:model-value="emit('update:query', $event)"
-            />
+        <div class="space-y-1.5">
+            <div class="relative">
+                <Search class="pointer-events-none absolute top-2.5 size-3.5 text-muted-foreground ltr:left-2.5 rtl:right-2.5" />
+                <Input
+                    :model-value="query"
+                    :placeholder="t('user_manual.search_placeholder')"
+                    class="h-9 bg-background ltr:pl-8 ltr:pr-8 rtl:pl-8 rtl:pr-8"
+                    @update:model-value="emit('update:query', $event)"
+                    @keydown.enter.prevent="emit('submit')"
+                    @keydown.esc.prevent="emit('update:query', '')"
+                />
+                <span
+                    v-if="query"
+                    role="button"
+                    tabindex="0"
+                    class="absolute inset-y-0 flex cursor-pointer items-center px-2.5 text-muted-foreground hover:text-foreground ltr:right-0 rtl:left-0"
+                    :aria-label="t('user_manual.clear_search')"
+                    @click="emit('update:query', '')"
+                    @keydown.enter.prevent="emit('update:query', '')"
+                >
+                    <X class="size-3.5" />
+                </span>
+            </div>
+            <!-- dir="auto": this sentence is in the interface language, which can
+                 differ in direction from the manual's (English UI, Pashto guide). -->
+            <p v-if="query.trim()" dir="auto" class="px-1 text-start text-[11px] text-muted-foreground">
+                {{ t('user_manual.chapters_matching', { count: filteredChapters.length, total: guide.chapters.length }) }}
+            </p>
         </div>
 
         <nav class="space-y-0.5 text-sm">
@@ -74,7 +95,7 @@ const emit = defineEmits(['update:query', 'set-locale', 'go'])
                     class="mt-0.5 w-5 shrink-0 text-xs font-bold"
                     :class="activeId === `ch-${chapter.id}` ? 'text-primary-foreground' : 'text-primary'"
                 >{{ chapter.number }}</span>
-                <span>{{ chapter.title }}</span>
+                <span><ManualHighlight :text="chapter.title" :query="query" /></span>
             </button>
         </nav>
     </div>

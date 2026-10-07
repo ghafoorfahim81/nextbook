@@ -21,31 +21,16 @@ class ReportController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->validate([
-            'report' => ['nullable', 'string', Rule::in(ReportService::REPORT_KEYS)],
-            'date_from' => ['nullable', 'string'],
-            'date_to' => ['nullable', 'string'],
-            'branch_id' => ['nullable', 'string', 'exists:branches,id'],
-            'ledger_id' => ['nullable', 'string', 'exists:ledgers,id'],
-            'customer_id' => ['nullable', 'string', 'exists:ledgers,id'],
-            'supplier_id' => ['nullable', 'string', 'exists:ledgers,id'],
-            'item_id' => ['nullable', 'string', 'exists:items,id'],
-            'account_id' => ['nullable', 'string', 'exists:accounts,id'],
-            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
-            'variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
-            'reason' => ['nullable', 'string', Rule::in(\App\Enums\StockAdjustmentReason::values())],
-            'type' => ['nullable', 'string'],
-            'balance_type' => ['nullable', 'string', Rule::in(['all', 'debtor', 'creditor'])],
-            'view_type' => ['nullable', 'string', Rule::in(['general', 'itemwise'])],
-            'category_id' => ['nullable', 'string', 'exists:expense_categories,id'],
-            'expense_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            ...$this->filterRules(),
             'per_page' => ['nullable', 'integer', Rule::in([15, 25, 50, 100])],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
+        $reportSelected = $request->filled('report');
+
         return Inertia::render('Reports/Index', [
-            ...$this->reportService->getPageData($request->user(), $filters),
-            'reportSelected' => $request->filled('report'),
+            ...$this->reportService->getPageData($request->user(), $filters, $reportSelected),
+            'reportSelected' => $reportSelected,
         ]);
     }
 
@@ -54,26 +39,7 @@ class ReportController extends Controller
         SpreadsheetExportService $spreadsheetExportService,
     ): BinaryFileResponse
     {
-        $filters = $request->validate([
-            'report' => ['nullable', 'string', Rule::in(ReportService::REPORT_KEYS)],
-            'date_from' => ['nullable', 'string'],
-            'date_to' => ['nullable', 'string'],
-            'branch_id' => ['nullable', 'string', 'exists:branches,id'],
-            'ledger_id' => ['nullable', 'string', 'exists:ledgers,id'],
-            'customer_id' => ['nullable', 'string', 'exists:ledgers,id'],
-            'supplier_id' => ['nullable', 'string', 'exists:ledgers,id'],
-            'item_id' => ['nullable', 'string', 'exists:items,id'],
-            'account_id' => ['nullable', 'string', 'exists:accounts,id'],
-            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
-            'variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
-            'reason' => ['nullable', 'string', Rule::in(\App\Enums\StockAdjustmentReason::values())],
-            'type' => ['nullable', 'string'],
-            'balance_type' => ['nullable', 'string', Rule::in(['all', 'debtor', 'creditor'])],
-            'view_type' => ['nullable', 'string', Rule::in(['general', 'itemwise'])],
-            'category_id' => ['nullable', 'string', 'exists:expense_categories,id'],
-            'expense_account_id' => ['nullable', 'string', 'exists:accounts,id'],
-        ]);
+        $filters = $request->validate($this->filterRules());
 
         $export = $this->reportService->getExportData($request->user(), $filters);
 
@@ -92,5 +58,41 @@ class ReportController extends Controller
         );
 
         return $spreadsheetExportService->download($export);
+    }
+
+    /**
+     * Only validated keys reach the service, so every filter a report offers
+     * must be listed here — a missing key is silently dropped (the HR filters
+     * once were, and picking an employee changed nothing).
+     */
+    private function filterRules(): array
+    {
+        return [
+            'report' => ['nullable', 'string', Rule::in(ReportService::REPORT_KEYS)],
+            'date_from' => ['nullable', 'string'],
+            'date_to' => ['nullable', 'string'],
+            'branch_id' => ['nullable', 'string', 'exists:branches,id'],
+            'ledger_id' => ['nullable', 'string', 'exists:ledgers,id'],
+            'customer_id' => ['nullable', 'string', 'exists:ledgers,id'],
+            'supplier_id' => ['nullable', 'string', 'exists:ledgers,id'],
+            'item_id' => ['nullable', 'string', 'exists:items,id'],
+            'account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+            'variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
+            'reason' => ['nullable', 'string', Rule::in(\App\Enums\StockAdjustmentReason::values())],
+            'type' => ['nullable', 'string'],
+            'balance_type' => ['nullable', 'string', Rule::in(['all', 'debtor', 'creditor'])],
+            'view_type' => ['nullable', 'string', Rule::in(['general', 'itemwise'])],
+            'category_id' => ['nullable', 'string', 'exists:expense_categories,id'],
+            'expense_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'employee_id' => ['nullable', 'string', 'exists:employees,id'],
+            'department_id' => ['nullable', 'string', 'exists:departments,id'],
+            'designation_id' => ['nullable', 'string', 'exists:designations,id'],
+            'payroll_id' => ['nullable', 'string', 'exists:payrolls,id'],
+            'leave_type_id' => ['nullable', 'string', 'exists:leave_types,id'],
+            'employment_type' => ['nullable', 'string', Rule::in(\App\Enums\EmploymentType::values())],
+            'employment_status' => ['nullable', 'string', Rule::in(\App\Enums\EmploymentStatus::values())],
+        ];
     }
 }

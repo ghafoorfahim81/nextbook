@@ -10,5 +10,16 @@
     "open_chapter": "باز کردن راهنما",
     "all_guides": "همهٔ راهنماها",
     "figure_placeholder": "اسکرین‌شات بعداً افزوده می‌شود",
-    "back_to_top": "بازگشت به بالا"
+    "back_to_top": "بازگشت به بالا",
+    "global_search_placeholder": "جستجو در همهٔ راهنماها — هر ماژول، هر زبان…",
+    "search_scope_all": "همهٔ زبان‌ها",
+    "search_min_chars": "برای جستجو حداقل {count} حرف بنویسید.",
+    "results_summary": "{total} نتیجه در {guides} راهنما",
+    "results_capped": "نمایش {shown} نتیجهٔ برتر",
+    "search_hint_keys": "↑ ↓ برای حرکت · Enter برای باز کردن · Esc برای پاک کردن",
+    "search_all_instead": "به‌جای آن در همهٔ زبان‌ها جستجو کنید",
+    "guide_overview": "معرفی راهنما",
+    "clear_search": "پاک کردن",
+    "filtered_banner": "نمایش فصل‌هایی که «{query}» را دارند",
+    "chapters_matching": "{count} از {total} فصل"
 }
