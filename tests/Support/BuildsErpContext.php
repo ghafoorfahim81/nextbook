@@ -29,7 +29,21 @@ trait BuildsErpContext
             'preferences' => User::DEFAULT_PREFERENCES,
         ]);
 
+        // The company is built before the branch and the user is attached to it
+        // immediately: a branch now requires an owning company, and the user's
+        // company has to be the same one or every company-scoped query in the
+        // test would look at a different set of books than the branch does.
+        // `currency_id` is filled in further down, once a currency exists.
+        $company = Company::factory()->create([
+            'name_en' => 'ERP Test Company',
+            'costing_method' => $costingMethod,
+            'calendar_type' => CalendarType::GREGORIAN->value,
+        ]);
+
+        $user->update(['company_id' => $company->id]);
+
         $branch = Branch::factory()->create([
+            'company_id' => $company->id,
             'name' => 'Main Branch '.fake()->unique()->numberBetween(100, 999),
             'is_main' => true,
             'created_by' => $user->id,
@@ -92,17 +106,13 @@ trait BuildsErpContext
             'flag' => 'af.png',
         ]);
 
-        $company = Company::factory()->create([
-            'name_en' => 'ERP Test Company',
-            'currency_id' => $currency->id,
-            'costing_method' => $costingMethod,
-            'calendar_type' => CalendarType::GREGORIAN->value,
-        ]);
+        $company->update(['currency_id' => $currency->id]);
 
-        $user->update(['company_id' => $company->id]);
         $user->refresh();
         $this->actingAs($user);
         app()->instance('active_branch_id', $branch->id);
+        app()->instance('active_company_id', $company->id);
+        app()->instance('accessible_company_ids', [$company->id]);
 
         $accountTypes = $this->createDefaultAccountTypes($branch->id);
         $accounts = $this->createDefaultGlAccounts($branch->id, $accountTypes);
