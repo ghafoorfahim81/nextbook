@@ -160,7 +160,7 @@ class DiscountRuleResolver
 
         return $this->cache = DiscountRule::query()
             ->where('is_active', true)
-            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
             ->get();
     }
 }

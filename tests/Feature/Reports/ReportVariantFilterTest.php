@@ -46,7 +46,7 @@ class ReportVariantFilterTest extends TestCase
     {
         return ItemVariant::query()->create([
             'item_id' => $this->ctx['item']->id,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
             'attributes' => $attributes,
             'variant_key' => ItemVariant::makeKey($attributes),

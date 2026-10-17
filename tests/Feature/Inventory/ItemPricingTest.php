@@ -33,7 +33,7 @@ class ItemPricingTest extends TestCase
     private function makeItem(string $code, array $attributes = []): Item
     {
         return Item::factory()->create(array_merge([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'code' => $code,
         ], $attributes));
@@ -170,8 +170,8 @@ class ItemPricingTest extends TestCase
 
     public function test_it_lists_only_the_chosen_category(): void
     {
-        $drinks = Category::factory()->create(['branch_id' => $this->ctx['branch']->id]);
-        $snacks = Category::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $drinks = Category::factory()->create(['company_id' => $this->ctx['company']->id]);
+        $snacks = Category::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         app(ItemVariantService::class)->ensureDefault(
             $this->makeItem('PR-CAT-1', ['category_id' => $drinks->id])
@@ -194,8 +194,8 @@ class ItemPricingTest extends TestCase
 
     public function test_it_lists_only_the_chosen_brand(): void
     {
-        $brand = Brand::factory()->create(['branch_id' => $this->ctx['branch']->id]);
-        $other = Brand::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $brand = Brand::factory()->create(['company_id' => $this->ctx['company']->id]);
+        $other = Brand::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         app(ItemVariantService::class)->ensureDefault(
             $this->makeItem('PR-BR-1', ['brand_id' => $brand->id])
@@ -211,7 +211,7 @@ class ItemPricingTest extends TestCase
 
     public function test_the_all_scope_ignores_a_leftover_target(): void
     {
-        $category = Category::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $category = Category::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         app(ItemVariantService::class)->ensureDefault(
             $this->makeItem('PR-ALL-1', ['category_id' => $category->id])
@@ -242,7 +242,7 @@ class ItemPricingTest extends TestCase
 
     public function test_the_scope_and_the_search_narrow_together(): void
     {
-        $category = Category::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $category = Category::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         app(ItemVariantService::class)->ensureDefault(
             $this->makeItem('PR-MIX-1', ['name' => 'Mango Juice', 'category_id' => $category->id])

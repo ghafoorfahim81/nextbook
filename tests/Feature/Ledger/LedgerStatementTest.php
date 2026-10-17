@@ -28,7 +28,7 @@ class LedgerStatementTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
 
         $this->usd = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'US Dollar',
             'code' => 'USD',
             'symbol' => '$',
@@ -39,7 +39,7 @@ class LedgerStatementTest extends TestCase
         ]);
 
         $this->eur = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Euro',
             'code' => 'EUR',
             'symbol' => '€',

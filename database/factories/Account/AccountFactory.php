@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Account;
 
+use App\Models\Administration\Company;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
@@ -29,7 +30,7 @@ class AccountFactory extends Factory
             'slug' => null,
             'is_active' => true,
             'is_main' => false,
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
             'remark' => fake()->optional()->sentence(),
         ];
     }

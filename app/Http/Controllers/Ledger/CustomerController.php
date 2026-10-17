@@ -701,7 +701,7 @@ class CustomerController extends Controller
     {
         $latestNumber = Ledger::query()
             ->where('type', 'customer')
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereRaw('code ~ ?', ['^(CUST-)?[0-9]+$'])
             ->selectRaw("MAX(CAST(REGEXP_REPLACE(code, '^CUST-', '') AS INTEGER)) as max_code")
             ->value('max_code');

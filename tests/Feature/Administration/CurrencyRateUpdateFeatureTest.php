@@ -13,7 +13,7 @@ it('renders the currency rate update page with foreign currencies and history', 
     $ctx = $this->bootstrapErpContext();
 
     $usd = Currency::factory()->create([
-        'branch_id' => $ctx['branch']->id,
+        'company_id' => $ctx['company']->id,
         'name' => 'US Dollar',
         'code' => 'USD',
         'symbol' => '$',
@@ -47,7 +47,7 @@ it('updates foreign currency rates and stores history rows', function () {
     $ctx = $this->bootstrapErpContext();
 
     $usd = Currency::factory()->create([
-        'branch_id' => $ctx['branch']->id,
+        'company_id' => $ctx['company']->id,
         'name' => 'US Dollar',
         'code' => 'USD',
         'symbol' => '$',
@@ -58,7 +58,7 @@ it('updates foreign currency rates and stores history rows', function () {
     ]);
 
     $eur = Currency::factory()->create([
-        'branch_id' => $ctx['branch']->id,
+        'company_id' => $ctx['company']->id,
         'name' => 'Euro',
         'code' => 'EUR',
         'symbol' => '€',
@@ -107,7 +107,7 @@ it('ignores unchanged currency rates when saving updates', function () {
     $ctx = $this->bootstrapErpContext();
 
     $usd = Currency::factory()->create([
-        'branch_id' => $ctx['branch']->id,
+        'company_id' => $ctx['company']->id,
         'name' => 'US Dollar',
         'code' => 'USD',
         'symbol' => '$',
@@ -118,7 +118,7 @@ it('ignores unchanged currency rates when saving updates', function () {
     ]);
 
     $irr = Currency::factory()->create([
-        'branch_id' => $ctx['branch']->id,
+        'company_id' => $ctx['company']->id,
         'name' => 'Iranian Rial',
         'code' => 'IRR',
         'symbol' => 'Rial',

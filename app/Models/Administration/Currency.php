@@ -2,7 +2,7 @@
 
 namespace App\Models\Administration;
 
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,11 +14,11 @@ use App\Traits\HasSorting;
 use App\Traits\HasCache;
 use App\Traits\HasUserTracking;
 use Symfony\Component\Uid\Ulid;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Currency extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, CompanySpecific, HasCompany, SoftDeletes;
 
 
     /**
@@ -39,7 +39,7 @@ class Currency extends Model
         'is_active',
         'is_base_currency',
         'flag',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
     ];
@@ -61,7 +61,7 @@ class Currency extends Model
         'id' => 'string',
         'is_active' => 'boolean',
         'is_base_currency' => 'boolean',
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'tenant_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
@@ -160,9 +160,9 @@ class Currency extends Model
         ];
     }
 
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Company::class);
     }
 
     public function rateUpdates(): HasMany

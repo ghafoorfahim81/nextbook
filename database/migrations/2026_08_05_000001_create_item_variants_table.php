@@ -47,19 +47,20 @@ return new class extends Migration
             $table->boolean('is_default')->default(false);
             $table->boolean('is_active')->default(true);
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['branch_id', 'item_id']);
+            $table->index(['company_id', 'item_id']);
         });
 
         Schema::table('item_variants', function (Blueprint $table) {
             $table->foreign('item_id')->references('id')->on('items')->cascadeOnDelete();
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users');
@@ -73,10 +74,10 @@ return new class extends Migration
         DB::statement('CREATE UNIQUE INDEX item_variants_identity_unique
             ON item_variants (item_id, variant_key) WHERE deleted_at IS NULL');
         DB::statement('CREATE UNIQUE INDEX item_variants_barcode_unique
-            ON item_variants (branch_id, barcode)
+            ON item_variants (company_id, barcode)
             WHERE deleted_at IS NULL AND barcode IS NOT NULL');
         DB::statement('CREATE UNIQUE INDEX item_variants_sku_unique
-            ON item_variants (branch_id, sku)
+            ON item_variants (company_id, sku)
             WHERE deleted_at IS NULL AND sku IS NOT NULL');
 
         DB::statement('CREATE INDEX item_variants_attributes_gin

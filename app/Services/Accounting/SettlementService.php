@@ -1473,7 +1473,7 @@ class SettlementService
         }
 
         $typeId = AccountType::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('slug', $definition['account_type_slug'])
             ->value('id');
 
@@ -1490,11 +1490,11 @@ class SettlementService
             'number' => $definition['number'],
             'account_type_id' => $typeId,
             'parent_id' => Account::withoutGlobalScopes()
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('slug', $definition['parent_slug'] ?? null)
                 ->value('id'),
             'slug' => $slug,
-            'branch_id' => $branchId,
+            'company_id' => $companyId,
             'remark' => $definition['remark'] ?? null,
             'is_main' => true,
             'is_active' => true,

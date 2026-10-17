@@ -832,11 +832,11 @@ class TransactionService
         }
 
         return Currency::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('is_base_currency', true)
             ->value('id')
             ?? Currency::withoutGlobalScopes()
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('code', 'AFN')
                 ->value('id');
     }

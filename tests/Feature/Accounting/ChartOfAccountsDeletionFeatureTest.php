@@ -50,7 +50,7 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
         ]);
 
         $currency = Currency::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'name' => 'Afghani',
             'code' => 'AFN',
             'symbol' => 'Af',
@@ -207,7 +207,7 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
     private function makeAccount(): Account
     {
         return Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'account_type_id' => $this->ctx['account_types']['expense']->id,
             'name' => 'Deletable Account '.fake()->unique()->numberBetween(100, 999),
             'number' => (string) fake()->unique()->numberBetween(10000, 99999),

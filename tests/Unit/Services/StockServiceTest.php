@@ -141,7 +141,7 @@ class StockServiceTest extends TestCase
         $service = app(StockService::class);
 
         $boxMeasure = UnitMeasure::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'quantity_id' => $this->ctx['quantity']->id,
             'name' => 'Box',
             'unit' => '6',
@@ -184,7 +184,7 @@ class StockServiceTest extends TestCase
         $service = app(StockService::class);
 
         $boxMeasure = UnitMeasure::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'quantity_id' => $this->ctx['quantity']->id,
             'name' => 'Box',
             'unit' => '6',

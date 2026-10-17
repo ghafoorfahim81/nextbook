@@ -192,7 +192,7 @@ class TaxBracketSetController extends Controller
                 'to_amount' => $bracket['to_amount'] ?? null,
                 'fixed_amount' => $bracket['fixed_amount'],
                 'rate' => $bracket['rate'],
-                'branch_id' => $set->branch_id,
+                'company_id' => $set->company_id,
             ]);
         }
     }

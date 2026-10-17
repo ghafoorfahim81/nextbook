@@ -95,7 +95,7 @@ class ItemCrudTest extends TestCase
         // Fast entry / imports create the item row directly; the service still
         // has to guarantee the default variant so variant_id is never null.
         $item = Item::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'sku' => 'BARE-1',
             'barcode' => '7000001',

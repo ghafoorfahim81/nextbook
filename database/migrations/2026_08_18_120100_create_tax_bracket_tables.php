@@ -35,14 +35,15 @@ return new class extends Migration
             $table->boolean('is_system')->default(false);
             $table->text('remark')->nullable();
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->index(['branch_id', 'period', 'effective_from']);
+            $table->index(['company_id', 'period', 'effective_from']);
         });
 
         Schema::create('tax_brackets', function (Blueprint $table) {
@@ -58,11 +59,12 @@ return new class extends Migration
             $table->decimal('fixed_amount', 18, 4)->default(0);
             $table->decimal('rate', 10, 4)->default(0);
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
 
             $table->unique(['tax_bracket_set_id', 'sequence', 'deleted_at'], 'tax_bracket_sequence_unique');
@@ -72,7 +74,7 @@ return new class extends Migration
 
         Schema::table('tax_bracket_sets', function (Blueprint $table) {
             $table->foreign('currency_id')->references('id')->on('currencies')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
@@ -80,7 +82,7 @@ return new class extends Migration
 
         Schema::table('tax_brackets', function (Blueprint $table) {
             $table->foreign('tax_bracket_set_id')->references('id')->on('tax_bracket_sets')->onDelete('cascade');
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

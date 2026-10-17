@@ -38,7 +38,7 @@ class LineLevelCurrencyPostingTest extends TestCase
     private function usd(float $rate = 60): Currency
     {
         return Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'US Dollar',
             'code' => 'USD',
             'symbol' => '$',

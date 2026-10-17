@@ -12,14 +12,14 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasUserAuditable;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 class JournalClass extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, CompanySpecific, HasCompany, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'journal_classes';
     protected $primaryKey = 'id';

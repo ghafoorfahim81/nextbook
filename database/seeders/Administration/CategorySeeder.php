@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Administration;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Category;
 use App\Models\User;
@@ -17,9 +18,9 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
-        $branch = Branch::where('is_main', true)->first();
+        $company = Company::withoutGlobalScopes()->first();
 
-        if (! $branch) {
+        if (! $company) {
             return;
         }
 
@@ -27,7 +28,7 @@ class CategorySeeder extends Seeder
 
         foreach (Category::defaultCategories() as $category) {
             $existing = Category::withoutGlobalScopes()
-                ->where('branch_id', $branch->id)
+                ->where('company_id', $company->id)
                 ->where('name', $category['name'])
                 ->first();
 
@@ -46,7 +47,7 @@ class CategorySeeder extends Seeder
                 'local_name' => $category['local_name'] ?? null,
                 'remark' => $category['remark'] ?? null,
                 'is_active' => true,
-                'branch_id' => $branch->id,
+                'company_id' => $company->id,
                 'created_by' => $createdBy,
             ]);
         }

@@ -49,8 +49,8 @@ class ItemFastEntryTest extends TestCase
     {
         // Codes are text: an import or a hand-typed "ITEM-2024/A" is legal, and
         // casting the whole column to integer made PostgreSQL throw on it.
-        Item::factory()->create(['code' => 'ITEM-2024/A', 'branch_id' => $this->ctx['branch']->id]);
-        Item::factory()->create(['code' => '0042', 'branch_id' => $this->ctx['branch']->id]);
+        Item::factory()->create(['code' => 'ITEM-2024/A', 'company_id' => $this->ctx['company']->id]);
+        Item::factory()->create(['code' => '0042', 'company_id' => $this->ctx['company']->id]);
 
         $this->get(route('item.fast.entry'))
             ->assertOk()

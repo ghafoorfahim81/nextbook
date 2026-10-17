@@ -47,7 +47,7 @@ class EmployeeLoanFeatureTest extends TestCase
 
         $this->ctx = $this->bootstrapErpContext();
 
-        $shift = Shift::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $shift = Shift::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->employee = Employee::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
@@ -424,21 +424,21 @@ class EmployeeLoanFeatureTest extends TestCase
             'effective_from' => '2005-01-01',
             'currency_id' => $this->ctx['currency']->id,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
             TaxBracket::create(array_merge($bracket, [
                 'tax_bracket_set_id' => $set->id,
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
 
         foreach (SalaryComponent::defaultComponents() as $component) {
             SalaryComponent::create(array_merge(['affects_gross' => true, 'is_active' => true], $component, [
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -451,7 +451,7 @@ class EmployeeLoanFeatureTest extends TestCase
             'basic_salary' => 50000,
             'pay_frequency' => 'monthly',
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
     }

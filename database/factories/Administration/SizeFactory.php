@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Administration;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Size;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -17,7 +18,7 @@ class SizeFactory extends Factory
             'code' => strtoupper(fake()->unique()->lexify('??')),
             'is_active' => true,
             'is_main' => false,
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
         ];
     }
 }

@@ -36,7 +36,7 @@ class BaseAmountMigrationRegressionTest extends TestCase
     private function currency(string $code, float $rate): Currency
     {
         return Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => $code,
             'code' => $code,
             'symbol' => $code,

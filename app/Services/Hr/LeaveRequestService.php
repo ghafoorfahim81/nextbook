@@ -70,7 +70,7 @@ class LeaveRequestService
     private function holidayDates(string $branchId, Carbon $from, Carbon $to): array
     {
         return Holiday::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereNull('deleted_at')
             ->overlapping($from, $to)
             ->get()

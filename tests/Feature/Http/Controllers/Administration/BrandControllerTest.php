@@ -55,7 +55,7 @@ final class BrandControllerTest extends TestCase
 
         $brands = Brand::query()
             ->where('name', $name)
-            ->where('branch_id', $branch->id)
+            ->where('company_id', $company->id)
             ->where('created_by', $created_by->id)
             ->get();
         $this->assertCount(1, $brands);

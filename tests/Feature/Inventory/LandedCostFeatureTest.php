@@ -83,7 +83,7 @@ class LandedCostFeatureTest extends TestCase
     public function test_it_stores_manual_allocation_amounts_and_posts_them(): void
     {
         $secondItem = Item::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'cost_account_id' => $this->ctx['accounts']['cost-of-goods-sold']->id,
             'income_account_id' => $this->ctx['accounts']['product-income']->id,

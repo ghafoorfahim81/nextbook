@@ -38,7 +38,7 @@ class LedgerPairingTest extends TestCase
     private function makeLedger(string $type, string $name, string $code): Ledger
     {
         return Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'currency_id' => $this->ctx['currency']->id,
             'name' => $name,
             'code' => $code,

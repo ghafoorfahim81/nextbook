@@ -5,7 +5,7 @@ namespace App\Models\Account;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -17,15 +17,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
-use App\Models\Administration\Branch;
-use App\Traits\BranchSpecific;
+use App\Models\Administration\Company;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, HasCompany, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -41,7 +41,7 @@ class Account extends Model
         'number',
         'account_type_id',
         'parent_id',
-        'branch_id',
+        'company_id',
         'slug',
         'is_active',
         'is_main',
@@ -61,7 +61,7 @@ class Account extends Model
         'local_name' => 'string',
         'account_type_id' => 'string',
         'parent_id' => 'string',
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'slug' => 'string',
         'is_active' => 'boolean',
         'is_main' => 'boolean',
@@ -260,9 +260,9 @@ class Account extends Model
         return $this->belongsTo(AccountType::class);
     }
 
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Company::class);
     }
 
     public function transactionLines()

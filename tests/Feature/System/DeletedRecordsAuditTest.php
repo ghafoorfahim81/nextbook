@@ -35,7 +35,7 @@ class DeletedRecordsAuditTest extends TestCase
     public function test_a_deleted_discount_rule_is_listed(): void
     {
         $rule = DiscountRule::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Ramadan 10%',
         ]);
 
@@ -55,7 +55,7 @@ class DeletedRecordsAuditTest extends TestCase
         $this->assertSame(0, $empty['summary']['modules']);
 
         Category::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Gone',
         ])->delete();
 
@@ -68,7 +68,7 @@ class DeletedRecordsAuditTest extends TestCase
     public function test_days_remaining_counts_down_from_the_retention_window(): void
     {
         $category = Category::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Aging',
         ]);
 
@@ -85,7 +85,7 @@ class DeletedRecordsAuditTest extends TestCase
     public function test_a_record_past_the_window_reports_no_days_left_and_counts_as_expiring(): void
     {
         $category = Category::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Overdue',
         ]);
 
@@ -104,7 +104,7 @@ class DeletedRecordsAuditTest extends TestCase
     public function test_a_deleted_customer_is_listed_once_not_under_ledgers_as_well(): void
     {
         $customer = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'type' => \App\Enums\LedgerType::CUSTOMER->value,
             'name' => 'Duplicated Party',
         ]);
@@ -129,7 +129,7 @@ class DeletedRecordsAuditTest extends TestCase
     public function test_restoring_a_record_whose_parent_is_still_trashed_is_refused(): void
     {
         $customer = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'type' => \App\Enums\LedgerType::CUSTOMER->value,
             'name' => 'Orphan Maker',
         ]);
@@ -152,7 +152,7 @@ class DeletedRecordsAuditTest extends TestCase
     public function test_restoring_the_parent_first_then_the_child_works(): void
     {
         $customer = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'type' => \App\Enums\LedgerType::CUSTOMER->value,
             'name' => 'Reinstated',
         ]);
@@ -177,7 +177,7 @@ class DeletedRecordsAuditTest extends TestCase
     public function test_a_record_with_a_live_parent_restores_normally(): void
     {
         $customer = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'type' => \App\Enums\LedgerType::CUSTOMER->value,
             'name' => 'Still Here',
         ]);
@@ -201,7 +201,7 @@ class DeletedRecordsAuditTest extends TestCase
         // sales.sale_order_id is nullable, so a sale whose order was deleted is
         // still a complete sale and must not be trapped in the trash.
         $customer = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'type' => \App\Enums\LedgerType::CUSTOMER->value,
         ]);
 
@@ -233,7 +233,7 @@ class DeletedRecordsAuditTest extends TestCase
         // Anything outside the page must come back without those keys.
         foreach (range(1, 4) as $i) {
             Category::factory()->create([
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'name' => "Bulk {$i}",
             ])->delete();
         }

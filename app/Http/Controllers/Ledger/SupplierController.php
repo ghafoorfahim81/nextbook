@@ -692,7 +692,7 @@ class SupplierController extends Controller
     {
         $latestNumber = Ledger::query()
             ->where('type', 'supplier')
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereRaw('code ~ ?', ['^(SUP-)?[0-9]+$'])
             ->selectRaw("MAX(CAST(REGEXP_REPLACE(code, '^SUP-', '') AS INTEGER)) as max_code")
             ->value('max_code');

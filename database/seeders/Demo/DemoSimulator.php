@@ -73,6 +73,9 @@ final class DemoSimulator
 
     private string $branchId;
 
+    /** Master data — chart of accounts, catalogue, customers — is company-scoped. */
+    private string $companyId;
+
     private string $warehouseId;
 
     private User $owner;
@@ -348,7 +351,10 @@ final class DemoSimulator
             ->orderBy('created_at')
             ->firstOrFail();
         $this->branchId = (string) $this->owner->branch_id;
+        $this->companyId = (string) $this->company->id;
         app()->instance('active_branch_id', $this->branchId);
+        app()->instance('active_company_id', $this->companyId);
+        app()->instance('accessible_company_ids', [$this->companyId]);
         $this->users[$this->owner->id] = $this->owner;
 
         $start = $this->calendar->at(0, 7 * 60);
@@ -376,17 +382,17 @@ final class DemoSimulator
         foreach (CustomerGroup::query()->get(['id', 'name_en']) as $group) {
             $this->groups[strtolower((string) $group->name_en)] = $group->id;
         }
-        foreach (LandedCostCategory::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->get(['id', 'name']) as $category) {
+        foreach (LandedCostCategory::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->get(['id', 'name']) as $category) {
             $this->landedCategories[$category->name] = $category->id;
         }
 
-        $this->cashCustomerId = (string) Ledger::query()->where('code', 'CASH-CUST')->where('branch_id', $this->branchId)->value('id');
+        $this->cashCustomerId = (string) Ledger::query()->where('code', 'CASH-CUST')->where('company_id', $this->companyId)->value('id');
     }
 
     private function loadAccounts(): void
     {
         $this->accounts = Account::query()->withoutGlobalScopes()
-            ->where('branch_id', $this->branchId)
+            ->where('company_id', $this->companyId)
             ->whereNull('deleted_at')
             ->pluck('id', 'slug')
             ->all();
@@ -394,7 +400,7 @@ final class DemoSimulator
 
     private function ensureCurrencies(CarbonImmutable $at): void
     {
-        $existing = Currency::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'code')->all();
+        $existing = Currency::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'code')->all();
 
         if (! isset($existing['PKR'])) {
             $list = Currency::currencyList()['PKR'];
@@ -410,7 +416,7 @@ final class DemoSimulator
                 'is_base_currency' => false,
                 'flag' => $list['flag'],
             ]));
-            $existing = Currency::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'code')->all();
+            $existing = Currency::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'code')->all();
         }
 
         foreach (['AFN', 'USD', 'PKR'] as $code) {
@@ -434,7 +440,7 @@ final class DemoSimulator
 
     private function ensureUnits(CarbonImmutable $at): void
     {
-        $byName = fn () => UnitMeasure::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'name')->all();
+        $byName = fn () => UnitMeasure::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'name')->all();
         $units = $byName();
 
         foreach ([['کارتن ۱۲', 12, 'ctn12'], ['کارتن ۲۴', 24, 'ctn24']] as [$name, $factor, $symbol]) {
@@ -447,7 +453,7 @@ final class DemoSimulator
         }
 
         // By symbol: the seeded Dari names mix Arabic and Persian letter forms.
-        $bySymbol = UnitMeasure::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'symbol')->all();
+        $bySymbol = UnitMeasure::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'symbol')->all();
         foreach (['ea' => 'ea', 'kg' => 'kg', 'L' => 'L', 'c12' => 'ctn12', 'c24' => 'ctn24'] as $key => $symbol) {
             $this->units[$key] = $bySymbol[$symbol] ?? throw new RuntimeException("Unit with symbol {$symbol} missing.");
         }
@@ -455,7 +461,7 @@ final class DemoSimulator
 
     private function createCategoriesAndBrands(CarbonImmutable $at): void
     {
-        $existing = Category::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'name')->all();
+        $existing = Category::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'name')->all();
 
         foreach (DemoCatalog::CATEGORIES as $key => $name) {
             if (! isset($existing[$name])) {
@@ -463,7 +469,7 @@ final class DemoSimulator
             }
         }
 
-        $existing = Category::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'name')->all();
+        $existing = Category::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'name')->all();
         foreach (DemoCatalog::CATEGORIES as $key => $name) {
             $this->categoryIds[$key] = $existing[$name];
         }
@@ -509,7 +515,7 @@ final class DemoSimulator
      */
     private function createAccounts(CarbonImmutable $at): void
     {
-        $types = AccountType::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'slug')->all();
+        $types = AccountType::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'slug')->all();
         $new = [
             ['afn_azizi', 'عزیزی بانک - افغانی', 'cash-or-bank', 'AFN', 3000000],
             ['usd_cash', 'صندوق دالر', 'cash-or-bank', 'USD', 25000],
@@ -524,7 +530,7 @@ final class DemoSimulator
         ];
 
         foreach ($new as $index => [$key, $name, $type, $code, $opening]) {
-            $existing = Account::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->where('name', $name)->value('id');
+            $existing = Account::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->where('name', $name)->value('id');
 
             if (! $existing) {
                 $payload = [
@@ -546,7 +552,7 @@ final class DemoSimulator
                 }
 
                 $this->attempt('account', fn () => $this->send($this->owner, $at, 'chart-of-accounts.store', $payload));
-                $existing = Account::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->where('name', $name)->value('id');
+                $existing = Account::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->where('name', $name)->value('id');
             }
 
             if ($existing) {
@@ -612,7 +618,7 @@ final class DemoSimulator
     private function createExpenseCategories(CarbonImmutable $at): void
     {
         foreach (self::EXPENSE_CATEGORIES as $name => $spec) {
-            $id = ExpenseCategory::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->where('name', $name)->value('id');
+            $id = ExpenseCategory::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->where('name', $name)->value('id');
 
             if (! $id) {
                 $this->attempt('expense_category', fn () => $this->send($this->owner, $at, 'expense-categories.store', [
@@ -620,7 +626,7 @@ final class DemoSimulator
                     'remarks' => 'کتگوری مصرف سوپرمارکت',
                     'is_active' => true,
                 ]));
-                $id = ExpenseCategory::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->where('name', $name)->value('id');
+                $id = ExpenseCategory::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->where('name', $name)->value('id');
             }
 
             if ($id) {
@@ -649,7 +655,7 @@ final class DemoSimulator
         $catalog = DemoCatalog::items($this->n(900), $this->random);
 
         // Brands first, one per distinct name.
-        $brandIds = Brand::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'name')->all();
+        $brandIds = Brand::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'name')->all();
         $brands = [];
         foreach ($catalog as $spec) {
             if ($this->brandable($spec)) {
@@ -669,7 +675,7 @@ final class DemoSimulator
             }
             $bar->advance();
         }
-        $brandIds = Brand::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'name')->all();
+        $brandIds = Brand::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'name')->all();
 
         $this->estimateDemand($catalog);
 
@@ -717,7 +723,7 @@ final class DemoSimulator
                             ]],
                         ]);
 
-                        return Item::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->where('code', $spec['code'])->value('id');
+                        return Item::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->where('code', $spec['code'])->value('id');
                     });
 
                     if ($created) {
@@ -1059,7 +1065,7 @@ final class DemoSimulator
     private function createDiscountRules(): void
     {
         $at = $this->calendar->at(0, 12 * 60);
-        $brandIds = Brand::query()->withoutGlobalScopes()->where('branch_id', $this->branchId)->pluck('id', 'name')->all();
+        $brandIds = Brand::query()->withoutGlobalScopes()->where('company_id', $this->companyId)->pluck('id', 'name')->all();
         $j = fn (string $gregorian) => $this->formDate(CarbonImmutable::parse($gregorian));
 
         $rules = [

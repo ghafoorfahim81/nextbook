@@ -216,7 +216,7 @@ class ReceiptController extends Controller
                 'credit_limit_enabled',
                 'credit_terms',
                 'is_active',
-                'branch_id',
+                'company_id',
             ])
             ->withStatementTotals()
             ->find($ledgerId);

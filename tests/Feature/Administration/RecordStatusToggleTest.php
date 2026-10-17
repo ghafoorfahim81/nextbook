@@ -52,7 +52,7 @@ class RecordStatusToggleTest extends TestCase
     public function test_a_category_can_be_deactivated(): void
     {
         $category = Category::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
         ]);
 
         $this->patch(route('categories.toggle-status', $category))->assertRedirect();

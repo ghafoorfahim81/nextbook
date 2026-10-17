@@ -50,12 +50,14 @@ return new class extends Migration
             // invoice, others want it folded quietly into the price.
             $table->boolean('show_on_invoice')->default(true);
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
 
-            $table->index(['branch_id', 'is_active', 'scope', 'scope_id']);
+            $table->index(['company_id', 'is_active', 'scope', 'scope_id']);
+
+            $table->unique(['company_id', 'id']);
 
             $table->timestamps();
             $table->softDeletes();
@@ -63,7 +65,7 @@ return new class extends Migration
 
         Schema::table('discount_rules', function (Blueprint $table) {
             $table->foreign('customer_group_id')->references('id')->on('customer_groups')->nullOnDelete();
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

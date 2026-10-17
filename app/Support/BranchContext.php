@@ -113,7 +113,7 @@ final class BranchContext
 
         return self::$glAccounts[$branchId] ??= Account::query()
             ->withoutGlobalScope('branchSpecific')
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereIn('slug', self::GL_ACCOUNT_SLUGS)
             ->pluck('id', 'slug');
     }
@@ -139,7 +139,7 @@ final class BranchContext
 
         return self::$homeCurrency[$branchId] ??= Currency::query()
             ->withoutGlobalScope('branchSpecific')
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('is_base_currency', true)
             ->first();
     }

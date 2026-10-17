@@ -13,7 +13,7 @@ class PaymentTerm extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasUserAuditable, SoftDeletes;
 
-    protected $fillable = ['name', 'days', 'type', 'branch_id', 'created_by', 'updated_by'];
+    protected $fillable = ['name', 'days', 'type', 'company_id', 'created_by', 'updated_by'];
 
     protected $casts = ['days' => 'integer'];
 

@@ -172,7 +172,7 @@ class QuickCreateController extends Controller
                 'parent_id' => $category->parent_id,
                 'remark' => $category->remark,
                 'is_active' => $category->is_active,
-                'branch_id' => $category->branch_id,
+                'company_id' => $category->company_id,
             ],
             branchId: $category->branch_id,
         );
@@ -503,7 +503,7 @@ class QuickCreateController extends Controller
      * A uniqueness rule scoped to the branch this request is acting on.
      *
      * The `...,branch_id,NULL,...` string form these replace compiled to
-     * `whereNull('branch_id')`, which matches no rows and passed every duplicate.
+     * `whereNull('company_id')`, which matches no rows and passed every duplicate.
      */
     private function uniqueInBranch(string $table): \Illuminate\Validation\Rules\Unique
     {

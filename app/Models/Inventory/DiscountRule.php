@@ -7,8 +7,8 @@ use App\Enums\DiscountType;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
 use App\Models\Administration\CustomerGroup;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class DiscountRule extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasUserTracking, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -41,7 +41,7 @@ class DiscountRule extends Model
         'is_priority',
         'is_active',
         'show_on_invoice',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
     ];
@@ -60,7 +60,7 @@ class DiscountRule extends Model
             'is_priority' => 'boolean',
             'is_active' => 'boolean',
             'show_on_invoice' => 'boolean',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
         ];

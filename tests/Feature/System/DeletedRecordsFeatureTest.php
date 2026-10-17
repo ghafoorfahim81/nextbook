@@ -26,7 +26,7 @@ class DeletedRecordsFeatureTest extends TestCase
     public function test_it_lists_soft_deleted_records_from_registered_modules(): void
     {
         $category = Category::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Archived Category',
         ]);
 
@@ -47,7 +47,7 @@ class DeletedRecordsFeatureTest extends TestCase
     public function test_it_restores_a_soft_deleted_record_from_the_central_module(): void
     {
         $category = Category::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Restorable Category',
         ]);
 
@@ -65,7 +65,7 @@ class DeletedRecordsFeatureTest extends TestCase
     public function test_auto_cleanup_force_deletes_expired_deleted_records(): void
     {
         $category = Category::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Expired Category',
         ]);
 

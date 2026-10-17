@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Administration;
 
+use App\Models\Administration\Company;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Currency;
@@ -30,7 +31,7 @@ class CurrencyFactory extends Factory
             'is_active' => true,
             'is_base_currency' => false,
             'flag' => fake()->optional()->lexify('??').'.png',
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
             'is_main' => false,
         ];
     }

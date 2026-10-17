@@ -44,14 +44,15 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->text('remark')->nullable();
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->unique(['branch_id', 'code', 'deleted_at']);
+            $table->unique(['company_id', 'code', 'deleted_at']);
         });
 
         Schema::create('salary_structures', function (Blueprint $table) {
@@ -77,14 +78,15 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->text('remark')->nullable();
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->index(['branch_id', 'employee_id', 'effective_from']);
+            $table->index(['company_id', 'employee_id', 'effective_from']);
         });
 
         Schema::create('salary_structure_lines', function (Blueprint $table) {
@@ -100,11 +102,12 @@ return new class extends Migration
             $table->decimal('percentage', 10, 4)->nullable();
             $table->smallInteger('sequence')->default(0);
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
 
             $table->unique(
@@ -117,7 +120,7 @@ return new class extends Migration
 
         Schema::table('salary_components', function (Blueprint $table) {
             $table->foreign('account_id')->references('id')->on('accounts')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
@@ -129,7 +132,7 @@ return new class extends Migration
             $table->foreign('department_id')->references('id')->on('departments')->onDelete('set null');
             $table->foreign('currency_id')->references('id')->on('currencies')->onDelete('set null');
             $table->foreign('expense_account_id')->references('id')->on('accounts')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
@@ -138,7 +141,7 @@ return new class extends Migration
         Schema::table('salary_structure_lines', function (Blueprint $table) {
             $table->foreign('salary_structure_id')->references('id')->on('salary_structures')->onDelete('cascade');
             $table->foreign('salary_component_id')->references('id')->on('salary_components');
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

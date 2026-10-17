@@ -34,7 +34,7 @@ class SelfServiceFeatureTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
 
         $shift = Shift::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'break_minutes' => 0,
         ]);
 

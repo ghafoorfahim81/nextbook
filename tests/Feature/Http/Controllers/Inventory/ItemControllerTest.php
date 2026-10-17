@@ -73,7 +73,7 @@ final class ItemControllerTest extends TestCase
             ->where('brand_id', $brand->id)
             ->where('category_id', $category->id)
             ->where('sale_price', $sale_price)
-            ->where('branch_id', $branch->id)
+            ->where('company_id', $company->id)
             ->where('created_by', $created_by->id)
             ->get();
         $this->assertCount(1, $items);

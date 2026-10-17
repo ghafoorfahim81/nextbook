@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Ledger;
 
+use App\Models\Administration\Company;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
 use App\Models\Administration\Branch;
@@ -23,7 +24,7 @@ class LedgerSeeder extends Seeder
                 'code' => 'CASH-CUST',
                 'type' => 'customer',
                 'is_active' => true,
-                'branch_id' => Branch::withoutGlobalScopes()->where('is_main', true)->first()->id,
+                'company_id' => Company::withoutGlobalScopes()->value('id'),
                 'created_by' => User::withoutGlobalScopes()->where('email', 'admin@nextbook.af')->first()->id,
             ],
         ];

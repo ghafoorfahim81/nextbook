@@ -2,8 +2,8 @@
 
 namespace App\Models\Hr;
 
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -20,7 +20,7 @@ use Illuminate\Support\Carbon;
 class Shift extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, HasCompany, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -49,7 +49,7 @@ class Shift extends Model
     {
         return [
             'id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'crosses_midnight' => 'boolean',

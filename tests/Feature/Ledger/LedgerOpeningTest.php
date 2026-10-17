@@ -36,7 +36,7 @@ class LedgerOpeningTest extends TestCase
         $this->afn = $this->ctx['currency'];
 
         $this->usd = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'US Dollar',
             'code' => 'USD',
             'symbol' => '$',
@@ -47,7 +47,7 @@ class LedgerOpeningTest extends TestCase
         ]);
 
         $this->eur = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Euro',
             'code' => 'EUR',
             'symbol' => '€',

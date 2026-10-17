@@ -51,7 +51,7 @@ class SalaryDisbursementFeatureTest extends TestCase
 
         $this->ctx = $this->bootstrapErpContext();
 
-        $shift = Shift::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $shift = Shift::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->employee = Employee::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
@@ -73,14 +73,14 @@ class SalaryDisbursementFeatureTest extends TestCase
             'effective_from' => '2005-01-01',
             'currency_id' => $this->ctx['currency']->id,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
             TaxBracket::create(array_merge($bracket, [
                 'tax_bracket_set_id' => $set->id,
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -92,7 +92,7 @@ class SalaryDisbursementFeatureTest extends TestCase
     {
         foreach (SalaryComponent::defaultComponents() as $component) {
             SalaryComponent::create(array_merge(['affects_gross' => true, 'is_active' => true], $component, [
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -108,7 +108,7 @@ class SalaryDisbursementFeatureTest extends TestCase
             'basic_salary' => $basic,
             'pay_frequency' => 'monthly',
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
     }
@@ -421,7 +421,7 @@ class SalaryDisbursementFeatureTest extends TestCase
     public function test_paying_a_foreign_salary_at_a_moved_rate_realises_exchange_loss(): void
     {
         $usd = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'code' => 'USD',
             'name' => 'US Dollar',
             // Pinned, because the payslip is booked at the CURRENCY's rate and

@@ -2,8 +2,8 @@
 
 namespace App\Models\Hr;
 
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
 use App\Support\BranchContext;
@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class HrSetting extends Model
 {
-    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $table = 'hr_settings';
 
@@ -45,7 +45,7 @@ class HrSetting extends Model
     {
         return [
             'id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'leave_year_start_month' => 'integer',
@@ -74,7 +74,7 @@ class HrSetting extends Model
 
         return static::withoutGlobalScopes()
             ->firstOrCreate(
-                ['branch_id' => $branchId, 'deleted_at' => null],
+                ['company_id' => $branchId, 'deleted_at' => null],
                 ['created_by' => auth()->id()]
             );
     }

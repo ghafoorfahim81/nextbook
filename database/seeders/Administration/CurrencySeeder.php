@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Administration;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
 use Illuminate\Database\Seeder;
 use App\Models\Administration\Branch;
@@ -13,7 +14,7 @@ class CurrencySeeder extends Seeder
      */
     public function run(): void
     {
-        $branch = Branch::where('is_main', true)->first();
+        $company = Company::withoutGlobalScopes()->first();
         $currencyList = Currency::defaultCurrencies();
         
         foreach ($currencyList as $key => $value) {

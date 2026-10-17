@@ -29,7 +29,7 @@ class BarcodePrintTest extends TestCase
     private function makeItem(string $code, array $attributes = []): Item
     {
         return Item::factory()->create(array_merge([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'code' => $code,
         ], $attributes));

@@ -32,7 +32,7 @@ class ListScreensRenderTest extends TestCase
     public function test_the_customer_groups_list_renders_with_usable_pagination(): void
     {
         CustomerGroup::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name_en' => 'Wholesale',
         ]);
 
