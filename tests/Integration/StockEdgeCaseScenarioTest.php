@@ -59,7 +59,7 @@ class StockEdgeCaseScenarioTest extends TestCase
         // while qty_remaining is kept in the item's own — the seam where a
         // conversion bug hides.
         $this->box = UnitMeasure::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'quantity_id' => $this->ctx['quantity']->id,
             'name' => 'Box',
             'unit' => '12',
@@ -466,7 +466,7 @@ class StockEdgeCaseScenarioTest extends TestCase
         $cheap = app(ItemVariantService::class)->ensureDefault($this->item);
         $pricy = ItemVariant::create([
             'item_id' => $this->item->id,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'attributes' => ['grade' => 'premium'],
             'variant_key' => 'grade:premium',
             'sku' => 'EDGE-PRICY',

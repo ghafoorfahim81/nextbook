@@ -110,7 +110,7 @@ class FastOpeningTest extends TestCase
     public function test_rows_with_no_quantity_are_skipped_rather_than_rejected(): void
     {
         $other = Item::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'asset_account_id' => $this->ctx['accounts']['inventory-stock']->id,
             'code' => 'SKIP-1',

@@ -34,7 +34,7 @@ class DiscountRuleTest extends TestCase
     private function rule(array $attributes = []): DiscountRule
     {
         return DiscountRule::factory()->create(array_merge([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
             'scope' => DiscountScope::ITEM->value,
             'scope_id' => $this->ctx['item']->id,
@@ -119,7 +119,7 @@ class DiscountRuleTest extends TestCase
     public function test_a_customer_group_rule_beats_the_same_scope_without_one(): void
     {
         $wholesale = CustomerGroup::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name_en' => 'Wholesale',
         ]);
         $wholesaleBuyer = $this->ctx['customer_ledger'];
@@ -142,11 +142,11 @@ class DiscountRuleTest extends TestCase
     public function test_a_group_rule_does_not_reach_a_customer_in_another_group(): void
     {
         $wholesale = CustomerGroup::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name_en' => 'Wholesale',
         ]);
         $retail = CustomerGroup::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name_en' => 'Retail',
         ]);
 
@@ -228,7 +228,7 @@ class DiscountRuleTest extends TestCase
     public function test_a_rule_with_a_group_still_names_that_group(): void
     {
         $wholesale = CustomerGroup::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name_en' => 'Wholesale',
         ]);
 
@@ -510,7 +510,7 @@ class DiscountRuleTest extends TestCase
     public function test_a_deleted_rule_cannot_be_restored(): void
     {
         $rule = DiscountRule::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'scope' => DiscountScope::ALL->value,
             'scope_id' => null,
             'discount_type' => DiscountType::PERCENTAGE->value,

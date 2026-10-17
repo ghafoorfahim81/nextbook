@@ -40,7 +40,7 @@ class LedgerTypeIsolationFeatureTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
 
         $this->employeeLedger = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'currency_id' => $this->ctx['currency']->id,
             'name' => 'Ahmad Karimi (EMP-001)',
             'code' => 'EMP-001',

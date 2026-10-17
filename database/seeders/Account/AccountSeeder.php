@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Account;
 
+use App\Models\Administration\Company;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
 use App\Models\Administration\Branch;
@@ -17,7 +18,7 @@ class AccountSeeder extends Seeder
     public function run(): void
     {
         // Get the main branch
-        $mainBranch = Branch::where('is_main', true)->first();
+        $company = Company::withoutGlobalScopes()->first();
 
         $accounts = Account::defaultAccounts();
         $createdBy = User::where('name', 'admin')->first()->id;
@@ -48,7 +49,7 @@ class AccountSeeder extends Seeder
                     ? ($createdIds[$account['parent_slug']] ?? null)
                     : null,
                 'slug' => $account['slug'],
-                'branch_id' => $mainBranch?->id,
+                'company_id' => $company?->id,
                 'remark' => $account['remark'],
                 'is_main' => $account['is_main'],
                 'created_by' => $createdBy,
@@ -64,12 +65,12 @@ class AccountSeeder extends Seeder
             'slug' => 'landed-costs-clearing',
             'remark' => 'Temporary holding for freight, customs, insurance before allocation to inventory',
             'is_main' => true,
-            'branch_id' => $mainBranch->id,
+            'company_id' => $company->id,
             'created_by' => User::where('name', 'admin')->first()->id,
         ];
         Account::firstOrCreate([
             'slug' => 'landed-costs-clearing',
-            'branch_id' => $mainBranch->id,
+            'company_id' => $company->id,
         ], $newAccount);
     }
 }

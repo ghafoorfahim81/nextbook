@@ -44,7 +44,7 @@ class WageTaxService
         ?string $branchId = null,
     ): TaxBracketSet {
         $query = TaxBracketSet::query()
-            ->when($branchId, fn ($q) => $q->withoutGlobalScopes()->where('branch_id', $branchId)->whereNull('deleted_at'))
+            ->when($companyId, fn ($q) => $q->withoutGlobalScopes()->where('company_id', $companyId)->whereNull('deleted_at'))
             ->where('period', $period->value)
             ->where('is_active', true)
             ->whereDate('effective_from', '<=', $periodEnd->toDateString())

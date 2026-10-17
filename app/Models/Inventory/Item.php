@@ -3,13 +3,13 @@
 namespace App\Models\Inventory;
 
 use App\Traits\HasAttachments;
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasCache;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Enums\StockSourceType;
 class Item extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasBranch, BranchSpecific, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasCompany, CompanySpecific, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -66,7 +66,7 @@ class Item extends Model
         'rate_c',
         'rack_no',
         'fast_search',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
 
@@ -129,7 +129,7 @@ class Item extends Model
             'rate_a' => 'decimal:2',
             'rate_b' => 'decimal:2',
             'rate_c' => 'decimal:2',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'is_batch_tracked' => 'boolean',
@@ -255,9 +255,9 @@ class Item extends Model
         return $this->belongsTo(\App\Models\Administration\Category::class);
     }
 
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Branch::class);
+        return $this->belongsTo(\App\Models\Administration\Company::class);
     }
 
     public function stocks()

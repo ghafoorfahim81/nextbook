@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Inventory;
 
+use App\Models\Administration\Company;
 use App\Enums\ItemType;
 use App\Models\Account\Account;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -56,7 +57,7 @@ class ItemFactory extends Factory
             'fast_search' => fake()->lexify('FAST-????'),
             'is_batch_tracked' => false,
             'is_expiry_tracked' => false,
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
         ];
     }
 }

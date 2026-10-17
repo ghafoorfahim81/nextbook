@@ -43,7 +43,7 @@ class StockAdjustmentVariantTest extends TestCase
             ['Inventory Adjustments', '9050', 'inventory-adjustments'],
         ] as [$name, $number, $slug]) {
             Account::factory()->create([
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'name' => $name,
                 'number' => $number,
                 'slug' => $slug,
@@ -107,7 +107,7 @@ class StockAdjustmentVariantTest extends TestCase
     public function test_a_line_keeps_the_variant_the_caller_chose(): void
     {
         $item = Item::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'asset_account_id' => $this->ctx['accounts']['inventory-stock']->id,
             'code' => 'ADJ-VAR',
@@ -174,7 +174,7 @@ class StockAdjustmentVariantTest extends TestCase
         $this->ctx['company']->update(['costing_method' => CostingMethod::FIFO->value]);
 
         $item = Item::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'asset_account_id' => $this->ctx['accounts']['inventory-stock']->id,
             'code' => 'ADJ-BATCH',

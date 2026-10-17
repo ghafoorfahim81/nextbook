@@ -2929,7 +2929,7 @@ class ReportService
         $date = Carbon::parse($filters['date_to'])->toDateString();
 
         $periodStart = DB::table('financial_periods')
-            ->where('branch_id', $filters['branch_id'])
+            ->where('company_id', $filters['company_id'])
             ->whereNull('deleted_at')
             ->whereDate('start_date', '<=', $date)
             ->where(fn ($q) => $q->whereNull('end_date')->orWhereDate('end_date', '>=', $date))
@@ -4540,14 +4540,14 @@ class ReportService
                 ->map(fn ($branch) => ['id' => $branch->id, 'name' => $branch->name])
                 ->all(),
             'ledgers' => ! $needs('ledgers') ? [] : DB::table('ledgers')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
             'customers' => ! $needs('customers') ? [] : DB::table('ledgers')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('type', LedgerType::CUSTOMER->value)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
@@ -4555,7 +4555,7 @@ class ReportService
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
             'suppliers' => ! $needs('suppliers') ? [] : DB::table('ledgers')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('type', LedgerType::SUPPLIER->value)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
@@ -4563,7 +4563,7 @@ class ReportService
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
             'items' => ! $needs('items') ? [] : DB::table('items')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get(['id', 'name'])
@@ -4622,7 +4622,7 @@ class ReportService
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
             'sizes' => DB::table('sizes')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get(['id', 'name'])
@@ -4665,21 +4665,21 @@ class ReportService
                 ])
                 ->all(),
             'departments' => DB::table('departments')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
             'designations' => DB::table('designations')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
             'leave_types' => DB::table('leave_types')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get(['id', 'name'])

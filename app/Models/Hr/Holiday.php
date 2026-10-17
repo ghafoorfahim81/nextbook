@@ -3,8 +3,8 @@
 namespace App\Models\Hr;
 
 use App\Enums\HolidayType;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -19,7 +19,7 @@ use Illuminate\Support\Carbon;
 class Holiday extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -41,7 +41,7 @@ class Holiday extends Model
     {
         return [
             'id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'date' => 'date',

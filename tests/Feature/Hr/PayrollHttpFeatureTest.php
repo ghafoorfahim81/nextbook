@@ -48,7 +48,7 @@ class PayrollHttpFeatureTest extends TestCase
 
         $this->ctx = $this->bootstrapErpContext();
 
-        $shift = Shift::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $shift = Shift::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->employee = Employee::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
@@ -135,7 +135,7 @@ class PayrollHttpFeatureTest extends TestCase
             'calculation_type' => 'fixed',
             'is_system' => true,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
@@ -161,7 +161,7 @@ class PayrollHttpFeatureTest extends TestCase
             'component_type' => 'earning',
             'calculation_type' => 'fixed',
             'is_system' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
@@ -265,7 +265,7 @@ class PayrollHttpFeatureTest extends TestCase
             'calculation_type' => 'fixed',
             'amount' => 2000,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
@@ -293,7 +293,7 @@ class PayrollHttpFeatureTest extends TestCase
             'component_type' => 'earning',
             'calculation_type' => 'fixed',
             'amount' => 2000,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
@@ -720,21 +720,21 @@ class PayrollHttpFeatureTest extends TestCase
             'effective_from' => '2005-01-01',
             'currency_id' => $this->ctx['currency']->id,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
             TaxBracket::create(array_merge($bracket, [
                 'tax_bracket_set_id' => $set->id,
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
 
         foreach (SalaryComponent::defaultComponents() as $component) {
             SalaryComponent::create(array_merge(['affects_gross' => true, 'is_active' => true], $component, [
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -747,7 +747,7 @@ class PayrollHttpFeatureTest extends TestCase
             'basic_salary' => 50000,
             'pay_frequency' => 'monthly',
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
     }

@@ -25,19 +25,22 @@ return new class extends Migration
     /** table => [index suffix => columns] */
     private const TARGETS = [
         'items' => [
-            'name' => ['branch_id', 'name'],
-            'code' => ['branch_id', 'code'],
+            'name' => ['company_id', 'name'],
+            'code' => ['company_id', 'code'],
         ],
-        'categories'    => ['name' => ['branch_id', 'name']],
-        'brands'        => ['name' => ['branch_id', 'name']],
+        'categories'    => ['name' => ['company_id', 'name']],
+        'brands'        => ['name' => ['company_id', 'name']],
+        // Warehouses stay branch-scoped: a warehouse is owned by the company
+        // but operated by a branch, and two branches may each run a "Main
+        // Warehouse".
         'warehouses'    => ['name' => ['branch_id', 'name']],
-        'sizes'         => ['name' => ['branch_id', 'name'], 'code' => ['branch_id', 'code']],
-        'unit_measures' => ['name' => ['branch_id', 'name']],
+        'sizes'         => ['name' => ['company_id', 'name'], 'code' => ['company_id', 'code']],
+        'unit_measures' => ['name' => ['company_id', 'name']],
     ];
 
     /** Nullable columns: only unique when a value is actually present. */
     private const NULLABLE_TARGETS = [
-        'items' => ['barcode' => ['branch_id', 'barcode']],
+        'items' => ['barcode' => ['company_id', 'barcode']],
     ];
 
     public function up(): void

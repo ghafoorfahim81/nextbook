@@ -39,7 +39,7 @@ class ReverseAfterAdjustmentTest extends TestCase
             ['Inventory Adjustments', '9050', 'inventory-adjustments'],
         ] as [$name, $number, $slug]) {
             Account::factory()->create([
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'name' => $name,
                 'number' => $number,
                 'slug' => $slug,

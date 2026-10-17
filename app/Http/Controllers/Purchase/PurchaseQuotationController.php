@@ -93,7 +93,7 @@ class PurchaseQuotationController extends Controller
             'purchaseQuotationNumber' => $purchaseQuotationNumber,
             'ledgers' => \App\Http\Resources\Ledger\LedgerOptionResource::collection(
                 Ledger::query()
-                    ->select(['id', 'name', 'code', 'type', 'currency_id', 'is_active', 'branch_id'])
+                    ->select(['id', 'name', 'code', 'type', 'currency_id', 'is_active', 'company_id'])
                     ->where('type', 'supplier')
                     ->where('is_active', true)
                     ->orderBy('created_at', 'desc')

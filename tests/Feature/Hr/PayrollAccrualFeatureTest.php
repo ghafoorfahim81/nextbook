@@ -52,7 +52,7 @@ class PayrollAccrualFeatureTest extends TestCase
 
         $this->ctx = $this->bootstrapErpContext();
 
-        $shift = Shift::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $shift = Shift::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->employee = Employee::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
@@ -74,14 +74,14 @@ class PayrollAccrualFeatureTest extends TestCase
             'effective_from' => '2005-01-01',
             'currency_id' => $this->ctx['currency']->id,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
             TaxBracket::create(array_merge($bracket, [
                 'tax_bracket_set_id' => $set->id,
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -93,7 +93,7 @@ class PayrollAccrualFeatureTest extends TestCase
     {
         foreach (SalaryComponent::defaultComponents() as $component) {
             SalaryComponent::create(array_merge(['affects_gross' => true, 'is_active' => true], $component, [
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -109,7 +109,7 @@ class PayrollAccrualFeatureTest extends TestCase
             'basic_salary' => $basic,
             'pay_frequency' => 'monthly',
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
     }
@@ -203,7 +203,7 @@ class PayrollAccrualFeatureTest extends TestCase
             'component_type' => SalaryComponentType::Earning->value,
             'calculation_type' => ComponentCalculationType::PercentOfBasic->value,
             'percentage' => 10, 'is_taxable' => true, 'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id, 'created_by' => $this->ctx['user']->id,
+            'company_id' => $this->ctx['company']->id, 'created_by' => $this->ctx['user']->id,
         ]);
 
         SalaryStructureLine::create([
@@ -211,7 +211,7 @@ class PayrollAccrualFeatureTest extends TestCase
             'salary_component_id' => $allowance->id,
             'calculation_type' => ComponentCalculationType::PercentOfBasic->value,
             'percentage' => 10, 'sequence' => 10,
-            'branch_id' => $this->ctx['branch']->id, 'created_by' => $this->ctx['user']->id,
+            'company_id' => $this->ctx['company']->id, 'created_by' => $this->ctx['user']->id,
         ]);
 
         $line = $this->calculate()->lines()->firstOrFail();
@@ -232,7 +232,7 @@ class PayrollAccrualFeatureTest extends TestCase
             'component_type' => SalaryComponentType::Earning->value,
             'calculation_type' => ComponentCalculationType::Fixed->value,
             'amount' => 10000, 'is_taxable' => true, 'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id, 'created_by' => $this->ctx['user']->id,
+            'company_id' => $this->ctx['company']->id, 'created_by' => $this->ctx['user']->id,
         ]);
 
         $bonus = SalaryComponent::create([
@@ -240,7 +240,7 @@ class PayrollAccrualFeatureTest extends TestCase
             'component_type' => SalaryComponentType::Earning->value,
             'calculation_type' => ComponentCalculationType::PercentOfGross->value,
             'percentage' => 10, 'is_taxable' => true, 'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id, 'created_by' => $this->ctx['user']->id,
+            'company_id' => $this->ctx['company']->id, 'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach ([[$fixed, ComponentCalculationType::Fixed, 10000, null, 10],
@@ -250,7 +250,7 @@ class PayrollAccrualFeatureTest extends TestCase
                 'salary_component_id' => $c->id,
                 'calculation_type' => $calc->value,
                 'amount' => $amt, 'percentage' => $pct, 'sequence' => $seq,
-                'branch_id' => $this->ctx['branch']->id, 'created_by' => $this->ctx['user']->id,
+                'company_id' => $this->ctx['company']->id, 'created_by' => $this->ctx['user']->id,
             ]);
         }
 

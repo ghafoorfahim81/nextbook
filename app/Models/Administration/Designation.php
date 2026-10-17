@@ -3,8 +3,8 @@
 namespace App\Models\Administration;
 
 use App\Models\Hr\Employee;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasCache;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
@@ -24,13 +24,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * This model used HasUuids against a char(26) ULID column, so every insert
  * generated a 36-character UUIDv4 that Postgres rejected outright — the module
- * could not create a single row. It also lacked BranchSpecific, so had inserts
+ * could not create a single row. It also lacked CompanySpecific, so had inserts
  * worked, one branch would have seen another's designations.
  */
 class Designation extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, HasCache, HasDependencyCheck, BranchSpecific, HasBranch, SoftDeletes;
+        HasDynamicFilters, HasCache, HasDependencyCheck, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -51,7 +51,7 @@ class Designation extends Model
         return [
             'id' => 'string',
             'department_id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'grade_level' => 'integer',

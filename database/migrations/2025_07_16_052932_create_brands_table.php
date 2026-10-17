@@ -27,21 +27,22 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('city')->nullable();
             $table->string('country')->nullable();
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
             $table->softDeletes();
-            $table->unique(['branch_id', 'name', 'deleted_at']);
+            $table->unique(['company_id', 'name', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();
 
         Schema::table('brands', function (Blueprint $table) {
-            $table->foreign('branch_id')
+            $table->foreign('company_id')
                 ->references('id')
-                ->on('branches')
+                ->on('companies')
                 ->onDelete('CASCADE');
 
             $table->foreign('created_by')->references('id')->on('users');

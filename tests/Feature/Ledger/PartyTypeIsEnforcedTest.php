@@ -135,7 +135,7 @@ class PartyTypeIsEnforcedTest extends TestCase
     public function test_an_employee_ledger_is_refused_on_both_sides(): void
     {
         $employee = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'currency_id' => $this->ctx['currency']->id,
             'name' => 'Payroll party',
             'code' => 'EMP-9',

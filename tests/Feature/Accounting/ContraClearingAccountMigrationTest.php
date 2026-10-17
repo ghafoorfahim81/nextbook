@@ -30,7 +30,7 @@ class ContraClearingAccountMigrationTest extends TestCase
     private function deleteTheClearingAccount(string $branchId): void
     {
         DB::table('accounts')
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('slug', 'contra-clearing')
             ->delete();
     }
@@ -43,7 +43,7 @@ class ContraClearingAccountMigrationTest extends TestCase
         $this->migration()->up();
 
         $account = DB::table('accounts')
-            ->where('branch_id', $ctx['branch']->id)
+            ->where('company_id', $ctx['company']->id)
             ->where('slug', 'contra-clearing')
             ->first();
 
@@ -65,7 +65,7 @@ class ContraClearingAccountMigrationTest extends TestCase
         $this->assertSame(
             1,
             DB::table('accounts')
-                ->where('branch_id', $ctx['branch']->id)
+                ->where('company_id', $ctx['company']->id)
                 ->where('slug', 'contra-clearing')
                 ->count(),
         );
@@ -79,14 +79,14 @@ class ContraClearingAccountMigrationTest extends TestCase
         // Account numbers are unique per branch and users add their own, so
         // 3070 may well be occupied by the time this runs.
         DB::table('accounts')
-            ->where('branch_id', $ctx['branch']->id)
+            ->where('company_id', $ctx['company']->id)
             ->where('slug', 'inventory-stock')
             ->update(['number' => '3070']);
 
         $this->migration()->up();
 
         $account = DB::table('accounts')
-            ->where('branch_id', $ctx['branch']->id)
+            ->where('company_id', $ctx['company']->id)
             ->where('slug', 'contra-clearing')
             ->first();
 

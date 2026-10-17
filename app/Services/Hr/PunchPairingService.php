@@ -372,7 +372,7 @@ class PunchPairingService
     private function isHoliday(string $branchId, Carbon $date): bool
     {
         return Holiday::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereNull('deleted_at')
             ->covering($date)
             ->exists();
@@ -388,7 +388,7 @@ class PunchPairingService
     private function defaultShift(string $branchId): ?Shift
     {
         return Shift::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('is_default', true)
             ->whereNull('deleted_at')
             ->first();

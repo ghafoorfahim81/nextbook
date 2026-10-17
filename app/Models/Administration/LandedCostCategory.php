@@ -2,8 +2,8 @@
 
 namespace App\Models\Administration;
 
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasCache;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class LandedCostCategory extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasCache, HasDependencyCheck, BranchSpecific, HasBranch, SoftDeletes;
+        HasCache, HasDependencyCheck, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -37,7 +37,7 @@ class LandedCostCategory extends Model
         return [
             'id' => 'string',
             'local_name' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
         ];

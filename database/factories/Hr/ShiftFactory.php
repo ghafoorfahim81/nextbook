@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Hr;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Branch;
 use App\Models\Hr\Shift;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -27,7 +28,7 @@ class ShiftFactory extends Factory
             'working_days' => [6, 7, 1, 2, 3, 4],
             'is_default' => true,
             'is_active' => true,
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
         ];
     }
 

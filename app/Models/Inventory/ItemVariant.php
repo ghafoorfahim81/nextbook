@@ -2,8 +2,8 @@
 
 namespace App\Models\Inventory;
 
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -27,7 +27,7 @@ use Illuminate\Support\Str;
 class ItemVariant extends Model
 {
     use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasSearch,
-        HasSorting, HasBranch, BranchSpecific, HasDependencyCheck, SoftDeletes;
+        HasSorting, HasCompany, CompanySpecific, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -49,7 +49,7 @@ class ItemVariant extends Model
         'sort_order',
         'is_default',
         'is_active',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
     ];
@@ -58,7 +58,7 @@ class ItemVariant extends Model
     {
         return [
             'item_id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'attributes' => 'array',

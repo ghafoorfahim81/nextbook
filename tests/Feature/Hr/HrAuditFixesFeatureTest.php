@@ -55,7 +55,7 @@ class HrAuditFixesFeatureTest extends TestCase
 
         $this->ctx = $this->bootstrapErpContext();
 
-        $shift = Shift::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $shift = Shift::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->employee = Employee::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
@@ -83,7 +83,7 @@ class HrAuditFixesFeatureTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $department = \App\Models\Administration\Department::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
         ]);
 
         $this->post(route('payrolls.store'), $this->payrollPayload([
@@ -95,7 +95,7 @@ class HrAuditFixesFeatureTest extends TestCase
     public function test_a_company_wide_run_cannot_overlap_a_department_run(): void
     {
         $department = \App\Models\Administration\Department::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
         ]);
 
         $this->post(route('payrolls.store'), $this->payrollPayload([
@@ -109,8 +109,8 @@ class HrAuditFixesFeatureTest extends TestCase
     /** Two genuinely disjoint departments may still both be run. */
     public function test_two_different_departments_do_not_conflict(): void
     {
-        $a = \App\Models\Administration\Department::factory()->create(['branch_id' => $this->ctx['branch']->id]);
-        $b = \App\Models\Administration\Department::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $a = \App\Models\Administration\Department::factory()->create(['company_id' => $this->ctx['company']->id]);
+        $b = \App\Models\Administration\Department::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->post(route('payrolls.store'), $this->payrollPayload(['department_id' => $a->id]))
             ->assertSessionHasNoErrors();
@@ -219,7 +219,7 @@ class HrAuditFixesFeatureTest extends TestCase
             'is_taxable' => true,
             'affects_gross' => true,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
@@ -229,7 +229,7 @@ class HrAuditFixesFeatureTest extends TestCase
             'calculation_type' => 'fixed',
             'amount' => 3000,
             'sequence' => 1,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
         ]);
 
         $line = app(PayrollCalculationService::class)
@@ -438,7 +438,7 @@ class HrAuditFixesFeatureTest extends TestCase
     public function test_the_roster_cannot_overwrite_an_approved_leave_day(): void
     {
         $type = LeaveType::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'is_paid' => true,
         ]);
 
@@ -558,7 +558,7 @@ class HrAuditFixesFeatureTest extends TestCase
             'affects_gross' => false,
             'is_prorated' => false,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ], $attributes));
 
@@ -568,7 +568,7 @@ class HrAuditFixesFeatureTest extends TestCase
             'calculation_type' => 'fixed',
             'amount' => $attributes['amount'],
             'sequence' => 5,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
         ]);
 
         return $component;
@@ -617,21 +617,21 @@ class HrAuditFixesFeatureTest extends TestCase
             'effective_from' => '2005-01-01',
             'currency_id' => $this->ctx['currency']->id,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
             TaxBracket::create(array_merge($bracket, [
                 'tax_bracket_set_id' => $set->id,
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
 
         foreach (SalaryComponent::defaultComponents() as $component) {
             SalaryComponent::create(array_merge(['affects_gross' => true, 'is_active' => true], $component, [
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -644,7 +644,7 @@ class HrAuditFixesFeatureTest extends TestCase
             'basic_salary' => 50000,
             'pay_frequency' => 'monthly',
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
     }

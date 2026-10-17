@@ -33,7 +33,7 @@ class StockAdjustmentFeatureTest extends TestCase
         Cache::put('costing_method', 'fifo');
 
         $this->shrinkageAccount = Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Inventory Shrinkage & Wastage',
             'number' => '9040',
             'slug' => 'inventory-shrinkage-and-wastage',
@@ -43,7 +43,7 @@ class StockAdjustmentFeatureTest extends TestCase
         ]);
 
         $this->adjustmentsAccount = Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Inventory Adjustments',
             'number' => '9050',
             'slug' => 'inventory-adjustments',

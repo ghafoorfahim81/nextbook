@@ -37,7 +37,7 @@ class SettlementEndpointsTest extends TestCase
     private function usd(float $rate = 60): Currency
     {
         return Currency::query()->firstOrCreate(
-            ['branch_id' => $this->ctx['branch']->id, 'code' => 'USD'],
+            ['company_id' => $this->ctx['company']->id, 'code' => 'USD'],
             [
                 'name' => 'US Dollar',
                 'symbol' => '$',

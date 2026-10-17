@@ -71,7 +71,7 @@ class ScenarioWalkthroughTest extends TestCase
             ['Inventory Adjustments', '9050', 'inventory-adjustments'],
         ] as [$name, $number, $slug]) {
             Account::factory()->create([
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'name' => $name,
                 'number' => $number,
                 'slug' => $slug,
@@ -88,7 +88,7 @@ class ScenarioWalkthroughTest extends TestCase
         ]);
 
         $this->carton = UnitMeasure::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'quantity_id' => $this->ctx['quantity']->id,
             'name' => 'Carton',
             'unit' => '12',

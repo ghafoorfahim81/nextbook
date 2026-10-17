@@ -266,7 +266,7 @@ class PayrollCalculationService
     private function systemComponents(string $branchId): array
     {
         return SalaryComponent::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereNull('deleted_at')
             ->where('is_system', true)
             ->get()

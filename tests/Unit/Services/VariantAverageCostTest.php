@@ -43,7 +43,7 @@ class VariantAverageCostTest extends TestCase
         $variant = new ItemVariant();
         $variant->fill([
             'item_id' => $this->ctx['item']->id,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'attributes' => $attributes,
             'name' => $name,
             'is_default' => false,
@@ -129,7 +129,7 @@ class VariantAverageCostTest extends TestCase
     public function test_the_replay_costs_every_layer_in_the_items_own_unit(): void
     {
         $boxMeasure = UnitMeasure::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'quantity_id' => $this->ctx['quantity']->id,
             'name' => 'Box',
             'unit' => '6',

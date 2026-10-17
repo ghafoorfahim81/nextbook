@@ -60,7 +60,7 @@ final class DomainShared
                             'address',
                             'currency_id',
                             'is_active',
-                            'branch_id',
+                            'company_id',
                         ])
                         ->withStatementTotals()
                         ->where('is_active', true)

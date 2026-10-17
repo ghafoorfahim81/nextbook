@@ -34,7 +34,7 @@ class PartyBothCustomerAndSupplierTest extends TestCase
     private function makeLedger(string $name, LedgerType $type, array $extra = []): Ledger
     {
         return Ledger::factory()->create(array_merge([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'currency_id' => $this->ctx['currency']->id,
             'name' => $name,
             'type' => $type->value,

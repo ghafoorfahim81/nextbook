@@ -59,7 +59,7 @@ class HrScreensRenderFeatureTest extends TestCase
             'name_fa' => 'کابل',
         ]);
 
-        $shift = Shift::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $shift = Shift::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->employee = Employee::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
@@ -79,10 +79,10 @@ class HrScreensRenderFeatureTest extends TestCase
             'employee_id' => $this->employee->id,
         ]);
 
-        Holiday::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        Holiday::factory()->create(['company_id' => $this->ctx['company']->id]);
         AttendanceDevice::factory()->create(['branch_id' => $this->ctx['branch']->id]);
 
-        $type = LeaveType::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $type = LeaveType::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         LeaveAllocation::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
@@ -109,14 +109,14 @@ class HrScreensRenderFeatureTest extends TestCase
             'effective_from' => '2026-01-01',
             'currency_id' => $this->ctx['currency']->id,
             'is_active' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
             TaxBracket::create($bracket + [
                 'tax_bracket_set_id' => $taxTable->id,
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]);
         }

@@ -48,7 +48,7 @@ class PunchPairingFeatureTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
 
         $this->shift = Shift::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'start_time' => '08:00:00',
             'end_time' => '16:00:00',
             'break_minutes' => 0,
@@ -232,7 +232,7 @@ class PunchPairingFeatureTest extends TestCase
 
     public function test_a_holiday_outranks_an_ordinary_working_day(): void
     {
-        Holiday::factory()->on(self::WORKDAY)->create(['branch_id' => $this->ctx['branch']->id]);
+        Holiday::factory()->on(self::WORKDAY)->create(['company_id' => $this->ctx['company']->id]);
 
         $day = $this->pair();
 
@@ -245,7 +245,7 @@ class PunchPairingFeatureTest extends TestCase
      */
     public function test_approved_leave_outranks_a_punch(): void
     {
-        $type = LeaveType::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $type = LeaveType::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $request = $this->employee->leaveRequests()->create([
             'number' => '1',
@@ -254,7 +254,7 @@ class PunchPairingFeatureTest extends TestCase
             'to_date' => self::WORKDAY,
             'days' => 1,
             'status' => \App\Enums\LeaveRequestStatus::Approved->value,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
@@ -274,7 +274,7 @@ class PunchPairingFeatureTest extends TestCase
     public function test_a_night_shift_pairs_across_midnight(): void
     {
         $night = Shift::factory()->night()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'break_minutes' => 0,
             'full_day_hours' => 8,
             'working_days' => [6, 7, 1, 2, 3, 4],

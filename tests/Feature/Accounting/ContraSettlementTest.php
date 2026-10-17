@@ -242,7 +242,7 @@ class ContraSettlementTest extends TestCase
         $this->buyOnLoan(3000);
 
         $employee = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'currency_id' => $this->ctx['currency']->id,
             'name' => 'Payroll party',
             'code' => 'EMP-1',

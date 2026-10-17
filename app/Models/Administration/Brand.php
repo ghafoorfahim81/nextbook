@@ -2,7 +2,7 @@
 
 namespace App\Models\Administration;
 
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 class Brand extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasUserTracking, HasCache, BranchSpecific, HasBranch, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, HasUserTracking, HasCache, CompanySpecific, HasCompany, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'brands';
     protected $primaryKey = 'id';
@@ -37,14 +37,14 @@ class Brand extends Model
         'address',
         'city',
         'country',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
         'id' => 'string',
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
     ];

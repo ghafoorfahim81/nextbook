@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Administration;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Branch;
 use App\Models\Administration\LandedCostCategory;
 use App\Models\User;
@@ -14,9 +15,9 @@ class LandedCostCategorySeeder extends Seeder
      */
     public function run(): void
     {
-        $branch = Branch::where('is_main', true)->first();
+        $company = Company::withoutGlobalScopes()->first();
 
-        if (! $branch) {
+        if (! $company) {
             return;
         }
 
@@ -24,7 +25,7 @@ class LandedCostCategorySeeder extends Seeder
 
         foreach (LandedCostCategory::defaultCategories() as $category) {
             $existing = LandedCostCategory::withoutGlobalScopes()
-                ->where('branch_id', $branch->id)
+                ->where('company_id', $company->id)
                 ->where('name', $category['name'])
                 ->first();
 
@@ -42,7 +43,7 @@ class LandedCostCategorySeeder extends Seeder
                 'name' => $category['name'],
                 'local_name' => $category['local_name'] ?? null,
                 'remark' => $category['remark'],
-                'branch_id' => $branch->id,
+                'company_id' => $company->id,
                 'created_by' => $createdBy,
             ]);
         }

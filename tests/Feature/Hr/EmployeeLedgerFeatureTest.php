@@ -75,7 +75,7 @@ class EmployeeLedgerFeatureTest extends TestCase
         $ledger = Ledger::withoutGlobalScopes()->find($employee->ledger_id);
 
         $this->assertSame($otherBranch->id, $ledger->branch_id);
-        $this->assertNotSame($this->ctx['branch']->id, $ledger->branch_id);
+        $this->assertNotSame($this->ctx['company']->id, $ledger->company_id);
     }
 
     /**

@@ -53,14 +53,14 @@ class WageTaxFeatureTest extends TestCase
             'currency_id' => $this->ctx['currency']->id,
             'is_active' => true,
             'is_system' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
             TaxBracket::create(array_merge($bracket, [
                 'tax_bracket_set_id' => $set->id,
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -244,7 +244,7 @@ class WageTaxFeatureTest extends TestCase
         app(\App\Services\BranchProvisioningService::class)->provision($branch, $this->ctx['user']->id);
 
         $set = TaxBracketSet::withoutGlobalScopes()
-            ->where('branch_id', $branch->id)
+            ->where('company_id', $company->id)
             ->first();
 
         $this->assertNotNull($set, 'Provisioning should seed a wage tax table.');

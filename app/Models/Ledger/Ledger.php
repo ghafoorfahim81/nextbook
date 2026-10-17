@@ -3,7 +3,7 @@
 namespace App\Models\Ledger;
 
 use App\Enums\CreditTerms;
-use App\Models\Administration\Branch;
+use App\Models\Administration\Company;
 use App\Models\Administration\Country;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
@@ -12,7 +12,7 @@ use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
 use App\Traits\HasAttachments;
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -33,11 +33,11 @@ use App\Models\Purchase\Purchase;
 use App\Models\Payment\Payment;
 use App\Enums\LedgerType;
 use App\Models\Transaction\TransactionLine;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, HasCompany, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     /** Transaction statuses that count toward a party's balance. */
     private const STATEMENT_STATUSES = ['posted', 'reversed'];
@@ -76,7 +76,12 @@ class Ledger extends Model
                     $totals = TransactionLine::query()
                         ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
                         ->where('transaction_lines.ledger_id', $this->id)
-                        ->where('transactions.branch_id', $this->branch_id)
+                        // BROKEN until transactions carry company_id — see
+                        // docs/phase-2-handoff.md. This compares a branch
+                        // column against a company id, so it silently matches
+                        // nothing rather than failing. Becomes
+                        // `transactions.company_id` in pass 2.
+                        ->where('transactions.branch_id', $this->company_id)
                         ->whereIn('transactions.status', self::STATEMENT_STATUSES)
                         ->whereNull('transactions.deleted_at')
                         ->selectRaw('
@@ -167,7 +172,7 @@ class Ledger extends Model
         'address',
         'contact_person',
         'phone_no',
-        'branch_id',
+        'company_id',
         'email',
         'currency_id',
         'group_id',
@@ -209,7 +214,7 @@ class Ledger extends Model
             'discount' => 'double',
             'created_by' => 'string',
             'updated_by' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'counterpart_ledger_id' => 'string',
             'is_active' => 'boolean',
             'is_main' => 'boolean',
@@ -260,6 +265,8 @@ class Ledger extends Model
                    FROM transaction_lines tl
                    JOIN transactions t ON t.id = tl.transaction_id
                   WHERE tl.ledger_id = ledgers.id
+                    -- BROKEN: ledgers.branch_id no longer exists. Becomes
+                    -- t.company_id = ledgers.company_id in pass 2.
                     AND t.branch_id = ledgers.branch_id
                     AND tl.deleted_at IS NULL
                     AND t.deleted_at IS NULL)";
@@ -280,6 +287,8 @@ class Ledger extends Model
         $lineTotals = DB::table('transaction_lines')
             ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
             ->whereColumn('transaction_lines.ledger_id', 'ledgers.id')
+            // BROKEN: ledgers.branch_id no longer exists. Becomes
+            // ('transactions.company_id', 'ledgers.company_id') in pass 2.
             ->whereColumn('transactions.branch_id', 'ledgers.branch_id')
             // Drafts are not owed yet; a reversed original and its posted
             // mirror are both kept so they cancel out.
@@ -308,9 +317,9 @@ class Ledger extends Model
         return $this->belongsTo(\App\Models\Administration\Currency::class);
     }
 
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Company::class);
     }
 
     /**

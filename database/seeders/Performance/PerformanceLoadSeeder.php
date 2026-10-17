@@ -50,7 +50,7 @@ class PerformanceLoadSeeder extends Seeder
         ];
 
         foreach ($branchIds as $branchId) {
-            if (DB::table('ledgers')->where('branch_id', $branchId)->where('code', 'CUST-000001')->exists()) {
+            if (DB::table('ledgers')->where('company_id', $companyId)->where('code', 'CUST-000001')->exists()) {
                 $this->command?->warn("Branch {$branchId} already seeded (CUST-000001 found). Skipping branch.");
                 continue;
             }
@@ -62,18 +62,18 @@ class PerformanceLoadSeeder extends Seeder
             $storeCount = 2;
 
             $currencyId = DB::table('currencies')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('is_base_currency', true)
                 ->value('id')
-                ?? DB::table('currencies')->where('branch_id', $branchId)->value('id');
+                ?? DB::table('currencies')->where('company_id', $companyId)->value('id');
 
-            $assetAccountId = DB::table('accounts')->where('branch_id', $branchId)->where('slug', 'inventory-stock')->value('id')
-                ?? DB::table('accounts')->where('branch_id', $branchId)->value('id');
-            $incomeAccountId = DB::table('accounts')->where('branch_id', $branchId)->where('slug', 'product-income')->value('id')
-                ?? DB::table('accounts')->where('branch_id', $branchId)->value('id');
-            $costAccountId = DB::table('accounts')->where('branch_id', $branchId)->where('slug', 'cost-of-goods-sold')->value('id')
-                ?? DB::table('accounts')->where('branch_id', $branchId)->where('slug', 'direct-material-cost')->value('id')
-                ?? DB::table('accounts')->where('branch_id', $branchId)->value('id');
+            $assetAccountId = DB::table('accounts')->where('company_id', $companyId)->where('slug', 'inventory-stock')->value('id')
+                ?? DB::table('accounts')->where('company_id', $companyId)->value('id');
+            $incomeAccountId = DB::table('accounts')->where('company_id', $companyId)->where('slug', 'product-income')->value('id')
+                ?? DB::table('accounts')->where('company_id', $companyId)->value('id');
+            $costAccountId = DB::table('accounts')->where('company_id', $companyId)->where('slug', 'cost-of-goods-sold')->value('id')
+                ?? DB::table('accounts')->where('company_id', $companyId)->where('slug', 'direct-material-cost')->value('id')
+                ?? DB::table('accounts')->where('company_id', $companyId)->value('id');
 
             $unitMeasureIds = $this->resolveUnitMeasurePool($branchId, $adminId, $now);
 
@@ -188,7 +188,7 @@ class PerformanceLoadSeeder extends Seeder
 
     private function ensureBranchDefaultData(string $branchId, string $adminId, Carbon $now): void
     {
-        if (!DB::table('account_types')->where('branch_id', $branchId)->exists()) {
+        if (!DB::table('account_types')->where('company_id', $companyId)->exists()) {
             $accountTypeRows = [];
             foreach (AccountType::defaultAccountTypes() as $accountType) {
                 $accountTypeRows[] = [
@@ -198,7 +198,7 @@ class PerformanceLoadSeeder extends Seeder
                     'slug' => $accountType['slug'],
                     'remark' => $accountType['remark'] ?? null,
                     'is_main' => $accountType['is_main'] ?? true,
-                    'branch_id' => $branchId,
+                    'company_id' => $companyId,
                     'created_by' => $adminId,
                     'updated_by' => null,
                     'deleted_by' => null,
@@ -210,14 +210,14 @@ class PerformanceLoadSeeder extends Seeder
             $this->chunkInsert('account_types', $accountTypeRows, 200);
         }
 
-        if (!DB::table('accounts')->where('branch_id', $branchId)->exists()) {
+        if (!DB::table('accounts')->where('company_id', $companyId)->exists()) {
             $accountRows = [];
             // Maps slug => id for rows built in this loop, so entries that
             // declare a `parent_slug` can be linked to their parent.
             $accountIdsBySlug = [];
             foreach (Account::defaultAccounts() as $account) {
                 $accountTypeId = DB::table('account_types')
-                    ->where('branch_id', $branchId)
+                    ->where('company_id', $companyId)
                     ->where('slug', $account['account_type_slug'])
                     ->value('id');
 
@@ -254,7 +254,7 @@ class PerformanceLoadSeeder extends Seeder
             $this->chunkInsert('accounts', $accountRows, 300);
         }
 
-        if (!DB::table('sizes')->where('branch_id', $branchId)->exists()) {
+        if (!DB::table('sizes')->where('company_id', $companyId)->exists()) {
             $sizeRows = [];
             foreach (Size::defaultSizes() as $size) {
                 $sizeRows[] = [
@@ -263,7 +263,7 @@ class PerformanceLoadSeeder extends Seeder
                     'code' => $size['code'],
                     'is_active' => true,
                     'is_main' => true,
-                    'branch_id' => $branchId,
+                    'company_id' => $companyId,
                     'created_by' => $adminId,
                     'updated_by' => null,
                     'deleted_by' => null,
@@ -275,7 +275,7 @@ class PerformanceLoadSeeder extends Seeder
             $this->chunkInsert('sizes', $sizeRows, 200);
         }
 
-        if (!DB::table('currencies')->where('branch_id', $branchId)->exists()) {
+        if (!DB::table('currencies')->where('company_id', $companyId)->exists()) {
             $currencyRows = [];
             foreach (Currency::defaultCurrencies() as $currency) {
                 $currencyRows[] = [
@@ -289,7 +289,7 @@ class PerformanceLoadSeeder extends Seeder
                     'is_active' => $currency['is_active'],
                     'is_base_currency' => $currency['is_base_currency'] ?? false,
                     'flag' => $currency['flag'] ?? null,
-                    'branch_id' => $branchId,
+                    'company_id' => $companyId,
                     'created_by' => $adminId,
                     'updated_by' => null,
                     'deleted_by' => null,
@@ -301,7 +301,7 @@ class PerformanceLoadSeeder extends Seeder
             $this->chunkInsert('currencies', $currencyRows, 50);
         }
 
-        if (!DB::table('quantities')->where('branch_id', $branchId)->exists()) {
+        if (!DB::table('quantities')->where('company_id', $companyId)->exists()) {
             $quantityRows = [];
             foreach (Quantity::defaultQuantity() as $quantity) {
                 $quantityRows[] = [
@@ -312,7 +312,7 @@ class PerformanceLoadSeeder extends Seeder
                     'slug' => $quantity['slug'],
                     'is_main' => $quantity['is_main'] ?? true,
                     'is_active' => true,
-                    'branch_id' => $branchId,
+                    'company_id' => $companyId,
                     'created_by' => $adminId,
                     'updated_by' => null,
                     'deleted_by' => null,
@@ -324,11 +324,11 @@ class PerformanceLoadSeeder extends Seeder
             $this->chunkInsert('quantities', $quantityRows, 50);
         }
 
-        if (!DB::table('unit_measures')->where('branch_id', $branchId)->exists()) {
+        if (!DB::table('unit_measures')->where('company_id', $companyId)->exists()) {
             $rows = [];
             foreach (UnitMeasure::defaultUnitMeasures() as $unitMeasure) {
                 $quantityId = DB::table('quantities')
-                    ->where('branch_id', $branchId)
+                    ->where('company_id', $companyId)
                     ->where('slug', $unitMeasure['quantity_slug'])
                     ->value('id');
 
@@ -846,14 +846,14 @@ class PerformanceLoadSeeder extends Seeder
             return $pool;
         }
 
-        $fallback = DB::table('unit_measures')->where('branch_id', $branchId)->pluck('id')->all();
+        $fallback = DB::table('unit_measures')->where('company_id', $companyId)->pluck('id')->all();
         return array_values(array_unique(array_map(static fn ($v) => (string) $v, $fallback)));
     }
 
     private function firstUnitMeasureId(string $branchId, array $symbols): ?string
     {
         $id = DB::table('unit_measures')
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereIn('symbol', $symbols)
             ->value('id');
 
@@ -863,7 +863,7 @@ class PerformanceLoadSeeder extends Seeder
     private function createBoxUnitMeasure(string $branchId, string $adminId, Carbon $now): ?string
     {
         $quantityId = DB::table('quantities')
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('slug', 'count')
             ->value('id');
 
@@ -881,7 +881,7 @@ class PerformanceLoadSeeder extends Seeder
             'quantity_id' => $quantityId,
             'is_main' => false,
             'is_active' => true,
-            'branch_id' => $branchId,
+            'company_id' => $companyId,
             'created_by' => $adminId,
             'updated_by' => null,
             'deleted_by' => null,

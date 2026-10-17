@@ -206,7 +206,7 @@ class SalaryStructureController extends Controller
                 'amount' => $line['amount'] ?? $component?->amount,
                 'percentage' => $line['percentage'] ?? $component?->percentage,
                 'sequence' => $line['sequence'] ?? $index + 1,
-                'branch_id' => $structure->branch_id,
+                'company_id' => $structure->company_id,
             ]);
         }
     }

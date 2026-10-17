@@ -125,12 +125,12 @@ class ReportsFeatureTest extends TestCase
     public function test_group_summary_report_falls_back_to_slug_when_account_type_nature_is_missing(): void
     {
         DB::table('account_types')
-            ->where('branch_id', $this->ctx['branch']->id)
+            ->where('company_id', $this->ctx['company']->id)
             ->update(['nature' => null]);
 
         $response = $this->get(route('reports.index', [
             'report' => 'group_summary_report',
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => '2026-03-01',
             'date_to' => '2026-03-31',
             'per_page' => 25,
@@ -149,12 +149,12 @@ class ReportsFeatureTest extends TestCase
     public function test_journal_book_report_falls_back_to_slug_when_account_type_nature_is_missing(): void
     {
         DB::table('account_types')
-            ->where('branch_id', $this->ctx['branch']->id)
+            ->where('company_id', $this->ctx['company']->id)
             ->update(['nature' => null]);
 
         $response = $this->get(route('reports.index', [
             'report' => 'journal_book_report',
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => '2026-03-01',
             'date_to' => '2026-03-31',
             'per_page' => 25,
@@ -174,7 +174,7 @@ class ReportsFeatureTest extends TestCase
         Cache::put('costing_method', 'fifo');
 
         Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Inventory Shrinkage & Wastage',
             'number' => '9040',
             'slug' => 'inventory-shrinkage-and-wastage',
@@ -183,7 +183,7 @@ class ReportsFeatureTest extends TestCase
             'is_active' => true,
         ]);
         Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Inventory Adjustments',
             'number' => '9050',
             'slug' => 'inventory-adjustments',

@@ -17,7 +17,7 @@ class CustomerGroup extends Model
         'name_en',
         'local_name',
         'description',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
     ];

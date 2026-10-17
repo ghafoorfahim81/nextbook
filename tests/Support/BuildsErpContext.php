@@ -65,7 +65,7 @@ trait BuildsErpContext
         app()->instance('active_branch_id', $branch->id);
 
         $quantity = Quantity::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'quantity' => 'Count',
             'unit' => 'piece',
             'symbol' => 'pc',
@@ -74,7 +74,7 @@ trait BuildsErpContext
         ]);
 
         $unitMeasure = UnitMeasure::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'quantity_id' => $quantity->id,
             'name' => 'Piece',
             'unit' => '1',
@@ -90,13 +90,13 @@ trait BuildsErpContext
         ]);
 
         $size = Size::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'name' => 'Default',
             'code' => 'DF',
         ]);
 
         $currency = Currency::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'name' => 'Afghani',
             'code' => 'AFN',
             'symbol' => 'Af',
@@ -114,11 +114,11 @@ trait BuildsErpContext
         app()->instance('active_company_id', $company->id);
         app()->instance('accessible_company_ids', [$company->id]);
 
-        $accountTypes = $this->createDefaultAccountTypes($branch->id);
-        $accounts = $this->createDefaultGlAccounts($branch->id, $accountTypes);
+        $accountTypes = $this->createDefaultAccountTypes($company->id);
+        $accounts = $this->createDefaultGlAccounts($company->id, $accountTypes);
 
         $customerLedger = Ledger::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'currency_id' => $currency->id,
             'name' => 'Customer Ledger',
             'code' => 'CUS-001',
@@ -127,7 +127,7 @@ trait BuildsErpContext
         ]);
 
         $supplierLedger = Ledger::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'currency_id' => $currency->id,
             'name' => 'Supplier Ledger',
             'code' => 'SUP-001',
@@ -136,7 +136,7 @@ trait BuildsErpContext
         ]);
 
         $item = Item::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'unit_measure_id' => $unitMeasure->id,
             'cost_account_id' => $accounts['cost-of-goods-sold']->id,
             'income_account_id' => $accounts['product-income']->id,
@@ -170,7 +170,7 @@ trait BuildsErpContext
         ];
     }
 
-    protected function createDefaultAccountTypes(string $branchId): array
+    protected function createDefaultAccountTypes(string $companyId): array
     {
         $definitions = [
             'cash-or-bank' => ['name' => 'Cash or Bank', 'nature' => 'asset'],
@@ -186,7 +186,7 @@ trait BuildsErpContext
         $types = [];
         foreach ($definitions as $slug => $definition) {
             $types[$slug] = AccountType::factory()->create([
-                'branch_id' => $branchId,
+                'company_id' => $companyId,
                 'name' => $definition['name'],
                 'slug' => $slug,
                 'nature' => $definition['nature'],
@@ -197,7 +197,7 @@ trait BuildsErpContext
         return $types;
     }
 
-    protected function createDefaultGlAccounts(string $branchId, array $accountTypes): array
+    protected function createDefaultGlAccounts(string $companyId, array $accountTypes): array
     {
         $definitions = [
             'sales-revenue' => ['name' => 'Sales Revenue', 'type' => 'income', 'number' => '7001'],
@@ -250,7 +250,7 @@ trait BuildsErpContext
         $accounts = [];
         foreach ($definitions as $slug => $definition) {
             $accounts[$slug] = Account::factory()->create([
-                'branch_id' => $branchId,
+                'company_id' => $companyId,
                 'name' => $definition['name'],
                 'number' => $definition['number'],
                 'slug' => $slug,

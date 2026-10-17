@@ -2,7 +2,7 @@
 
 namespace App\Models\Administration;
 
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -15,10 +15,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
 use App\Traits\HasCache;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 class UnitMeasure extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, CompanySpecific, HasCompany, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -42,7 +42,7 @@ class UnitMeasure extends Model
         'symbol',
         'description',
         'is_active',
-        'branch_id',
+        'company_id',
         'quantity_id',
         'is_main',
         'value',
@@ -58,7 +58,7 @@ class UnitMeasure extends Model
 
     protected $casts = [
         'id' => 'string',
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'quantity_id' => 'string',
         'is_active' => 'boolean',
         'is_main' => 'boolean',
@@ -234,9 +234,9 @@ class UnitMeasure extends Model
             ],
         ];
     }
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Company::class);
     }
 
     public function quantity(): BelongsTo

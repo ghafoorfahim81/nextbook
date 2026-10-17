@@ -29,7 +29,7 @@ class SaleListCurrencyTest extends TestCase
     public function test_sale_list_carries_the_transaction_currency_code(): void
     {
         $usd = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'US Dollar',
             'code' => 'USD',
             'symbol' => '$',

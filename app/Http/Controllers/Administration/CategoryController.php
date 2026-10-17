@@ -54,7 +54,7 @@ class CategoryController extends Controller
                 'parent_id' => $category->parent_id,
                 'remark' => $category->remark,
                 'is_active' => $category->is_active,
-                'branch_id' => $category->branch_id,
+                'company_id' => $category->company_id,
             ],
             branchId: $category->branch_id,
         );
@@ -77,7 +77,7 @@ class CategoryController extends Controller
             'parent_id' => $category->parent_id,
             'remark' => $category->remark,
             'is_active' => $category->is_active,
-            'branch_id' => $category->branch_id,
+            'company_id' => $category->company_id,
         ];
 
         $category->update($request->validated());
@@ -91,7 +91,7 @@ class CategoryController extends Controller
                 'parent_id' => $category->parent_id,
                 'remark' => $category->remark,
                 'is_active' => $category->is_active,
-                'branch_id' => $category->branch_id,
+                'company_id' => $category->company_id,
             ],
             module: 'category',
             description: "Category {$category->name} updated.",
@@ -117,7 +117,7 @@ class CategoryController extends Controller
             'parent_id' => $category->parent_id,
             'remark' => $category->remark,
             'is_active' => $category->is_active,
-            'branch_id' => $category->branch_id,
+            'company_id' => $category->company_id,
         ];
 
         $category->delete();

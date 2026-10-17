@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Administration;
 
+use App\Models\Administration\Company;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Category;
@@ -25,7 +26,7 @@ class CategoryFactory extends Factory
             'local_name' => fake()->optional()->word(),
             'remark' => fake()->optional()->sentence(),
             'parent_id' => null,
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
             'is_active' => true,
         ];
     }

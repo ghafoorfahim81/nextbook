@@ -73,7 +73,7 @@ class WeightedAverageScenarioTest extends TestCase
             ['Inventory Adjustments', '9050', 'inventory-adjustments'],
         ] as [$name, $number, $slug]) {
             Account::factory()->create([
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'name' => $name,
                 'number' => $number,
                 'slug' => $slug,
@@ -90,7 +90,7 @@ class WeightedAverageScenarioTest extends TestCase
 
         // One tank is twenty litres.
         $this->tank = UnitMeasure::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'quantity_id' => $this->ctx['quantity']->id,
             'name' => 'Tank',
             'unit' => '20',

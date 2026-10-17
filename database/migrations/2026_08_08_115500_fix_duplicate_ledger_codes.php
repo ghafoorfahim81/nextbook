@@ -18,15 +18,15 @@ return new class extends Migration
                 prefix TEXT;
             BEGIN
                 FOR duplicate_ledger IN
-                    SELECT id, branch_id, type
+                    SELECT id, company_id, type
                     FROM (
                         SELECT
                             id,
-                            branch_id,
+                            company_id,
                             type,
                             code,
                             ROW_NUMBER() OVER (
-                                PARTITION BY branch_id, code
+                                PARTITION BY company_id, code
                                 ORDER BY created_at, id
                             ) AS duplicate_rank
                         FROM ledgers
@@ -47,7 +47,7 @@ return new class extends Migration
                     INTO next_number
                     FROM ledgers
                     WHERE type = duplicate_ledger.type
-                      AND branch_id IS NOT DISTINCT FROM duplicate_ledger.branch_id
+                      AND company_id IS NOT DISTINCT FROM duplicate_ledger.company_id
                       AND deleted_at IS NULL
                       AND code ~ '^(CUST-|SUP-)?[0-9]+$';
 
@@ -60,7 +60,7 @@ return new class extends Migration
 
         DB::statement(
             'CREATE UNIQUE INDEX ledgers_branch_code_active_unique
-            ON ledgers (branch_id, code)
+            ON ledgers (company_id, code)
             WHERE deleted_at IS NULL'
         );
     }

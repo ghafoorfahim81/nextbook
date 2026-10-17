@@ -143,7 +143,7 @@ class SettlementController extends Controller
     {
         return (string) (\App\Support\BranchContext::glAccount('cash-in-hand', $ledger->branch_id)
             ?? \App\Models\Account\Account::withoutGlobalScopes()
-                ->where('branch_id', $ledger->branch_id)
+                ->where('company_id', $ledger->company_id)
                 ->value('id'));
     }
 }
