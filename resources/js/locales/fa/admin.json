@@ -49,8 +49,7 @@
     "company": {
         "company": "شرکت",
         "companies": "شرکت ها",
-        "website": "وبسایت",
-        "sub_domain": "زیر دامنه"
+        "website": "وبسایت"
     },
     "designation": {
         "designation": "وظیفه",
@@ -110,8 +109,7 @@
         "branch": "شعبه",
         "branches": "شعبه ها",
         "city": "شهر",
-        "location": "مکان",
-        "sub_domain": "زیر دامنه"
+        "location": "مکان"
     },
     "customer_group": {
         "customer_group": "گروه مشتری",

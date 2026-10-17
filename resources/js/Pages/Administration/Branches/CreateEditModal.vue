@@ -39,7 +39,6 @@ const isEditing = computed(() => !!props.editingItem?.id)
 const form = useForm({
     name: '',
     location: '',
-    sub_domain: '',
     remark: '',
     parent_id: null,
 })
@@ -50,7 +49,6 @@ watch(() => props.editingItem, (item) => {
         form.name = item.name || ''
         form.remark = item.remark || ''
         form.location = item.location || ''
-        form.sub_domain = item.sub_domain || ''
         form.parent_id = item.parent_id || null
     } else {
         form.reset() // ✅ reset when switching from edit to create
@@ -118,7 +116,6 @@ const handleSubmit = async () => {
                 <div class="grid items-center grid-cols-2 gap-4">
                     <NextInput is-required :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors?.name"/>
                     <NextInput :label="t('admin.branch.location')" :placeholder="t('general.enter', { text: t('admin.branch.location') })" v-model="form.location" :error="form.errors?.location"/>
-                    <NextInput :label="t('admin.branch.sub_domain')" :placeholder="t('general.enter', { text: t('admin.branch.sub_domain') })" v-model="form.sub_domain" :error="form.errors?.sub_domain"/>
                     <NextSelect
                         v-model="form.parent_id"
                         :options="branches"

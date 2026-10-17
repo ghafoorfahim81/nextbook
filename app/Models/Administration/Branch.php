@@ -31,11 +31,11 @@ class Branch extends Model
      * @var array
      */
     protected $fillable = [
+        'company_id',
         'name',
         'is_main',
         'parent_id',
         'location',
-        'sub_domain',
         'remark',
         'created_by',
         'updated_by',
@@ -46,7 +46,6 @@ class Branch extends Model
         return [
             'name',
             'location',
-            'sub_domain',
             'remark',
             'parent.name'
         ];
@@ -59,10 +58,16 @@ class Branch extends Model
      */
     protected $casts = [
         'is_main' => 'boolean',
+        'company_id' => 'string',
         'parent_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
     ];
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 
     public function parent(): BelongsTo
     {
