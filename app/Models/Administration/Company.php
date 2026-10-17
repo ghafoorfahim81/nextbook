@@ -7,6 +7,8 @@ use App\Traits\HasDependencyCheck;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -22,7 +24,24 @@ use App\Enums\CostingMethod;
 
 class Company extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasDependencyCheck;
+    // HasSearch backs Company::search(), which the company list page calls;
+    // without it the page fails with an undefined method. SoftDeletes backs the
+    // companies.restore route, which otherwise 500s on a model that was never
+    // soft-deletable.
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasDependencyCheck, HasSearch, HasSorting, SoftDeletes;
+
+    protected static function searchableColumns(): array
+    {
+        return [
+            'name_en',
+            'name_fa',
+            'name_pa',
+            'abbreviation',
+            'phone',
+            'email',
+            'city',
+        ];
+    }
 
 
     /**
@@ -80,6 +99,14 @@ class Company extends Model
     public function users()
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * Branches operating under this company.
+     */
+    public function branches(): HasMany
+    {
+        return $this->hasMany(Branch::class);
     }
 
     public function currency(): BelongsTo

@@ -27,7 +27,13 @@ class DatabaseSeeder extends Seeder
     {
 
 
+        // CompanySeeder runs first: a branch cannot exist without a company,
+        // and every table below is scoped to one. It is called a second time at
+        // the end to fill in the company's home currency, which only exists
+        // once CurrencySeeder has run — the same two-pass shape UserSeeder
+        // already uses to pick up its branch.
         if(app()->environment('local')){
+            $this->call(CompanySeeder::class);
             $this->call(UserSeeder::class);
             $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);
@@ -47,6 +53,7 @@ class DatabaseSeeder extends Seeder
             // $this->call(ItemSeeder::class);
         }
         if(app()->environment('production')){
+            $this->call(CompanySeeder::class);
             $this->call(UserSeeder::class);
             $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);

@@ -109,8 +109,7 @@
         "branch": "Branch",
         "branches": "Branches",
         "city": "City",
-        "location": "Location",
-        "sub_domain": "Sub Domain"
+        "location": "Location"
     },
     "customer_group": {
         "customer_group": "Customer Group",

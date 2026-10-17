@@ -174,7 +174,6 @@ class PerformanceLoadSeeder extends Seeder
             'remark' => $name,
             'location' => $name,
             'is_main' => $isMain,
-            'sub_domain' => 'second',
             'parent_id' => $parentId,
             'created_by' => $createdBy,
             'created_at' => $now,

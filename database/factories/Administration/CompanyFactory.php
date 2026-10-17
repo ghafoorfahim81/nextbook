@@ -7,7 +7,6 @@ use App\Enums\CalendarType;
 use App\Enums\CostingMethod;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
-use App\Models\Administration\Currency;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Company;
 
@@ -39,7 +38,11 @@ class CompanyFactory extends Factory
             'working_style' => WorkingStyle::NORMAL->value,
             'business_type' => BusinessType::PHARMACY->value,
             'locale' => Locale::EN->value,
-            'currency_id' => Currency::factory(),
+            // Left null rather than Currency::factory(): currencies are
+            // company-scoped, so building one here would recurse back into this
+            // factory. The home currency is set once the company's currency set
+            // is provisioned.
+            'currency_id' => null,
             'costing_method' => CostingMethod::FIFO->value,
             'email' => fake()->optional()->safeEmail(),
             'website' => fake()->optional()->url(),

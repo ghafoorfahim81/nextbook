@@ -22,7 +22,6 @@ const columns = computed(() => ([
         render: (row) => row.parent?.name ?? '-',
     },
     { key: 'location', label: t('admin.branch.location') },
-    { key: 'sub_domain', label: t('admin.branch.sub_domain') },
     { key: 'remark', label: t('admin.shared.remark') },
     {
         key: 'created_by.name',
