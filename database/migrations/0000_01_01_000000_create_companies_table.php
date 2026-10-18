@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\CalendarType;
 use App\Enums\BusinessType;
@@ -46,6 +47,13 @@ return new class extends Migration
             $table->enum('locale', Locale::values())->nullable()->default(Locale::EN->value);
             $table->ulid('currency_id')->nullable()->index();
             $table->enum('costing_method', CostingMethod::values())->nullable()->default(CostingMethod::FIFO->value);
+            // The trade licence is issued to the legal entity, so branches of
+            // one company all operate under it and printed documents carry the
+            // company's number — the issuing branch's name and address appear
+            // beside it, not a second licence.
+            $table->string('license_number')->nullable();
+            $table->date('license_issued_at')->nullable();
+            $table->date('license_expires_at')->nullable();
             $table->string('email')->nullable();
             $table->string('website')->nullable();
             $table->text('invoice_description')->nullable();
@@ -55,6 +63,14 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
+
+        // One licence number cannot belong to two companies. A partial index
+        // over live rows, because `unique([..., 'deleted_at'])` does not work
+        // in PostgreSQL — NULL != NULL, so it never fires — and because the
+        // number is optional until the company records it.
+        DB::statement('CREATE UNIQUE INDEX companies_license_number_live_unique
+            ON companies (license_number)
+            WHERE deleted_at IS NULL AND license_number IS NOT NULL');
     }
 
     public function down(): void
