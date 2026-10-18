@@ -175,6 +175,7 @@ class SaleReceiveBackfill
             'forex_amount' => 0,
             'is_cross_currency' => false,
             'branch_id' => $branchId,
+            'company_id' => $companyId,
             // Preserved, not stamped with today and whoever ran the migration.
             'created_by' => $row->created_by,
             'updated_by' => $row->updated_by,

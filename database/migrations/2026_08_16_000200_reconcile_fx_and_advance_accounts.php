@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 /**
  * Settlement resolves its posting accounts by SLUG, never by name — the names
  * are localised into Dari and Pashto and a name lookup breaks as soon as a user
- * switches language. This brings existing branches in line with the slugs the
+ * switches language. This brings existing companies in line with the slugs the
  * code now expects.
  *
  * 1. `foreign-exchange-gain` / `foreign-exchange-loss` become `fx-gain` /
@@ -51,18 +51,18 @@ return new class extends Migration
     public function up(): void
     {
         DB::transaction(function () {
-            foreach (DB::table('branches')->pluck('id') as $branchId) {
-                $this->renameFxSlugs((string) $branchId);
-                $this->createAdvanceAccounts((string) $branchId);
+            foreach (DB::table('companies')->pluck('id') as $companyId) {
+                $this->renameFxSlugs((string) $companyId);
+                $this->createAdvanceAccounts((string) $companyId);
             }
         });
     }
 
-    private function renameFxSlugs(string $branchId): void
+    private function renameFxSlugs(string $companyId): void
     {
         foreach (self::SLUG_RENAMES as $from => $to) {
             $legacy = DB::table('accounts')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('slug', $from)
                 ->whereNull('deleted_at')
                 ->first(['id', 'name']);
@@ -72,7 +72,7 @@ return new class extends Migration
             }
 
             $taken = DB::table('accounts')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('slug', $to)
                 ->whereNull('deleted_at')
                 ->exists();
@@ -82,7 +82,8 @@ return new class extends Migration
                 // index, and picking a winner is a judgement call about which
                 // account history was posted to. Report and leave both alone.
                 Log::warning('Skipped FX slug rename: both slugs already exist.', [
-                    'branch_id' => $branchId,
+                    'company_id' => $companyId,
+                    
                     'from' => $from,
                     'to' => $to,
                     'legacy_account_id' => $legacy->id,
@@ -98,7 +99,7 @@ return new class extends Migration
         }
     }
 
-    private function createAdvanceAccounts(string $branchId): void
+    private function createAdvanceAccounts(string $companyId): void
     {
         // accounts.created_by is NOT NULL with a foreign key, so provisioning
         // needs a real user to attribute the row to.
@@ -110,7 +111,7 @@ return new class extends Migration
 
         foreach (self::ADVANCE_ACCOUNTS as $definition) {
             $exists = DB::table('accounts')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('slug', $definition['slug'])
                 ->whereNull('deleted_at')
                 ->exists();
@@ -120,14 +121,15 @@ return new class extends Migration
             }
 
             $typeId = DB::table('account_types')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('slug', $definition['account_type_slug'])
                 ->whereNull('deleted_at')
                 ->value('id');
 
             if (! $typeId) {
-                Log::warning('Skipped advance account: branch has no matching account type.', [
-                    'branch_id' => $branchId,
+                Log::warning('Skipped advance account: company has no matching account type.', [
+                    'company_id' => $companyId,
+                    
                     'slug' => $definition['slug'],
                     'account_type_slug' => $definition['account_type_slug'],
                 ]);
@@ -135,8 +137,8 @@ return new class extends Migration
                 continue;
             }
 
-            $number = $this->availableNumber($branchId, $definition['number']);
-            $name = $this->availableName($branchId, $definition['name']);
+            $number = $this->availableNumber($companyId, $definition['number']);
+            $name = $this->availableName($companyId, $definition['name']);
 
             DB::table('accounts')->insert([
                 'id' => (string) Str::ulid(),
@@ -145,14 +147,15 @@ return new class extends Migration
                 'number' => $number,
                 'account_type_id' => $typeId,
                 'parent_id' => DB::table('accounts')
-                    ->where('branch_id', $branchId)
+                    ->where('company_id', $companyId)
                     ->where('slug', $definition['parent_slug'])
                     ->whereNull('deleted_at')
                     ->value('id'),
                 'is_active' => true,
                 'is_main' => true,
                 'slug' => $definition['slug'],
-                'branch_id' => $branchId,
+                'company_id' => $companyId,
+                
                 'remark' => $definition['remark'],
                 'created_by' => $actorId,
                 'created_at' => now(),
@@ -162,17 +165,17 @@ return new class extends Migration
     }
 
     /**
-     * Account numbers are unique per branch and users add their own, so the
+     * Account numbers are unique per company and users add their own, so the
      * preferred number may already be in use. Walk forward rather than fail the
      * migration over a number nobody posts against.
      */
-    private function availableNumber(string $branchId, string $preferred): string
+    private function availableNumber(string $companyId, string $preferred): string
     {
         $number = $preferred;
 
         for ($suffix = 1; $suffix <= 50; $suffix++) {
             $taken = DB::table('accounts')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('number', $number)
                 ->whereNull('deleted_at')
                 ->exists();
@@ -187,14 +190,14 @@ return new class extends Migration
         return $preferred . '-' . Str::lower(Str::random(4));
     }
 
-    /** Names are unique per branch too. */
-    private function availableName(string $branchId, string $preferred): string
+    /** Names are unique per company too. */
+    private function availableName(string $companyId, string $preferred): string
     {
         $name = $preferred;
 
         for ($suffix = 2; $suffix <= 50; $suffix++) {
             $taken = DB::table('accounts')
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('name', $name)
                 ->whereNull('deleted_at')
                 ->exists();
