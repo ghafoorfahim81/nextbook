@@ -81,7 +81,7 @@ class SettlementService
     ): Collection {
         $ledger = $this->resolveLedger($ledgerId);
         $claimColumn = $this->claimColumn($direction);
-        $accountId = $this->partyAccountId($ledger, $ledger->branch_id);
+        $accountId = $this->partyAccountId($ledger, $ledger->company_id);
 
         // When a voucher is being EDITED, its own applications must not count
         // as settled — otherwise the documents it paid look closed, the form
@@ -475,7 +475,7 @@ class SettlementService
         string $documentTransactionId,
     ): void {
         $ledger = $this->resolveLedger($ledgerId);
-        $controlAccountId = $this->partyAccountId($ledger, (string) $returnTransaction->branch_id);
+        $controlAccountId = $this->partyAccountId($ledger, (string) $returnTransaction->company_id);
         $reliefColumn = $direction === self::DIRECTION_IN ? 'credit' : 'debit';
 
         $settlingLine = $returnTransaction->lines()
@@ -514,6 +514,7 @@ class SettlementService
                 'forex_amount' => '0',
                 'is_cross_currency' => false,
                 'branch_id' => $returnTransaction->branch_id,
+                'company_id' => $returnTransaction->company_id,
                 'created_by' => Auth::id(),
             ]);
 
@@ -522,9 +523,9 @@ class SettlementService
     }
 
     /** The party's advance account (customer-advances / supplier-advances). */
-    public function advanceAccountFor(string $ledgerId, string $branchId): string
+    public function advanceAccountFor(string $ledgerId, string $companyId): string
     {
-        return $this->advanceAccountId($this->resolveLedger($ledgerId), $branchId);
+        return $this->advanceAccountId($this->resolveLedger($ledgerId), $companyId);
     }
 
     /**
@@ -764,6 +765,7 @@ class SettlementService
                 ledger: $composed['ledger'],
                 direction: $composed['direction'],
                 branchId: $composed['branch_id'],
+                companyId: $composed['company_id'],
                 groups: $composed['groups'],
                 postedForex: $composed['forex'],
             );
@@ -788,7 +790,10 @@ class SettlementService
         $direction = ($voucher["direction"] ?? null) === self::DIRECTION_OUT
             ? self::DIRECTION_OUT
             : self::DIRECTION_IN;
-        $branchId = (string) ($voucher['branch_id'] ?? $ledger->branch_id);
+        $branchId = (string) ($voucher['branch_id'] ?? BranchContext::branchId());
+        // The books the lines post to. A ledger is company-level now, so
+        // the company comes from the party rather than from the branch.
+        $companyId = (string) ($voucher['company_id'] ?? $ledger->company_id);
 
         $cashAmount = Decimal::amount($voucher['cash_amount']);
         $cashRate = Decimal::rate($voucher['cash_rate']);
@@ -836,7 +841,7 @@ class SettlementService
         $lines = $this->buildLines(
             ledger: $ledger,
             direction: $direction,
-            branchId: $branchId,
+            companyId: $companyId,
             groups: $groups,
             cashAccountId: (string) $voucher['cash_account_id'],
             cashCurrencyId: $cashCurrencyId,
@@ -850,6 +855,7 @@ class SettlementService
             'ledger' => $ledger,
             'direction' => $direction,
             'branch_id' => $branchId,
+            'company_id' => $companyId,
             'cash_currency_id' => $cashCurrencyId,
             'cash_rate' => $cashRate,
             'cash_amount' => $cashAmount,
@@ -1110,7 +1116,7 @@ class SettlementService
     private function buildLines(
         Ledger $ledger,
         string $direction,
-        string $branchId,
+        string $companyId,
         array $groups,
         string $cashAccountId,
         string $cashCurrencyId,
@@ -1136,7 +1142,7 @@ class SettlementService
             'remark_ps' => $remarks['ps'],
         ]];
 
-        $partyAccountId = $this->partyAccountId($ledger, $branchId);
+        $partyAccountId = $this->partyAccountId($ledger, $companyId);
 
         foreach ($groups as $currencyId => $group) {
             // Group by rate, not by document. Two invoices booked at 60 relieve
@@ -1166,7 +1172,7 @@ class SettlementService
             // Overpayments are common here and rejecting them just pushes the
             // problem onto the user. Park the excess where it is visible.
             $lines[] = [
-                'account_id' => $this->advanceAccountId($ledger, $branchId),
+                'account_id' => $this->advanceAccountId($ledger, $companyId),
                 'ledger_id' => $ledger->id,
                 'currency_id' => $cashCurrencyId,
                 'rate' => $cashRate,
@@ -1184,7 +1190,7 @@ class SettlementService
             // moved at — every AFN voucher, and any foreign one where the rate
             // has not shifted — there is no line here at all, and the entry is
             // byte-identical to what the system posted before settlement existed.
-            $lines[] = $this->forexLine($forex, $branchId, $remarks);
+            $lines[] = $this->forexLine($forex, $companyId, $remarks);
         }
 
         return ['lines' => $lines, 'forex' => $forex];
@@ -1223,16 +1229,16 @@ class SettlementService
      * @param  array<string, string>  $remarks
      * @return array<string, mixed>
      */
-    private function forexLine(string $forex, string $branchId, array $remarks): array
+    private function forexLine(string $forex, string $companyId, array $remarks): array
     {
         $isGain = Decimal::isPositive($forex);
         $slug = $isGain ? 'fx-gain' : 'fx-loss';
         $amount = Decimal::abs($forex);
 
-        $baseCurrency = $this->baseCurrency($branchId);
+        $baseCurrency = $this->baseCurrency($companyId);
 
         return [
-            'account_id' => $this->requireAccount($slug, $branchId),
+            'account_id' => $this->requireAccount($slug, $companyId),
             'currency_id' => $baseCurrency->id,
             'rate' => '1',
             // Debits exceed credits => more base came in than the claim was
@@ -1254,6 +1260,7 @@ class SettlementService
         Ledger $ledger,
         string $direction,
         string $branchId,
+        string $companyId,
         array $groups,
         string $postedForex
     ): void {
@@ -1262,7 +1269,7 @@ class SettlementService
         }
 
         $transaction->load('lines');
-        $partyAccountId = $this->partyAccountId($ledger, $branchId);
+        $partyAccountId = $this->partyAccountId($ledger, $companyId);
         $cashIn = $direction !== self::DIRECTION_OUT;
 
         // Keyed by currency AND rate: one voucher can now relieve dollars at 60
@@ -1306,6 +1313,7 @@ class SettlementService
                     'forex_amount' => $forex,
                     'is_cross_currency' => $group['is_cross_currency'],
                     'branch_id' => $branchId,
+                    'company_id' => $companyId,
                     'created_by' => Auth::id(),
                 ];
             }
@@ -1406,9 +1414,9 @@ class SettlementService
         return $direction === self::DIRECTION_OUT ? 'credit' : 'debit';
     }
 
-    private function partyAccountId(Ledger $ledger, string $branchId): string
+    private function partyAccountId(Ledger $ledger, string $companyId): string
     {
-        return $this->requireAccount($this->partyAccountSlug($ledger), $branchId);
+        return $this->requireAccount($this->partyAccountSlug($ledger), $companyId);
     }
 
     /**
@@ -1419,12 +1427,12 @@ class SettlementService
      * beyond what they were owed — unusual, and legible as such, which is
      * better than inventing a fifth account for it.
      */
-    private function advanceAccountId(Ledger $ledger, string $branchId): string
+    private function advanceAccountId(Ledger $ledger, string $companyId): string
     {
         $slug = $this->advanceAccountSlug($ledger);
 
-        return BranchContext::glAccount($slug, $branchId)
-            ?? $this->createAdvanceAccount($slug, $branchId);
+        return BranchContext::glAccount($slug, $companyId)
+            ?? $this->createAdvanceAccount($slug, $companyId);
     }
 
     /**
@@ -1446,14 +1454,14 @@ class SettlementService
      * Dari and Pashto and a name lookup breaks the moment a user switches
      * language.
      */
-    private function requireAccount(string $slug, string $branchId): string
+    private function requireAccount(string $slug, string $companyId): string
     {
-        $accountId = BranchContext::glAccount($slug, $branchId);
+        $accountId = BranchContext::glAccount($slug, $companyId);
 
         if (! $accountId) {
             throw SettlementException::make(
                 'This branch has no account for that slug. Run branch provisioning.',
-                [['slug' => $slug, 'branch_id' => $branchId]]
+                [['slug' => $slug, 'company_id' => $companyId]]
             );
         }
 
@@ -1464,7 +1472,7 @@ class SettlementService
      * Advances are created on demand rather than required up front, so a branch
      * provisioned before this feature existed can still take an overpayment.
      */
-    private function createAdvanceAccount(string $slug, string $branchId): string
+    private function createAdvanceAccount(string $slug, string $companyId): string
     {
         $definition = collect(Account::defaultAccounts())->firstWhere('slug', $slug);
 
@@ -1501,17 +1509,17 @@ class SettlementService
             'created_by' => Auth::id(),
         ]);
 
-        BranchContext::flush($branchId);
+        BranchContext::flush($companyId);
 
         return $account->id;
     }
 
-    private function baseCurrency(string $branchId): Currency
+    private function baseCurrency(string $companyId): Currency
     {
-        $currency = BranchContext::homeCurrency($branchId);
+        $currency = BranchContext::homeCurrency($companyId);
 
         if (! $currency) {
-            throw SettlementException::make('This branch has no base currency.', [['branch_id' => $branchId]]);
+            throw SettlementException::make('This company has no base currency.', [['company_id' => $companyId]]);
         }
 
         return $currency;

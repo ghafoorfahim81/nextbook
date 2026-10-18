@@ -22,15 +22,27 @@ trait ValidatesItemPayload
     /**
      * The branch every uniqueness check is scoped to.
      */
-    protected function branchId(): ?string
+    /**
+     * The company an item's name and code have to be unique within.
+     *
+     * The catalogue is shared by every branch of a company, so this is a
+     * company question: one "Paracetamol 500mg" per company, not one per
+     * branch. Never read from request input — that would let the caller pick
+     * which company their uniqueness is checked against.
+     */
+    protected function companyId(): ?string
     {
-        $branchId = $this->user()?->branch_id;
+        if (app()->bound('active_company_id')) {
+            $companyId = app('active_company_id');
 
-        if ($branchId !== null) {
-            return $branchId;
+            if ($companyId) {
+                return (string) $companyId;
+            }
         }
 
-        return app()->bound('active_branch_id') ? app('active_branch_id') : null;
+        $companyId = $this->user()?->company_id;
+
+        return $companyId ? (string) $companyId : null;
     }
 
     /**
@@ -38,14 +50,14 @@ trait ValidatesItemPayload
      */
     protected function itemRules(?string $ignoreId = null): array
     {
-        $branchId = $this->branchId();
+        $companyId = $this->companyId();
 
-        // Scope to the live rows of this branch. The previous rule read
+        // Scope to the live rows of this company. The original rule read
         // `unique:items,name,NULL,id,branch_id,NULL,...`, which tests
         // `branch_id IS NULL` and therefore never matched anything.
         $unique = fn (string $column) => Rule::unique('items', $column)
             ->where(fn ($query) => $query
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->whereNull('deleted_at'))
             ->when($ignoreId !== null, fn ($rule) => $rule->ignore($ignoreId));
 

@@ -68,12 +68,14 @@ class EmployeeLedgerService
             'type' => LedgerType::EMPLOYEE->value,
             'name' => $this->ledgerName($employee),
             'code' => $this->ledgerCode($employee),
-            // The employee's OWN branch, never the acting branch: an admin
-            // creating an employee while switched to another branch must not
-            // strand the ledger somewhere the employee cannot be settled from.
-            'branch_id' => $employee->branch_id,
+            // The employee's OWN company, never the acting one: an admin
+            // creating an employee while switched elsewhere must not strand
+            // the ledger somewhere the employee cannot be settled from. The
+            // ledger is company-level now, so an employee moving between
+            // branches of one company keeps a single account.
+            'company_id' => $employee->company_id,
             'currency_id' => $employee->currency_id
-                ?? BranchContext::homeCurrency($employee->branch_id)?->id,
+                ?? BranchContext::homeCurrency($employee->company_id)?->id,
             'is_active' => (bool) $employee->is_active,
             'is_main' => false,
         ]);

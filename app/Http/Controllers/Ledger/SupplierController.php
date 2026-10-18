@@ -108,7 +108,7 @@ class SupplierController extends Controller
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
             ...$this->referenceData(),
-            'nextCode' => $this->nextCode($request->user()?->branch_id),
+            'nextCode' => $this->nextCode($request->user()?->company_id),
             'accountTypes' => [],
         ]);
     }
@@ -123,7 +123,7 @@ class SupplierController extends Controller
     ) {
         $validated = $request->validated();
         $validated['type'] = 'supplier';
-        $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
+        $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->company_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
 
         if ($request->hasFile('photo')) {
@@ -688,7 +688,7 @@ class SupplierController extends Controller
         ]);
     }
 
-    protected function nextCode(?string $branchId): string
+    protected function nextCode(?string $companyId): string
     {
         $latestNumber = Ledger::query()
             ->where('type', 'supplier')

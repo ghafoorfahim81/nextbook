@@ -24,6 +24,7 @@ return new class extends Migration
 
         Schema::create('attendances', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('employee_id')->index();
             $table->date('date')->index();
             $table->ulid('shift_id')->nullable()->index();
@@ -70,6 +71,7 @@ return new class extends Migration
 
         Schema::create('attendance_punches', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('attendance_device_id')->nullable()->index();
 
             // Nullable ON PURPOSE: a punch from an unmapped device ID must still

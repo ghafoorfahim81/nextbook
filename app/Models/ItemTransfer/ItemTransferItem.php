@@ -3,7 +3,9 @@
 namespace App\Models\ItemTransfer;
 
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -15,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransferItem extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasDependencyCheck, SoftDeletes, HasBranch;
+    use HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, BranchSpecific, HasDependencyCheck, SoftDeletes, HasCompany, HasBranch;
 
     protected $table = 'item_transfer_items';
 
@@ -23,6 +25,7 @@ class ItemTransferItem extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'item_transfer_id',
         'item_id',
         'variant_id',

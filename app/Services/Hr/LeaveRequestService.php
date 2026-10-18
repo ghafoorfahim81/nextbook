@@ -67,7 +67,7 @@ class LeaveRequestService
     /**
      * @return array<int, string>
      */
-    private function holidayDates(string $branchId, Carbon $from, Carbon $to): array
+    private function holidayDates(string $companyId, Carbon $from, Carbon $to): array
     {
         return Holiday::withoutGlobalScopes()
             ->where('company_id', $companyId)

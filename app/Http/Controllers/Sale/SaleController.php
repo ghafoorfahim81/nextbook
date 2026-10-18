@@ -163,7 +163,7 @@ class SaleController extends Controller
                         'credit_limit_enabled',
                         'credit_terms',
                         'is_active',
-                        'branch_id',
+                        'company_id',
                     ])
                     ->withStatementTotals()
                     ->where('is_active', true)
@@ -204,7 +204,7 @@ class SaleController extends Controller
                 'credit_limit_enabled',
                 'credit_terms',
                 'is_active',
-                'branch_id',
+                'company_id',
             ])
             ->withStatementTotals()
             ->find($ledgerId);
@@ -604,7 +604,7 @@ class SaleController extends Controller
                         'credit_limit_enabled',
                         'credit_terms',
                         'is_active',
-                        'branch_id',
+                        'company_id',
                     ])
                     ->withStatementTotals()
                     ->where('is_active', true)

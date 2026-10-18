@@ -133,7 +133,7 @@ class PayrollPostingService
 
             $transaction = $this->transactions->post(
                 header: [
-                    'currency_id' => $payroll->currency_id ?? BranchContext::homeCurrency($payroll->branch_id)?->id,
+                    'currency_id' => $payroll->currency_id ?? BranchContext::homeCurrency($payroll->company_id)?->id,
                     'rate' => 1,
                     'date' => $payroll->period_end->toDateString(),
                     'voucher_number' => 'PAY-'.$payroll->number,
@@ -166,7 +166,7 @@ class PayrollPostingService
      */
     private function buildGlLines(Payroll $payroll, $lines): array
     {
-        $accounts = $this->requiredAccounts($payroll->branch_id);
+        $accounts = $this->requiredAccounts($payroll->company_id);
 
         // Aggregated per (account, currency, rate) — the same expense in the
         // same currency at the same rate is one line, however many employees
@@ -449,7 +449,7 @@ class PayrollPostingService
     /**
      * @return array<string, string>
      */
-    private function requiredAccounts(string $branchId): array
+    private function requiredAccounts(string $companyId): array
     {
         $slugs = [
             'payroll-liabilities', 'salary-tax-payable', 'employee-advances',
@@ -460,7 +460,7 @@ class PayrollPostingService
         $accounts = [];
 
         foreach ($slugs as $slug) {
-            $id = BranchContext::glAccount($slug, $branchId);
+            $id = BranchContext::glAccount($slug, $companyId);
 
             if (! $id) {
                 throw PayrollException::make(
@@ -491,7 +491,7 @@ class PayrollPostingService
      */
     private function linkLiabilityLines(Payroll $payroll, $lines, Transaction $transaction): void
     {
-        $liabilityAccountId = BranchContext::glAccount('payroll-liabilities', $payroll->branch_id);
+        $liabilityAccountId = BranchContext::glAccount('payroll-liabilities', $payroll->company_id);
 
         $byLedger = $transaction->lines()
             ->where('account_id', $liabilityAccountId)

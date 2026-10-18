@@ -4,7 +4,9 @@ namespace App\Models\Accounting;
 
 use App\Models\Account\Account;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,13 +15,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AccountBalance extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
 
     protected $table = 'account_balances';
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'financial_period_id',
         'account_id',
         'base_debit',

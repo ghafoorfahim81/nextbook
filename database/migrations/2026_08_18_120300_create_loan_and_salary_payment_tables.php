@@ -16,6 +16,7 @@ return new class extends Migration
 
         Schema::create('employee_loans', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->index();
             $table->ulid('employee_id')->index();
 
@@ -60,6 +61,7 @@ return new class extends Migration
 
         Schema::create('employee_loan_repayments', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('employee_loan_id')->index();
             // Set when the instalment came out of a payroll run, so reversing
             // that run can find and undo exactly its own repayments.
@@ -87,6 +89,7 @@ return new class extends Migration
         // Named salary_payments because `payments` is the supplier voucher.
         Schema::create('salary_payments', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->index();
             $table->date('date');
 
@@ -120,6 +123,7 @@ return new class extends Migration
 
         Schema::create('salary_payment_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('salary_payment_id')->index();
             $table->ulid('payroll_line_id')->index();
             $table->ulid('employee_id')->index();

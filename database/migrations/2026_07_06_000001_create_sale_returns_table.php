@@ -17,6 +17,7 @@ return new class extends Migration
 
         Schema::create('sale_returns', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->integer('number')->index();
             $table->ulid('sale_id')->index();
             $table->ulid('customer_id')->index();

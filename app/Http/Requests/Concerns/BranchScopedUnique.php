@@ -74,4 +74,62 @@ trait BranchScopedUnique
 
         return $rule;
     }
+
+    /**
+     * The company counterpart of uniqueInBranch, for master data.
+     *
+     * Chart of accounts, catalogue, customers and HR configuration are shared
+     * by every branch of a company, so their uniqueness is a company question:
+     * one item code per company, not per branch.
+     */
+    protected function uniqueInCompany(string $table, mixed $ignore = null, ?string $column = null): Unique
+    {
+        $rule = ($column === null ? Rule::unique($table) : Rule::unique($table, $column))
+            ->whereNull('deleted_at');
+
+        $companyId = $this->activeCompanyId();
+
+        if ($companyId !== null) {
+            $rule->where('company_id', $companyId);
+        }
+
+        return $ignore ? $rule->ignore($ignore) : $rule;
+    }
+
+    /**
+     * An `exists` rule confined to the acting company, for the same reasons
+     * existsInBranch exists: the validator queries the table directly, so a
+     * crafted request can otherwise point at another company's row.
+     */
+    protected function existsInCompany(string $table, string $column = 'id'): Exists
+    {
+        $rule = Rule::exists($table, $column)->whereNull('deleted_at');
+
+        $companyId = $this->activeCompanyId();
+
+        if ($companyId !== null) {
+            $rule->where('company_id', $companyId);
+        }
+
+        return $rule;
+    }
+
+    /**
+     * The company this request is acting in. Never read from request input,
+     * for the reason given on activeBranchId.
+     */
+    protected function activeCompanyId(): ?string
+    {
+        if (app()->bound('active_company_id')) {
+            $companyId = app('active_company_id');
+
+            if ($companyId) {
+                return (string) $companyId;
+            }
+        }
+
+        $companyId = $this->user()?->company_id;
+
+        return $companyId ? (string) $companyId : null;
+    }
 }

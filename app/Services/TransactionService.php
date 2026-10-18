@@ -89,7 +89,10 @@ class TransactionService
             }
 
             $branchId = $this->resolveBranchId($header);
-            $baseCurrencyId = $this->resolveBaseCurrencyId($branchId);
+            // Currencies are company-level, so the functional currency is
+            // looked up by company rather than by the branch posting the entry.
+            $companyId = $this->resolveCompanyId($header, $branchId);
+            $baseCurrencyId = $this->resolveBaseCurrencyId($companyId);
 
             // Normalise and validate everything BEFORE a single row is written,
             // so a rejected entry never leaves a half-posted voucher behind.
@@ -123,6 +126,7 @@ class TransactionService
                     ? array_merge($header['posting_payload'] ?? [], ['lines' => $lines])
                     : ($header['posting_payload'] ?? null),
                 'branch_id'         => $branchId,
+                'company_id'        => $companyId,
                 'created_by'        => Auth::id(),
             ]);
 
@@ -132,6 +136,11 @@ class TransactionService
 
             foreach ($prepared as $line) {
                 $transaction->lines()->create([
+                    // Taken from the voucher, not from the request context: a
+                    // line always belongs to the books its voucher was posted
+                    // in, including when posting runs from a job or a command
+                    // where there is no acting company at all.
+                    'company_id'       => $transaction->company_id,
                     'account_id'       => $line['account_id'],
                     'ledger_id'        => $line['ledger_id'],
                     'journal_class_id' => $line['journal_class_id'],
@@ -177,7 +186,7 @@ class TransactionService
             $lines = $lines ?: (array) data_get($draft->posting_payload, 'lines', []);
             $this->validateLines($lines);
 
-            $baseCurrencyId = $draft->base_currency_id ?? $this->resolveBaseCurrencyId($draft->branch_id);
+            $baseCurrencyId = $draft->base_currency_id ?? $this->resolveBaseCurrencyId($draft->company_id);
 
             $prepared = $this->prepareLines($lines, [
                 'currency_id' => $draft->currency_id,
@@ -188,6 +197,7 @@ class TransactionService
 
             foreach ($prepared as $line) {
                 $draft->lines()->create([
+                    'company_id'       => $draft->company_id,
                     'account_id'       => $line['account_id'],
                     'ledger_id'        => $line['ledger_id'],
                     'journal_class_id' => $line['journal_class_id'],
@@ -820,14 +830,39 @@ class TransactionService
     }
 
     /**
-     * The branch's functional currency.
+     * The books this voucher is posted in.
      *
-     * Currencies are per-branch (unique on branch_id + code), so each branch
-     * owns its own AFN row — a global lookup would cross-link branches.
+     * Derived from the branch rather than taken from the header when the caller
+     * does not say, so the voucher and the branch it is stamped with can never
+     * disagree about the company — which the composite foreign key would
+     * reject anyway.
      */
-    protected function resolveBaseCurrencyId(?string $branchId): ?string
+    protected function resolveCompanyId(array $header, ?string $branchId): ?string
     {
-        if ($branchId === null) {
+        if (! empty($header['company_id'])) {
+            return (string) $header['company_id'];
+        }
+
+        if ($branchId) {
+            $companyId = Branch::withoutGlobalScopes()->whereKey($branchId)->value('company_id');
+
+            if ($companyId) {
+                return (string) $companyId;
+            }
+        }
+
+        return Auth::user()?->company_id;
+    }
+
+    /**
+     * The company's functional currency.
+     *
+     * Currencies are per-company (unique on company_id + code), so each company
+     * owns its own AFN row — a global lookup would cross-link companies.
+     */
+    protected function resolveBaseCurrencyId(?string $companyId): ?string
+    {
+        if ($companyId === null) {
             return null;
         }
 

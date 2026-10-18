@@ -12,6 +12,7 @@ return new class extends Migration
 
         Schema::create('journal_entry_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('journal_entry_id')->index();
             $table->ulid('account_id')->index();
             $table->text('description')->nullable();

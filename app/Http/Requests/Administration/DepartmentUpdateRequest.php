@@ -32,7 +32,7 @@ class DepartmentUpdateRequest extends FormRequest
             'parent_id' => [
                 'nullable',
                 Rule::exists('departments', 'id')->where(fn ($query) => $query->where(
-                    'branch_id',
+                    'company_id',
                     $this->activeBranchId()
                 )),
             ],

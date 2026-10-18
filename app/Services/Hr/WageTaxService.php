@@ -41,7 +41,7 @@ class WageTaxService
     public function resolveSet(
         Carbon $periodEnd,
         TaxPeriod $period = TaxPeriod::Monthly,
-        ?string $branchId = null,
+        ?string $companyId = null,
     ): TaxBracketSet {
         $query = TaxBracketSet::query()
             ->when($companyId, fn ($q) => $q->withoutGlobalScopes()->where('company_id', $companyId)->whereNull('deleted_at'))

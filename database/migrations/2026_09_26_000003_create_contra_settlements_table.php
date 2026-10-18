@@ -22,6 +22,7 @@ return new class extends Migration
     {
         Schema::create('contra_settlements', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->index();
             $table->date('date');
             $table->ulid('customer_ledger_id')->index();

@@ -16,12 +16,18 @@ class WarehouseSeeder extends Seeder
         if ($exists) {
             return;
         }
+        // A warehouse is owned by the company and operated by a branch, so both
+        // are set explicitly. Seeders run with no authenticated user, which is
+        // what HasCompany would otherwise resolve the company from.
+        $branch = Branch::withoutGlobalScopes()->firstOrFail();
+
         Warehouse::create([
             'name' => 'گدام مرکزی',
             'address' => 'گدام مرکزی',
             'is_main' => true,
             'is_active' => false,
-            'branch_id' => Branch::first()->id,
+            'company_id' => $branch->company_id,
+            'branch_id' => $branch->id,
         ]);
     }
 }

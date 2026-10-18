@@ -576,7 +576,7 @@ class PurchaseReturnController extends Controller
 
         if ($excess > 0) {
             $lines[] = [
-                'account_id' => $settlements->advanceAccountFor($purchase->supplier_id, (string) $purchaseReturn->branch_id),
+                'account_id' => $settlements->advanceAccountFor($purchase->supplier_id, (string) $purchaseReturn->company_id),
                 'ledger_id' => $purchase->supplier_id,
                 'debit' => $excess,
                 'credit' => 0,

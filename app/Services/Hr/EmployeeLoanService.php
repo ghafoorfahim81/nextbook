@@ -117,14 +117,14 @@ class EmployeeLoanService
             );
         }
 
-        $controlAccountId = $this->account($loan->accountSlug(), $loan->branch_id);
+        $controlAccountId = $this->account($loan->accountSlug(), $loan->company_id);
         $rate = Decimal::rate($loan->rate);
 
         return DB::transaction(function () use ($loan, $employee, $principal, $rate, $cashAccountId, $controlAccountId) {
             $transaction = $this->transactions->post(
                 header: [
                     'currency_id' => $loan->currency_id
-                        ?? BranchContext::homeCurrency($loan->branch_id)?->id,
+                        ?? BranchContext::homeCurrency($loan->company_id)?->id,
                     'rate' => $rate,
                     'date' => $loan->issue_date->toDateString(),
                     'voucher_number' => 'LOAN-'.$loan->number,
@@ -214,12 +214,12 @@ class EmployeeLoanService
         $employee = $loan->employee;
         $rate = Decimal::rate($attributes['rate'] ?? $loan->rate);
         $currencyId = $attributes['currency_id'] ?? $loan->currency_id;
-        $controlAccountId = $this->account($loan->accountSlug(), $loan->branch_id);
+        $controlAccountId = $this->account($loan->accountSlug(), $loan->company_id);
 
         return DB::transaction(function () use ($loan, $employee, $attributes, $amount, $rate, $currencyId, $controlAccountId) {
             $transaction = $this->transactions->post(
                 header: [
-                    'currency_id' => $currencyId ?? BranchContext::homeCurrency($loan->branch_id)?->id,
+                    'currency_id' => $currencyId ?? BranchContext::homeCurrency($loan->company_id)?->id,
                     'rate' => $rate,
                     'date' => $attributes['date'],
                     'voucher_number' => 'LREP-'.$loan->number,
@@ -305,14 +305,14 @@ class EmployeeLoanService
 
         $employee = $loan->employee;
         $rate = Decimal::rate($loan->rate);
-        $controlAccountId = $this->account($loan->accountSlug(), $loan->branch_id);
-        $expenseAccountId = $this->account('staff-benefits-expense', $loan->branch_id);
+        $controlAccountId = $this->account($loan->accountSlug(), $loan->company_id);
+        $expenseAccountId = $this->account('staff-benefits-expense', $loan->company_id);
 
         return DB::transaction(function () use ($loan, $employee, $outstanding, $rate, $date, $reason, $controlAccountId, $expenseAccountId) {
             $transaction = $this->transactions->post(
                 header: [
                     'currency_id' => $loan->currency_id
-                        ?? BranchContext::homeCurrency($loan->branch_id)?->id,
+                        ?? BranchContext::homeCurrency($loan->company_id)?->id,
                     'rate' => $rate,
                     'date' => $date,
                     'voucher_number' => 'LWO-'.$loan->number,
@@ -380,9 +380,9 @@ class EmployeeLoanService
         }
     }
 
-    private function account(string $slug, string $branchId): string
+    private function account(string $slug, string $companyId): string
     {
-        $id = BranchContext::glAccount($slug, $branchId);
+        $id = BranchContext::glAccount($slug, $companyId);
 
         if (! $id) {
             throw PayrollException::make(

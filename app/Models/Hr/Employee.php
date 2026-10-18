@@ -15,8 +15,10 @@ use App\Models\Administration\Province;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -45,13 +47,14 @@ use Illuminate\Support\Facades\Storage;
 class Employee extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'code',
         'ledger_id',
         'user_id',

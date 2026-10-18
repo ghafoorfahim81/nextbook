@@ -14,6 +14,7 @@ return new class extends Migration
 
         Schema::create('journal_entries', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->index();
             $table->date('date')->index();
             $table->enum('status', JournalEntryStatus::values())

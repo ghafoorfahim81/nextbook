@@ -9,6 +9,7 @@ use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -22,12 +23,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 class Payment extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, HasSequentialNumber, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, HasSequentialNumber, SoftDeletes;
 
     protected $fillable = [
+        'company_id',
         'number',
         'date',
         'ledger_id',

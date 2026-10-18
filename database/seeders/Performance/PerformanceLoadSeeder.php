@@ -50,6 +50,10 @@ class PerformanceLoadSeeder extends Seeder
         ];
 
         foreach ($branchIds as $branchId) {
+            // Master data — chart of accounts, catalogue, customers — sits on
+            // the company the branch belongs to, not on the branch.
+            $companyId = DB::table('branches')->where('id', $branchId)->value('company_id');
+
             if (DB::table('ledgers')->where('company_id', $companyId)->where('code', 'CUST-000001')->exists()) {
                 $this->command?->warn("Branch {$branchId} already seeded (CUST-000001 found). Skipping branch.");
                 continue;
@@ -75,7 +79,7 @@ class PerformanceLoadSeeder extends Seeder
                 ?? DB::table('accounts')->where('company_id', $companyId)->where('slug', 'direct-material-cost')->value('id')
                 ?? DB::table('accounts')->where('company_id', $companyId)->value('id');
 
-            $unitMeasureIds = $this->resolveUnitMeasurePool($branchId, $adminId, $now);
+            $unitMeasureIds = $this->resolveUnitMeasurePool($companyId, $adminId, $now);
 
             if (!$currencyId || !$assetAccountId || !$incomeAccountId || !$costAccountId || count($unitMeasureIds) === 0) {
                 throw new \RuntimeException("Missing prerequisites for branch {$branchId}: currency/accounts/unit measures not found.");
@@ -188,6 +192,10 @@ class PerformanceLoadSeeder extends Seeder
 
     private function ensureBranchDefaultData(string $branchId, string $adminId, Carbon $now): void
     {
+        // Account types, accounts and the rest are company-level; only the
+        // warehouse below belongs to the branch itself.
+        $companyId = DB::table('branches')->where('id', $branchId)->value('company_id');
+
         if (!DB::table('account_types')->where('company_id', $companyId)->exists()) {
             $accountTypeRows = [];
             foreach (AccountType::defaultAccountTypes() as $accountType) {
@@ -809,33 +817,33 @@ class PerformanceLoadSeeder extends Seeder
     /**
      * @return array<int, string>
      */
-    private function resolveUnitMeasurePool(string $branchId, string $adminId, Carbon $now): array
+    private function resolveUnitMeasurePool(string $companyId, string $adminId, Carbon $now): array
     {
         $pool = [];
 
-        $kgId = $this->firstUnitMeasureId($branchId, ['kg']);
+        $kgId = $this->firstUnitMeasureId($companyId, ['kg']);
         if ($kgId) {
             $pool[] = $kgId;
         }
 
-        $grId = $this->firstUnitMeasureId($branchId, ['gr', 'g']);
+        $grId = $this->firstUnitMeasureId($companyId, ['gr', 'g']);
         if ($grId) {
             $pool[] = $grId;
         }
 
-        $meterId = $this->firstUnitMeasureId($branchId, ['m']);
+        $meterId = $this->firstUnitMeasureId($companyId, ['m']);
         if ($meterId) {
             $pool[] = $meterId;
         }
 
-        $pieceId = $this->firstUnitMeasureId($branchId, ['ea', 'pc', 'piece']);
+        $pieceId = $this->firstUnitMeasureId($companyId, ['ea', 'pc', 'piece']);
         if ($pieceId) {
             $pool[] = $pieceId;
         }
 
-        $boxId = $this->firstUnitMeasureId($branchId, ['box', 'bx']);
+        $boxId = $this->firstUnitMeasureId($companyId, ['box', 'bx']);
         if (!$boxId) {
-            $boxId = $this->createBoxUnitMeasure($branchId, $adminId, $now);
+            $boxId = $this->createBoxUnitMeasure($companyId, $adminId, $now);
         }
         if ($boxId) {
             $pool[] = $boxId;
@@ -850,7 +858,7 @@ class PerformanceLoadSeeder extends Seeder
         return array_values(array_unique(array_map(static fn ($v) => (string) $v, $fallback)));
     }
 
-    private function firstUnitMeasureId(string $branchId, array $symbols): ?string
+    private function firstUnitMeasureId(string $companyId, array $symbols): ?string
     {
         $id = DB::table('unit_measures')
             ->where('company_id', $companyId)
@@ -860,7 +868,7 @@ class PerformanceLoadSeeder extends Seeder
         return $id ? (string) $id : null;
     }
 
-    private function createBoxUnitMeasure(string $branchId, string $adminId, Carbon $now): ?string
+    private function createBoxUnitMeasure(string $companyId, string $adminId, Carbon $now): ?string
     {
         $quantityId = DB::table('quantities')
             ->where('company_id', $companyId)

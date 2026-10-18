@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('purchase_payments', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('purchase_id');
             $table->ulid('payment_id'); 
             $table->ulid('created_by');

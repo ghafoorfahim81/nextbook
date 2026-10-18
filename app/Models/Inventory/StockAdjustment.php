@@ -6,8 +6,10 @@ use App\Enums\StockAdjustmentReason;
 use App\Enums\StockMovementType;
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -24,9 +26,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StockAdjustment extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $fillable = [
+        'company_id',
         'reference',
         'date',
         'type',

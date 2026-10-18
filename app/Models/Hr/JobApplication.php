@@ -8,8 +8,10 @@ use App\Enums\Gender;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Province;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -38,13 +40,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class JobApplication extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasAttachments, HasDependencyCheck, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'job_opening_id', 'application_number',
         'full_name', 'father_name', 'gender', 'date_of_birth', 'national_id',
         'phone_number', 'email', 'address', 'province_id',

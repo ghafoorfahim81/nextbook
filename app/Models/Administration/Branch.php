@@ -83,19 +83,12 @@ class Branch extends Model
      */
     protected function getRelationships(): array
     {
+        // Catalogue, chart of accounts and customers are company-level and
+        // shared by every branch, so they are no longer a reason a branch
+        // cannot be deleted — deleting one branch of three leaves them
+        // untouched. What still blocks deletion is what the branch itself
+        // owns: its documents, its staff, its warehouses and its sub-branches.
         return [
-            'items' => [
-                'model' => 'items',
-                'message' => 'This branch is used in items'
-            ],
-            'userAccounts' => [
-                'model' => 'accounts',
-                'message' => 'This branch is used in accounts'
-            ],
-            'userLedgers' => [
-                'model' => 'ledgers',
-                'message' => 'This branch is used in customers or suppliers'
-            ],
             'transactions' => [
                 'model' => 'transactions',
                 'message' => 'This branch is used in transactions'
@@ -107,30 +100,22 @@ class Branch extends Model
             'employees' => [
                 'model' => 'employees',
                 'message' => 'This branch is used in employees'
+            ],
+            'warehouses' => [
+                'model' => 'warehouses',
+                'message' => 'This branch is used in warehouses'
             ]
         ];
     }
 
     /**
-     * Relationship to items that belong to this branch
+     * Employees working at this branch.
      *
-     * Every relation below drops the `branchSpecific` scope. The related models add
-     * `branch_id = <acting branch>` of their own, which combined with this relation's
-     * `branch_id = <this branch>` can only ever match the branch you are currently
-     * in — so the dependency check used to report zero for every other branch and
-     * let a branch full of data be deleted.
-     */
-    public function items()
-    {
-        return $this->hasMany(\App\Models\Inventory\Item::class, 'branch_id')
-            ->withoutGlobalScope('branchSpecific');
-    }
-
-    /**
-     * Employees belonging to this branch. Drops `branchSpecific` for the reason
-     * documented above — without it the count is always zero for any branch
-     * other than the one you are acting in, and a branch full of staff records
-     * would report as safe to delete.
+     * Every relation below drops the `branchSpecific` scope. The related models
+     * add `branch_id = <acting branch>` of their own, which combined with this
+     * relation's `branch_id = <this branch>` can only ever match the branch you
+     * are currently in — so the dependency check used to report zero for every
+     * other branch and let a branch full of data be deleted.
      */
     public function employees()
     {
@@ -139,20 +124,12 @@ class Branch extends Model
     }
 
     /**
-     * Relationship to accounts that belong to this branch
+     * Warehouses this branch operates. Owned by the company, but a branch
+     * holding stock is not one that can be deleted.
      */
-    public function accounts()
+    public function warehouses()
     {
-        return $this->hasMany(\App\Models\Account\Account::class, 'branch_id')
-            ->withoutGlobalScope('branchSpecific');
-    }
-
-    /**
-     * Relationship to ledgers that belong to this branch
-     */
-    public function ledgers()
-    {
-        return $this->hasMany(\App\Models\Ledger\Ledger::class, 'branch_id')
+        return $this->hasMany(\App\Models\Administration\Warehouse::class, 'branch_id')
             ->withoutGlobalScope('branchSpecific');
     }
 
@@ -163,28 +140,5 @@ class Branch extends Model
     {
         return $this->hasMany(\App\Models\Transaction\Transaction::class, 'branch_id')
             ->withoutGlobalScope('branchSpecific');
-    }
-
-    /**
-     * Accounts the user added themselves.
-     *
-     * Every branch is provisioned with the default chart of accounts, so counting
-     * all accounts would make every branch permanently undeletable.
-     */
-    public function userAccounts()
-    {
-        return $this->accounts()->whereNotIn(
-            'slug',
-            array_column(\App\Models\Account\Account::defaultAccounts(), 'slug')
-        );
-    }
-
-    /**
-     * Customers and suppliers the user added themselves, ignoring the cash customer
-     * every branch is provisioned with.
-     */
-    public function userLedgers()
-    {
-        return $this->ledgers()->where('code', '!=', 'CASH-CUST');
     }
 }

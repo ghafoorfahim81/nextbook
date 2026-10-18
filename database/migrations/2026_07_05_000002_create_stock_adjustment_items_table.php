@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('stock_adjustment_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('stock_adjustment_id');
             $table->ulid('item_id');
             $table->ulid('unit_measure_id')->nullable()->index();

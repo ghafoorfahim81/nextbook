@@ -18,6 +18,7 @@ return new class extends Migration
 
         Schema::create('payrolls', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->index();
             $table->string('name')->nullable();
 
@@ -74,6 +75,7 @@ return new class extends Migration
         // One payslip.
         Schema::create('payroll_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('payroll_id')->index();
             $table->ulid('employee_id')->index();
 
@@ -129,6 +131,7 @@ return new class extends Migration
         // has since been deleted.
         Schema::create('payroll_line_components', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('payroll_line_id')->index();
             $table->ulid('salary_component_id')->nullable()->index();
 

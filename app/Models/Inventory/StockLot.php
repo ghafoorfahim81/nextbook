@@ -4,7 +4,9 @@ namespace App\Models\Inventory;
 
 use App\Enums\LotStatus;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -28,13 +30,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class StockLot extends Model
 {
     use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasSearch,
-        HasSorting, HasBranch, BranchSpecific, HasDependencyCheck, SoftDeletes;
+        HasSorting, HasCompany, HasBranch, CompanySpecific, BranchSpecific, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'item_id',
         'variant_id',
         'batch_no',

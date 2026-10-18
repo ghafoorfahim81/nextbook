@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -20,7 +22,7 @@ use App\Traits\HasUserTracking;
 
 class PurchaseQuotation extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -28,6 +30,7 @@ class PurchaseQuotation extends Model
      * @var array
      */
     protected $fillable = [
+        'company_id',
         'number',
         'date',
         'valid_until',

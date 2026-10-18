@@ -7,7 +7,9 @@ use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,7 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Settlement extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $table = 'settlements';
 
@@ -38,6 +40,7 @@ class Settlement extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'transaction_id',
         'settling_line_id',
         'target_line_id',

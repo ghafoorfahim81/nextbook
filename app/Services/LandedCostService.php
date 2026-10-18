@@ -70,13 +70,22 @@ class LandedCostService
         $landedCost->purchases()->detach();
 
         if (! empty($purchaseIds)) {
-            $landedCost->purchases()->attach(collect($purchaseIds)->mapWithKeys(function (string $purchaseId): array {
-                return [
-                    $purchaseId => [
-                        'id' => (string) Str::ulid(),
-                    ],
-                ];
-            })->all());
+            // The pivot carries the company so both of its composite foreign
+            // keys can share one column, which is what makes a landed cost of
+            // one company unattachable to another company's purchase. An
+            // `attach` writes raw, so no model hook fills it in.
+            $companyId = $landedCost->company_id;
+
+            $landedCost->purchases()->attach(collect($purchaseIds)->mapWithKeys(
+                function (string $purchaseId) use ($companyId): array {
+                    return [
+                        $purchaseId => [
+                            'id' => (string) Str::ulid(),
+                            'company_id' => $companyId,
+                        ],
+                    ];
+                }
+            )->all());
         }
 
         $landedCost->update([

@@ -369,7 +369,7 @@ class PunchPairingService
             ->exists();
     }
 
-    private function isHoliday(string $branchId, Carbon $date): bool
+    private function isHoliday(string $companyId, Carbon $date): bool
     {
         return Holiday::withoutGlobalScopes()
             ->where('company_id', $companyId)
@@ -385,7 +385,7 @@ class PunchPairingService
             : (PunchDirection::tryFrom((string) $punch->punch_direction) ?? PunchDirection::Unknown);
     }
 
-    private function defaultShift(string $branchId): ?Shift
+    private function defaultShift(string $companyId): ?Shift
     {
         return Shift::withoutGlobalScopes()
             ->where('company_id', $companyId)

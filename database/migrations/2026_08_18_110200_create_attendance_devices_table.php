@@ -13,6 +13,7 @@ return new class extends Migration
 
         Schema::create('attendance_devices', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('name');
             $table->string('code')->index();
             $table->enum('device_type', AttendanceDeviceType::values())
@@ -38,6 +39,7 @@ return new class extends Migration
         // by whoever enrolled the fingerprint) to an actual employee.
         Schema::create('attendance_device_users', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('attendance_device_id')->index();
             $table->ulid('employee_id')->index();
             $table->string('device_user_id')->index();

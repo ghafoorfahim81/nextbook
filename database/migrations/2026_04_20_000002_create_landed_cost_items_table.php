@@ -12,6 +12,7 @@ return new class extends Migration
 
         Schema::create('landed_cost_items', function (Blueprint $table): void {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('landed_cost_id')->index();
             $table->ulid('purchase_item_id')->nullable()->index();
             $table->ulid('item_id')->index();

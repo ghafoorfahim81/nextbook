@@ -5,7 +5,9 @@ namespace App\Models\Hr;
 use App\Enums\AttendanceSource;
 use App\Enums\PunchDirection;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,13 +24,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class AttendancePunch extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'attendance_device_id',
         'employee_id',
         'device_user_id',

@@ -5,7 +5,9 @@ namespace App\Models\Accounting;
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,13 +17,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class JournalEntryLine extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $table = 'journal_entry_lines';
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'journal_entry_id',
         'account_id',
         'description',

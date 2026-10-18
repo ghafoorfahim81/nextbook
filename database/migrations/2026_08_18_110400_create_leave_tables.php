@@ -69,6 +69,7 @@ return new class extends Migration
 
         Schema::create('leave_allocations', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('employee_id')->index();
             $table->ulid('leave_type_id')->index();
 
@@ -102,6 +103,7 @@ return new class extends Migration
 
         Schema::create('leave_requests', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->index();
             $table->ulid('employee_id')->index();
             $table->ulid('leave_type_id')->index();

@@ -9,15 +9,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\JournalEntry\JournalClass;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompanyFromParent;
 class TransactionLine extends Model
 {
-    use HasFactory, HasUlids, SoftDeletes;
+    // CompanySpecific but not BranchSpecific: a line's branch comes from its
+    // voucher, while its company has to be on the row itself — the composite
+    // foreign key to `accounts` is what stops a line of one company pointing at
+    // another company's chart of accounts, and that needs the column here.
+    use HasFactory, HasUlids, CompanySpecific, HasCompanyFromParent, SoftDeletes;
 
     protected $table = 'transaction_lines';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
     protected $fillable = [
+        'company_id',
         'transaction_id',
         'account_id',
         'ledger_id',

@@ -50,7 +50,7 @@ class BranchProvisioningService
             fn (): int => $this->warehouse($branch, $actorId)
         );
 
-        BranchContext::flush($branch->id);
+        BranchContext::flush($branch->company_id);
 
         return $counts;
     }
@@ -72,6 +72,7 @@ class BranchProvisioningService
                 'id' => (string) new Ulid(),
                 'name' => __('general.main_warehouse'),
                 'address' => __('general.main_warehouse'),
+                'company_id' => $branch->company_id,
                 'branch_id' => $branch->id,
                 'is_main' => true,
                 'created_by' => $actorId,

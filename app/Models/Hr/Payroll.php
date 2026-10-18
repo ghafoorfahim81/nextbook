@@ -10,7 +10,9 @@ use App\Models\Concerns\HasSequentialNumber;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -34,13 +36,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Payroll extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasSequentialNumber, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasSequentialNumber, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'number', 'name', 'period_start', 'period_end', 'pay_date', 'period_label',
         'pay_frequency', 'currency_id', 'rate', 'status',
         'total_gross', 'total_deductions', 'total_tax', 'total_net', 'employee_count',

@@ -14,6 +14,7 @@ return new class extends Migration
 
         Schema::create('landed_costs', function (Blueprint $table): void {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->date('date');
             $table->ulid('purchase_id')->nullable()->index();
             $table->decimal('total_cost', 12, 2)->default(0);

@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            // Nullable, unlike every other scoped table. The audit trail also
+            // records platform-level events — a permission or a role being
+            // seeded — which belong to no company and have no user behind
+            // them. Refusing to log those is worse than logging them
+            // unscoped; the "no unknown scope" rule guards documents, not the
+            // record of what happened.
+            $table->ulid('company_id')->nullable()->index();
             $table->string('event_type', 50);
             $table->string('module', 100);
             $table->string('reference_type')->nullable();

@@ -76,12 +76,7 @@ class Ledger extends Model
                     $totals = TransactionLine::query()
                         ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
                         ->where('transaction_lines.ledger_id', $this->id)
-                        // BROKEN until transactions carry company_id — see
-                        // docs/phase-2-handoff.md. This compares a branch
-                        // column against a company id, so it silently matches
-                        // nothing rather than failing. Becomes
-                        // `transactions.company_id` in pass 2.
-                        ->where('transactions.branch_id', $this->company_id)
+                        ->where('transactions.company_id', $this->company_id)
                         ->whereIn('transactions.status', self::STATEMENT_STATUSES)
                         ->whereNull('transactions.deleted_at')
                         ->selectRaw('
@@ -265,9 +260,7 @@ class Ledger extends Model
                    FROM transaction_lines tl
                    JOIN transactions t ON t.id = tl.transaction_id
                   WHERE tl.ledger_id = ledgers.id
-                    -- BROKEN: ledgers.branch_id no longer exists. Becomes
-                    -- t.company_id = ledgers.company_id in pass 2.
-                    AND t.branch_id = ledgers.branch_id
+                    AND t.company_id = ledgers.company_id
                     AND tl.deleted_at IS NULL
                     AND t.deleted_at IS NULL)";
 
@@ -287,9 +280,7 @@ class Ledger extends Model
         $lineTotals = DB::table('transaction_lines')
             ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
             ->whereColumn('transaction_lines.ledger_id', 'ledgers.id')
-            // BROKEN: ledgers.branch_id no longer exists. Becomes
-            // ('transactions.company_id', 'ledgers.company_id') in pass 2.
-            ->whereColumn('transactions.branch_id', 'ledgers.branch_id')
+            ->whereColumn('transactions.company_id', 'ledgers.company_id')
             // Drafts are not owed yet; a reversed original and its posted
             // mirror are both kept so they cancel out.
             ->whereIn('transactions.status', self::STATEMENT_STATUSES)

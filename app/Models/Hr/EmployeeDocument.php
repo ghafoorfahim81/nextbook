@@ -5,8 +5,10 @@ namespace App\Models\Hr;
 use App\Enums\EmployeeDocumentType;
 use App\Models\User;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -22,13 +24,14 @@ use Illuminate\Support\Carbon;
 class EmployeeDocument extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasAttachments, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'employee_id',
         'document_type',
         'document_number',

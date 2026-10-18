@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('ledger_openings', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             // Polymorphic relation to ledger: Customer, Supplier, Account, etc.
             $table->ulid('ledgerable_id')->index();
             $table->string('ledgerable_type');
