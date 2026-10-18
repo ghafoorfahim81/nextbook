@@ -833,6 +833,7 @@ class SettlementServiceTest extends TestCase
             'base_relieved' => 1,
             'forex_amount' => 0,
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

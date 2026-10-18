@@ -195,6 +195,7 @@ class PartyBothCustomerAndSupplierTest extends TestCase
             'date' => now()->toDateString(),
             'status' => 'posted',
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
             'created_at' => now(),
             'updated_at' => now(),

@@ -137,6 +137,7 @@ class SaleReceiveBackfillTest extends TestCase
             'receipt_id' => $receipt->id,
             'amount' => $amount,
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
             'created_at' => '2026-02-01 08:30:00',
             'updated_at' => '2026-02-01 08:30:00',
