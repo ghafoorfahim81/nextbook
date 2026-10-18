@@ -17,6 +17,7 @@ return new class extends Migration
 
         Schema::create('purchases', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->integer('number')->index();
             $table->ulid('supplier_id')->index();
             $table->date('date');

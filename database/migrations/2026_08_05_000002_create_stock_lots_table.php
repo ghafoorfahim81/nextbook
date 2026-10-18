@@ -26,6 +26,7 @@ return new class extends Migration
     {
         Schema::create('stock_lots', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('item_id')->index();
             // Null means the lot applies to every variant of the item, which is
             // what a supermarket with simple items will use.

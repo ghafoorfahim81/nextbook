@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Administration\Branch;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,7 @@ class ActivityLog extends Model
     // Scoped to the active branch like every other business record. Without it
     // the log listed every tenant's actions — users, amounts, IP addresses — to
     // anyone who could open the page.
-    use BranchSpecific;
+    use CompanySpecific, BranchSpecific;
     use HasFactory;
     use HasUlids;
 
@@ -28,6 +29,7 @@ class ActivityLog extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'event_type',
         'module',
         'reference_type',

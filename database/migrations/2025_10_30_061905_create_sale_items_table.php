@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('sale_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('sale_id');
             $table->ulid('item_id');
             $table->string('batch')->nullable();

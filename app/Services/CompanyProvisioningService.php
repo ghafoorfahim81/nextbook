@@ -87,11 +87,8 @@ class CompanyProvisioningService
             return $counts;
         });
 
-        // Posting accounts and the base currency may have just changed for every
-        // branch reading this company's defaults.
-        foreach (Branch::withoutGlobalScopes()->where('company_id', $company->id)->pluck('id') as $branchId) {
-            BranchContext::flush($branchId);
-        }
+        // Posting accounts and the base currency may have just changed.
+        BranchContext::flush($company->id);
 
         return $created;
     }

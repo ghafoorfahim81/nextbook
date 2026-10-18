@@ -6,7 +6,9 @@ use App\Enums\ItemCondition;
 use App\Enums\PieceStatus;
 use App\Models\Administration\Warehouse;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -28,13 +30,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class StockPiece extends Model
 {
     use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasSearch,
-        HasSorting, HasBranch, BranchSpecific, SoftDeletes;
+        HasSorting, HasCompany, HasBranch, CompanySpecific, BranchSpecific, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'item_id',
         'variant_id',
         'lot_id',

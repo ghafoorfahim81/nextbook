@@ -16,6 +16,7 @@ return new class extends Migration
 
         Schema::create('item_transfers', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->date('date')->index();
             $table->ulid('from_warehouse_id')->index();
             $table->ulid('to_warehouse_id')->index();

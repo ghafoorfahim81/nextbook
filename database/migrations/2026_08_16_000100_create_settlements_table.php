@@ -23,6 +23,7 @@ return new class extends Migration
     {
         Schema::create('settlements', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
 
             // The receipt / payment voucher this application belongs to.
             $table->ulid('transaction_id')->index();

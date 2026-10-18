@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('account_transfers', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->nullable()->index();
             $table->date('date');
             $table->ulid('transaction_id')->nullable()->index();

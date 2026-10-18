@@ -24,6 +24,7 @@ return new class extends Migration
 
         Schema::create('employee_documents', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('employee_id')->index();
             $table->enum('document_type', EmployeeDocumentType::values())
                 ->default(EmployeeDocumentType::Other->value)

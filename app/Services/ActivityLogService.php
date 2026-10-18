@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\Administration\Branch;
 use DateTimeInterface;
 use Illuminate\Database\ClassMorphViolationException;
 use Illuminate\Contracts\Support\Arrayable;
@@ -400,6 +401,10 @@ class ActivityLogService
                 explicitBranchId: $data['branch_id'] ?? null,
                 referenceBranchId: $reference['branch_id'],
             ),
+            'company_id' => $this->resolveCompanyId(
+                explicitCompanyId: $data['company_id'] ?? null,
+                referenceCompanyId: $reference['company_id'],
+            ),
             'ip_address' => $this->resolveIpAddress($data['ip_address'] ?? null),
             'user_agent' => $this->resolveUserAgent($data['user_agent'] ?? null),
             'description' => $data['description'] ?? null,
@@ -585,6 +590,7 @@ class ActivityLogService
                 'type' => $this->referenceType($reference),
                 'id' => (string) $reference->getKey(),
                 'branch_id' => $this->stringOrNull($reference->getAttribute('branch_id')),
+                'company_id' => $this->stringOrNull($reference->getAttribute('company_id')),
             ];
         }
 
@@ -593,6 +599,7 @@ class ActivityLogService
                 'type' => $this->referenceType($reference),
                 'id' => $referenceId,
                 'branch_id' => null,
+                'company_id' => null,
             ];
         }
 
@@ -600,6 +607,7 @@ class ActivityLogService
             'type' => $referenceType ?? $reference,
             'id' => $referenceId,
             'branch_id' => null,
+            'company_id' => null,
         ];
     }
 
@@ -661,6 +669,50 @@ class ActivityLogService
         }
 
         return $this->stringOrNull(Auth::user()?->branch_id);
+    }
+
+    /**
+     * The company an audit entry belongs to.
+     *
+     * Mirrors resolveBranchId one level up, with one extra fallback: a
+     * company-scoped record carries the company itself, a branch-scoped one
+     * does not, so the branch is read back when nothing nearer is available.
+     * An audit trail that cannot say which company it belongs to is worth less
+     * than the row it occupies.
+     */
+    protected function resolveCompanyId(?string $explicitCompanyId, ?string $referenceCompanyId): ?string
+    {
+        if ($explicitCompanyId) {
+            return $explicitCompanyId;
+        }
+
+        if ($referenceCompanyId) {
+            return $referenceCompanyId;
+        }
+
+        if (app()->bound('active_company_id')) {
+            $companyId = $this->stringOrNull(app('active_company_id'));
+
+            if ($companyId) {
+                return $companyId;
+            }
+        }
+
+        $companyId = $this->stringOrNull(Auth::user()?->company_id);
+
+        if ($companyId) {
+            return $companyId;
+        }
+
+        if (app()->bound('active_branch_id')) {
+            return $this->stringOrNull(
+                Branch::withoutGlobalScopes()
+                    ->whereKey(app('active_branch_id'))
+                    ->value('company_id')
+            );
+        }
+
+        return null;
     }
 
     protected function resolveIpAddress(?string $ipAddress): ?string

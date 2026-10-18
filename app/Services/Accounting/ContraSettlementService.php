@@ -55,7 +55,10 @@ class ContraSettlementService
     ): array {
         $this->assertRoles($customer, $supplier);
 
-        $branchId = (string) ($voucher['branch_id'] ?? $customer->branch_id);
+        $branchId = (string) ($voucher['branch_id'] ?? BranchContext::branchId());
+        // The books the offset posts to. Ledgers are company-level, so the
+        // company comes from the party.
+        $companyId = (string) ($voucher['company_id'] ?? $customer->company_id);
         $amount = Decimal::amount($voucher['amount']);
 
         if (! Decimal::isPositive($amount)) {
@@ -70,7 +73,7 @@ class ContraSettlementService
             ]);
         }
 
-        $clearingId = BranchContext::glAccount('contra-clearing', $branchId);
+        $clearingId = BranchContext::glAccount('contra-clearing', $companyId);
 
         if (! $clearingId) {
             throw ValidationException::withMessages([

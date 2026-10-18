@@ -12,21 +12,24 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Builder;
 class AccountTransfer extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'number',
         'date',
         'from_account_id',

@@ -18,6 +18,7 @@ return new class extends Migration
 
         Schema::create('stock_adjustments', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('reference')->index();
             $table->date('date')->index();
             $table->enum('type', StockMovementType::values());

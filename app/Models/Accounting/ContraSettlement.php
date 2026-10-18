@@ -7,7 +7,9 @@ use App\Models\Concerns\HasSequentialNumber;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -31,8 +33,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ContraSettlement extends Model
 {
-    use BranchSpecific;
-    use HasBranch;
+    use CompanySpecific, BranchSpecific;
+    use HasCompany, HasBranch;
     use HasDynamicFilters;
     use HasFactory;
     use HasSearch;
@@ -44,6 +46,7 @@ class ContraSettlement extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'company_id',
         'number',
         'date',
         'customer_ledger_id',

@@ -46,6 +46,9 @@ class PunchImportService
     public function import(UploadedFile $file, ?string $deviceId, array $columnMap): array
     {
         $branchId = BranchContext::branchId();
+        // Rows go in through insertOrIgnore, which skips the model hooks that
+        // would otherwise fill the scope columns.
+        $companyId = BranchContext::companyId();
         $batchId = (string) Str::ulid();
 
         $device = $deviceId
@@ -100,6 +103,7 @@ class PunchImportService
                 ),
                 'import_batch_id' => $batchId,
                 'is_ignored' => false,
+                'company_id' => $companyId,
                 'branch_id' => $branchId,
                 'created_by' => auth()->id(),
                 'created_at' => now()->toDateTimeString(),

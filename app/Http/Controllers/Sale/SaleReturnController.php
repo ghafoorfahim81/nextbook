@@ -586,7 +586,7 @@ class SaleReturnController extends Controller
 
         if ($excess > 0) {
             $lines[] = [
-                'account_id' => $settlements->advanceAccountFor($sale->customer_id, (string) $saleReturn->branch_id),
+                'account_id' => $settlements->advanceAccountFor($sale->customer_id, (string) $saleReturn->company_id),
                 'ledger_id' => $sale->customer_id,
                 'debit' => 0,
                 'credit' => $excess,

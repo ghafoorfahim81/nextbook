@@ -12,6 +12,7 @@ return new class extends Migration
 
         Schema::create('currency_rate_updates', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('currency_id')->index();
             $table->decimal('exchange_rate', 24, 8);
             $table->date('date')->index();

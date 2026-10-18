@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('drawings', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('owner_id')->index();
             $table->date('date')->index();
             $table->text('narration')->nullable();

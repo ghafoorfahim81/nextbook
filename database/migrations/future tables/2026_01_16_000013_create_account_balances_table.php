@@ -12,6 +12,7 @@ return new class extends Migration
 
         Schema::create('account_balances', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('financial_period_id')->index();
             $table->ulid('account_id')->index();
             $table->decimal('base_debit', 19, 4)->default(0);

@@ -17,6 +17,7 @@ return new class extends Migration
 
         Schema::create('sale_orders', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->integer('number')->index();
             $table->date('date');
             $table->date('delivery_date')->nullable();

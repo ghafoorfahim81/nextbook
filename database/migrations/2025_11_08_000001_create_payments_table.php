@@ -12,6 +12,7 @@ return new class extends Migration
 
         Schema::create('payments', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->index();
             $table->date('date');
             $table->ulid('ledger_id')->index(); 

@@ -263,7 +263,7 @@ class PayrollCalculationService
     /**
      * @return array<string, SalaryComponent>
      */
-    private function systemComponents(string $branchId): array
+    private function systemComponents(string $companyId): array
     {
         return SalaryComponent::withoutGlobalScopes()
             ->where('company_id', $companyId)
@@ -511,7 +511,7 @@ class PayrollCalculationService
                 ? bcdiv($dayRate, $hoursPerDay, Decimal::AMOUNT_SCALE)
                 : '0.0000';
 
-            $multiplier = Decimal::amount((string) (\App\Models\Hr\HrSetting::forBranch($payroll->branch_id)->overtime_multiplier ?? 1));
+            $multiplier = Decimal::amount((string) (\App\Models\Hr\HrSetting::forCompany($payroll->company_id)->overtime_multiplier ?? 1));
 
             $components[] = [
                 'salary_component_id' => $systemComponents[SalaryComponent::CODE_OVERTIME]->id,
@@ -782,7 +782,7 @@ class PayrollCalculationService
             return Decimal::rate($payroll->rate ?? 1);
         }
 
-        $home = BranchContext::homeCurrency($payroll->branch_id);
+        $home = BranchContext::homeCurrency($payroll->company_id);
 
         if ($home && $home->id === $currencyId) {
             return '1.00000000';

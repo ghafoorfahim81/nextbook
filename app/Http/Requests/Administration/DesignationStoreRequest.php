@@ -31,7 +31,7 @@ class DesignationStoreRequest extends FormRequest
             'department_id' => [
                 'nullable',
                 Rule::exists('departments', 'id')->where(fn ($query) => $query
-                    ->where('branch_id', $this->activeBranchId())
+                    ->where('company_id', $this->activeCompanyId())
                     ->whereNull('deleted_at')),
             ],
             'grade_level' => ['nullable', 'integer', 'min:0', 'max:100'],

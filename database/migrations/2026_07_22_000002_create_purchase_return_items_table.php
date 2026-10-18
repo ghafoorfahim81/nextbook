@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('purchase_return_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('purchase_return_id');
             $table->ulid('purchase_item_id');
             $table->ulid('item_id');

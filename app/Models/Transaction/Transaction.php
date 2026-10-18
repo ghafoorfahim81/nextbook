@@ -15,13 +15,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Transaction extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasUlids, HasUserAuditable, SoftDeletes, BranchSpecific, HasBranch;
+    use HasFactory, HasSearch, HasSorting, HasUlids, HasUserAuditable, SoftDeletes, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
 
     /**
      * The attributes that are mass assignable.
@@ -31,6 +33,7 @@ class Transaction extends Model
     protected $keyType = 'string';
     public $incrementing = false;
     protected $fillable = [
+        'company_id',
         'voucher_number',
         'status',
         'currency_id',

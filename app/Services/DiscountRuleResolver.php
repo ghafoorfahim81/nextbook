@@ -152,7 +152,7 @@ class DiscountRuleResolver
     /**
      * @return Collection<int, DiscountRule>
      */
-    private function rulesFor(?string $branchId): Collection
+    private function rulesFor(?string $companyId): Collection
     {
         if ($this->cache !== null) {
             return $this->cache;

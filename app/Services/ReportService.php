@@ -140,7 +140,7 @@ class ReportService
             // figures, so it skips both rather than running a trial balance
             // nobody sees.
             'filterOptions' => $reportSelected
-                ? $this->filterOptions($filters['branch_id'], $filters['report'], $filters['view_type'])
+                ? $this->filterOptions($filters['branch_id'], $filters['company_id'], $filters['report'], $filters['view_type'])
                 : (object) [],
             'result' => $reportSelected
                 ? $this->getReportData($filters)
@@ -278,7 +278,7 @@ class ReportService
         $query = DB::table('accounts as a')
             ->joinSub($balances, 'b', fn ($join) => $join->on('b.account_id', '=', 'a.id'))
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
-            ->where('a.branch_id', $filters['branch_id'])
+            ->where('a.company_id', $filters['company_id'])
             ->whereRaw('ABS(b.balance) >= 0.005')
             ->orderByRaw($this->accountTypeNatureOrderExpression('at'))
             ->orderBy('a.number')
@@ -448,7 +448,7 @@ class ReportService
                     $join->where('t.currency_id', '=', $filters['currency_id']);
                 }
             })
-            ->where('l.branch_id', $filters['branch_id'])
+            ->where('l.company_id', $filters['company_id'])
             ->where('l.type', $ledgerType)
             ->whereNull('l.deleted_at')
             ->groupBy('l.id', 'l.name')
@@ -635,7 +635,7 @@ class ReportService
             })
             ->join('accounts as a', function ($join) use ($filters) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->where('a.company_id', '=', $filters['company_id'])
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -695,7 +695,7 @@ class ReportService
             })
             ->join('accounts as a', function ($join) use ($filters) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->where('a.company_id', '=', $filters['company_id'])
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -758,7 +758,7 @@ class ReportService
             })
             ->join('accounts as a', function ($join) use ($filters) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->where('a.company_id', '=', $filters['company_id'])
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -837,7 +837,7 @@ class ReportService
             })
             ->join('accounts as a', function ($join) use ($filters) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->where('a.company_id', '=', $filters['company_id'])
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -896,6 +896,7 @@ class ReportService
     private function getSalesGeneralReport(array $filters): array
     {
         $branchId = $filters['branch_id'];
+        $companyId = $filters['company_id'];
 
         $grossSql = '(SELECT COALESCE(SUM(si2.quantity * si2.unit_price), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
         $discSql  = '(SELECT COALESCE(SUM(si2.discount), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
@@ -909,7 +910,7 @@ class ReportService
         $query = DB::table('sales as s')
             ->leftJoin('ledgers as l', function ($join) use ($branchId) {
                 $join->on('l.id', '=', 's.customer_id')
-                    ->where('l.branch_id', '=', $branchId)
+                    ->where('l.company_id', '=', $companyId)
                     ->whereNull('l.deleted_at');
             })
             ->join('transactions as t', function ($join) use ($branchId) {
@@ -1002,17 +1003,17 @@ class ReportService
             })
             ->join('items as i', function ($join) use ($filters) {
                 $join->on('i.id', '=', 'si.item_id')
-                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->where('i.company_id', '=', $filters['company_id'])
                     ->whereNull('i.deleted_at');
             })
             ->leftJoin('ledgers as l', function ($join) use ($filters) {
                 $join->on('l.id', '=', 's.customer_id')
-                    ->where('l.branch_id', '=', $filters['branch_id'])
+                    ->where('l.company_id', '=', $filters['company_id'])
                     ->whereNull('l.deleted_at');
             })
             ->join('unit_measures as um', function ($join) use ($filters) {
                 $join->on('um.id', '=', 'si.unit_measure_id')
-                    ->where('um.branch_id', '=', $filters['branch_id'])
+                    ->where('um.company_id', '=', $filters['company_id'])
                     ->whereNull('um.deleted_at');
             })
             // Left, not inner: lines written before variants existed carry no
@@ -1084,6 +1085,7 @@ class ReportService
     private function getPurchaseGeneralReport(array $filters): array
     {
         $branchId = $filters['branch_id'];
+        $companyId = $filters['company_id'];
 
         $grossSql = '(SELECT COALESCE(SUM(pi2.quantity * pi2.unit_price), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
         $discSql  = '(SELECT COALESCE(SUM(pi2.discount), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
@@ -1103,7 +1105,7 @@ class ReportService
             })
             ->leftJoin('ledgers as l', function ($join) use ($branchId) {
                 $join->on('l.id', '=', 'p.supplier_id')
-                    ->where('l.branch_id', '=', $branchId)
+                    ->where('l.company_id', '=', $companyId)
                     ->whereNull('l.deleted_at');
             })
             ->where('p.branch_id', $branchId)
@@ -1184,12 +1186,12 @@ class ReportService
             })
             ->join('items as i', function ($join) use ($filters) {
                 $join->on('i.id', '=', 'pi.item_id')
-                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->where('i.company_id', '=', $filters['company_id'])
                     ->whereNull('i.deleted_at');
             })
             ->leftJoin('ledgers as l', function ($join) use ($filters) {
                 $join->on('l.id', '=', 'p.supplier_id')
-                    ->where('l.branch_id', '=', $filters['branch_id'])
+                    ->where('l.company_id', '=', $filters['company_id'])
                     ->whereNull('l.deleted_at');
             })
             // Left, not inner: lines written before variants existed carry no
@@ -1249,6 +1251,7 @@ class ReportService
     public function getExpenseReport(array $filters): array
     {
         $branchId = $filters['branch_id'];
+        $companyId = $filters['company_id'];
         $expenseClass = \App\Models\Expense\Expense::class;
 
         $amountSql = '(SELECT COALESCE(SUM(ed2.amount), 0) FROM expense_details ed2 WHERE ed2.expense_id = e.id AND ed2.deleted_at IS NULL)';
@@ -1338,6 +1341,7 @@ class ReportService
     public function getInventoryStock(array $filters): array
     {
         $branchId  = $filters['branch_id'];
+        $companyId  = $filters['company_id'];
         $itemId    = $filters['item_id'] ?? null;
         $variantId = $filters['variant_id'] ?? null;
         $inValue   = StockMovementType::IN->value;
@@ -1375,7 +1379,7 @@ class ReportService
             ->fromSub($balanceQty, 'bq')
             ->join('items as i', function ($join) use ($branchId) {
                 $join->on('i.id', '=', 'bq.item_id')
-                    ->where('i.branch_id', '=', $branchId)
+                    ->where('i.company_id', '=', $companyId)
                     ->whereNull('i.deleted_at');
             })
             ->join('warehouses as w', function ($join) use ($branchId) {
@@ -1432,7 +1436,7 @@ class ReportService
             ->fromSub($positiveStockPairs, 'ps')
             ->join('items as i', function ($join) use ($branchId) {
                 $join->on('i.id', '=', 'ps.item_id')
-                    ->where('i.branch_id', '=', $branchId)
+                    ->where('i.company_id', '=', $companyId)
                     ->whereNull('i.deleted_at');
             })
             ->join('warehouses as w', function ($join) use ($branchId) {
@@ -1482,7 +1486,7 @@ class ReportService
         $query = DB::table('stock_movements as sm')
             ->join('items as i', function ($join) use ($filters) {
                 $join->on('i.id', '=', 'sm.item_id')
-                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->where('i.company_id', '=', $filters['company_id'])
                     ->whereNull('i.deleted_at');
             })
             ->join('warehouses as w', function ($join) use ($filters) {
@@ -1585,7 +1589,7 @@ class ReportService
             })
             ->join('items as i', function ($join) use ($filters) {
                 $join->on('i.id', '=', 'sai.item_id')
-                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->where('i.company_id', '=', $filters['company_id'])
                     ->whereNull('i.deleted_at');
             })
             ->join('warehouses as w', function ($join) use ($filters) {
@@ -1665,7 +1669,7 @@ class ReportService
         $query = $this->activeStockBalanceQuery($filters)
             ->join('items as i', function ($join) use ($filters) {
                 $join->on('i.id', '=', 'sb.item_id')
-                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->where('i.company_id', '=', $filters['company_id'])
                     ->whereNull('i.deleted_at');
             })
             ->join('warehouses as w', function ($join) use ($filters) {
@@ -1714,7 +1718,7 @@ class ReportService
         $query = $this->activeStockBalanceQuery($filters)
             ->join('items as i', function ($join) use ($filters) {
                 $join->on('i.id', '=', 'sb.item_id')
-                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->where('i.company_id', '=', $filters['company_id'])
                     ->whereNull('i.deleted_at');
             })
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sb.item_id', $itemId));
@@ -1963,7 +1967,7 @@ class ReportService
         $query = DB::table('items as i')
             ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
             ->leftJoinSub($movementTotals, 'movement_totals', fn ($join) => $join->on('movement_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $filters['branch_id'])
+            ->where('i.company_id', $filters['company_id'])
             ->whereNull('i.deleted_at')
             ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereRaw('COALESCE(stock_totals.on_hand, 0) = 0')
@@ -2008,7 +2012,7 @@ class ReportService
 
         $query = DB::table('items as i')
             ->leftJoinSub($saleTotals, 'sale_totals', fn ($join) => $join->on('sale_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $filters['branch_id'])
+            ->where('i.company_id', $filters['company_id'])
             ->whereNull('i.deleted_at')
             ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereRaw('COALESCE(sale_totals.total_sold, 0) > 0')
@@ -2055,7 +2059,7 @@ class ReportService
         $query = DB::table('items as i')
             ->leftJoinSub($saleTotals, 'sale_totals', fn ($join) => $join->on('sale_totals.item_id', '=', 'i.id'))
             ->leftJoinSub($firstInDates, 'first_stock', fn ($join) => $join->on('first_stock.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $filters['branch_id'])
+            ->where('i.company_id', $filters['company_id'])
             ->whereNull('i.deleted_at')
             ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereRaw('COALESCE(sale_totals.total_sold, 0) > 0')
@@ -2106,7 +2110,7 @@ class ReportService
         $query = DB::table('items as i')
             ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
             ->leftJoinSub($todayMovements, 'today_totals', fn ($join) => $join->on('today_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $filters['branch_id'])
+            ->where('i.company_id', $filters['company_id'])
             ->whereNull('i.deleted_at')
             ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereRaw('COALESCE(stock_totals.on_hand, 0) <> 0 OR COALESCE(today_totals.purchase_today, 0) <> 0 OR COALESCE(today_totals.sale_today, 0) <> 0')
@@ -2199,7 +2203,7 @@ class ReportService
 
         $query = DB::table('items as i')
             ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $filters['branch_id'])
+            ->where('i.company_id', $filters['company_id'])
             ->whereNull('i.deleted_at')
             ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('i.id', $id))
             ->whereNotNull('i.maximum_stock')
@@ -2245,11 +2249,11 @@ class ReportService
         $query = DB::table('accounts as a')
             ->join('account_types as at', function ($join) use ($filters) {
                 $join->on('at.id', '=', 'a.account_type_id')
-                    ->where('at.branch_id', '=', $filters['branch_id'])
+                    ->where('at.company_id', '=', $filters['company_id'])
                     ->whereNull('at.deleted_at');
             })
             ->leftJoinSub($lifetimeTotals, 'lifetime', fn ($join) => $join->on('lifetime.account_id', '=', 'a.id'))
-            ->where('a.branch_id', $filters['branch_id'])
+            ->where('a.company_id', $filters['company_id'])
             ->whereNull('a.deleted_at')
             ->whereRaw("{$accountTypeNature} IN ('asset', 'liability', 'equity', 'income', 'expense')")
             ->orderByRaw($this->accountTypeNatureOrderExpression('at'))
@@ -2332,7 +2336,7 @@ class ReportService
             })
             ->join('accounts as a', function ($join) use ($filters) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->where('a.company_id', '=', $filters['company_id'])
                     ->whereNull('a.deleted_at');
             })
             ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
@@ -2392,11 +2396,11 @@ class ReportService
         $query = DB::table('account_types as at')
             ->join('accounts as a', function ($join) use ($filters) {
                 $join->on('a.account_type_id', '=', 'at.id')
-                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->where('a.company_id', '=', $filters['company_id'])
                     ->whereNull('a.deleted_at');
             })
             ->leftJoinSub($lifetimeTotals, 'lifetime', fn ($join) => $join->on('lifetime.account_id', '=', 'a.id'))
-            ->where('at.branch_id', $filters['branch_id'])
+            ->where('at.company_id', $filters['company_id'])
             ->whereNull('at.deleted_at')
             ->whereRaw("{$accountTypeNature} IN ('asset', 'liability', 'equity', 'income', 'expense')")
             ->groupBy('at.id', 'at.name', 'at.nature', 'at.slug')
@@ -2479,7 +2483,7 @@ class ReportService
         $query = DB::table('stock_balances as sb')
             ->join('items as i', function ($join) use ($filters) {
                 $join->on('i.id', '=', 'sb.item_id')
-                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->where('i.company_id', '=', $filters['company_id'])
                     ->whereNull('i.deleted_at');
             })
             ->where('sb.branch_id', $filters['branch_id'])
@@ -2769,7 +2773,7 @@ class ReportService
             })
             ->join('ledgers as l', function ($join) use ($filters, $ledgerId, $ledgerType) {
                 $join->on('l.id', '=', 'tl.ledger_id')
-                    ->where('l.branch_id', '=', $filters['branch_id'])
+                    ->where('l.company_id', '=', $filters['company_id'])
                     ->where('l.id', '=', $ledgerId)
                     ->whereNull('l.deleted_at');
 
@@ -2807,7 +2811,7 @@ class ReportService
             })
             ->join('ledgers as l', function ($join) use ($filters, $ledgerId, $ledgerType) {
                 $join->on('l.id', '=', 'tl.ledger_id')
-                    ->where('l.branch_id', '=', $filters['branch_id'])
+                    ->where('l.company_id', '=', $filters['company_id'])
                     ->where('l.id', '=', $ledgerId)
                     ->whereNull('l.deleted_at');
 
@@ -2845,13 +2849,13 @@ class ReportService
             })
             ->join('accounts as a2', function ($join) use ($filters) {
                 $join->on('a2.id', '=', 'tl2.account_id')
-                    ->where('a2.branch_id', '=', $filters['branch_id'])
+                    ->where('a2.company_id', '=', $filters['company_id'])
                     ->whereNull('a2.deleted_at');
             })
             ->join('account_types as at2', 'at2.id', '=', 'a2.account_type_id')
             ->leftJoin('ledgers as l2', function ($join) use ($filters) {
                 $join->on('l2.id', '=', 'tl2.ledger_id')
-                    ->where('l2.branch_id', '=', $filters['branch_id'])
+                    ->where('l2.company_id', '=', $filters['company_id'])
                     ->whereNull('l2.deleted_at');
             })
             ->whereNull('tl2.deleted_at')
@@ -2889,7 +2893,7 @@ class ReportService
             })
             ->join('accounts as a', function ($join) use ($filters) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->where('a.company_id', '=', $filters['company_id'])
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -4439,6 +4443,13 @@ class ReportService
     protected function normalizeFilters(array $filters, ?Authenticatable $user): array
     {
         $branchId = (string) ($filters['branch_id'] ?? $this->resolveBranchId($user));
+
+        // Reports read two levels at once: documents are branch-scoped, the
+        // master data they join to — accounts, items, ledgers, unit measures —
+        // is company-scoped. Derived from the branch rather than taken from the
+        // request, so a company cannot be widened by a posted filter.
+        $companyId = (string) $this->resolveCompanyId($branchId, $user);
+
         $today = Carbon::today()->toDateString();
         $defaultFrom = Carbon::today()->startOfMonth()->toDateString();
 
@@ -4473,6 +4484,7 @@ class ReportService
         return [
             'report' => $report,
             'branch_id' => $branchId,
+            'company_id' => $companyId,
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
             'ledger_id' => $this->nullableString($filters['ledger_id'] ?? null),
@@ -4511,7 +4523,7 @@ class ReportService
      * @param string|null $report Limits the large picker lists to the ones this
      *                            report's filters use; null loads every list.
      */
-    protected function filterOptions(string $branchId, ?string $report = null, ?string $viewType = null): array
+    protected function filterOptions(string $branchId, string $companyId, ?string $report = null, ?string $viewType = null): array
     {
         $needs = function (string $list) use ($report, $viewType): bool {
             if ($report === null) {
@@ -4574,7 +4586,7 @@ class ReportService
             // selected, so choosing an item never costs a round trip.
             'variants' => ! $needs('variants') ? [] : DB::table('item_variants as iv')
                 ->join('items as i', 'i.id', '=', 'iv.item_id')
-                ->where('iv.branch_id', $branchId)
+                ->where('iv.company_id', $companyId)
                 ->whereNull('iv.deleted_at')
                 ->whereNull('i.deleted_at')
                 ->orderBy('i.name')
@@ -4594,7 +4606,7 @@ class ReportService
                 ->all(),
             'cash_accounts' => DB::table('accounts as a')
                 ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
-                ->where('a.branch_id', $branchId)
+                ->where('a.company_id', $companyId)
                 ->where('at.slug', 'cash-or-bank')
                 ->whereNull('a.deleted_at')
                 ->orderBy(app()->getLocale() === 'en' ? 'a.name' : 'a.local_name')
@@ -4647,7 +4659,7 @@ class ReportService
                 ->all(),
             'expense_accounts' => DB::table('accounts as a')
                 ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
-                ->where('a.branch_id', $branchId)
+                ->where('a.company_id', $companyId)
                 ->where('at.slug', 'expense')
                 ->whereNull('a.deleted_at')
                 ->orderBy('a.name')
@@ -4744,6 +4756,26 @@ class ReportService
         }
 
         return (string) Branch::query()->value('id');
+    }
+
+    /**
+     * The company whose master data this report reads.
+     *
+     * Taken from the branch being reported on rather than from the request, so
+     * the two levels in a report can never belong to different companies. The
+     * branch lookup drops global scopes because the branch has already been
+     * authorised by the time it reaches here, and a scoped lookup would depend
+     * on the very context being resolved.
+     */
+    protected function resolveCompanyId(string $branchId, ?Authenticatable $user): string
+    {
+        $companyId = Branch::withoutGlobalScopes()
+            ->whereKey($branchId)
+            ->value('company_id');
+
+        return (string) ($companyId
+            ?? $user?->company_id
+            ?? Auth::user()?->company_id);
     }
 
     protected function displayDate(?string $date): ?string

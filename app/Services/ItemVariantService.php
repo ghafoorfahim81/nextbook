@@ -43,7 +43,7 @@ class ItemVariantService
             ]);
 
             $variant->item_id = $item->id;
-            $variant->branch_id = $item->branch_id;
+            $variant->company_id = $item->company_id;
             $variant->save();
 
             $kept[] = $variant->id;

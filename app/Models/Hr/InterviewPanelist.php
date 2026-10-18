@@ -5,7 +5,9 @@ namespace App\Models\Hr;
 use App\Enums\InterviewRecommendation;
 use App\Models\User;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,13 +24,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class InterviewPanelist extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'interview_id', 'employee_id', 'user_id', 'role', 'is_lead',
         'score', 'recommendation', 'feedback', 'submitted_at',
         'created_by', 'updated_by',

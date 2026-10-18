@@ -3,7 +3,9 @@
 namespace App\Models\Hr;
 
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -21,13 +23,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class AttendanceDeviceUser extends Model
 {
-    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'attendance_device_id',
         'employee_id',
         'device_user_id',

@@ -12,10 +12,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 class LedgerOpening extends Model
 {
-    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, SoftDeletes, BranchSpecific, HasBranch;
+    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, SoftDeletes, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
 
 
     protected $keyType = 'string';
@@ -27,6 +29,7 @@ class LedgerOpening extends Model
      * @var array
      */
     protected $fillable = [
+        'company_id',
         'ledgerable_id',
         'ledgerable_type',
         'transaction_id',

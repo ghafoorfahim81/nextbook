@@ -17,6 +17,7 @@ return new class extends Migration
 
         Schema::create('employees', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('code')->index();
 
             // The financial half of an employee. Created and kept in step by

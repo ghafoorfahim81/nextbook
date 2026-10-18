@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('transactions', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('currency_id')->index();
             $table->decimal('rate', 10, 4);
             $table->date('date')->index();

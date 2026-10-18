@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('transaction_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('transaction_id');
             $table->ulid('account_id');
             $table->ulid('ledger_id')->nullable();

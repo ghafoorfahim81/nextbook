@@ -8,8 +8,10 @@ use App\Models\Account\Account;
 use App\Models\Purchase\Purchase;
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -27,13 +29,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LandedCost extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, HasDynamicFilters, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $table = 'landed_costs';
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'date',
         'purchase_id',
         'bank_account_id',

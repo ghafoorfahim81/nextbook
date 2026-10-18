@@ -12,11 +12,13 @@ use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 
 class SaleQuotationItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, BranchSpecific, HasBranch;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -27,6 +29,7 @@ class SaleQuotationItem extends Model
      * @var array
      */
     protected $fillable = [
+        'company_id',
         'sale_quotation_id',
         'item_id',
         'variant_id',

@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
@@ -17,7 +19,7 @@ use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 class StockMovement extends Model
 {
-    use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific, HasBranch,BranchSpecific;
+    use HasUlids, SoftDeletes, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch,BranchSpecific;
     protected $table = 'stock_movements';
     protected $primaryKey = 'id';
     protected $keyType = 'string';
@@ -45,6 +47,7 @@ class StockMovement extends Model
         'deleted_by' => 'string',
     ];
     protected $fillable = [
+        'company_id',
         'id',
         'branch_id',
         'item_id',

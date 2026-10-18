@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('purchase_order_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('purchase_order_id');
             $table->ulid('item_id');
             $table->decimal('quantity', 10, 2);

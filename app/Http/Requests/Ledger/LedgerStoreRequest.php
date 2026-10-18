@@ -32,7 +32,7 @@ class LedgerStoreRequest extends FormRequest
                 'string',
                 Rule::unique('ledgers', 'code')
                     ->where(fn ($query) => $query
-                        ->where('branch_id', $this->user()?->branch_id)
+                        ->where('company_id', $this->user()?->company_id)
                         ->whereNull('deleted_at')),
             ],
             'address' => ['nullable', 'string'],

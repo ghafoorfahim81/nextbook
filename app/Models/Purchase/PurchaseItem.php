@@ -14,10 +14,12 @@ use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 class PurchaseItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasDependencyCheck, SoftDeletes, HasBranch;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, BranchSpecific, HasDependencyCheck, SoftDeletes, HasCompany, HasBranch;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -28,6 +30,7 @@ class PurchaseItem extends Model
      * @var array
      */
     protected $fillable = [
+        'company_id',
         'purchase_id',
         'item_id',
         'variant_id',

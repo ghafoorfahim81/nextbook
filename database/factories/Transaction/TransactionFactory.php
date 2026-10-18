@@ -37,6 +37,11 @@ class TransactionFactory extends Factory
             'reference_id' => null,
             'status' => TransactionStatus::POSTED->value,
             'branch_id' => Branch::factory(),
+            // Read off the branch rather than built separately, so the voucher
+            // and its branch always agree on the company.
+            'company_id' => fn (array $attributes) => Branch::withoutGlobalScopes()
+                ->whereKey($attributes['branch_id'])
+                ->value('company_id'),
             'remark' => fake()->optional()->sentence(),
         ];
     }

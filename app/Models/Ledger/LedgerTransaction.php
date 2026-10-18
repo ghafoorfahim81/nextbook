@@ -11,11 +11,14 @@ use App\Traits\HasSorting;
 use App\Models\Transaction\Transaction;
 use App\Models\Ledger\Ledger;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 class LedgerTransaction extends Model
 {
-    use HasFactory, HasUlids, HasSorting, SoftDeletes, BranchSpecific, HasBranch;
+    use HasFactory, HasUlids, HasSorting, SoftDeletes, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
     protected $fillable = [
+        'company_id',
         'transaction_id',
         'ledger_id',
         'deleted_by',

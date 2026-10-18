@@ -7,16 +7,19 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Models\Administration\Branch;
 use App\Enums\StockStatus;
 class StockBalance extends Model
 {
-    use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific, HasBranch;
+    use HasUlids, SoftDeletes, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
     protected $table = 'stock_balances';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $fillable = [
+        'company_id',
         'item_id',
         'variant_id',
         'lot_id',

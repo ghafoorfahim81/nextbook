@@ -3,7 +3,9 @@
 namespace App\Models\Inventory;
 
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -14,9 +16,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StockAdjustmentItem extends Model
 {
-    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $fillable = [
+        'company_id',
         'stock_adjustment_id',
         'item_id',
         'variant_id',

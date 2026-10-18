@@ -4,8 +4,10 @@ namespace App\Models\ItemTransfer;
 
 use App\Enums\TransactionStatus;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -20,11 +22,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransfer extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $table = 'item_transfers';
 
     protected $fillable = [
+        'company_id',
         'date',
         'from_warehouse_id',
         'to_warehouse_id',

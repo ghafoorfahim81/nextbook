@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('attachments', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('attachable_type')->index();
             $table->ulid('attachable_id')->index();
             $table->string('disk')->default('public');

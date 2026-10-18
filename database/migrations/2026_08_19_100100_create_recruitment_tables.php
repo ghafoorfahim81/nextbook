@@ -30,6 +30,7 @@ return new class extends Migration
 
         Schema::create('job_openings', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('code')->index();
             $table->string('title');
 
@@ -73,6 +74,7 @@ return new class extends Migration
 
         Schema::create('job_applications', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('job_opening_id')->index();
             $table->string('application_number')->index();
 
@@ -129,6 +131,7 @@ return new class extends Migration
 
         Schema::create('interviews', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('job_application_id')->index();
 
             $table->smallInteger('round')->default(1);
@@ -161,6 +164,7 @@ return new class extends Migration
 
         Schema::create('interview_panelists', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('interview_id')->index();
             // An employee, so the panel can be drawn from the org chart; a
             // user_id as well, because the reminder has to reach an inbox and

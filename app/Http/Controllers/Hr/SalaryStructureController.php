@@ -43,8 +43,8 @@ class SalaryStructureController extends Controller
         $structures = SalaryStructure::query()
             ->with([
                 'employee:id,full_name,code,branch_id',
-                'designation:id,name,branch_id',
-                'department:id,name,branch_id',
+                'designation:id,name,company_id',
+                'department:id,name,company_id',
                 'currency:id,code',
                 'createdBy:id,name',
             ])
@@ -97,8 +97,8 @@ class SalaryStructureController extends Controller
     {
         $salaryStructure->load([
             'employee:id,full_name,code,branch_id',
-            'designation:id,name,branch_id',
-            'department:id,name,branch_id',
+            'designation:id,name,company_id',
+            'department:id,name,company_id',
             'currency:id,code',
             'lines.component:id,name,code,component_type,branch_id',
             'createdBy:id,name',

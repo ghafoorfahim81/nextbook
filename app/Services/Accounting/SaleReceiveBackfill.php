@@ -72,7 +72,7 @@ class SaleReceiveBackfill
 
     private function migrateRow(object $row, bool $dryRun): void
     {
-        $sale = DB::table('sales')->where('id', $row->sale_id)->first(['id', 'number', 'customer_id', 'branch_id']);
+        $sale = DB::table('sales')->where('id', $row->sale_id)->first(['id', 'number', 'customer_id', 'branch_id', 'company_id']);
         $receipt = DB::table('receipts')->where('id', $row->receipt_id)->first(['id', 'number', 'ledger_id', 'branch_id']);
 
         if (! $sale || ! $receipt) {
@@ -82,7 +82,8 @@ class SaleReceiveBackfill
         }
 
         $branchId = (string) ($row->branch_id ?? $sale->branch_id);
-        $arAccountId = BranchContext::glAccount('account-receivable', $branchId);
+        $companyId = (string) ($row->company_id ?? $sale->company_id);
+        $arAccountId = BranchContext::glAccount('account-receivable', $companyId);
 
         if (! $arAccountId) {
             $this->skip($row, 'branch has no account-receivable account');

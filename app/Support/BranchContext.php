@@ -99,46 +99,69 @@ final class BranchContext
     }
 
     /**
-     * Default posting accounts for a branch, keyed by slug.
+     * The company the current request is acting in.
+     *
+     * The chart of accounts and the currency set moved up to the company, so
+     * the lookups below key on this rather than on the branch. Resolved from
+     * the container binding the middleware sets, never from request input.
+     */
+    public static function companyId(): ?string
+    {
+        if (app()->bound('active_company_id')) {
+            $companyId = app('active_company_id');
+
+            if ($companyId) {
+                return (string) $companyId;
+            }
+        }
+
+        $companyId = Auth::user()?->company_id;
+
+        return $companyId ? (string) $companyId : null;
+    }
+
+    /**
+     * Default posting accounts for a company, keyed by slug.
      *
      * @return Collection<string, string>
      */
-    public static function glAccounts(?string $branchId = null): Collection
+    public static function glAccounts(?string $companyId = null): Collection
     {
-        $branchId = $branchId ?? self::branchId();
+        $companyId = $companyId ?? self::companyId();
 
-        if (! $branchId) {
+        if (! $companyId) {
             return collect();
         }
 
-        return self::$glAccounts[$branchId] ??= Account::query()
-            ->withoutGlobalScope('branchSpecific')
+        return self::$glAccounts[$companyId] ??= Account::query()
+            ->withoutGlobalScope('companySpecific')
             ->where('company_id', $companyId)
             ->whereIn('slug', self::GL_ACCOUNT_SLUGS)
             ->pluck('id', 'slug');
     }
 
     /**
-     * A single default posting account id, or null when the branch does not have it.
+     * A single default posting account id, or null when the company does not
+     * have it.
      */
-    public static function glAccount(string $slug, ?string $branchId = null): ?string
+    public static function glAccount(string $slug, ?string $companyId = null): ?string
     {
-        return self::glAccounts($branchId)->get($slug);
+        return self::glAccounts($companyId)->get($slug);
     }
 
     /**
-     * The base currency of a branch.
+     * The base currency of a company.
      */
-    public static function homeCurrency(?string $branchId = null): ?Currency
+    public static function homeCurrency(?string $companyId = null): ?Currency
     {
-        $branchId = $branchId ?? self::branchId();
+        $companyId = $companyId ?? self::companyId();
 
-        if (! $branchId) {
+        if (! $companyId) {
             return null;
         }
 
-        return self::$homeCurrency[$branchId] ??= Currency::query()
-            ->withoutGlobalScope('branchSpecific')
+        return self::$homeCurrency[$companyId] ??= Currency::query()
+            ->withoutGlobalScope('companySpecific')
             ->where('company_id', $companyId)
             ->where('is_base_currency', true)
             ->first();
@@ -158,15 +181,15 @@ final class BranchContext
      *
      * Call after creating, renaming or deleting default accounts or currencies.
      */
-    public static function flush(?string $branchId = null): void
+    public static function flush(?string $companyId = null): void
     {
-        if ($branchId === null) {
+        if ($companyId === null) {
             self::$glAccounts = [];
             self::$homeCurrency = [];
 
             return;
         }
 
-        unset(self::$glAccounts[$branchId], self::$homeCurrency[$branchId]);
+        unset(self::$glAccounts[$companyId], self::$homeCurrency[$companyId]);
     }
 }

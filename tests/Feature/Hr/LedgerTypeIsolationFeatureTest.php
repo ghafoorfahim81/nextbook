@@ -174,7 +174,7 @@ class LedgerTypeIsolationFeatureTest extends TestCase
 
     public function test_payroll_control_accounts_resolve_by_slug(): void
     {
-        BranchContext::flush($this->ctx['branch']->id);
+        BranchContext::flush($this->ctx['company']->id);
 
         foreach (['payroll-liabilities', 'salary-tax-payable', 'employee-advances', 'employee-loans-receivable'] as $slug) {
             $this->assertNotNull(

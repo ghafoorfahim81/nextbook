@@ -13,6 +13,7 @@ use App\Models\Transaction\TransactionLine;
 use Laravel\Scout\Searchable;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasCache;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
@@ -20,10 +21,11 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 class JournalEntry extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $table = 'journal_entries';
     protected $primaryKey = 'id';
@@ -31,6 +33,7 @@ class JournalEntry extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'company_id',
         'number',
         'date',
         'remark',

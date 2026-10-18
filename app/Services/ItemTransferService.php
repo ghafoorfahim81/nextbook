@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Enums\TransactionStatus;
 use App\Models\Account\Account;
+use App\Models\Administration\Warehouse;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Models\ItemTransfer\ItemTransferItem;
 use Illuminate\Support\Facades\DB;
@@ -37,8 +38,17 @@ class ItemTransferService
             // Validate stock availability for all items
             $this->validateStockAvailability($data['items'], $data['from_warehouse_id']);
 
+            // Both levels come off the source warehouse rather than the
+            // request context: a transfer always belongs to the books the stock
+            // is leaving, including when it is created from a job or a command.
+            $source = Warehouse::withoutGlobalScopes()
+                ->whereKey($data['from_warehouse_id'])
+                ->first(['company_id', 'branch_id']);
+
             // Create transfer record
             $transfer = ItemTransfer::create([
+                'company_id' => $source?->company_id,
+                'branch_id' => $source?->branch_id,
                 'date' => $this->dateConversionService->toGregorian($data['date']),
                 'from_warehouse_id' => $data['from_warehouse_id'],
                 'to_warehouse_id' => $data['to_warehouse_id'],

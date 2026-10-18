@@ -27,7 +27,7 @@ class ContraClearingAccountMigrationTest extends TestCase
         return require database_path('migrations/2026_09_26_000002_create_contra_clearing_account.php');
     }
 
-    private function deleteTheClearingAccount(string $branchId): void
+    private function deleteTheClearingAccount(string $companyId): void
     {
         DB::table('accounts')
             ->where('company_id', $companyId)
@@ -38,7 +38,7 @@ class ContraClearingAccountMigrationTest extends TestCase
     public function test_it_provisions_the_account_on_an_existing_branch(): void
     {
         $ctx = $this->bootstrapErpContext();
-        $this->deleteTheClearingAccount($ctx['branch']->id);
+        $this->deleteTheClearingAccount($ctx['company']->id);
 
         $this->migration()->up();
 
@@ -57,7 +57,7 @@ class ContraClearingAccountMigrationTest extends TestCase
     public function test_running_it_twice_does_not_create_a_second_one(): void
     {
         $ctx = $this->bootstrapErpContext();
-        $this->deleteTheClearingAccount($ctx['branch']->id);
+        $this->deleteTheClearingAccount($ctx['company']->id);
 
         $this->migration()->up();
         $this->migration()->up();
@@ -74,7 +74,7 @@ class ContraClearingAccountMigrationTest extends TestCase
     public function test_it_walks_past_a_number_someone_else_already_used(): void
     {
         $ctx = $this->bootstrapErpContext();
-        $this->deleteTheClearingAccount($ctx['branch']->id);
+        $this->deleteTheClearingAccount($ctx['company']->id);
 
         // Account numbers are unique per branch and users add their own, so
         // 3070 may well be occupied by the time this runs.
