@@ -65,8 +65,11 @@ foreach (['app', 'database/seeders', 'database/factories', 'tests'] as $root) {
 
             // Deriving one from the other legitimately mentions both:
             //   $companyId = ...branches...->value('company_id');
-            $derives = preg_match('/\$companyId\s*=.*branches/', $line)
-                || preg_match('/\$branchId\s*=.*\bcompany\b/', $line);
+            $derives = preg_match('/\$companyId\s*=.*(branches|Branch::)/', $line)
+                || preg_match('/\$branchId\s*=.*\bcompany\b/', $line)
+                // 'company_id' => <branch lookup> is the same derivation,
+                // written inline into a row.
+                || preg_match("/'company_id'\s*=>.*Branch::.*value\('company_id'\)/", $line);
 
             if (! $derives
                 && (($hasCompanyCol && $hasBranchVal && ! $hasBranchCol)
