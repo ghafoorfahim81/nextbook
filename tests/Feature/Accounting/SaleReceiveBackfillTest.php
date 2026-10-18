@@ -51,6 +51,11 @@ class SaleReceiveBackfillTest extends TestCase
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->ulid('branch_id');
+            // The legacy table is rebuilt here because the migration that
+            // retired it drops it. It carries a company for the same reason
+            // every other table does — the backfill reads it to decide which
+            // books a settlement belongs in.
+            $table->ulid('company_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
