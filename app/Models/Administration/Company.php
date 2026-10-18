@@ -66,6 +66,9 @@ class Company extends Model
         'locale',
         'currency_id',
         'costing_method',
+        'license_number',
+        'license_issued_at',
+        'license_expires_at',
         'email',
         'website',
         'invoice_description',
@@ -88,6 +91,8 @@ class Company extends Model
             'working_style' => WorkingStyle::class,
             'business_type' => BusinessType::class,
             'preferences' => 'array',
+            'license_issued_at' => 'date',
+            'license_expires_at' => 'date',
             'locale' => Locale::class,
             'costing_method' => CostingMethod::class,
         ];
