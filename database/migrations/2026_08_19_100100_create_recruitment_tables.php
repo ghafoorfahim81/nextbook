@@ -180,7 +180,6 @@ return new class extends Migration
             $table->text('feedback')->nullable();
             $table->timestamp('submitted_at')->nullable();
 
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
@@ -222,7 +221,6 @@ return new class extends Migration
             $table->foreign('interview_id')->references('id')->on('interviews')->onDelete('cascade');
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

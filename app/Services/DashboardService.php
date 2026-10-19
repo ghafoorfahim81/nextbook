@@ -863,7 +863,7 @@ class DashboardService
                     ->where('i.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('i.deleted_at');
             })
-            ->where('si.branch_id', $branchId)
+            ->where('s.branch_id', $branchId)
             ->whereNull('si.deleted_at')
             ->whereBetween('s.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->groupBy('si.item_id', 'i.name')
@@ -906,7 +906,7 @@ class DashboardService
                     ->where('i.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('i.deleted_at');
             })
-            ->where('pi.branch_id', $branchId)
+            ->where('p.branch_id', $branchId)
             ->whereNull('pi.deleted_at')
             ->whereBetween('p.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->groupBy('pi.item_id', 'i.name')

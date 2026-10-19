@@ -48,7 +48,6 @@ class HrReminderFeatureTest extends TestCase
     {
         return EmployeeContract::factory()->expiringInDays($expiresInDays)->create([
             'employee_id' => $this->employee->id,
-            'branch_id' => $this->ctx['branch']->id,
         ]);
     }
 
@@ -56,7 +55,6 @@ class HrReminderFeatureTest extends TestCase
     {
         return EmployeeDocument::factory()->expiringInDays($expiresInDays)->create([
             'employee_id' => $this->employee->id,
-            'branch_id' => $this->ctx['branch']->id,
         ]);
     }
 
@@ -105,7 +103,6 @@ class HrReminderFeatureTest extends TestCase
     {
         EmployeeContract::factory()->create([
             'employee_id' => $this->employee->id,
-            'branch_id' => $this->ctx['branch']->id,
             'contract_type' => 'permanent',
             'end_date' => null,
         ]);

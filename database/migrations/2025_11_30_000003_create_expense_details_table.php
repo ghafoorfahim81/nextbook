@@ -14,7 +14,6 @@ return new class extends Migration
             $table->ulid('expense_id')->index();
             $table->decimal('amount', 15, 2);
             $table->string('title'); 
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable(); 
@@ -23,7 +22,6 @@ return new class extends Migration
         });
         Schema::table('expense_details', function (Blueprint $table) {
             $table->foreign('expense_id')->references('id')->on('expenses');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

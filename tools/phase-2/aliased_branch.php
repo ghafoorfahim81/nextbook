@@ -3,7 +3,7 @@
 require_once __DIR__ . '/bootstrap.php';
 
 /**
- * `alias.branch_id` where the alias is bound to a company-level table.
+ * `alias.branch_id` where the alias is bound to a table without branch_id.
  *
  * report_aliases.php does this for ReportService alone. The same query shape
  * lives in DashboardService and NotificationService, which no test reached
@@ -14,7 +14,7 @@ require_once __DIR__ . '/bootstrap.php';
  * accounts here, attendances there) is reported as ambiguous: look at the
  * query, the file-wide map cannot tell.
  */
-const COMPANY_ONLY_TABLES = [
+const NO_BRANCH_TABLES = [
     'account_types', 'accounts', 'brands', 'categories', 'currencies',
     'customer_groups', 'departments', 'designations', 'discount_rules',
     'expense_categories', 'financial_periods', 'holidays', 'hr_settings',
@@ -24,6 +24,13 @@ const COMPANY_ONLY_TABLES = [
     'salary_components', 'salary_structure_lines', 'salary_structures',
     'shifts', 'sizes', 'tax_bracket_sets', 'tax_brackets', 'transaction_lines',
     'unit_measures',
+    // Category C, step 7: lines and child records take the parent's branch.
+    'sale_items', 'sale_order_items', 'sale_quotation_items', 'sale_return_items',
+    'purchase_items', 'purchase_order_items', 'purchase_quotation_items',
+    'purchase_return_items', 'stock_adjustment_items', 'item_transfer_items',
+    'expense_details', 'payroll_lines', 'payroll_line_components',
+    'salary_payment_lines', 'landed_cost_items', 'landed_cost_category_allocations',
+    'employee_documents', 'employee_contracts', 'interview_panelists', 'attachments',
 ];
 
 $patterns = [
@@ -53,7 +60,7 @@ foreach (phpFiles(repo('app')) as $file) {
     preg_match_all('/\b([a-z_0-9]+)\.branch_id\b/', $src, $m, PREG_OFFSET_CAPTURE);
     foreach ($m[1] as [$alias, $offset]) {
         $tables = array_keys($map[$alias] ?? []);
-        $company = array_intersect($tables, COMPANY_ONLY_TABLES);
+        $company = array_intersect($tables, NO_BRANCH_TABLES);
         if ($company === []) {
             continue;
         }

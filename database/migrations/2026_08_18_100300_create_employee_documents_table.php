@@ -44,15 +44,14 @@ return new class extends Migration
             $table->timestamp('last_reminded_at')->nullable();
             $table->text('remark')->nullable();
 
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
             $table->timestamps();
 
-            $table->index(['branch_id', 'expiry_date']);
-            $table->index(['branch_id', 'employee_id', 'document_type']);
+            $table->index(['company_id', 'expiry_date']);
+            $table->index(['company_id', 'employee_id', 'document_type']);
         });
 
         Schema::enableForeignKeyConstraints();
@@ -60,7 +59,6 @@ return new class extends Migration
         Schema::table('employee_documents', function (Blueprint $table) {
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
             $table->foreign('verified_by')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

@@ -132,7 +132,6 @@ return new class extends Migration
             $table->ulid('currency_id')->nullable()->index();
             $table->decimal('rate', 19, 8)->default(1);
 
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
@@ -189,7 +188,6 @@ return new class extends Migration
             $table->foreign('payroll_line_id')->references('id')->on('payroll_lines');
             $table->foreign('employee_id')->references('id')->on('employees');
             $table->foreign('currency_id')->references('id')->on('currencies')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

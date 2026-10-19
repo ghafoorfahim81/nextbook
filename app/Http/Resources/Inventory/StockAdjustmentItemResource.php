@@ -65,7 +65,6 @@ class StockAdjustmentItemResource extends JsonResource
             'batch' => $this->batch,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
             'category_id' => $this->category_id,
-            'branch_id' => $this->branch_id,
         ];
     }
 }

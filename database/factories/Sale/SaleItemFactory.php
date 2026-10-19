@@ -2,7 +2,6 @@
 
 namespace Database\Factories\Sale;
 
-use App\Models\Administration\Branch;
 use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
@@ -29,12 +28,10 @@ class SaleItemFactory extends Factory
             'discount' => fake()->randomFloat(2, 0, 10),
             'free' => fake()->randomFloat(2, 0, 5),
             'tax' => fake()->randomFloat(2, 0, 5),
-            'branch_id' => Branch::factory(),
-            // Read off the branch rather than built separately: a document's
-            // company and its branch's company have to agree, and the composite
-            // foreign key enforces that.
-            'company_id' => fn (array $attributes) => Branch::withoutGlobalScopes()
-                ->whereKey($attributes['branch_id'])
+            // Read off the sale: a line has no branch of its own, and its
+            // company has to be the one its document is filed in.
+            'company_id' => fn (array $attributes) => Sale::withoutGlobalScopes()
+                ->whereKey($attributes['sale_id'])
                 ->value('company_id'),
         ];
     }

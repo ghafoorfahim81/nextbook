@@ -3,7 +3,6 @@
 namespace Database\Factories\Hr;
 
 use App\Enums\EmployeeDocumentType;
-use App\Models\Administration\Branch;
 use App\Models\Hr\Employee;
 use App\Models\Hr\EmployeeDocument;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,12 +23,10 @@ class EmployeeDocumentFactory extends Factory
             'expiry_date' => Carbon::today()->addYear()->toDateString(),
             'is_verified' => false,
             'reminder_days_before' => 30,
-            'branch_id' => Branch::factory(),
-            // Read off the branch rather than built separately: a document's
-            // company and its branch's company have to agree, and the composite
-            // foreign key enforces that.
-            'company_id' => fn (array $attributes) => Branch::withoutGlobalScopes()
-                ->whereKey($attributes['branch_id'])
+            // Read off the employee: the record has no branch of its own, and
+            // its company has to be the employee's.
+            'company_id' => fn (array $attributes) => Employee::withoutGlobalScopes()
+                ->whereKey($attributes['employee_id'])
                 ->value('company_id'),
         ];
     }

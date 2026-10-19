@@ -2,6 +2,7 @@
 
 namespace App\Services\Hr;
 
+use App\Models\Hr\Employee;
 use App\Models\Hr\EmployeeContract;
 use App\Models\Hr\EmployeeDocument;
 use App\Models\User;
@@ -36,7 +37,7 @@ class HrReminderService
 
         foreach ($this->recipientsByBranch('notifications.contract_expiry_alert') as $branchId => $users) {
             $contracts = EmployeeContract::withoutGlobalScopes()
-                ->where('branch_id', $branchId)
+                ->whereIn('employee_id', $this->employeesOf($branchId))
                 ->whereNull('deleted_at')
                 ->with('employee:id,full_name,code')
                 ->dueForRenewalReminder($asOf)
@@ -94,7 +95,7 @@ class HrReminderService
 
         foreach ($this->recipientsByBranch('notifications.document_expiry_alert') as $branchId => $users) {
             $documents = EmployeeDocument::withoutGlobalScopes()
-                ->where('branch_id', $branchId)
+                ->whereIn('employee_id', $this->employeesOf($branchId))
                 ->whereNull('deleted_at')
                 ->with('employee:id,full_name,code')
                 ->dueForExpiryReminder($asOf)
@@ -137,6 +138,17 @@ class HrReminderService
         }
 
         return $sent;
+    }
+
+    /**
+     * Ids of the branch's employees, as a sub-query. Contracts and documents
+     * carry no branch of their own; they belong to the employee's.
+     */
+    private function employeesOf(string $branchId): \Illuminate\Database\Eloquent\Builder
+    {
+        return Employee::withoutGlobalScopes()
+            ->where('branch_id', $branchId)
+            ->select('id');
     }
 
     /**

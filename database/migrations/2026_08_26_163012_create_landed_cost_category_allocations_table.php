@@ -19,7 +19,6 @@ return new class extends Migration
             $table->ulid('landed_cost_id')->index();
             $table->ulid('landed_cost_category_id')->index();
             $table->decimal('amount', 12, 2)->default(0);
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
@@ -27,13 +26,12 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->unique(['landed_cost_id', 'landed_cost_category_id']);
-            $table->index(['branch_id', 'landed_cost_id']);
+            $table->index(['company_id', 'landed_cost_id']);
         });
 
         Schema::table('landed_cost_category_allocations', function (Blueprint $table): void {
             $table->foreign('landed_cost_id')->references('id')->on('landed_costs')->cascadeOnDelete();
             $table->foreign('landed_cost_category_id')->references('id')->on('landed_cost_categories');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
             $table->foreign('deleted_by')->references('id')->on('users')->nullOnDelete();

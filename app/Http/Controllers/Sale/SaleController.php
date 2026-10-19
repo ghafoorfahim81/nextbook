@@ -1711,11 +1711,11 @@ class SaleController extends Controller
 
             $affectedCombos = $sale->items()
                 ->withTrashed()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->get(['item_id', 'warehouse_id'])
                 ->map(fn ($item) => [
                     'item_id' => $item->item_id,
                     'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $sale->branch_id,
+                    'branch_id' => $sale->branch_id,
                 ])
                 ->all();
 

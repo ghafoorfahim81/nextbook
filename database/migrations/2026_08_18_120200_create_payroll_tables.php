@@ -115,14 +115,13 @@ return new class extends Migration
 
             $table->text('remark')->nullable();
 
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
             $table->timestamps();
 
-            $table->index(['branch_id', 'employee_id']);
+            $table->index(['company_id', 'employee_id']);
         });
 
         // The payslip breakdown. Required, not optional: a payslip reprinted two
@@ -149,7 +148,6 @@ return new class extends Migration
             $table->ulid('account_id')->nullable()->index();
             $table->smallInteger('sequence')->default(0);
 
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->nullable()->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
@@ -179,7 +177,6 @@ return new class extends Migration
             $table->foreign('salary_structure_id')->references('id')->on('salary_structures')->onDelete('set null');
             $table->foreign('tax_bracket_set_id')->references('id')->on('tax_bracket_sets')->onDelete('set null');
             $table->foreign('currency_id')->references('id')->on('currencies')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
@@ -189,7 +186,6 @@ return new class extends Migration
             $table->foreign('payroll_line_id')->references('id')->on('payroll_lines')->onDelete('cascade');
             $table->foreign('salary_component_id')->references('id')->on('salary_components')->onDelete('set null');
             $table->foreign('account_id')->references('id')->on('accounts')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

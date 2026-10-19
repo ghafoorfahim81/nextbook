@@ -330,7 +330,6 @@ class StockAdjustmentService
                     ? $this->dateConversionService->toGregorian($line['expire_date'])
                     : null,
                 'category_id' => $line['category_id'] ?? $itemModel->category_id,
-                'branch_id' => $adjustment->branch_id,
             ]);
 
             $stockPayloads[] = [
