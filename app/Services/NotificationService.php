@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Administration\Branch;
 use App\Enums\TransactionStatus;
 use App\Enums\UserStatus;
 use App\Http\Resources\NotificationResource;
@@ -16,6 +17,9 @@ use Illuminate\Support\Facades\Lang;
 
 class NotificationService
 {
+    /** branch id => company id, memoised per instance. */
+    private array $companyIds = [];
+
     /** Read notifications are dropped after this many days. */
     public const READ_RETENTION_DAYS = 90;
 
@@ -602,7 +606,7 @@ class NotificationService
         return DB::table('accounts as a')
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
             ->leftJoinSub($balances, 'balances', fn ($join) => $join->on('balances.account_id', '=', 'a.id'))
-            ->where('a.branch_id', $branchId)
+            ->where('a.company_id', $this->companyOf($branchId))
             ->whereNull('a.deleted_at')
             ->where('a.is_active', true)
             ->where('at.slug', 'cash-or-bank')
@@ -625,7 +629,7 @@ class NotificationService
 
         return DB::table('items as i')
             ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $branchId)
+            ->where('i.company_id', $this->companyOf($branchId))
             ->whereNull('i.deleted_at')
             ->whereNotNull('i.minimum_stock')
             ->whereRaw('COALESCE(stock_totals.current_quantity, 0) <= i.minimum_stock')
@@ -1028,5 +1032,17 @@ class NotificationService
     protected function formatQuantity(mixed $value): string
     {
         return number_format($this->quantityValue($value), 2, '.', ',');
+    }
+
+    /**
+     * The company a branch belongs to, for joins against company master data
+     * (accounts, items, ledgers). The documents stay filtered by branch; what
+     * they point at is shared by every branch of the company.
+     */
+    protected function companyOf(string $branchId): ?string
+    {
+        return $this->companyIds[$branchId] ??= Branch::withoutGlobalScopes()
+            ->whereKey($branchId)
+            ->value('company_id');
     }
 }

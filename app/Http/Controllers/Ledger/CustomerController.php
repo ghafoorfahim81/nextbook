@@ -338,7 +338,7 @@ class CustomerController extends Controller
 
         $list = $validated['list'] ?? 'sales';
         $format = $validated['format'] ?? 'xlsx';
-        $customer->loadMissing(['currency', 'branch']);
+        $customer->loadMissing(['currency']);
 
         $translate = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
 

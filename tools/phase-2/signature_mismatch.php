@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/bootstrap.php';
+
 /**
  * Bug class three from docs/phase-2-handoff.md: a method whose signature moved
  * up to the company while a caller still hands it a branch.
@@ -19,12 +21,7 @@ $dirs = array_slice($argv, 1) ?: ['app', 'database', 'tests'];
 
 $files = [];
 foreach ($dirs as $dir) {
-    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS));
-    foreach ($it as $f) {
-        if ($f->getExtension() === 'php') {
-            $files[] = $f->getPathname();
-        }
-    }
+    $files = array_merge($files, phpFiles(repo($dir)));
 }
 
 /** Split an argument list on top-level commas. */
@@ -136,7 +133,7 @@ foreach ($files as $file) {
         }
         if ($suspect) {
             $line = substr_count($src, "\n", 0, $m[0][$k][1]) + 1;
-            $hits[] = sprintf('%s:%d  %s(... %s ...)', $file, $line, $name, implode(', ', $suspect));
+            $hits[] = sprintf('%s:%d  %s(... %s ...)', rel($file), $line, $name, implode(', ', $suspect));
         }
     }
 }

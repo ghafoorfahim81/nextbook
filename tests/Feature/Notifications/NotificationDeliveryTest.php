@@ -326,6 +326,7 @@ class NotificationDeliveryTest extends TestCase
 
         TransactionLine::withoutEvents(fn () => TransactionLine::create([
             'transaction_id' => $transaction->id,
+            'company_id' => $transaction->company_id,
             'account_id' => $this->ctx['accounts']['account-receivable']->id,
             'ledger_id' => $this->ctx['customer_ledger']->id,
             'currency_id' => $this->ctx['currency']->id,

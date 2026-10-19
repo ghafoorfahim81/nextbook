@@ -338,7 +338,7 @@ class SupplierController extends Controller
 
         $list = $validated['list'] ?? 'purchases';
         $format = $validated['format'] ?? 'xlsx';
-        $supplier->loadMissing(['currency', 'branch']);
+        $supplier->loadMissing(['currency']);
 
         $translate = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
 

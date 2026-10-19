@@ -204,6 +204,7 @@ class PartyBothCustomerAndSupplierTest extends TestCase
         DB::table('transaction_lines')->insert([
             'id' => (string) \Illuminate\Support\Str::ulid(),
             'transaction_id' => $transactionId,
+            'company_id' => $this->ctx['company']->id,
             'account_id' => $this->ctx['accounts'][$accountSlug]->id,
             'ledger_id' => $ledger->id,
             'currency_id' => $this->ctx['currency']->id,
