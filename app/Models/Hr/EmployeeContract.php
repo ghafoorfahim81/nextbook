@@ -5,11 +5,9 @@ namespace App\Models\Hr;
 use App\Enums\ContractStatus;
 use App\Enums\ContractType;
 use App\Models\Administration\Currency;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -24,8 +22,7 @@ use Illuminate\Support\Carbon;
 
 class EmployeeContract extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, HasDynamicFilters, CompanySpecific, HasCompanyFromParent, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -63,7 +60,6 @@ class EmployeeContract extends Model
             'employee_id' => 'string',
             'currency_id' => 'string',
             'renewed_from_id' => 'string',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'contract_type' => ContractType::class,
@@ -145,5 +141,11 @@ class EmployeeContract extends Model
                 $q->whereNull('last_reminded_at')
                     ->orWhere('last_reminded_at', '<', $asOf->startOfDay());
             });
+    }
+
+    /** No branch of its own: the employee holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'employee';
     }
 }

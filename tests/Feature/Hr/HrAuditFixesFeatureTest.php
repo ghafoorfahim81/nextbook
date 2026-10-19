@@ -602,7 +602,6 @@ class HrAuditFixesFeatureTest extends TestCase
         $panelist = InterviewPanelist::create([
             'interview_id' => $interview->id,
             'employee_id' => $this->employee->id,
-            'branch_id' => $this->ctx['branch']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 

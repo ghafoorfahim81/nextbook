@@ -11,14 +11,12 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 
 class PurchaseQuotationItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, CompanySpecific, HasCompanyFromParent;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -43,7 +41,6 @@ class PurchaseQuotationItem extends Model
         'discount',
         'created_by',
         'updated_by',
-        'branch_id',
     ];
 
     /**
@@ -67,7 +64,6 @@ class PurchaseQuotationItem extends Model
             'discount' => 'decimal:2',
             'created_by' => 'string',
             'updated_by' => 'string',
-            'branch_id' => 'string',
         ];
     }
 
@@ -109,5 +105,11 @@ class PurchaseQuotationItem extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Category::class);
+    }
+
+    /** No branch of its own: the purchaseQuotation holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'purchaseQuotation';
     }
 }

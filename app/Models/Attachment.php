@@ -2,10 +2,8 @@
 
 namespace App\Models;
 
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Attachment extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasCompany, HasBranch, CompanySpecific, BranchSpecific, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, HasCompanyFromParent, CompanySpecific, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -53,5 +51,11 @@ class Attachment extends Model
     public function getUrlAttribute(): string
     {
         return Storage::disk($this->disk)->url($this->path);
+    }
+
+    /** No branch of its own: the attachable holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'attachable';
     }
 }

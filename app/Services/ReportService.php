@@ -998,7 +998,7 @@ class ReportService
             })
             ->join('sale_items as si', function ($join) use ($filters) {
                 $join->on('si.sale_id', '=', 's.id')
-                    ->where('si.branch_id', '=', $filters['branch_id'])
+                    ->where('s.branch_id', '=', $filters['branch_id'])
                     ->whereNull('si.deleted_at');
             })
             ->join('items as i', function ($join) use ($filters) {
@@ -1181,7 +1181,7 @@ class ReportService
             })
             ->join('purchase_items as pi', function ($join) use ($filters) {
                 $join->on('pi.purchase_id', '=', 'p.id')
-                    ->where('pi.branch_id', '=', $filters['branch_id'])
+                    ->where('p.branch_id', '=', $filters['branch_id'])
                     ->whereNull('pi.deleted_at');
             })
             ->join('items as i', function ($join) use ($filters) {
@@ -3009,7 +3009,7 @@ class ReportService
             })
             ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
             ->leftJoin('currencies as c', 'c.id', '=', 'pl.currency_id')
-            ->where('pl.branch_id', $filters['branch_id'])
+            ->where('p.branch_id', $filters['branch_id'])
             ->whereNull('pl.deleted_at')
             // Cancelled and reversed runs are excluded: they are not what
             // anybody was paid, and including them would double the register
@@ -3172,7 +3172,7 @@ class ReportService
             })
             ->leftJoin('tax_bracket_sets as tbs', 'tbs.id', '=', 'pl.tax_bracket_set_id')
             ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
-            ->where('pl.branch_id', $filters['branch_id'])
+            ->where('p.branch_id', $filters['branch_id'])
             ->whereNull('pl.deleted_at')
             ->whereIn('p.status', [
                 PayrollStatus::Posted->value,
@@ -3693,7 +3693,7 @@ class ReportService
             })
             ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
             ->leftJoin('designations as dg', 'dg.id', '=', 'e.designation_id')
-            ->where('ec.branch_id', $filters['branch_id'])
+            ->where('e.branch_id', $filters['branch_id'])
             ->whereNull('ec.deleted_at')
             ->whereNotNull('ec.end_date');
 

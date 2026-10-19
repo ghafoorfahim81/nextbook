@@ -5,10 +5,8 @@ namespace App\Models\Hr;
 use App\Enums\PayrollLinePaymentStatus;
 use App\Models\Administration\Currency;
 use App\Models\Transaction\TransactionLine;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -30,8 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class PayrollLine extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable,
-        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDynamicFilters, CompanySpecific, HasCompanyFromParent, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -58,7 +55,6 @@ class PayrollLine extends Model
             'tax_bracket_set_id' => 'string',
             'liability_line_id' => 'string',
             'currency_id' => 'string',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'rate' => 'decimal:8',
@@ -136,5 +132,11 @@ class PayrollLine extends Model
     public function outstanding(): float
     {
         return round((float) $this->net_payable - (float) $this->paid_amount, 4);
+    }
+
+    /** No branch of its own: the payroll holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'payroll';
     }
 }

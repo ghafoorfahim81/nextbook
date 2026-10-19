@@ -439,14 +439,12 @@ class HrReportFeatureTest extends TestCase
     {
         \App\Models\Hr\EmployeeContract::factory()->create([
             'employee_id' => $this->employee->id,
-            'branch_id' => $this->ctx['branch']->id,
             'start_date' => '2025-08-15',
             'end_date' => '2026-08-15',
         ]);
 
         \App\Models\Hr\EmployeeContract::factory()->create([
             'employee_id' => $this->employee->id,
-            'branch_id' => $this->ctx['branch']->id,
             'start_date' => '2026-01-01',
             'end_date' => '2027-01-01',
         ]);
@@ -515,7 +513,6 @@ class HrReportFeatureTest extends TestCase
 
         \App\Models\Hr\EmployeeContract::factory()->create([
             'employee_id' => $this->employee->id,
-            'branch_id' => $this->ctx['branch']->id,
             'start_date' => '2025-08-15',
             'end_date' => '2026-08-15',
         ]);

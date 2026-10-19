@@ -13,13 +13,11 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 class PurchaseItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, BranchSpecific, HasDependencyCheck, SoftDeletes, HasCompany, HasBranch;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, HasDependencyCheck, SoftDeletes, HasCompanyFromParent;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -45,7 +43,6 @@ class PurchaseItem extends Model
         'tax',
         'created_by',
         'updated_by',
-        'branch_id',
     ];
 
     /**
@@ -70,7 +67,6 @@ class PurchaseItem extends Model
             'tax' => 'decimal:2',
             'created_by' => 'string',
             'updated_by' => 'string',
-            'branch_id' => 'string',
         ];
     }
 
@@ -141,5 +137,11 @@ class PurchaseItem extends Model
     public function remainingReturnableQuantity(?string $excludingPurchaseReturnId = null): float
     {
         return max((float) $this->quantity - $this->returnedQuantity($excludingPurchaseReturnId), 0.0);
+    }
+
+    /** No branch of its own: the purchase holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'purchase';
     }
 }

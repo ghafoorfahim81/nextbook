@@ -2,10 +2,8 @@
 
 namespace App\Models\Inventory;
 
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -18,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LandedCostItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, CompanySpecific, HasCompanyFromParent, SoftDeletes;
 
     protected $table = 'landed_cost_items';
     protected $keyType = 'string';
@@ -40,7 +38,6 @@ class LandedCostItem extends Model
         'allocated_amount',
         'item_cost_before',
         'item_cost_after',
-        'branch_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -63,7 +60,6 @@ class LandedCostItem extends Model
             'allocated_amount' => 'decimal:2',
             'item_cost_before' => 'decimal:2',
             'item_cost_after' => 'decimal:2',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'deleted_by' => 'string',
@@ -83,5 +79,11 @@ class LandedCostItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /** No branch of its own: the landedCost holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'landedCost';
     }
 }

@@ -28,15 +28,14 @@ return new class extends Migration
             $table->decimal('discount', 18, 4)->default(0)->nullable();
             $table->decimal('free', 18, 4)->default(0)->nullable();
             $table->decimal('tax', 18, 4)->default(0)->nullable();
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
-            $table->index(['branch_id', 'purchase_id']);
-            $table->index(['branch_id', 'item_id']);
-            $table->index(['branch_id', 'warehouse_id']);
-            $table->index(['branch_id', 'batch']);
-            $table->index(['branch_id', 'expire_date']);
+            $table->index(['company_id', 'purchase_id']);
+            $table->index(['company_id', 'item_id']);
+            $table->index(['company_id', 'warehouse_id']);
+            $table->index(['company_id', 'batch']);
+            $table->index(['company_id', 'expire_date']);
             $table->timestamps();
             $table->softDeletes();
         });
@@ -48,7 +47,6 @@ return new class extends Migration
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
             $table->foreign('warehouse_id')->references('id')->on('warehouses');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
