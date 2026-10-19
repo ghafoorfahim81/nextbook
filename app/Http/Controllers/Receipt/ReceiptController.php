@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
+use App\Support\Inertia\CacheForget;
 use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
@@ -323,7 +324,7 @@ class ReceiptController extends Controller
 
             return $receipt;
         });
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         if ($request->input('create_and_new')) {
             return redirect()->route('receipts.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
@@ -500,7 +501,7 @@ class ReceiptController extends Controller
             );
 
             $this->refreshSettledDocuments($transaction->id);
-            Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+            CacheForget::lookupEverywhere($request, 'ledgers');
 
             $activityLogService->logUpdate(
                 reference: $receipt,
@@ -521,7 +522,7 @@ class ReceiptController extends Controller
                     'transaction_id' => $transaction->id,
                 ],
             );
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
         });
 
         $redirect = redirect()->route('receipts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
@@ -625,7 +626,7 @@ class ReceiptController extends Controller
                 'action' => 'receipt_delete',
             ],
         );
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('receipts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.receipt')]));
     }
@@ -664,7 +665,7 @@ class ReceiptController extends Controller
                 'action' => 'receipt_restore',
             ],
         );
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('receipts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.receipt')]));
     }
@@ -673,7 +674,7 @@ class ReceiptController extends Controller
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('receipts', (string) $receipt->id);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('receipts.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.receipt')]));
     }

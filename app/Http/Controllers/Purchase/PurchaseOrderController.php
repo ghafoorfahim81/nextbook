@@ -18,6 +18,7 @@ use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Support\BranchContext;
 
 class PurchaseOrderController extends Controller
 {
@@ -87,7 +88,7 @@ class PurchaseOrderController extends Controller
 
     public function create()
     {
-        $purchaseOrderNumber = PurchaseOrder::max('number') ? PurchaseOrder::max('number') + 1 : 1;
+        $purchaseOrderNumber = PurchaseOrder::nextNumber();
 
         return inertia('Purchase/PurchaseOrders/Create', [
             'purchaseOrderNumber' => $purchaseOrderNumber,
@@ -96,6 +97,7 @@ class PurchaseOrderController extends Controller
                     ->select(['id', 'name', 'code', 'type', 'currency_id', 'is_active', 'company_id'])
                     ->where('type', 'supplier')
                     ->where('is_active', true)
+                    ->availableInBranch(BranchContext::branchId())
                     ->orderBy('created_at', 'desc')
                     ->limit(200)
                     ->get()

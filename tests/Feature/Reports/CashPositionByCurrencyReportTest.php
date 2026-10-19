@@ -41,7 +41,9 @@ class CashPositionByCurrencyReportTest extends TestCase
             'company_id' => $this->ctx['company']->id,
             'name' => 'Cash In Hand USD',
             'local_name' => 'صندوق دالری',
-            'number' => '1002',
+            // 1002 is the context's Cash In Safe, and account numbers are
+            // unique within a company.
+            'number' => '1102',
             'slug' => 'cash-in-hand-usd',
             'account_type_id' => $this->ctx['account_types']['cash-or-bank']->id,
         ]);

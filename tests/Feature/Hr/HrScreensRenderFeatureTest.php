@@ -70,12 +70,10 @@ class HrScreensRenderFeatureTest extends TestCase
         ]);
 
         EmployeeContract::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
             'employee_id' => $this->employee->id,
         ]);
 
         EmployeeDocument::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
             'employee_id' => $this->employee->id,
         ]);
 
@@ -150,7 +148,6 @@ class HrScreensRenderFeatureTest extends TestCase
             'interview_id' => $interview->id,
             'employee_id' => $this->employee->id,
             'is_lead' => true,
-            'branch_id' => $this->ctx['branch']->id,
         ]);
     }
 

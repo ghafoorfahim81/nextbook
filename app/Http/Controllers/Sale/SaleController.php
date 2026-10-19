@@ -135,7 +135,7 @@ class SaleController extends Controller
 
     public function create(Request $request)
     {
-        $saleNumber = Sale::max('number') ? Sale::max('number') + 1 : 1;
+        $saleNumber = Sale::nextNumber();
         $bankAccounts = new Account();
         $bankAccounts = $bankAccounts->getAccountsByAccountTypeSlug('cash-or-bank');
 
@@ -167,6 +167,7 @@ class SaleController extends Controller
                     ])
                     ->withStatementTotals()
                     ->where('is_active', true)
+                    ->availableInBranch(BranchContext::branchId())
                     ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
                     ->orderBy('created_at','desc')
                     ->limit(200)
@@ -277,7 +278,6 @@ class SaleController extends Controller
                     unitValuesById: $unitValuesById,
                     itemId: $item['item_id'],
                     warehouseId: $validated['warehouse_id'],
-                    branchId: $sale->branch_id,
                     quantity: (float) $item['quantity'],
                     costingMethod: $itemModel->effectiveCostingMethod()->value,
                     variantId: $item['variant_id'] ?? null,
@@ -608,6 +608,8 @@ class SaleController extends Controller
                     ])
                     ->withStatementTotals()
                     ->where('is_active', true)
+                    // Its own customer stays selectable even if no longer open here.
+                    ->where(fn ($q) => $q->availableInBranch(BranchContext::branchId())->orWhere('id', $sale->customer_id))
                     ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
                     ->orderBy('created_at','desc')
                     ->limit(200)
@@ -761,7 +763,6 @@ class SaleController extends Controller
                         unitValuesById: $unitValuesById,
                         itemId: $item['item_id'],
                         warehouseId: $item['warehouse_id'],
-                        branchId: $sale->branch_id,
                         quantity: (float) $item['quantity'],
                         costingMethod: $itemModel->effectiveCostingMethod()->value,
                         variantId: $item['variant_id'] ?? null,
@@ -1018,9 +1019,9 @@ class SaleController extends Controller
     private function rebuildStockStateForCombos(array $combos): void
     {
         $uniqueCombos = collect($combos)
-            ->filter(fn ($combo) => !empty($combo['item_id']) && !empty($combo['warehouse_id']) && !empty($combo['branch_id']))
+            // The warehouse settles the branch, so it is not part of the key.
+            ->filter(fn ($combo) => !empty($combo['item_id']) && !empty($combo['warehouse_id']))
             ->unique(fn ($combo) => implode('|', [
-                $combo['branch_id'],
                 $combo['warehouse_id'],
                 $combo['item_id'],
             ]))
@@ -1028,7 +1029,6 @@ class SaleController extends Controller
 
         foreach ($uniqueCombos as $combo) {
             $this->rebuildStockStateForItemWarehouse(
-                branchId: $combo['branch_id'],
                 warehouseId: $combo['warehouse_id'],
                 itemId: $combo['item_id'],
             );
@@ -1059,7 +1059,7 @@ class SaleController extends Controller
         $stockService->recalculateVariantAverageCosts($itemId);
     }
 
-    private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
+    private function rebuildStockStateForItemWarehouse(string $warehouseId, string $itemId): void
     {
         /** @var Item|null $item */
         $item = Item::query()->find($itemId);
@@ -1069,7 +1069,6 @@ class SaleController extends Controller
         }
 
         $movements = StockMovement::query()
-            ->where('branch_id', $branchId)
             ->where('warehouse_id', $warehouseId)
             ->where('item_id', $itemId)
             ->orderBy('date')
@@ -1078,7 +1077,6 @@ class SaleController extends Controller
         /** @var \Illuminate\Database\Eloquent\Collection<int, StockMovement> $movements */
 
         StockBalance::query()
-            ->where('branch_id', $branchId)
             ->where('warehouse_id', $warehouseId)
             ->where('item_id', $itemId)
             ->forceDelete();
@@ -1100,7 +1098,6 @@ class SaleController extends Controller
 
             if (!isset($balanceBuckets[$bucketKey])) {
                 $balanceBuckets[$bucketKey] = [
-                    'branch_id' => $branchId,
                     'item_id' => $itemId,
                     'warehouse_id' => $warehouseId,
                     'batch' => $movement->batch,
@@ -1131,7 +1128,6 @@ class SaleController extends Controller
             }
 
             StockBalance::create([
-                'branch_id' => $bucket['branch_id'],
                 'item_id' => $bucket['item_id'],
                 'warehouse_id' => $bucket['warehouse_id'],
                 'batch' => $bucket['batch'],
@@ -1340,7 +1336,6 @@ class SaleController extends Controller
         array $unitValuesById,
         string $itemId,
         string $warehouseId,
-        string $branchId,
         float $quantity,
         ?string $costingMethod = null,
         ?string $variantId = null,
@@ -1370,7 +1365,6 @@ class SaleController extends Controller
         $layers = StockMovement::query()
             ->where('item_id', $itemId)
             ->where('warehouse_id', $warehouseId)
-            ->where('branch_id', $branchId)
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0)
             // Voided layers are not consumable (StockService::consumeLayers
@@ -1711,11 +1705,11 @@ class SaleController extends Controller
 
             $affectedCombos = $sale->items()
                 ->withTrashed()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->get(['item_id', 'warehouse_id'])
                 ->map(fn ($item) => [
                     'item_id' => $item->item_id,
                     'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $sale->branch_id,
+                    'branch_id' => $sale->branch_id,
                 ])
                 ->all();
 

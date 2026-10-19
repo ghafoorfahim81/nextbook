@@ -96,5 +96,18 @@ class Warehouse extends Model
             ->orderByDesc('is_active')
             ->first();
     }
-}
 
+    /**
+     * The ids of a branch's warehouses, as a sub-query.
+     *
+     * Stock carries no branch of its own, so "this branch's stock" means stock
+     * in this branch's warehouses. Deleted warehouses are included: their
+     * stock still belongs to the branch's history.
+     */
+    public static function idsOfBranch(string $branchId): \Illuminate\Database\Query\Builder
+    {
+        return \Illuminate\Support\Facades\DB::table('warehouses')
+            ->select('id')
+            ->where('branch_id', $branchId);
+    }
+}

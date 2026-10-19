@@ -3,9 +3,12 @@
 namespace App\Http\Requests\AccountTransfer;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class AccountTransferStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +17,7 @@ class AccountTransferStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['nullable', 'max:255'],
+            'number' => ['nullable', 'max:255', $this->uniqueInCompany('account_transfers', column: 'number')],
             'date' => ['required', 'date'],
             'from_account_id' => ['required', 'exists:accounts,id'],
             'to_account_id' => ['required', 'different:from_account_id', 'exists:accounts,id'],

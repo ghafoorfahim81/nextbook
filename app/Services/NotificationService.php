@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Lang;
+use App\Models\Administration\Warehouse;
 
 class NotificationService
 {
@@ -622,7 +623,7 @@ class NotificationService
     protected function lowStockItems(string $branchId): Collection
     {
         $stockTotals = DB::table('stock_balances')
-            ->where('branch_id', $branchId)
+            ->whereIn('warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('deleted_at')
             ->groupBy('item_id')
             ->selectRaw('item_id, COALESCE(SUM(quantity), 0) as current_quantity');
@@ -656,7 +657,7 @@ class NotificationService
                 $join->on('w.id', '=', 'stock_balances.warehouse_id')
                     ->whereNull('w.deleted_at');
             })
-            ->where('stock_balances.branch_id', $branchId)
+            ->whereIn('stock_balances.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('stock_balances.deleted_at')
             ->where('stock_balances.quantity', '>', 0)
             ->whereBetween('stock_balances.expire_date', [$today, $cutoff])

@@ -11,7 +11,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import { Switch } from '@/Components/ui/switch';
 import { Label } from '@/Components/ui/label';
-import { useForm, router } from '@inertiajs/vue3';
+import { useForm, router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
@@ -32,6 +32,8 @@ const props = defineProps({
     paymentTerms: { type: Array, default: () => [] },
     countries: { type: Array, default: () => [] },
     provinces: { type: Array, default: () => [] },
+    // The company's branches, for the \"available in branches\" field.
+    branches: { type: [Array, Object], default: () => [] },
     nextCode: {
         type: String,
         default: '',
@@ -57,11 +59,15 @@ const form = useForm({
     credit_terms: 'warning',
     // The same person's other account, when they trade both ways.
     counterpart_ledger_id: null,
+    // Starts in the branch creating it; open it to others here.
+    branch_ids: usePage().props.activeBranchId ? [usePage().props.activeBranchId] : [],
     discount: null,
     attachments: [],
     // One row per currency; blank rows are discarded server-side.
     openings: buildOpeningRows(props.currencies, [], props.homeCurrency),
 })
+
+const branchOptions = computed(() => props.branches?.data ?? props.branches ?? []);
 
 const creditTermOptions = computed(() => [
     { id: 'strict', name: t('ledger.credit_terms_strict') },
@@ -197,6 +203,17 @@ const saveFormRef = useSaveShortcut({ form });
                         role="customer"
                         :preselected="null"
                         :error="form.errors?.counterpart_ledger_id"
+                    />
+                    <NextSelect
+                        :options="branchOptions"
+                        v-model="form.branch_ids"
+                        label-key="name"
+                        value-key="id"
+                        :reduce="branch => branch.id"
+                        :multiple="true"
+                        :floating-text="t('ledger.available_in_branches')"
+                        :hint="t('ledger.available_in_branches_hint')"
+                        :error="form.errors?.branch_ids || form.errors?.['branch_ids.0']"
                     />
                 </div>
 

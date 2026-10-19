@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Support\BranchContext;
+use App\Models\Administration\Warehouse;
 
 use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
@@ -590,7 +591,7 @@ class LandedCostService
         mixed $expireDate,
     ): Collection {
         return StockMovement::query()
-            ->where('branch_id', $landedCost->branch_id)
+            ->whereIn('warehouse_id', Warehouse::idsOfBranch($landedCost->branch_id))
             ->where('item_id', $itemId)
             ->where('movement_type', StockMovementType::IN)
             ->where('source', StockSourceType::PURCHASE)

@@ -11,14 +11,12 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 
 class PurchaseReturnItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, CompanySpecific, HasCompanyFromParent;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -42,7 +40,6 @@ class PurchaseReturnItem extends Model
         'warehouse_id',
         'created_by',
         'updated_by',
-        'branch_id',
     ];
 
     /**
@@ -65,7 +62,6 @@ class PurchaseReturnItem extends Model
             'warehouse_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
-            'branch_id' => 'string',
         ];
     }
 
@@ -113,4 +109,9 @@ class PurchaseReturnItem extends Model
         return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'warehouse_id');
     }
 
+    /** No branch of its own: the purchaseReturn holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'purchaseReturn';
+    }
 }

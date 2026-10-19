@@ -20,9 +20,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
 use App\Models\Transaction\Transaction;
+use App\Models\Concerns\HasSequentialNumber;
 class Expense extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasUserAuditable, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasUserAuditable, HasDependencyCheck, HasAttachments, SoftDeletes, HasSequentialNumber;
 
     protected $keyType = 'string';
     public $incrementing = false;

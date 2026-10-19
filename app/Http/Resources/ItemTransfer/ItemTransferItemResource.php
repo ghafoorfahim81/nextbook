@@ -49,7 +49,6 @@ class ItemTransferItemResource extends JsonResource
                 'name' => $this->unitMeasure->name,
             ]),
             'unit_price' => $this->unit_price,
-            'branch_id' => $this->branch_id,
         ];
     }
 }

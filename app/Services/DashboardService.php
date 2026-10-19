@@ -12,6 +12,7 @@ use App\Models\Sale\Sale;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
+use App\Models\Administration\Warehouse;
 
 class DashboardService
 {
@@ -244,7 +245,7 @@ class DashboardService
         // Only include (item, warehouse) pairs that currently have positive stock,
         // then sum their movement net values — mirrors the GL and matches the inventory-stock report.
         $positiveStockPairs = DB::table('stock_balances as sb')
-            ->where('sb.branch_id', $branchId)
+            ->whereIn('sb.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [$voided, $cancelled])
             ->groupBy('sb.item_id', 'sb.warehouse_id')
@@ -256,7 +257,7 @@ class DashboardService
                 $join->on('sm.item_id', '=', 'ps.item_id')
                     ->on('sm.warehouse_id', '=', 'ps.warehouse_id');
             })
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [$voided, $cancelled])
             ->selectRaw(
@@ -406,7 +407,7 @@ class DashboardService
                 $join->on('w.id', '=', 'sm.warehouse_id')
                     ->whereNull('w.deleted_at');
             })
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereBetween('sm.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->orderByDesc('sm.date')
@@ -863,7 +864,7 @@ class DashboardService
                     ->where('i.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('i.deleted_at');
             })
-            ->where('si.branch_id', $branchId)
+            ->where('s.branch_id', $branchId)
             ->whereNull('si.deleted_at')
             ->whereBetween('s.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->groupBy('si.item_id', 'i.name')
@@ -906,7 +907,7 @@ class DashboardService
                     ->where('i.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('i.deleted_at');
             })
-            ->where('pi.branch_id', $branchId)
+            ->where('p.branch_id', $branchId)
             ->whereNull('pi.deleted_at')
             ->whereBetween('p.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->groupBy('pi.item_id', 'i.name')
@@ -1097,7 +1098,7 @@ class DashboardService
     protected function activeStockBalances(string $branchId)
     {
         return DB::table('stock_balances')
-            ->where('stock_balances.branch_id', $branchId)
+            ->whereIn('stock_balances.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('stock_balances.deleted_at')
             ->whereNotIn('stock_balances.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value]);
     }

@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
+use App\Support\Inertia\CacheForget;
 use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
@@ -329,7 +330,7 @@ class PaymentController extends Controller
 
         });
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         if ($request->input('create_and_new')) {
             return redirect()->route('payments.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
@@ -522,7 +523,7 @@ class PaymentController extends Controller
             );
         });
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         $redirect = redirect()->route('payments.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment')]));
 
@@ -626,7 +627,7 @@ class PaymentController extends Controller
             ],
         );
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('payments.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.payment')]));
     }
@@ -667,7 +668,7 @@ class PaymentController extends Controller
             ],
         );
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));
     }
@@ -676,7 +677,7 @@ class PaymentController extends Controller
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('payments', (string) $payment->id);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('payments.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.payment')]));
     }

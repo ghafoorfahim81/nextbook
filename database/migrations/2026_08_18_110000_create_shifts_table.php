@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -46,8 +47,11 @@ return new class extends Migration
             $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->unique(['company_id', 'code', 'deleted_at']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX shifts_company_id_code_live_unique ON shifts (company_id, code) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 

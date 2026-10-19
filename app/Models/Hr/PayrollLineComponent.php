@@ -5,10 +5,8 @@ namespace App\Models\Hr;
 use App\Enums\ComponentCalculationType;
 use App\Enums\SalaryComponentType;
 use App\Models\Account\Account;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,7 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class PayrollLineComponent extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, HasCompanyFromParent, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -47,7 +45,6 @@ class PayrollLineComponent extends Model
             'payroll_line_id' => 'string',
             'salary_component_id' => 'string',
             'account_id' => 'string',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'component_type' => SalaryComponentType::class,
@@ -78,5 +75,11 @@ class PayrollLineComponent extends Model
     public function isEarning(): bool
     {
         return $this->component_type === SalaryComponentType::Earning;
+    }
+
+    /** No branch of its own: the line holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'line';
     }
 }

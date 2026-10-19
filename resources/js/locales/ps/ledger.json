@@ -41,5 +41,7 @@
   "customer": {
     "customer": "پېرودونکی",
     "customers": "پېرودونکي"
-  }
+  },
+  "available_in_branches": "په څانګو کې د کارولو وړ",
+  "available_in_branches_hint": "هغه څانګې چې دا طرف یې په فورمو کې ښکاري. بیلانس یې د ټولو ترمنځ ګډ دی."
 }

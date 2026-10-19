@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -20,12 +21,15 @@ return new class extends Migration
            $table->ulid('company_id')->index();
            $table->ulid('created_by')->index();
            $table->ulid('updated_by')->nullable();
-           $table->unique(['company_id', 'name', 'deleted_at']);
            $table->unique(['company_id', 'id']);
            $table->timestamps();
            $table->softDeletes();
            $table->ulid('deleted_by')->nullable();
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX designations_company_id_name_live_unique ON designations (company_id, name) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
         Schema::table('designations', function (Blueprint $table) {

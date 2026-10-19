@@ -45,6 +45,7 @@ class LedgerResource extends JsonResource
             // render the picker; the show page needs the name to offer the
             // combined view without loading the whole ledger again.
             'counterpart_ledger_id' => $this->counterpart_ledger_id,
+            'branch_ids' => $this->whenLoaded('branches', fn () => $this->branches->pluck('id')->values()),
             'counterpart' => $this->whenLoaded('counterpart', fn () => [
                 'id' => $this->counterpart?->id,
                 'name' => $this->counterpart?->name,

@@ -26,6 +26,7 @@ use App\Support\DocumentType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use App\Models\Administration\Warehouse;
 
 class ReportService
 {
@@ -998,7 +999,7 @@ class ReportService
             })
             ->join('sale_items as si', function ($join) use ($filters) {
                 $join->on('si.sale_id', '=', 's.id')
-                    ->where('si.branch_id', '=', $filters['branch_id'])
+                    ->where('s.branch_id', '=', $filters['branch_id'])
                     ->whereNull('si.deleted_at');
             })
             ->join('items as i', function ($join) use ($filters) {
@@ -1181,7 +1182,7 @@ class ReportService
             })
             ->join('purchase_items as pi', function ($join) use ($filters) {
                 $join->on('pi.purchase_id', '=', 'p.id')
-                    ->where('pi.branch_id', '=', $filters['branch_id'])
+                    ->where('p.branch_id', '=', $filters['branch_id'])
                     ->whereNull('pi.deleted_at');
             })
             ->join('items as i', function ($join) use ($filters) {
@@ -1350,7 +1351,7 @@ class ReportService
 
         // Quantity per (item, warehouse) from stock_balances — already normalized to item units.
         $balanceQty = DB::table('stock_balances as sb')
-            ->where('sb.branch_id', $branchId)
+            ->whereIn('sb.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sb.item_id', $id))
@@ -1363,7 +1364,7 @@ class ReportService
         // so this always matches the inventory-stock account balance in the balance sheet —
         // even after retroactive purchase updates that don't re-cost existing sales.
         $movementValues = DB::table('stock_movements as sm')
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sm.item_id', $id))
@@ -1405,7 +1406,7 @@ class ReportService
         // The variant filter applies here too: the rows honoured it but the totals
         // did not, so filtering to one variant still summed every variant.
         $positiveStockPairs = DB::table('stock_balances as sb')
-            ->where('sb.branch_id', $branchId)
+            ->whereIn('sb.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sb.item_id', $id))
@@ -1419,7 +1420,7 @@ class ReportService
             ->join('stock_balances as sb2', function ($join) use ($branchId, $voided, $cancelled, $variantId) {
                 $join->on('sb2.item_id', '=', 'ps.item_id')
                     ->on('sb2.warehouse_id', '=', 'ps.warehouse_id')
-                    ->where('sb2.branch_id', $branchId)
+                    ->whereIn('sb2.warehouse_id', Warehouse::idsOfBranch($branchId))
                     ->whereNull('sb2.deleted_at')
                     ->whereNotIn('sb2.status', [$voided, $cancelled]);
 
@@ -1452,7 +1453,7 @@ class ReportService
                 $join->on('sm.item_id', '=', 'ps.item_id')
                     ->on('sm.warehouse_id', '=', 'ps.warehouse_id');
             })
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sm.item_id', $id))
@@ -1505,7 +1506,7 @@ class ReportService
                     ->whereNull('u.deleted_at');
             })
 
-            ->where('sm.branch_id', $filters['branch_id'])
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($filters['branch_id']))
             ->whereNull('sm.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sm.item_id', $itemId));
 
@@ -2486,7 +2487,7 @@ class ReportService
                     ->where('i.company_id', '=', $filters['company_id'])
                     ->whereNull('i.deleted_at');
             })
-            ->where('sb.branch_id', $filters['branch_id'])
+            ->whereIn('sb.warehouse_id', Warehouse::idsOfBranch($filters['branch_id']))
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->when($filters['item_id'] ?? null, fn ($q, $id) => $q->where('sb.item_id', $id));
@@ -2503,7 +2504,7 @@ class ReportService
     protected function stockTotalsByItemSubquery(string $branchId, ?string $variantId = null): Builder
     {
         return DB::table('stock_balances as sb')
-            ->where('sb.branch_id', $branchId)
+            ->whereIn('sb.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->when($variantId, fn ($q, $id) => $q->where('sb.variant_id', $id))
@@ -2515,7 +2516,7 @@ class ReportService
     protected function stockBatchMovementTotalsSubquery(string $branchId): Builder
     {
         return DB::table('stock_movements as sm')
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->groupBy('sm.item_id', 'sm.batch', 'sm.expire_date')
@@ -2534,7 +2535,7 @@ class ReportService
     protected function stockMovementTotalsByVariantSubquery(string $branchId): Builder
     {
         return DB::table('stock_movements as sm')
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->groupBy('sm.item_id', 'sm.variant_id')
@@ -2547,7 +2548,7 @@ class ReportService
     protected function stockMovementTotalsByExpirySubquery(string $branchId): Builder
     {
         return DB::table('stock_movements as sm')
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->whereNotNull('sm.expire_date')
@@ -2561,7 +2562,7 @@ class ReportService
     protected function stockMovementTotalsByItemSubquery(string $branchId, ?string $variantId = null): Builder
     {
         return DB::table('stock_movements as sm')
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->when($variantId, fn ($q, $id) => $q->where('sm.variant_id', $id))
@@ -2574,7 +2575,7 @@ class ReportService
     protected function stockFirstInDateSubquery(string $branchId, ?string $variantId = null): Builder
     {
         return DB::table('stock_movements as sm')
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->where('sm.movement_type', StockMovementType::IN->value)
@@ -2611,7 +2612,7 @@ class ReportService
     protected function todayStockMovementTotalsByItemSubquery(string $branchId, string $date, ?string $variantId = null): Builder
     {
         return DB::table('stock_movements as sm')
-            ->where('sm.branch_id', $branchId)
+            ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch($branchId))
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->whereDate('sm.date', $date)
@@ -3009,7 +3010,7 @@ class ReportService
             })
             ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
             ->leftJoin('currencies as c', 'c.id', '=', 'pl.currency_id')
-            ->where('pl.branch_id', $filters['branch_id'])
+            ->where('p.branch_id', $filters['branch_id'])
             ->whereNull('pl.deleted_at')
             // Cancelled and reversed runs are excluded: they are not what
             // anybody was paid, and including them would double the register
@@ -3172,7 +3173,7 @@ class ReportService
             })
             ->leftJoin('tax_bracket_sets as tbs', 'tbs.id', '=', 'pl.tax_bracket_set_id')
             ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
-            ->where('pl.branch_id', $filters['branch_id'])
+            ->where('p.branch_id', $filters['branch_id'])
             ->whereNull('pl.deleted_at')
             ->whereIn('p.status', [
                 PayrollStatus::Posted->value,
@@ -3693,7 +3694,7 @@ class ReportService
             })
             ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
             ->leftJoin('designations as dg', 'dg.id', '=', 'e.designation_id')
-            ->where('ec.branch_id', $filters['branch_id'])
+            ->where('e.branch_id', $filters['branch_id'])
             ->whereNull('ec.deleted_at')
             ->whereNotNull('ec.end_date');
 
@@ -3783,7 +3784,7 @@ class ReportService
     protected function activeStockBalanceQuery(array $filters): Builder
     {
         $query = DB::table('stock_balances as sb')
-            ->where('sb.branch_id', $filters['branch_id'])
+            ->whereIn('sb.warehouse_id', Warehouse::idsOfBranch($filters['branch_id']))
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value]);
 
