@@ -5,6 +5,8 @@
 سند دسته‌بندی: [phase-2-table-classification-fa.md](phase-2-table-classification-fa.md)
 سند مادر: [multi-company-plan-fa.md](multi-company-plan-fa.md)
 
+> **شروع جلسهٔ بعد:** اول [phase-2-next-session-fa.md](phase-2-next-session-fa.md) را بخوان — وضعیت، قدم بعدی و سؤال‌هایی که باید پیش از شروع پرسیده شود.
+
 این سند برای ادامه دادن کار روی ماشین دیگر نوشته شده. هدفش این است که بدون
 خواندن تاریخچهٔ گفت‌وگو بتوان از همین نقطه ادامه داد.
 
