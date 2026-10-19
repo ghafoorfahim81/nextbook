@@ -1,6 +1,6 @@
 # ادامهٔ کار فاز ۲ — وضعیت و نقشهٔ راه
 
-تاریخ: ۱۴۰۵/۰۷/۲۵ (2026-10-17)
+تاریخ: ۱۴۰۵/۰۷/۲۷ (2026-10-19)
 برنچ: `refactor-items-and-company-wise`
 سند دسته‌بندی: [phase-2-table-classification-fa.md](phase-2-table-classification-fa.md)
 سند مادر: [multi-company-plan-fa.md](multi-company-plan-fa.md)
@@ -38,6 +38,16 @@ php artisan test            # بدون این اصلاح کار نمی‌کند
 CREATE DATABASE nextbook_test;
 ```
 
+**۳. افزونهٔ bcmath و build فرانت‌اند.**
+بدون `php-bcmath` حدود ۱۲۰ تست با `Call to undefined function bcmul()` و بدون
+`npm run build` حدود ۷۰ تست با `Vite manifest not found` شکست می‌خورند. هیچ‌کدام
+باگ کد نیستند:
+
+```bash
+php -m | grep bcmath        # باید چیزی چاپ کند
+npm install && npm run build
+```
+
 ---
 
 ## ۲. وضعیت فعلی در یک نگاه
@@ -49,8 +59,8 @@ CREATE DATABASE nextbook_test;
 | ۳ | میان‌افزار کمپنی فعال + trait دامنه + بستن حفرهٔ سویچ شعبه | ✅ |
 | ۴ | ۳۰ جدول مستر دیتا به دامنهٔ کمپنی | ✅ |
 | ۵ | تجزیهٔ سرویس provisioning به کمپنی/شعبه | ✅ |
-| ۶ | کالم کمپنی روی ۷۲ جدول باقی‌مانده + انتقال کوئری‌ها | 🟡 **در جریان** |
-| ۷ | حذف `branch_id` از ۵۷ جدولی که لازمش ندارند | ⬜ |
+| ۶ | کالم کمپنی روی ۷۲ جدول باقی‌مانده + انتقال کوئری‌ها | ✅ |
+| ۷ | حذف `branch_id` از ۵۷ جدولی که لازمش ندارند | ⬜ **قدم بعدی** |
 | ۸ | بازنویسی ۵۷ ایندکس یکتا به شکل partial | ⬜ |
 | ۹ | جدول واسط مشتری‑شعبه | ⬜ |
 | ۱۰ | فعال‌سازی RLS | ⬜ |
@@ -65,16 +75,16 @@ DB_DATABASE=nextbook_phase2_check php artisan db:seed --force   # ✅ کامل
 php artisan test tests/Feature/Tenancy                          # ✅ ۴ سناریوی امنیتی
 ```
 
+```bash
+php artisan test            # ✅ ۸۹۴ پاس — Unit + Feature + Integration
+```
+
 ### چه چیزی قرمز است
 
-```
-php artisan test --testsuite=Feature
-→ حدود ۶۶۰ پاس از ۸۴۸
-```
+فقط پنج تستی که پایین‌تر آمده و از قبل از این کار خراب بوده‌اند.
 
-روند تا اینجا: **۰ ← ۱۶۲ ← ۵۰۶ ← ۵۳۶ ← ۶۳۱ ← ۶۵۶ ← ۶۶۳**
-
-کار نیمه‌تمام است، نه خراب. بیشتر شکست‌های باقی‌مانده دیگر خطای SQL نیستند.
+روند Feature تا اینجا: **۰ ← ۱۶۲ ← ۵۰۶ ← ۵۳۶ ← ۶۳۱ ← ۶۵۶ ← ۶۷۲ ← ۸۴۳**
+(از ۸۴۸؛ پنج تای باقی همان پنج تای قدیمی‌اند). Integration هم ۲۹ از ۲۹.
 
 ### پنج تست که از قبل خراب بوده‌اند
 
@@ -130,40 +140,75 @@ $baseCurrencyId = $this->resolveBaseCurrencyId($branchId);
 //                                              ↑ این متد حالا کمپنی می‌خواهد
 ```
 
+کلاس سوم حالا اسکنر دارد: `signature_mismatch.php` هر تابعی که پارامتر
+`$companyId` دارد را جمع می‌کند و فراخوانی‌هایی را گزارش می‌دهد که در همان جایگاه
+چیزی شعبه‌ای می‌دهند. اولین اجرایش شش مورد پیدا کرد — از جمله رخصتی‌هایی که هرگز
+از روزهای رخصتی کم نمی‌شدند و مالیاتی که روی هیچ معاشی کسر نمی‌شد.
+
+### کلاس چهارم: خواندن `->branch_id` از مدل کمپنی‌محور
+
+```php
+->where('t.branch_id', '=', $ledger->branch_id)   // ← همیشه null
+if ($customer->branch_id !== $supplier->branch_id) // ← null !== null، همیشه رد می‌شود
+```
+
+مدل کالم ندارد و Eloquent برای attribute ناموجود بی‌صدا `null` می‌دهد. صورتحساب
+مشتری خالی نشان داده می‌شد و بررسی «طرفین باید در یک شعبه باشند» هیچ‌وقت چیزی را
+رد نمی‌کرد. اسکنر ندارد؛ این grep بر اساس نام متغیر پیدایش می‌کند:
+
+```bash
+grep -rnE "\$(category|brand|item|account|ledger|customer|supplier|currency|department|designation|shift|holiday|size)\??->branch_id\b" app
+```
+
+### پنج شکل دیگر که اسکنرهای قبلی نمی‌دیدند
+
+- قوانین validation: `existsInBranch('departments')` و `uniqueInBranch('items')`
+  روی جدول‌های کمپنی‌محور (۵۶ مورد). validator کوئری خودش را می‌سازد، پس از مدل رد
+  نمی‌شود. حالا `existsInCompany` / `uniqueInCompany`.
+- رشته‌های select رابطه: `'department:id,name,branch_id'`.
+- eager-load رابطهٔ `branch` روی مدلی که دیگر آن را ندارد (`Account`, `Ledger`).
+- `alias.branch_id` در DashboardService و NotificationService — همان مشکل
+  ReportService، در فایل‌هایی که هیچ تست Feature به آن نمی‌رسید.
+- درج خام یا `withoutEvents` در تست‌ها که `company_id` نمی‌گذارند؛ `raw_inserts.php`
+  فقط درج‌هایی را می‌بیند که `branch_id` دارند.
+
 ### ⚠️ بعد از هر تغییر خودکار حتماً اینها را اجرا کنید
 
 ```bash
 php tools/phase-2/undefined_company.php   # کلاس اول و دوم — باید صفر باشد
+php tools/phase-2/signature_mismatch.php  # کلاس سوم — باید صفر باشد
+php tools/phase-2/aliased_branch.php      # alias.branch_id روی جدول کمپنی — باید صفر باشد
 php tools/phase-2/raw_inserts.php         # درج‌های خامی که از مدل رد می‌شوند
 php tools/phase-2/branchcontext_callers.php --dry
 php tools/phase-2/select_lists.php
 git diff | grep -nE "branch_id.*company_id|company_id.*branch_id"
 ```
 
-کلاس سوم اسکنر ندارد — با ردیابی از روی شکست تست‌ها پیدا می‌شود.
+`aliased_branch.php` ده مورد «مبهم» در ReportService گزارش می‌دهد (`s` هم sales
+است هم shifts و…). هر ده تا بررسی شده‌اند و همه جدول سندی‌اند — درست‌اند.
 
 ---
 
 ## ۴. قدم بعدی
 
-### ۴-الف: تمام کردن گام ۶
+### ۴-الف: گام ۷ — حذف `branch_id`
 
-حدود ۱۸۵ تست باقی مانده. بیشترشان دیگر خطای SQL نیستند. روش کار:
+گام ۶ تمام است و تست‌ها سبزند، پس این پاس حالا شروع می‌شود: از ۵۷ جدولی که لازمش
+ندارند (دستهٔ الف، ج، د در سند دسته‌بندی). بعد از هر دسته همهٔ اسکنرهای بالا و
+`php artisan test` را اجرا کنید.
+
+روش کار وقتی تست‌ها قرمز شدند:
 
 ```bash
 php tools/phase-2/mkdb.php nextbook_test     # اول دیتابیس تست را تازه کنید
-php artisan test --testsuite=Feature 2>&1 | Out-File $env:TEMP\t.txt
+php artisan test > /tmp/t.txt 2>&1
 ```
 
-بعد خطاهای دیتابیس را گروه‌بندی کنید و از پرتکرارترین شروع کنید — تقریباً
-همیشه یک ریشه ده‌ها شکست تولید می‌کند.
+بعد خطاها را گروه‌بندی کنید و از پرتکرارترین شروع کنید — تقریباً همیشه یک ریشه
+ده‌ها شکست تولید می‌کند. Unit و Integration را هم اجرا کنید؛ DashboardService فقط
+از Integration دیده می‌شد.
 
-### ۴-ب: گام ۷ — حذف `branch_id`
-
-از ۵۷ جدولی که لازمش ندارند (دستهٔ الف، ج، د در سند دسته‌بندی). این پاس
-**بعد از سبز شدن تست‌ها** انجام شود، نه قبلش.
-
-### ۴-ج: گام ۸ — ایندکس‌های یکتا
+### ۴-ب: گام ۸ — ایندکس‌های یکتا
 
 هر ۵۷ تا باید به شکل partial در بیایند، نه فقط تعویض کالم. دلیلش در بخش ۱۲
 سند دسته‌بندی.
@@ -190,6 +235,8 @@ php artisan test --testsuite=Feature 2>&1 | Out-File $env:TEMP\t.txt
 | اسکریپت | کار |
 |---|---|
 | `undefined_company.php` | متغیر تعریف‌نشده و ناسازگاری کالم/مقدار — **باید صفر باشد** |
+| `signature_mismatch.php` | شعبه‌ای که به پارامتر `$companyId` داده می‌شود — **باید صفر باشد** |
+| `aliased_branch.php` | `alias.branch_id` روی جدول کمپنی‌محور در کل `app/` — **باید صفر باشد** |
 | `raw_inserts.php` | درج خامی که شعبه می‌نویسد ولی کمپنی نه (`--fix` دارد) |
 | `branchcontext_callers.php` | callerهایی که به جستجوی اکونت شعبه می‌دهند |
 | `select_lists.php` | فهرست ستون که از جدول کمپنی‌محور شعبه می‌خواهد (`--fix` دارد) |
@@ -278,7 +325,13 @@ php artisan test --testsuite=Feature
   هم‌پوشانی دارند و بهتر است یکی شوند
 - `BranchSpecific` در console و job از scope بیرون می‌زند (بدهی بخش ۱۱ سند مادر)
 - الگوی `MAX+1` در `HasSequentialNumber` و نبود قید یکتا روی نمبر فروش، خرید و
-  تراکنش (بخش ۱۳ سند دسته‌بندی)
+  تراکنش (بخش ۱۳ سند دسته‌بندی). قوانین validation نمبر سند هم هنوز شکل
+  `unique:sales,number,NULL,id,branch_id,NULL,...` را دارند که به
+  `branch_id IS NULL` تبدیل می‌شود و هیچ تکراری را نمی‌گیرد. طبق تصمیم «نمبرگذاری
+  کمپنی‌محور» این‌ها باید با گام ۸ به کمپنی منتقل شوند
+- کلید ترجمهٔ `contra_parties_must_share_a_branch` و
+  `counterpart_must_share_a_branch` حالا کمپنی را بررسی می‌کنند؛ متن پیام هنوز
+  «شعبه» می‌گوید
 - `activity_logs.company_id` تنها کالم دامنهٔ nullable است. اگر روزی همهٔ
   رویدادهای سطح پلتفرم به یک کمپنی سیستمی نسبت داده شوند، می‌شود سفتش کرد
 
