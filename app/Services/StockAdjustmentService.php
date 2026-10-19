@@ -298,7 +298,6 @@ class StockAdjustmentService
                     selectedUnitMeasureId: $line['unit_measure_id'],
                     unitValuesById: $unitValuesById,
                     warehouseId: $adjustment->warehouse_id,
-                    branchId: $adjustment->branch_id,
                     quantity: $quantity,
                     batch: $line['batch'] ?? null,
                     expireDate: $line['expire_date'] ?? null,
@@ -536,7 +535,6 @@ class StockAdjustmentService
         string $selectedUnitMeasureId,
         array $unitValuesById,
         string $warehouseId,
-        ?string $branchId,
         float $quantity,
         ?string $batch = null,
         ?string $expireDate = null,
@@ -570,7 +568,6 @@ class StockAdjustmentService
         $layers = StockMovement::query()
             ->where('item_id', $itemModel->id)
             ->where('warehouse_id', $warehouseId)
-            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0)
             // Voided layers are not consumable (StockService::consumeLayers

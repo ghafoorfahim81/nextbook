@@ -31,6 +31,9 @@ const NO_BRANCH_TABLES = [
     'expense_details', 'payroll_lines', 'payroll_line_components',
     'salary_payment_lines', 'landed_cost_items', 'landed_cost_category_allocations',
     'employee_documents', 'employee_contracts', 'interview_panelists', 'attachments',
+    // Category D, step 7: stock takes the warehouse's branch. stock_lots has no
+    // warehouse and keeps its branch.
+    'stock_balances', 'stock_movements', 'stock_pieces',
 ];
 
 $patterns = [

@@ -8,10 +8,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserAuditable;
-use App\Traits\BranchSpecific;
+use App\Traits\BranchSpecificThroughWarehouse;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
@@ -19,7 +18,7 @@ use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 class StockMovement extends Model
 {
-    use HasUlids, SoftDeletes, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch,BranchSpecific;
+    use HasUlids, SoftDeletes, HasUserAuditable, CompanySpecific, BranchSpecificThroughWarehouse, HasCompanyFromParent;
     protected $table = 'stock_movements';
     protected $primaryKey = 'id';
     protected $keyType = 'string';
@@ -27,7 +26,6 @@ class StockMovement extends Model
     protected $guarded = [];
     protected $casts = [
         'id' => 'string',
-        'branch_id' => 'string',
         'item_id' => 'string',
         'warehouse_id' => 'string',
         'unit_measure_id' => 'string',
@@ -49,7 +47,6 @@ class StockMovement extends Model
     protected $fillable = [
         'company_id',
         'id',
-        'branch_id',
         'item_id',
         'variant_id',
         'lot_id',
@@ -82,10 +79,6 @@ class StockMovement extends Model
         return $this->belongsTo(ItemVariant::class, 'variant_id');
     }
 
-    public function branch()
-    {
-        return $this->belongsTo(\App\Models\Administration\Branch::class);
-    }
 
     public function unit_measure()
     {
@@ -125,5 +118,11 @@ class StockMovement extends Model
             Sale::class => $reference->customer?->name ?? 'Unknown',
             default => 'Unknown',
         };
+    }
+
+    /** No branch of its own: the warehouse holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'warehouse';
     }
 }

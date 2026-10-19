@@ -22,22 +22,22 @@ return new class extends Migration
         });
 
         Schema::table('stock_balances', function (Blueprint $table) {
-            $table->index(['branch_id', 'item_id', 'warehouse_id', 'status', 'deleted_at'], 'stock_balances_branch_item_warehouse_status_deleted_idx');
+            $table->index(['company_id', 'item_id', 'warehouse_id', 'status', 'deleted_at'], 'stock_balances_company_item_warehouse_status_deleted_idx');
         });
 
         Schema::table('stock_movements', function (Blueprint $table) {
-            $table->index(['branch_id', 'date', 'item_id', 'deleted_at'], 'stock_movements_branch_date_item_deleted_idx');
+            $table->index(['company_id', 'date', 'item_id', 'deleted_at'], 'stock_movements_company_date_item_deleted_idx');
         });
     }
 
     public function down(): void
     {
         Schema::table('stock_movements', function (Blueprint $table) {
-            $table->dropIndex('stock_movements_branch_date_item_deleted_idx');
+            $table->dropIndex('stock_movements_company_date_item_deleted_idx');
         });
 
         Schema::table('stock_balances', function (Blueprint $table) {
-            $table->dropIndex('stock_balances_branch_item_warehouse_status_deleted_idx');
+            $table->dropIndex('stock_balances_company_item_warehouse_status_deleted_idx');
         });
 
         Schema::table('ledgers', function (Blueprint $table) {

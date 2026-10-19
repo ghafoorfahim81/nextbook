@@ -22,16 +22,16 @@ return new class extends Migration
         });
 
         Schema::table('stock_balances', function (Blueprint $table) {
-            $table->index(['branch_id', 'item_id'], 'stock_balances_branch_item_idx');
-            $table->index(['branch_id', 'expire_date'], 'stock_balances_branch_expire_idx');
+            $table->index(['company_id', 'item_id'], 'stock_balances_company_item_idx');
+            $table->index(['company_id', 'expire_date'], 'stock_balances_company_expire_idx');
         });
     }
 
     public function down(): void
     {
         Schema::table('stock_balances', function (Blueprint $table) {
-            $table->dropIndex('stock_balances_branch_expire_idx');
-            $table->dropIndex('stock_balances_branch_item_idx');
+            $table->dropIndex('stock_balances_company_expire_idx');
+            $table->dropIndex('stock_balances_company_item_idx');
         });
 
         Schema::table('transaction_lines', function (Blueprint $table) {

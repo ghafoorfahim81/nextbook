@@ -289,7 +289,7 @@ class ItemController extends Controller
     {
         $valueByWarehouse = DB::table('stock_movements')
             ->where('item_id', $item->id)
-            ->where('branch_id', BranchContext::branchId())
+            ->whereIn('warehouse_id', Warehouse::idsOfBranch(BranchContext::branchId()))
             ->whereNull('deleted_at')
             ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->groupBy('warehouse_id')
