@@ -3,6 +3,7 @@
 use App\Enums\HolidayType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -33,9 +34,12 @@ return new class extends Migration
             $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->unique(['company_id', 'date', 'name', 'deleted_at']);
             $table->index(['company_id', 'date', 'end_date']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX holidays_company_id_date_name_live_unique ON holidays (company_id, date, name) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 

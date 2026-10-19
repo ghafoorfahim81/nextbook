@@ -4,6 +4,7 @@ use App\Enums\ContractStatus;
 use App\Enums\ContractType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -55,9 +56,12 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(['company_id', 'contract_number', 'deleted_at']);
             $table->index(['company_id', 'end_date', 'status']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX employee_contracts_company_id_contract_number_live_unique ON employee_contracts (company_id, contract_number) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 

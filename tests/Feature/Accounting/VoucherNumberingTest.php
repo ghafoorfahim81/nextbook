@@ -109,11 +109,12 @@ class VoucherNumberingTest extends TestCase
             ->assertInertia(fn ($page) => $page->where('latestNumber', 11));
     }
 
-    public function test_numbering_is_per_branch(): void
+    public function test_numbering_is_per_company(): void
     {
         $this->receipt('10');
 
         $other = \App\Models\Administration\Branch::factory()->create([
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Second Branch',
             'is_main' => false,
             'created_by' => $this->ctx['user']->id,
@@ -121,7 +122,8 @@ class VoucherNumberingTest extends TestCase
 
         app()->instance('active_branch_id', $other->id);
 
-        // Each branch runs its own sequence, as it did before.
-        $this->assertSame(1, Receipt::nextNumber());
+        // One series per company and document type: the second branch
+        // continues the first one's sequence instead of starting its own.
+        $this->assertSame(11, Receipt::nextNumber());
     }
 }

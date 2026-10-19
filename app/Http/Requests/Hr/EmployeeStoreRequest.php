@@ -49,7 +49,7 @@ class EmployeeStoreRequest extends FormRequest
             'marital_status' => ['nullable', Rule::in(MaritalStatus::values())],
             'date_of_birth' => ['nullable', 'date'],
 
-            'national_id' => ['nullable', 'string', 'max:50', $this->uniqueInBranch('employees')],
+            'national_id' => ['nullable', 'string', 'max:50', $this->uniqueInCompany('employees')],
             'passport_number' => ['nullable', 'string', 'max:50'],
             'tin' => ['nullable', 'string', 'max:50'],
 
