@@ -87,7 +87,7 @@ class PurchaseOrderController extends Controller
 
     public function create()
     {
-        $purchaseOrderNumber = PurchaseOrder::max('number') ? PurchaseOrder::max('number') + 1 : 1;
+        $purchaseOrderNumber = PurchaseOrder::nextNumber();
 
         return inertia('Purchase/PurchaseOrders/Create', [
             'purchaseOrderNumber' => $purchaseOrderNumber,

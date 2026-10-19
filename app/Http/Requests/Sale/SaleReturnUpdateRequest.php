@@ -5,9 +5,12 @@ namespace App\Http\Requests\Sale;
 use App\Enums\SaleReturnReason;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class SaleReturnUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,7 +25,7 @@ class SaleReturnUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1', Rule::unique('sale_returns', 'number')->ignore($this->sale_return)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('sale_returns', $this->sale_return, 'number')],
             'sale_id' => ['required', 'string', 'exists:sales,id'],
             'date' => ['nullable', 'date'],
             'reason' => ['nullable', 'string', Rule::in(SaleReturnReason::values())],

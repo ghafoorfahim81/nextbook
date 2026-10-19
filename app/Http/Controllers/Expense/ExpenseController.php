@@ -69,7 +69,7 @@ class ExpenseController extends Controller
 
     public function create(Request $request)
     {
-        $latestNumber = (string) ((int) Expense::max('number') + 1);
+        $latestNumber = (string) Expense::nextNumber();
         return inertia('Expenses/Expenses/Create', [
             'latestNumber' => $latestNumber,
             'categories' => ExpenseCategoryResource::collection(
@@ -100,7 +100,7 @@ class ExpenseController extends Controller
 
             // Create expense record
             $expense = Expense::create([
-                'number' => $validated['number'] ?? (string) ((int) Expense::max('number') + 1),
+                'number' => $validated['number'] ?? (string) Expense::nextNumber(),
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],

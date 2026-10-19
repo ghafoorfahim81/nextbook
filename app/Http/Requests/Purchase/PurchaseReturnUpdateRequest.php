@@ -5,9 +5,12 @@ namespace App\Http\Requests\Purchase;
 use App\Enums\PurchaseReturnReason;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class PurchaseReturnUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,7 +25,7 @@ class PurchaseReturnUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1', Rule::unique('purchase_returns', 'number')->ignore($this->purchase_return)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('purchase_returns', $this->purchase_return, 'number')],
             'purchase_id' => ['required', 'string', 'exists:purchases,id'],
             'date' => ['nullable', 'date'],
             'reason' => ['nullable', 'string', Rule::in(PurchaseReturnReason::values())],

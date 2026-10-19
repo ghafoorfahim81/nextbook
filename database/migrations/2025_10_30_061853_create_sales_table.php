@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\SalePurchaseType;
 use App\Enums\TransactionStatus;
@@ -33,6 +34,11 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
         });
+
+        // One numbering series per company and document type. Partial, because
+        // a soft-deleted document must not hold its number against a new one
+        // and unique([..., 'deleted_at']) never fires in PostgreSQL.
+        DB::statement('CREATE UNIQUE INDEX sales_company_id_number_live_unique ON sales (company_id, number) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 

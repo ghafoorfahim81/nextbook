@@ -5,8 +5,11 @@ namespace App\Http\Requests\Purchase;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\TransactionStatus;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 class PurchaseStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -21,7 +24,7 @@ class PurchaseStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1'],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('purchases', column: 'number')],
             'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
             'purchase_order_id' => ['nullable', 'string', 'exists:purchase_orders,id'],
             'date' => ['required', 'date'],

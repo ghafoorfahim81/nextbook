@@ -90,7 +90,7 @@ class PurchaseController extends Controller
 
     public function create(Request $request)
     {
-        $purchaseNumber = Purchase::max('number') ? Purchase::max('number') + 1 : 1;
+        $purchaseNumber = Purchase::nextNumber();
         $bankAccounts = new Account();
         $bankAccounts = $bankAccounts->getAccountsByAccountTypeSlug('cash-or-bank');
         return inertia('Purchase/Purchases/Create', [

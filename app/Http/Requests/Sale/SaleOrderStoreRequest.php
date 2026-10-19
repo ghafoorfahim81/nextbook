@@ -5,9 +5,12 @@ namespace App\Http\Requests\Sale;
 use App\Enums\DiscountType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class SaleOrderStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,7 +25,7 @@ class SaleOrderStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1', 'unique:sale_orders,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('sale_orders', column: 'number')],
             'date' => ['nullable', 'date'],
             'delivery_date' => ['nullable', 'date'],
             'customer_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'customer')],

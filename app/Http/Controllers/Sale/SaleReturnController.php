@@ -104,7 +104,7 @@ class SaleReturnController extends Controller
 
     public function create(Request $request)
     {
-        $saleReturnNumber = SaleReturn::max('number') ? SaleReturn::max('number') + 1 : 1;
+        $saleReturnNumber = SaleReturn::nextNumber();
 
         $sales = Sale::query()
             ->with('customer:id,name')

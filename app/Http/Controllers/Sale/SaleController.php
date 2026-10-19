@@ -135,7 +135,7 @@ class SaleController extends Controller
 
     public function create(Request $request)
     {
-        $saleNumber = Sale::max('number') ? Sale::max('number') + 1 : 1;
+        $saleNumber = Sale::nextNumber();
         $bankAccounts = new Account();
         $bankAccounts = $bankAccounts->getAccountsByAccountTypeSlug('cash-or-bank');
 
