@@ -71,7 +71,7 @@ class DiscountRuleTest extends TestCase
         // 4 x 250 = 1000, less 10%.
         $this->assertEqualsWithDelta(
             100.0,
-            $this->resolver()->discountFor($this->ctx['item']->id, 4, 250, branchId: $this->ctx['branch']->id),
+            $this->resolver()->discountFor($this->ctx['item']->id, 4, 250, companyId: $this->ctx['company']->id),
             0.0001,
         );
     }
@@ -82,7 +82,7 @@ class DiscountRuleTest extends TestCase
 
         $this->assertEqualsWithDelta(
             30.0,
-            $this->resolver()->discountFor($this->ctx['item']->id, 4, 250, branchId: $this->ctx['branch']->id),
+            $this->resolver()->discountFor($this->ctx['item']->id, 4, 250, companyId: $this->ctx['company']->id),
             0.0001,
         );
     }
@@ -93,7 +93,7 @@ class DiscountRuleTest extends TestCase
 
         $this->assertEqualsWithDelta(
             100.0,
-            $this->resolver()->discountFor($this->ctx['item']->id, 1, 100, branchId: $this->ctx['branch']->id),
+            $this->resolver()->discountFor($this->ctx['item']->id, 1, 100, companyId: $this->ctx['company']->id),
             0.0001,
         );
     }
@@ -111,7 +111,7 @@ class DiscountRuleTest extends TestCase
         $this->rule(['scope' => DiscountScope::ITEM->value, 'scope_id' => $item->id, 'value' => 5]);
 
         // The item rule wins even though the category rule is worth more.
-        $winner = $this->resolver()->resolve($item->id, 1, branchId: $this->ctx['branch']->id);
+        $winner = $this->resolver()->resolve($item->id, 1, companyId: $this->ctx['company']->id);
 
         $this->assertSame(DiscountScope::ITEM, $winner?->scope);
     }
@@ -129,10 +129,10 @@ class DiscountRuleTest extends TestCase
         $this->rule(['value' => 20, 'customer_group_id' => $wholesale->id]);
 
         $forWholesale = $this->resolver()->resolve(
-            $this->ctx['item']->id, 1, ledgerId: $wholesaleBuyer->id, branchId: $this->ctx['branch']->id,
+            $this->ctx['item']->id, 1, ledgerId: $wholesaleBuyer->id, companyId: $this->ctx['company']->id,
         );
         $forWalkIn = $this->resolver()->resolve(
-            $this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id,
+            $this->ctx['item']->id, 1, companyId: $this->ctx['company']->id,
         );
 
         $this->assertEquals(20.0, (float) $forWholesale?->value);
@@ -156,7 +156,7 @@ class DiscountRuleTest extends TestCase
         $this->rule(['value' => 20, 'customer_group_id' => $wholesale->id]);
 
         $this->assertNull($this->resolver()->resolve(
-            $this->ctx['item']->id, 1, ledgerId: $retailBuyer->id, branchId: $this->ctx['branch']->id,
+            $this->ctx['item']->id, 1, ledgerId: $retailBuyer->id, companyId: $this->ctx['company']->id,
         ));
     }
 
@@ -165,10 +165,10 @@ class DiscountRuleTest extends TestCase
         $this->rule(['starts_at' => '2026-01-01', 'ends_at' => '2026-01-31']);
 
         $inside = $this->resolver()->resolve(
-            $this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id, onDate: '2026-01-15',
+            $this->ctx['item']->id, 1, companyId: $this->ctx['company']->id, onDate: '2026-01-15',
         );
         $after = $this->resolver()->resolve(
-            $this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id, onDate: '2026-02-01',
+            $this->ctx['item']->id, 1, companyId: $this->ctx['company']->id, onDate: '2026-02-01',
         );
 
         $this->assertNotNull($inside);
@@ -179,8 +179,8 @@ class DiscountRuleTest extends TestCase
     {
         $this->rule(['min_quantity' => 10]);
 
-        $this->assertNull($this->resolver()->resolve($this->ctx['item']->id, 9, branchId: $this->ctx['branch']->id));
-        $this->assertNotNull($this->resolver()->resolve($this->ctx['item']->id, 10, branchId: $this->ctx['branch']->id));
+        $this->assertNull($this->resolver()->resolve($this->ctx['item']->id, 9, companyId: $this->ctx['company']->id));
+        $this->assertNotNull($this->resolver()->resolve($this->ctx['item']->id, 10, companyId: $this->ctx['company']->id));
     }
 
     /**
@@ -194,7 +194,7 @@ class DiscountRuleTest extends TestCase
         $this->rule(['name' => 'Wins ties', 'value' => 5, 'is_priority' => true]);
 
         $winner = $this->resolver()->resolve(
-            $this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id,
+            $this->ctx['item']->id, 1, companyId: $this->ctx['company']->id,
         );
 
         // Same scope, same group: the switched-on rule wins even though the
@@ -208,7 +208,7 @@ class DiscountRuleTest extends TestCase
         $this->rule(['name' => 'Large', 'value' => 30]);
 
         $winner = $this->resolver()->resolve(
-            $this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id,
+            $this->ctx['item']->id, 1, companyId: $this->ctx['company']->id,
         );
 
         $this->assertSame('Large', $winner?->name);
@@ -244,7 +244,7 @@ class DiscountRuleTest extends TestCase
     {
         $this->rule(['is_active' => false]);
 
-        $this->assertNull($this->resolver()->resolve($this->ctx['item']->id, 1, branchId: $this->ctx['branch']->id));
+        $this->assertNull($this->resolver()->resolve($this->ctx['item']->id, 1, companyId: $this->ctx['company']->id));
     }
 
     /** The backstop, for a caller that posts no discount field at all. */
@@ -340,7 +340,7 @@ class DiscountRuleTest extends TestCase
         $this->rule(['name' => 'Ten or more', 'value' => 15, 'is_priority' => true, 'min_quantity' => 10]);
 
         $candidates = $this->resolver()->candidatesFor(
-            $this->ctx['item']->id, branchId: $this->ctx['branch']->id,
+            $this->ctx['item']->id, companyId: $this->ctx['company']->id,
         );
 
         foreach ([1, 9, 10, 40] as $quantity) {
@@ -348,7 +348,7 @@ class DiscountRuleTest extends TestCase
                 fn ($rule) => $rule->min_quantity === null || $quantity >= (float) $rule->min_quantity,
             );
             $resolved = $this->resolver()->resolve(
-                $this->ctx['item']->id, $quantity, branchId: $this->ctx['branch']->id,
+                $this->ctx['item']->id, $quantity, companyId: $this->ctx['company']->id,
             );
 
             $this->assertSame($resolved?->id, $picked?->id, "quantity {$quantity}");

@@ -260,7 +260,7 @@ class SaleController extends Controller
                 // `discount`. Without this the value is dropped on create, so the GL
                 // records the discount (it is folded into discount_total) while the
                 // sale_items row stores 0 and the sales report cannot subtract it.
-                $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->branch_id);
+                $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->company_id);
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 $item['variant_id'] = $this->resolveLineVariantId($item);
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
@@ -671,7 +671,7 @@ class SaleController extends Controller
             // $oldItemIds = collect($affectedCombos)->pluck('item_id')->unique()->values()->all();
 
             $validated['item_list'] = array_map(function ($item) use ($validated, $sale) {
-                $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->branch_id);
+                $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->company_id);
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 $item['variant_id'] = $this->resolveLineVariantId($item);
 
@@ -1227,7 +1227,7 @@ class SaleController extends Controller
      * backstop for callers that send no discount at all. The bill-level
      * discount is a separate concept and is not consulted here.
      */
-    private function resolveLineDiscount(array $item, array $validated, ?string $branchId): float
+    private function resolveLineDiscount(array $item, array $validated, ?string $companyId): float
     {
         // The sale form resolves the rule itself and shows the figure in the
         // line's discount box, so the presence of the field — whatever it holds
@@ -1248,7 +1248,7 @@ class SaleController extends Controller
             quantity: (float) ($item['quantity'] ?? 0),
             unitPrice: (float) ($item['unit_price'] ?? 0),
             ledgerId: $validated['customer_id'] ?? null,
-            branchId: $branchId,
+            companyId: $companyId,
             onDate: $validated['date'] ?? null,
         );
     }

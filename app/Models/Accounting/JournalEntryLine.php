@@ -4,10 +4,8 @@ namespace App\Models\Accounting;
 
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class JournalEntryLine extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, HasCompanyFromParent, SoftDeletes;
 
     protected $table = 'journal_entry_lines';
     protected $keyType = 'string';
@@ -34,7 +32,6 @@ class JournalEntryLine extends Model
         'exchange_rate',
         'base_debit',
         'base_credit',
-        'branch_id',
         'created_by',
         'updated_by',
     ];
@@ -50,10 +47,14 @@ class JournalEntryLine extends Model
             'exchange_rate' => 'float',
             'base_debit' => 'float',
             'base_credit' => 'float',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
         ];
+    }
+
+    protected function companyParentRelation(): string
+    {
+        return 'journalEntry';
     }
 
     public function journalEntry(): BelongsTo

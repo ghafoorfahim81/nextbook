@@ -21,6 +21,7 @@ class AccountStatementTest extends TestCase
     {
         $context = $this->bootstrapErpContext();
         $branch = $context['branch'];
+        $company = $context['company'];
         $currency = $context['currency'];
 
         $account = Account::factory()->create([

@@ -253,7 +253,6 @@ class AccountController extends Controller
     {
         $chart_of_account->load([
             'accountType',
-            'branch',
             'opening',
             'opening.transaction.currency',
             'opening.transaction.lines',
@@ -432,7 +431,7 @@ class AccountController extends Controller
     ): BinaryFileResponse {
         $this->authorize('view', $chart_of_account);
 
-        $chart_of_account->loadMissing(['accountType', 'branch']);
+        $chart_of_account->loadMissing(['accountType']);
 
         $dateConversionService = app(\App\Services\DateConversionService::class);
 

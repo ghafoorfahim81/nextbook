@@ -40,7 +40,6 @@ class LedgerResource extends JsonResource
             'credit_limit_enabled' => (bool) $this->credit_limit_enabled,
             'credit_terms' => $this->credit_terms?->value,
             'discount' => $this->discount,
-            'branch' => $this->branch,
             'type' => $this->type,
             // The same person's other account. The edit form needs the id to
             // render the picker; the show page needs the name to offer the
