@@ -107,3 +107,16 @@ it('resolves the acting company from the user, not the request', function () {
     expect(app('active_company_id'))->toBe($company->id)
         ->and(app('accessible_company_ids'))->toBe([$company->id]);
 });
+
+it('does not let one company read another company\'s branches', function () {
+    [$ownCompany, $ownBranch] = companyWithBranch('Ahmad Electronics');
+    [, $foreignBranch] = companyWithBranch('Ahmad Construction');
+
+    $this->actingAs(superAdminIn($ownCompany, $ownBranch));
+
+    // Branch lists, the main-branch lookup and the Branch::query() fallbacks
+    // all go through this scope; without it they read across companies.
+    expect(Branch::query()->pluck('id')->all())->toBe([$ownBranch->id])
+        ->and(Branch::query()->where('is_main', true)->value('id'))->toBe($ownBranch->id)
+        ->and(Branch::query()->find($foreignBranch->id))->toBeNull();
+});
