@@ -41,5 +41,7 @@
   },
   "invalid_phone_for_country": "Not a valid phone number length for {country}",
   "balance_by_currency": "Balance by Currency",
-  "no_currency_balance": "No balance in any currency"
+  "no_currency_balance": "No balance in any currency",
+  "available_in_branches": "Available in branches",
+  "available_in_branches_hint": "Branches whose forms offer this party. Its balance is shared by all of them."
 }

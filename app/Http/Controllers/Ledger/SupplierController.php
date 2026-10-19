@@ -15,6 +15,7 @@ use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
+use App\Support\BranchContext;
 use App\Models\Administration\Country;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
@@ -41,6 +42,7 @@ use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
 use App\Models\Transaction\Transaction;
 use App\Support\Inertia\CacheKey;
+use App\Support\Inertia\CacheForget;
 use App\Models\User;
 use Illuminate\Support\Str;
 use App\Services\SpreadsheetExportService;
@@ -106,7 +108,6 @@ class SupplierController extends Controller
     {
         return inertia('Ledgers/Suppliers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
-            'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
             ...$this->referenceData(),
             'nextCode' => $this->nextCode($request->user()?->company_id),
             'accountTypes' => [],
@@ -143,7 +144,11 @@ class SupplierController extends Controller
         // other, and setting one alone leaves a pairing that is only half true.
         app(LedgerLinkService::class)->sync($ledger, $validated);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        if (isset($validated['branch_ids'])) {
+            $ledger->openToBranches($validated['branch_ids']);
+        }
+
+        CacheForget::lookupEverywhere($request, 'ledgers');
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
             return to_route('suppliers.create')
                 ->with('success', __('general.created_successfully', ['resource' => __('general.resource.supplier')]));
@@ -320,6 +325,10 @@ class SupplierController extends Controller
             'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
             'countries' => Country::query()->orderBy('name_en')->get(),
             'provinces' => Province::query()->orderBy('name_en')->get(),
+            // The company's branches, for the "open in branches" field.
+            'branches' => BranchResource::collection(
+                Branch::query()->where('company_id', BranchContext::companyId())->orderBy('name')->get()
+            ),
         ];
     }
 
@@ -411,7 +420,7 @@ class SupplierController extends Controller
         $supplier->load([
             'currency', 'group', 'paymentTerm', 'country', 'province',
             'openings', 'openings.transaction.currency', 'openings.transaction.lines',
-            'attachments', 'counterpart',
+            'attachments', 'counterpart', 'branches:id',
         ]);
 
         return inertia('Ledgers/Suppliers/Edit', [
@@ -549,7 +558,11 @@ class SupplierController extends Controller
 
         app(LedgerLinkService::class)->sync($supplier, $validated);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        if (isset($validated['branch_ids'])) {
+            $supplier->openToBranches($validated['branch_ids']);
+        }
+
+        CacheForget::lookupEverywhere($request, 'ledgers');
         return to_route('suppliers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.supplier')]));
     }
 
@@ -585,7 +598,7 @@ class SupplierController extends Controller
 
             $supplier->delete();
         });
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
         return redirect()->route('suppliers.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.supplier')]));
     }
     public function restore(Request $request, Ledger $supplier)
@@ -601,7 +614,7 @@ class SupplierController extends Controller
 
             $supplier->restore();
         });
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
         return redirect()->route('suppliers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.supplier')]));
     }
 
@@ -609,7 +622,7 @@ class SupplierController extends Controller
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('suppliers', (string) $supplier->id);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('suppliers.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.supplier')]));
     }

@@ -3,6 +3,7 @@
 namespace App\Models\Ledger;
 
 use App\Enums\CreditTerms;
+use App\Models\Administration\Branch;
 use App\Models\Administration\Company;
 use App\Models\Administration\Country;
 use App\Models\Administration\CustomerGroup;
@@ -11,6 +12,7 @@ use App\Models\Administration\Province;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
+use App\Support\BranchContext;
 use App\Traits\HasAttachments;
 use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
@@ -25,6 +27,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\DB;
@@ -311,6 +314,82 @@ class Ledger extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Branches whose document forms offer this party.
+     *
+     * Only customers and suppliers have rows. The ledger itself, and its
+     * balance, belong to the company; this only decides who may pick it.
+     */
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'ledger_branches')
+            ->withPivot('company_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Customers and suppliers open to a branch, plus every other kind of
+     * ledger, which has no branch list. A null branch (console, queue) leaves
+     * the query alone, as the branch scopes do.
+     */
+    public function scopeAvailableInBranch(Builder $query, ?string $branchId): Builder
+    {
+        if ($branchId === null) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($branchId) {
+            $q->whereNotIn($this->qualifyColumn('type'), LedgerType::commercialValues())
+                ->orWhereExists(fn ($sub) => $sub->select(DB::raw(1))
+                    ->from('ledger_branches')
+                    ->whereColumn('ledger_branches.ledger_id', $this->qualifyColumn('id'))
+                    ->where('ledger_branches.branch_id', $branchId));
+        });
+    }
+
+    /**
+     * Replace the branches this party is open to. The company is written on
+     * every row so the composite foreign keys can hold it to its own company.
+     *
+     * @param  array<int, string>  $branchIds
+     */
+    public function openToBranches(array $branchIds): void
+    {
+        $this->branches()->sync(
+            collect($branchIds)
+                ->filter()
+                ->unique()
+                ->mapWithKeys(fn ($id) => [(string) $id => ['company_id' => $this->company_id]])
+                ->all()
+        );
+    }
+
+    protected static function booted(): void
+    {
+        // A new party starts in the branch that created it. With no acting
+        // branch (a seeder, an import, a job) it is open to every branch of
+        // its company, as the parties that predate branch lists are.
+        static::created(function (Ledger $ledger) {
+            if (! in_array($ledger->typeValue(), LedgerType::commercialValues(), true)) {
+                return;
+            }
+
+            $branchId = BranchContext::branchId();
+
+            $ledger->openToBranches($branchId !== null
+                ? [$branchId]
+                : Branch::withoutGlobalScopes()
+                    ->where('company_id', $ledger->company_id)
+                    ->pluck('id')
+                    ->all());
+        });
+    }
+
+    private function typeValue(): ?string
+    {
+        return $this->type instanceof LedgerType ? $this->type->value : $this->type;
     }
 
     /**
