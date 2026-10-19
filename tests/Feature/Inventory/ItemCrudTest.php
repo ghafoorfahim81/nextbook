@@ -305,7 +305,6 @@ class ItemCrudTest extends TestCase
 
         StockMovement::create([
             'item_id' => $item->id,
-            'branch_id' => $this->ctx['branch']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'movement_type' => StockMovementType::IN->value,

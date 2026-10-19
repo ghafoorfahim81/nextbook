@@ -75,9 +75,10 @@ class FastOpeningTest extends TestCase
             ->where('source', StockSourceType::OPENING->value)
             ->firstOrFail();
 
-        // Companies have no branch_id, so the old `auth()->user()->company->branch_id`
-        // passed null here and only the HasBranch boot hook saved it.
-        $this->assertSame($this->ctx['branch']->id, $movement->branch_id);
+        // Stock has no branch of its own: it lands in the acting branch by
+        // landing in that branch's warehouse.
+        $this->assertSame($this->ctx['warehouse']->id, $movement->warehouse_id);
+        $this->assertSame($this->ctx['branch']->id, $movement->warehouse->branch_id);
         $this->assertSame($item->variants()->first()->id, $movement->variant_id);
 
         $this->assertTrue(Transaction::where('reference_id', $item->id)->exists());

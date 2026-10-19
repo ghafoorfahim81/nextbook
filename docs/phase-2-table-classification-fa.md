@@ -128,7 +128,7 @@ tax_brackets
 
 ---
 
-## ۵. دستهٔ ب — **هر دو** کالم + composite FK (۴۳ جدول)
+## ۵. دستهٔ ب — **هر دو** کالم + composite FK (۴۴ جدول)
 
 اسناد و عملیات شعبه‌محور. شعبه در اینها واقعیت سطر است:
 
@@ -149,8 +149,10 @@ leave_requests   leave_allocations attendances       attendance_punches
 attendance_devices                 attendance_device_users
 job_openings     job_applications  interviews
 employees        warehouses        users             pos_sessions
-activity_logs    currency_rate_updates
+activity_logs    currency_rate_updates             stock_lots
 ```
+
+`stock_lots` در ابتدا در دستهٔ د بود و در گام ۷ به اینجا آمد (بخش ۷ را ببینید).
 
 ### دو جدول با شعبهٔ nullable
 
@@ -208,13 +210,19 @@ FOREIGN KEY (company_id, purchase_id)    REFERENCES purchases   (company_id, id)
 
 ---
 
-## ۷. دستهٔ د — کالم کمپنی + گدام، شعبه **حذف** (۴ جدول)
+## ۷. دستهٔ د — کالم کمپنی + گدام، شعبه **حذف** (۳ جدول)
 
 ```
-stock_balances   stock_lots   stock_pieces   stock_movements
+stock_balances   stock_pieces   stock_movements
 ```
 
-دلیل اول: هر چهار جدول گدام دارند و گدام خودش به شعبه وصل است — طبق قاعدهٔ دوم،
+> **اصلاح در گام ۷:** `stock_lots` در ابتدا اینجا بود، ولی کالم گدام **ندارد** —
+> پس دلیل زیر برایش صدق نمی‌کند. علاوه بر این قیمت فروش و MRP هر محموله را نگه
+> می‌دارد و هویت یکتایش `(branch_id, item, variant, batch, expiry)` است. حذف شعبه
+> یعنی دو شعبه با یک batch مجبور به یک قیمت می‌شدند. تصمیم: شعبه را نگه می‌دارد و
+> به دستهٔ ب رفت.
+
+دلیل اول: هر سه جدول گدام دارند و گدام خودش به شعبه وصل است — طبق قاعدهٔ دوم،
 شعبه معلومات جدیدی اضافه نمی‌کند.
 
 دلیل دوم و مهم‌تر: **اینجا composite FK محافظت نمی‌کند.** تنها قید ممکن این است:
@@ -232,6 +240,15 @@ FOREIGN KEY (company_id, warehouse_id) REFERENCES warehouses (company_id, id)
 
 گزارش موجودی به تفکیک شعبه یک join به جدول گدام‌ها می‌خواهد — جدولی کوچک که
 همیشه در کش است.
+
+در کد این‌طور پیاده شد:
+
+- trait `BranchSpecificThroughWarehouse` جای `BranchSpecific` را روی این سه مدل
+  گرفت: `warehouse_id IN (گدام‌های شعبهٔ فعال)`. نام scope همان `branchSpecific`
+  است، پس `withoutGlobalScope('branchSpecific')` هر جا که بود کار می‌کند.
+- کوئری‌های دستی: `Warehouse::idsOfBranch($branchId)` به‌عنوان زیرکوئری.
+- کمپنی سطر از گدام می‌آید (`HasCompanyFromParent` با والد `warehouse`).
+- گدام‌های حذف‌شده عمداً کنار گذاشته نمی‌شوند: موجودی‌شان قبلاً هم جزو شعبه بود.
 
 ---
 
@@ -476,7 +493,7 @@ branches → companies → currencies → branches
 |---|---|
 | جدول اپلیکیشنی | ۱۰۹ |
 | دارای کالم شعبه امروز | ۱۰۱ |
-| کالم شعبه **حذف** می‌شود | ۵۷ |
-| کالم شعبه **باقی** می‌ماند | ۴۳ |
+| کالم شعبه **حذف** می‌شود | ۵۶ |
+| کالم شعبه **باقی** می‌ماند | ۴۴ |
 | کالم کمپنی اضافه می‌شود | ۱۰۴ |
 | ایندکس یکتای نیازمند بازنویسی | ۵۷ |

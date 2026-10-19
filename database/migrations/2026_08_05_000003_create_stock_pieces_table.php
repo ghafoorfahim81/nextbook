@@ -49,15 +49,14 @@ return new class extends Migration
             $table->ulid('purchase_item_id')->nullable()->index();
             $table->date('warranty_end_date')->nullable();
 
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['branch_id', 'item_id', 'status']);
-            $table->index(['branch_id', 'warehouse_id', 'status']);
+            $table->index(['company_id', 'item_id', 'status']);
+            $table->index(['company_id', 'warehouse_id', 'status']);
         });
 
         Schema::table('stock_pieces', function (Blueprint $table) {
@@ -65,7 +64,6 @@ return new class extends Migration
             $table->foreign('variant_id')->references('id')->on('item_variants');
             $table->foreign('lot_id')->references('id')->on('stock_lots');
             $table->foreign('warehouse_id')->references('id')->on('warehouses');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users');

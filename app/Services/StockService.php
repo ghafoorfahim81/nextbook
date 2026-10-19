@@ -153,7 +153,6 @@ class StockService
             : 'reserved_out';
 
         $keys = [
-            'branch_id' => $data['branch_id'],
             'item_id' => $data['item_id'],
             'warehouse_id' => $data['warehouse_id'],
             'variant_id' => $this->resolveVariantId($item, $data),
@@ -321,7 +320,6 @@ class StockService
             }
 
             $query = StockMovement::query()
-                ->where('branch_id', $balanceData['branch_id'])
                 ->where('item_id', $balanceData['item_id'])
                 ->where('warehouse_id', $balanceData['warehouse_id'])
                 ->where('movement_type', StockMovementType::IN->value)
@@ -433,7 +431,6 @@ class StockService
         }
 
         $candidates = StockMovement::query()
-            ->where('branch_id', $outMovement->branch_id)
             ->where('item_id', $outMovement->item_id)
             ->where('warehouse_id', $outMovement->warehouse_id)
             ->where('movement_type', StockMovementType::IN->value)
@@ -509,7 +506,6 @@ class StockService
     protected function deductWeightedAverage(Item $item, array $movementData, array $balanceData, float $conversionFactor, ?float $unitCostOverride = null): StockMovement
     {
         $balance = StockBalance::query()
-            ->where('branch_id', $balanceData['branch_id'])
             ->where('item_id', $balanceData['item_id'])
             ->where('warehouse_id', $balanceData['warehouse_id'])
             ->lockForUpdate()
@@ -530,7 +526,6 @@ class StockService
     protected function increaseBalance(Item $item, array $data): void
     {
         $keys = [
-            'branch_id' => $data['branch_id'],
             'item_id' => $data['item_id'],
             'warehouse_id' => $data['warehouse_id'],
             'variant_id' => $data['variant_id'],
@@ -858,7 +853,6 @@ class StockService
         if ($allocations !== null) {
             foreach ($allocations as $allocation) {
                 $balances = StockBalance::query()
-                    ->where('branch_id', $data['branch_id'])
                     ->where('item_id', $data['item_id'])
                     ->where('warehouse_id', $data['warehouse_id'])
                     ->when($allocation['batch'] !== null, function ($query) use ($allocation) {
@@ -887,7 +881,6 @@ class StockService
 
 
         $balances = StockBalance::query()
-            ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
             ->where('warehouse_id', $data['warehouse_id'])
             ->when(!empty($data['batch']), function ($query) use ($data) {
@@ -947,7 +940,6 @@ class StockService
         // fetch the locked rows and sum in PHP. The lock is held until this transaction
         // (StockService::post) commits, closing the check-to-deduct race window.
         $available = (float) StockBalance::query()
-            ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
             ->where('warehouse_id', $data['warehouse_id'])
             ->when(!empty($data['batch']), function($query) use ($data) {

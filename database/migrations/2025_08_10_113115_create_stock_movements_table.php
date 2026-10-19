@@ -17,7 +17,6 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->ulid('company_id')->index();
 
-            $table->ulid('branch_id')->index();
 
             $table->ulid('item_id')->index();
             $table->ulid('warehouse_id')->index();
@@ -43,15 +42,14 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
             // composite indexes
-            $table->index(['branch_id', 'item_id', 'warehouse_id', 'date']);
-            $table->index(['branch_id', 'reference_id', 'reference_type']);
-            $table->index(['branch_id', 'item_id', 'warehouse_id', 'batch', 'expire_date']);
+            $table->index(['company_id', 'item_id', 'warehouse_id', 'date']);
+            $table->index(['company_id', 'reference_id', 'reference_type']);
+            $table->index(['company_id', 'item_id', 'warehouse_id', 'batch', 'expire_date']);
         });
 
         Schema::table('stock_movements', function (Blueprint $table) {
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('warehouse_id')->references('id')->on('warehouses');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
