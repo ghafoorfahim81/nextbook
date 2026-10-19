@@ -5,9 +5,12 @@ namespace App\Http\Requests\Sale;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\SalePurchaseType;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class SaleUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,7 +25,7 @@ class SaleUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1', Rule::unique('sales', 'number')->ignore($this->sale)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('sales', $this->sale, 'number')],
             'customer_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'customer')],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],

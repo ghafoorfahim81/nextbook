@@ -71,7 +71,7 @@ class AccountTransferController extends Controller
 
     public function create(Request $request)
     {
-        $latestNumber = (string) ((int) AccountTransfer::max('number') + 1);
+        $latestNumber = (string) AccountTransfer::nextNumber();
         return inertia('AccountTransfers/Create', [
             'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])

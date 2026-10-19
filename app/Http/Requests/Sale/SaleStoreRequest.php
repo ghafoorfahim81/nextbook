@@ -25,7 +25,7 @@ class SaleStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1', $this->uniqueInBranch('sales')],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('sales', column: 'number')],
             'customer_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'customer')],
             'sale_order_id' => ['nullable', 'string', 'exists:sale_orders,id'],
             'date' => ['nullable', 'date'],

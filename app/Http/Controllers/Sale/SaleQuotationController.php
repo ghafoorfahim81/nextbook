@@ -87,7 +87,7 @@ class SaleQuotationController extends Controller
 
     public function create()
     {
-        $saleQuotationNumber = SaleQuotation::max('number') ? SaleQuotation::max('number') + 1 : 1;
+        $saleQuotationNumber = SaleQuotation::nextNumber();
 
         return inertia('Sale/SaleQuotations/Create', [
             'saleQuotationNumber' => $saleQuotationNumber,

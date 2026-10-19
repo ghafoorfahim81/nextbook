@@ -5,9 +5,12 @@ namespace App\Http\Requests\Purchase;
 use App\Enums\SalePurchaseType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class PurchaseUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,7 +25,7 @@ class PurchaseUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1', Rule::unique('purchases', 'number')->ignore($this->purchase)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('purchases', $this->purchase, 'number')],
             'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
             'date' => ['required', 'date'],
             'warehouse_id' => ['required', 'string', 'exists:warehouses,id'],

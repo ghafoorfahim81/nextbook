@@ -81,7 +81,7 @@ class DrawingController extends Controller
     public function create(Request $request): Response
     {
         $accountModel = new Account();
-        $latestNumber = (string) ((int) Drawing::max('number') + 1);
+        $latestNumber = (string) Drawing::nextNumber();
         return inertia('Owners/Drawings/Create', [
             'latestNumber' => $latestNumber,
             'owners' => OwnerResource::collection(
@@ -110,7 +110,7 @@ class DrawingController extends Controller
             $postImmediately = (bool) user_preference('transaction.drawing_post_immediately', true);
             $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
             $drawing = Drawing::create([
-                'number' => $validated['number'] ?? (string) ((int) Drawing::max('number') + 1),
+                'number' => $validated['number'] ?? (string) Drawing::nextNumber(),
                 'owner_id' => $owner->id,
                 'date' => $date,
                 'narration' => $validated['narration'] ?? null,

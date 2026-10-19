@@ -74,7 +74,7 @@ class JournalEntryController extends Controller
      */
     public function create()
     {
-        $latestNumber = (string) ((int) JournalEntry::max('number') + 1);
+        $latestNumber = (string) JournalEntry::nextNumber();
         return inertia('JournalEntry/JournalEntries/Create', [
             'accounts' => AccountResource::collection(Account::query()->orderBy('created_at', 'desc')->get()),
             'ledgers' => LedgerResource::collection(Ledger::query()->orderBy('created_at', 'desc')->get()),

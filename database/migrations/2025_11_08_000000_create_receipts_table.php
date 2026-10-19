@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -28,6 +29,11 @@ return new class extends Migration
             $table->softDeletes();
             $table->ulid('deleted_by')->nullable();
         });
+
+        // One numbering series per company and document type. Partial, because
+        // a soft-deleted document must not hold its number against a new one
+        // and unique([..., 'deleted_at']) never fires in PostgreSQL.
+        DB::statement('CREATE UNIQUE INDEX receipts_company_id_number_live_unique ON receipts (company_id, number) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 

@@ -22,9 +22,10 @@ use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasUserTracking;
+use App\Models\Concerns\HasSequentialNumber;
 class Sale extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes, HasSequentialNumber;
 
     /**
      * The attributes that are mass assignable.

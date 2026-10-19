@@ -21,9 +21,10 @@ use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
 use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\Concerns\HasSequentialNumber;
 class AccountTransfer extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, SoftDeletes, HasSequentialNumber;
 
     protected $keyType = 'string';
     public $incrementing = false;

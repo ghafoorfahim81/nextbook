@@ -3,9 +3,12 @@
 namespace App\Http\Requests\Owner;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class DrawingUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +17,7 @@ class DrawingUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['nullable', 'string', 'max:50'],
+            'number' => ['nullable', 'string', 'max:50', $this->uniqueInCompany('drawings', $this->route('drawing'), 'number')],
             'owner_id' => ['required', 'string', 'exists:owners,id'],
             'bank_account_id' => ['required', 'string', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],

@@ -5,7 +5,10 @@ namespace App\Models\Concerns;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Next voucher number for models whose `number` column is a STRING.
+ * Next document number, one series per company and document type.
+ *
+ * Written for the STRING `number` columns first, where the trap below lives,
+ * and used for the integer ones too.
  *
  * `MAX(number)` on a text column sorts lexicographically, not numerically:
  *
@@ -40,7 +43,9 @@ trait HasSequentialNumber
         }
 
         $highest = $query
-            ->selectRaw("MAX(CASE WHEN number ~ '^[0-9]+$' THEN number::bigint END) as highest_number")
+            // Through text, so the same expression serves the integer number
+            // columns of sales and purchases and the string ones of vouchers.
+            ->selectRaw("MAX(CASE WHEN number::text ~ '^[0-9]+$' THEN number::text::bigint END) as highest_number")
             ->value('highest_number');
 
         return ((int) $highest) + 1;

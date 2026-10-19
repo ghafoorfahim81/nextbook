@@ -87,7 +87,7 @@ class SaleOrderController extends Controller
 
     public function create()
     {
-        $saleOrderNumber = SaleOrder::max('number') ? SaleOrder::max('number') + 1 : 1;
+        $saleOrderNumber = SaleOrder::nextNumber();
 
         return inertia('Sale/SaleOrders/Create', [
             'saleOrderNumber' => $saleOrderNumber,

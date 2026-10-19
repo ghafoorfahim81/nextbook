@@ -87,7 +87,7 @@ class PurchaseQuotationController extends Controller
 
     public function create()
     {
-        $purchaseQuotationNumber = PurchaseQuotation::max('number') ? PurchaseQuotation::max('number') + 1 : 1;
+        $purchaseQuotationNumber = PurchaseQuotation::nextNumber();
 
         return inertia('Purchase/PurchaseQuotations/Create', [
             'purchaseQuotationNumber' => $purchaseQuotationNumber,
