@@ -101,12 +101,9 @@ class FastOpeningController extends Controller
                     'date'            => $date,
                     'expire_date'     => $row['expire_date'] ?? null,
                     'warehouse_id'    => $row['warehouse_id'],
-                    // This used to read `auth()->user()->company->branch_id`, and
-                    // companies have no branch_id column — so it was always null.
-                    // The write survived only because the HasBranch boot hook fills
-                    // a blank branch_id in, which means the balance lookup ran
-                    // against a null branch and matched nothing on the way past.
-                    'branch_id'       => $item->branch_id,
+                    // Items are shared by the company, so the item has no branch
+                    // to offer; the stock lands in the branch doing the entry.
+                    'branch_id'       => BranchContext::branchId(),
                 ]);
 
                 $posted++;

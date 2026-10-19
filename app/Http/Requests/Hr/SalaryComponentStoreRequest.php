@@ -27,7 +27,7 @@ class SalaryComponentStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
-            'code' => ['required', 'string', 'max:50', $this->uniqueInBranch('salary_components', $this->componentId())],
+            'code' => ['required', 'string', 'max:50', $this->uniqueInCompany('salary_components', $this->componentId())],
             'component_type' => ['required', Rule::in(SalaryComponentType::values())],
             'calculation_type' => ['required', Rule::in(ComponentCalculationType::values())],
             'amount' => ['nullable', 'numeric', 'min:0'],
@@ -35,7 +35,7 @@ class SalaryComponentStoreRequest extends FormRequest
             'is_taxable' => ['nullable', 'boolean'],
             'affects_gross' => ['nullable', 'boolean'],
             'is_prorated' => ['nullable', 'boolean'],
-            'account_id' => ['nullable', 'string', $this->existsInBranch('accounts')],
+            'account_id' => ['nullable', 'string', $this->existsInCompany('accounts')],
             'sequence' => ['nullable', 'integer', 'min:0', 'max:999'],
             'is_active' => ['nullable', 'boolean'],
         ];

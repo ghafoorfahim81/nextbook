@@ -23,7 +23,7 @@ class CategoryStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', $this->uniqueInBranch('categories')],
+            'name' => ['required', 'string', $this->uniqueInCompany('categories')],
             'local_name' => ['nullable', 'string', 'max:256'],
             'parent_id' => ['nullable', 'string', 'exists:categories,id'],
             'remark' => ['nullable', 'string'],

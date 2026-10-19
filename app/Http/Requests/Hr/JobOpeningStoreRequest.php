@@ -39,8 +39,8 @@ class JobOpeningStoreRequest extends FormRequest
         return [
             'code' => ['required', 'string', 'max:50', $this->uniqueInBranch('job_openings', $id)],
             'title' => ['required', 'string', 'max:150'],
-            'department_id' => ['nullable', 'string', $this->existsInBranch('departments')],
-            'designation_id' => ['nullable', 'string', $this->existsInBranch('designations')],
+            'department_id' => ['nullable', 'string', $this->existsInCompany('departments')],
+            'designation_id' => ['nullable', 'string', $this->existsInCompany('designations')],
             'employment_type' => ['required', Rule::in(EmploymentType::values())],
             'vacancies' => ['required', 'integer', 'min:1', 'max:9999'],
             'description' => ['nullable', 'string'],

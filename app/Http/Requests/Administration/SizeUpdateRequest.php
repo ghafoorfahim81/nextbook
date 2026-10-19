@@ -21,8 +21,8 @@ class SizeUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', $this->uniqueInBranch('sizes', $this->route('size'))],
-            'code' => ['required', 'string', $this->uniqueInBranch('sizes', $this->route('size'))],
+            'name' => ['required', 'string', $this->uniqueInCompany('sizes', $this->route('size'))],
+            'code' => ['required', 'string', $this->uniqueInCompany('sizes', $this->route('size'))],
         ];
     }
 }

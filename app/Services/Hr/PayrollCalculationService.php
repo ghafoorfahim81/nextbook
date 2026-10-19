@@ -80,7 +80,7 @@ class PayrollCalculationService
             $taxSet = $this->wageTax->resolveSet(
                 $payroll->period_end,
                 TaxPeriod::Monthly,
-                $payroll->branch_id
+                $payroll->company_id
             );
 
             $systemComponents = $this->systemComponents($payroll->branch_id);

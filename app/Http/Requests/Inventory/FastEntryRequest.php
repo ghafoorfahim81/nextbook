@@ -15,18 +15,19 @@ class FastEntryRequest extends FormRequest
 
     public function rules(): array
     {
-        $branchId = $this->user()?->branch_id;
+        // Items are company master data: one name and code per company.
+        $companyId = $this->user()?->company_id;
 
         return [
             'items'                       => ['required','array','min:1'],
             // `distinct` catches two rows in the same submission naming the same
             // item — the unique rule only looks at what is already stored.
             'items.*.name'                => ['required','string','max:255','distinct:ignore_case', Rule::unique('items')->where(fn ($q) => $q
-                        ->where('branch_id', $branchId)
+                        ->where('company_id', $companyId)
                         ->whereNull('deleted_at')
                     )],
             'items.*.code'                => ['nullable','string','max:50','distinct', Rule::unique('items')->where(fn ($q) => $q
-                        ->where('branch_id', $branchId)
+                        ->where('company_id', $companyId)
                         ->whereNull('deleted_at')
                     )],
             'items.*.barcode'             => ['nullable','string','max:100','distinct'],

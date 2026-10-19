@@ -175,7 +175,9 @@ class LedgerStatementService
         return DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($ledger) {
                 $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $ledger->branch_id)
+                    // A ledger is company master data: one record and one
+                    // balance across every branch the party deals with.
+                    ->where('t.company_id', '=', $ledger->company_id)
                     ->whereIn('t.status', [
                         TransactionStatus::POSTED->value,
                         TransactionStatus::REVERSED->value,

@@ -17,12 +17,12 @@ class OwnerUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255' , $this->uniqueInBranch('owners', $this->route('owner'))    ],
+            'name' => ['required', 'string', 'max:255' , $this->uniqueInCompany('owners', $this->route('owner'))    ],
             'father_name' => ['required', 'string', 'max:255'],
             'nic' => ['nullable', 'string', 'max:255'],
-                'email' => ['nullable', 'email', 'max:255' , $this->uniqueInBranch('owners', $this->route('owner'))],
+                'email' => ['nullable', 'email', 'max:255' , $this->uniqueInCompany('owners', $this->route('owner'))],
             'address' => ['nullable', 'string'],
-            'phone_number' => ['nullable', 'string', 'max:255' , $this->uniqueInBranch('owners', $this->route('owner'))],
+            'phone_number' => ['nullable', 'string', 'max:255' , $this->uniqueInCompany('owners', $this->route('owner'))],
             'ownership_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'profit_share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],

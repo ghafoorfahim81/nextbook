@@ -47,7 +47,7 @@ class EmployeeLoanStoreRequest extends FormRequest
             'issue_date' => ['required', 'date'],
             'first_deduction_period' => ['nullable', 'date'],
             'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'bank_account_id' => ['nullable', 'string', $this->existsInBranch('accounts')],
+            'bank_account_id' => ['nullable', 'string', $this->existsInCompany('accounts')],
             'remark' => ['nullable', 'string'],
         ];
     }

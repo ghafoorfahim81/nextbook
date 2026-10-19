@@ -23,7 +23,7 @@ class AccountTypeStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', $this->uniqueInBranch('account_types')],
+            'name' => ['required', 'string', $this->uniqueInCompany('account_types')],
             'remark' => ['nullable', 'string'],
             'slug' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],

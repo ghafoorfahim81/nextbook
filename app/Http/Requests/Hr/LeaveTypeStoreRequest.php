@@ -25,7 +25,7 @@ class LeaveTypeStoreRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:100'],
-            'code' => ['required', 'string', 'max:50', $this->uniqueInBranch('leave_types', $id)],
+            'code' => ['required', 'string', 'max:50', $this->uniqueInCompany('leave_types', $id)],
             'colour' => ['nullable', 'string', 'max:20'],
             'is_paid' => ['nullable', 'boolean'],
             'accrual_method' => ['required', Rule::in(LeaveAccrualMethod::values())],

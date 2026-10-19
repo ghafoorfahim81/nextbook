@@ -20,7 +20,7 @@ class LandedCostCategoryStoreRequest extends FormRequest
         $id = $this->landedCostCategoryId();
 
         return [
-            'name' => ['required', 'string', 'max:150', $this->uniqueInBranch('landed_cost_categories', $id)],
+            'name' => ['required', 'string', 'max:150', $this->uniqueInCompany('landed_cost_categories', $id)],
             'local_name' => ['nullable', 'string', 'max:150'],
             'remark' => ['nullable', 'string'],
         ];
