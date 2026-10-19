@@ -7,9 +7,12 @@ use App\Http\Requests\Ledger\Concerns\ValidatesLedgerOpenings;
 use App\Http\Requests\Ledger\Concerns\ValidatesPhoneNumbers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class LedgerUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     use ValidatesLedgerOpenings, ValidatesPhoneNumbers;
 
     /**
@@ -53,6 +56,11 @@ class LedgerUpdateRequest extends FormRequest
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
             'counterpart_ledger_id' => ['nullable', 'string', 'exists:ledgers,id'],
+            // The branches whose forms offer this party. Absent means leave the
+            // list as it is; when sent it may not be empty, or the party would
+            // vanish from every picker.
+            'branch_ids' => ['sometimes', 'array', 'min:1'],
+            'branch_ids.*' => ['string', $this->existsInCompany('branches')],
             ...$this->openingRules(),
         ];
     }
