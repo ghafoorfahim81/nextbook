@@ -29,7 +29,21 @@ trait BuildsErpContext
             'preferences' => User::DEFAULT_PREFERENCES,
         ]);
 
+        // The company is built before the branch and the user is attached to it
+        // immediately: a branch now requires an owning company, and the user's
+        // company has to be the same one or every company-scoped query in the
+        // test would look at a different set of books than the branch does.
+        // `currency_id` is filled in further down, once a currency exists.
+        $company = Company::factory()->create([
+            'name_en' => 'ERP Test Company',
+            'costing_method' => $costingMethod,
+            'calendar_type' => CalendarType::GREGORIAN->value,
+        ]);
+
+        $user->update(['company_id' => $company->id]);
+
         $branch = Branch::factory()->create([
+            'company_id' => $company->id,
             'name' => 'Main Branch '.fake()->unique()->numberBetween(100, 999),
             'is_main' => true,
             'created_by' => $user->id,
@@ -51,7 +65,7 @@ trait BuildsErpContext
         app()->instance('active_branch_id', $branch->id);
 
         $quantity = Quantity::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'quantity' => 'Count',
             'unit' => 'piece',
             'symbol' => 'pc',
@@ -60,7 +74,7 @@ trait BuildsErpContext
         ]);
 
         $unitMeasure = UnitMeasure::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'quantity_id' => $quantity->id,
             'name' => 'Piece',
             'unit' => '1',
@@ -76,13 +90,13 @@ trait BuildsErpContext
         ]);
 
         $size = Size::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'name' => 'Default',
             'code' => 'DF',
         ]);
 
         $currency = Currency::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'name' => 'Afghani',
             'code' => 'AFN',
             'symbol' => 'Af',
@@ -92,23 +106,19 @@ trait BuildsErpContext
             'flag' => 'af.png',
         ]);
 
-        $company = Company::factory()->create([
-            'name_en' => 'ERP Test Company',
-            'currency_id' => $currency->id,
-            'costing_method' => $costingMethod,
-            'calendar_type' => CalendarType::GREGORIAN->value,
-        ]);
+        $company->update(['currency_id' => $currency->id]);
 
-        $user->update(['company_id' => $company->id]);
         $user->refresh();
         $this->actingAs($user);
         app()->instance('active_branch_id', $branch->id);
+        app()->instance('active_company_id', $company->id);
+        app()->instance('accessible_company_ids', [$company->id]);
 
-        $accountTypes = $this->createDefaultAccountTypes($branch->id);
-        $accounts = $this->createDefaultGlAccounts($branch->id, $accountTypes);
+        $accountTypes = $this->createDefaultAccountTypes($company->id);
+        $accounts = $this->createDefaultGlAccounts($company->id, $accountTypes);
 
         $customerLedger = Ledger::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'currency_id' => $currency->id,
             'name' => 'Customer Ledger',
             'code' => 'CUS-001',
@@ -117,7 +127,7 @@ trait BuildsErpContext
         ]);
 
         $supplierLedger = Ledger::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'currency_id' => $currency->id,
             'name' => 'Supplier Ledger',
             'code' => 'SUP-001',
@@ -126,9 +136,8 @@ trait BuildsErpContext
         ]);
 
         $item = Item::factory()->create([
-            'branch_id' => $branch->id,
+            'company_id' => $company->id,
             'unit_measure_id' => $unitMeasure->id,
-            'size_id' => $size->id,
             'cost_account_id' => $accounts['cost-of-goods-sold']->id,
             'income_account_id' => $accounts['product-income']->id,
             'asset_account_id' => $accounts['inventory-stock']->id,
@@ -161,7 +170,7 @@ trait BuildsErpContext
         ];
     }
 
-    protected function createDefaultAccountTypes(string $branchId): array
+    protected function createDefaultAccountTypes(string $companyId): array
     {
         $definitions = [
             'cash-or-bank' => ['name' => 'Cash or Bank', 'nature' => 'asset'],
@@ -177,7 +186,7 @@ trait BuildsErpContext
         $types = [];
         foreach ($definitions as $slug => $definition) {
             $types[$slug] = AccountType::factory()->create([
-                'branch_id' => $branchId,
+                'company_id' => $companyId,
                 'name' => $definition['name'],
                 'slug' => $slug,
                 'nature' => $definition['nature'],
@@ -188,7 +197,7 @@ trait BuildsErpContext
         return $types;
     }
 
-    protected function createDefaultGlAccounts(string $branchId, array $accountTypes): array
+    protected function createDefaultGlAccounts(string $companyId, array $accountTypes): array
     {
         $definitions = [
             'sales-revenue' => ['name' => 'Sales Revenue', 'type' => 'income', 'number' => '7001'],
@@ -208,6 +217,10 @@ trait BuildsErpContext
             'raw-materials' => ['name' => 'Raw Materials', 'type' => 'other-current-asset', 'number' => '3003'],
             'finished-goods' => ['name' => 'Finished Goods', 'type' => 'other-current-asset', 'number' => '3004'],
             'other-expenses' => ['name' => 'Other Expenses', 'type' => 'expense', 'number' => '9001'],
+            // Freight for moving goods between the company's own warehouses.
+            // An item transfer defaults its expense line here.
+            'item-transfer-expense' => ['name' => 'Item Transfer Expense', 'type' => 'expense', 'number' => '9801'],
+            'contra-clearing' => ['name' => 'Set-off Clearing', 'type' => 'other-current-asset', 'number' => '3070'],
             // Realised exchange differences. Resolved by slug everywhere —
             // the names are localised into Dari and Pashto in production.
             'fx-gain' => ['name' => 'Foreign Exchange Gain', 'type' => 'income', 'number' => '9070'],
@@ -237,7 +250,7 @@ trait BuildsErpContext
         $accounts = [];
         foreach ($definitions as $slug => $definition) {
             $accounts[$slug] = Account::factory()->create([
-                'branch_id' => $branchId,
+                'company_id' => $companyId,
                 'name' => $definition['name'],
                 'number' => $definition['number'],
                 'slug' => $slug,

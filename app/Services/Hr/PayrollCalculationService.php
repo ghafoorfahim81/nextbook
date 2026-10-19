@@ -80,10 +80,10 @@ class PayrollCalculationService
             $taxSet = $this->wageTax->resolveSet(
                 $payroll->period_end,
                 TaxPeriod::Monthly,
-                $payroll->branch_id
+                $payroll->company_id
             );
 
-            $systemComponents = $this->systemComponents($payroll->branch_id);
+            $systemComponents = $this->systemComponents($payroll->company_id);
 
             // Force-delete rather than soft-delete: a recalculated run should
             // leave one set of lines behind, not a growing pile of trashed ones
@@ -263,10 +263,10 @@ class PayrollCalculationService
     /**
      * @return array<string, SalaryComponent>
      */
-    private function systemComponents(string $branchId): array
+    private function systemComponents(string $companyId): array
     {
         return SalaryComponent::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereNull('deleted_at')
             ->where('is_system', true)
             ->get()
@@ -511,7 +511,7 @@ class PayrollCalculationService
                 ? bcdiv($dayRate, $hoursPerDay, Decimal::AMOUNT_SCALE)
                 : '0.0000';
 
-            $multiplier = Decimal::amount((string) (\App\Models\Hr\HrSetting::forBranch($payroll->branch_id)->overtime_multiplier ?? 1));
+            $multiplier = Decimal::amount((string) (\App\Models\Hr\HrSetting::forCompany($payroll->company_id)->overtime_multiplier ?? 1));
 
             $components[] = [
                 'salary_component_id' => $systemComponents[SalaryComponent::CODE_OVERTIME]->id,
@@ -782,7 +782,7 @@ class PayrollCalculationService
             return Decimal::rate($payroll->rate ?? 1);
         }
 
-        $home = BranchContext::homeCurrency($payroll->branch_id);
+        $home = BranchContext::homeCurrency($payroll->company_id);
 
         if ($home && $home->id === $currencyId) {
             return '1.00000000';

@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Hr;
 
+use App\Models\Administration\Company;
 use App\Enums\LeaveAccrualMethod;
 use App\Models\Administration\Branch;
 use App\Models\Hr\LeaveType;
@@ -27,7 +28,7 @@ class LeaveTypeFactory extends Factory
             'excludes_holidays' => true,
             'excludes_weekends' => true,
             'is_active' => true,
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
         ];
     }
 

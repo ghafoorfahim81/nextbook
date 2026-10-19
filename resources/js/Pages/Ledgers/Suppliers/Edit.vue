@@ -1,9 +1,11 @@
 <script setup>
+import { useFormGuard } from '@/composables/useFormGuard'
 import AppLayout from '@/Layouts/Layout.vue';
 import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextPhoneInput from '@/Components/next/NextPhoneInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
+import CounterpartPicker from '@/Components/ledger/CounterpartPicker.vue';
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import LedgerOpeningRows from '@/Components/ledger/LedgerOpeningRows.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
@@ -15,6 +17,7 @@ import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { buildOpeningRows } from '@/utils/ledgerOpenings';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 const props = defineProps({
     supplier: { type: Object, required: true },
     currencies: { type: Array, required: true },
@@ -45,6 +48,9 @@ const form = useForm({
         props.homeCurrency,
     ),
 })
+
+
+useFormGuard(form)
 
 const existingAttachments = ref(props.supplier.data?.attachments ?? [])
 const removeExistingAttachment = (id) => {
@@ -87,12 +93,13 @@ const handleCancel = () => {
     router.visit(route('suppliers.index'))
 }
 
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('ledger.supplier.supplier') })">
         <FormPageToolbar back-route="suppliers.index" module="ledgers" />
-        <form @submit.prevent="handleSubmit">
+        <form ref="saveFormRef" @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('ledger.supplier.supplier') }) }}
@@ -109,7 +116,7 @@ const handleCancel = () => {
                     <NextSelect
                         :options="currencies.data"
                         v-model="form.currency_id"
-                        label-key="name"
+                        label-key="display_name"
                         value-key="id"
                         id="currency"
                         :floating-text="t('admin.currency.currency')"
@@ -137,6 +144,12 @@ const handleCancel = () => {
                         :clearable="false"
                         :floating-text="t('ledger.credit_terms')"
                         :error="form.errors?.credit_terms"
+                    />
+                    <CounterpartPicker
+                        v-model="form.counterpart_ledger_id"
+                        role="supplier"
+                        :preselected="props.supplier.data?.counterpart"
+                        :error="form.errors?.counterpart_ledger_id"
                     />
                 </div>
 

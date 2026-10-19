@@ -28,6 +28,7 @@
     "upload_logo": "Upload Logo",
     "upload_logo_description": "PNG, JPG, GIF up to 2MB",
     "logo_can_be_updated_in_edit_mode": "Logo can be updated in edit mode",
+    "invoice_designer_view_only": "Click Edit to change the company invoice format. You can still preview the current formats here.",
     "costing_method": "Costing Method"
 
 }

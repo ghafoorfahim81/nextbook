@@ -31,6 +31,7 @@ return new class extends Migration
     {
         Schema::create('sale_receives', function (Blueprint $table): void {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('sale_id');
             $table->ulid('receipt_id');
             $table->decimal('amount', 15, 2)->default(0);
@@ -47,6 +48,7 @@ return new class extends Migration
 
         Schema::create('purchase_payments', function (Blueprint $table): void {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('purchase_id');
             $table->ulid('payment_id');
             $table->decimal('amount', 15, 2)->default(0);

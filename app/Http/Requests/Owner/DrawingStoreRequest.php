@@ -14,6 +14,7 @@ class DrawingStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'number' => ['nullable', 'string', 'max:50'],
             'owner_id' => ['required', 'string', 'exists:owners,id'],
             'bank_account_id' => ['required', 'string', 'exists:accounts,id'],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
@@ -21,6 +22,8 @@ class DrawingStoreRequest extends FormRequest
             'amount' => ['required', 'numeric', 'min:0.01'],
             'date' => ['required', 'date'],
             'narration' => ['nullable', 'string', 'max:1000'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

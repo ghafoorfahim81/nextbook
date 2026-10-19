@@ -2,8 +2,8 @@
 
 namespace App\Models\Hr;
 
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TaxBracket extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -29,7 +29,7 @@ class TaxBracket extends Model
         return [
             'id' => 'string',
             'tax_bracket_set_id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'sequence' => 'integer',

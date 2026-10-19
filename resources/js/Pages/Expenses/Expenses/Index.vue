@@ -1,9 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
-import ShowDialog from './ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 
@@ -14,10 +13,9 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const showDialogOpen = ref(false);
-const selectedExpense = ref(null);
 
 const columns = computed(() => [
+    { key: 'number', label: t('general.number'), sortable: true },
     { key: 'date', label: t('general.date'), sortable: true },
     {
         key: 'category.name',
@@ -39,20 +37,13 @@ const columns = computed(() => [
         label: t('general.total'),
         render: (row) => `${row.currency?.symbol || ''} ${Number(row.total || 0).toLocaleString()}`,
     },
+    { key: 'status_label', label: t('general.status') },
     { key: 'remarks', label: t('general.remarks') },
     { key: 'actions', label: t('general.action') },
 ]);
 
-const viewItem = async (item) => {
-    console.log('item', item);
-    try {
-        const response = await fetch(route('expenses.show', item));
-        const data = await response.json();
-        selectedExpense.value = data.data;
-        showDialogOpen.value = true;
-    } catch (error) {
-        console.error('Error fetching expense:', error);
-    }
+const viewItem = (item) => {
+    router.visit(route('expenses.show', typeof item === 'object' ? item.id : item));
 };
 
 const editItem = (item) => {
@@ -64,7 +55,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('expenses.destroy', id, {
         title: t('general.delete', { name: t('expense.expense') }),
-        description: t('general.delete_description', { name: t('expense.expense') }),
+        name: t('expense.expense'),
         successMessage: t('general.delete_success', { name: t('expense.expense') }),
     });
 };
@@ -78,19 +69,19 @@ const filterFields = computed(() => ([
         key: 'category_id',
         label: t('expense.category'),
         type: 'select',
-        options: (props.filterOptions?.categories || []).map((c) => ({ id: c.id, name: c.name })),
+        options: (props.filterOptions?.categories?.data || []).map((c) => ({ id: c.id, name: c.name })),
     },
     {
         key: 'bankTransaction.lines.account_id',
         label: t('expense.bank_account'),
         type: 'select',
-        options: (props.filterOptions?.bankAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+        options: (props.filterOptions?.bankAccounts?.data || []).map((a) => ({ id: a.id, name: a.name })),
     },
     {
         key: 'expenseTransaction.lines.account_id',
         label: t('expense.expense_account'),
         type: 'select',
-        options: (props.filterOptions?.expenseAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+        options: (props.filterOptions?.expenseAccounts?.data || []).map((a) => ({ id: a.id, name: a.name })),
     },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {
@@ -104,11 +95,6 @@ const filterFields = computed(() => ([
 
 <template>
     <AppLayout :title="t('expense.expenses')">
-        <ShowDialog
-            :open="showDialogOpen"
-            :expense="selectedExpense"
-            @update:open="showDialogOpen = $event"
-        />
         <DataTable
             can="expenses"
             :items="expenses"

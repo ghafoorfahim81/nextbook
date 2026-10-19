@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import { useDeleteResource } from '@/composables/useDeleteResource.js'
 import { useI18n } from 'vue-i18n'
 import { router } from '@inertiajs/vue3'
+import { useBusinessProfile } from '@/composables/useBusinessProfile'
 const { t } = useI18n()
 
 const props = defineProps({
@@ -13,15 +14,21 @@ const props = defineProps({
   filterOptions: Object,
 })
 
+const { showsField, showsSection } = useBusinessProfile()
+
+// Columns follow the trade: a garment shop wants a variant count, a pharmacy
+// wants the generic name, and neither wants the other's column.
 const columns = computed(() => ([
-  { key: 'name', label: t('general.name'),sortable:true },
-  { key: 'code', label: t('admin.currency.code'),sortable:true },
+  { key: 'name', label: t('general.name'), sortable: true },
+  { key: 'code', label: t('admin.currency.code'), sortable: true },
+  ...(showsField('sku') ? [{ key: 'sku', label: t('item.sku') }] : []),
   { key: 'category', label: t('admin.category.category') },
   { key: 'measure', label: t('admin.unit_measure.unit_measure') },
-  { key: 'brand_name', label: t('admin.brand.brand') },
-  { key: 'avg_cost', label: t('item.cost'),sortable:true },
+  ...(showsField('brand') ? [{ key: 'brand_name', label: t('admin.brand.brand') }] : []),
+  ...(showsSection('variants') ? [{ key: 'variants_count', label: t('item.variants') }] : []),
+  { key: 'avg_cost', label: t('item.cost'), sortable: true },
   { key: 'on_hand', label: t('general.on_hand') },
-  { key: 'sale_price', label: t('item.sale_price'),sortable:true },
+  { key: 'sale_price', label: t('item.sale_price'), sortable: true },
   { key: 'actions', label: t('general.actions') },
 ]))
 
@@ -34,7 +41,7 @@ const editItem = (item) => {
 const deleteItem = (id) => {
   deleteResource('items.destroy', id, {
     title: t('general.delete', { name: t('item.item') }),
-    description: t('general.delete_description', { name: t('item.item') }),
+    name: t('item.item'),
     successMessage: t('general.delete_success', { name: t('item.item') }),
   })
 }
@@ -61,19 +68,19 @@ const filterFields = computed(() => ([
     key: 'category_id',
     label: t('admin.category.category'),
     type: 'select',
-    options: (props.filterOptions?.categories || []).map((o) => ({ id: o.id, name: o.name })),
-  },
-  {
-    key: 'size_id',
-    label: t('admin.size.size'),
-    type: 'select',
-    options: (props.filterOptions?.sizes || []).map((o) => ({ id: o.id, name: o.name })),
+    options: (props.filterOptions?.categories || []).map((o) => ({ id: o.id, name: o.localized_name || o.name })),
   },
   {
     key: 'brand_id',
     label: t('admin.brand.brand'),
     type: 'select',
     options: (props.filterOptions?.brands || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'warehouse_id',
+    label: t('admin.warehouse.warehouse'),
+    type: 'select',
+    options: (props.filterOptions?.warehouses || []).map((o) => ({ id: o.id, name: o.name })),
   },
   { key: 'purchase_price', label: t('item.purchase_price'), type: 'numberrange' },
   { key: 'sale_price', label: t('item.sale_price'), type: 'numberrange' },

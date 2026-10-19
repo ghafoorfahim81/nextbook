@@ -24,7 +24,7 @@ class LeaveAllocationStoreRequest extends FormRequest
     {
         return [
             'employee_id' => ['required', $this->existsInBranch('employees')],
-            'leave_type_id' => ['required', $this->existsInBranch('leave_types')],
+            'leave_type_id' => ['required', $this->existsInCompany('leave_types')],
             'period_start' => ['required', 'date'],
             'period_end' => ['required', 'date'],
             'entitled_days' => ['required', 'numeric', 'min:0', 'max:365'],

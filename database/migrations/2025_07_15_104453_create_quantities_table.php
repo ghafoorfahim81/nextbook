@@ -21,20 +21,21 @@ return new class extends Migration
             $table->string('slug');
             $table->boolean(column: 'is_main')->default(false);
             $table->boolean(column: 'is_active')->default(true);
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
             $table->softDeletes();
-            $table->unique(['branch_id', 'slug', 'deleted_at']);
+            $table->unique(['company_id', 'slug', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();
         Schema::table('quantities', function (Blueprint $table) {
-            $table->foreign('branch_id')
+            $table->foreign('company_id')
                 ->references('id')
-                ->on('branches')
+                ->on('companies')
                 ->onDelete('CASCADE');
 
             $table->foreign('created_by')->references('id')->on('users');

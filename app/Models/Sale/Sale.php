@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -16,12 +18,13 @@ use App\Traits\HasUserAuditable;
 use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasUserTracking;
 class Sale extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -29,8 +32,10 @@ class Sale extends Model
      * @var array
      */
     protected $fillable = [
+        'company_id',
         'number',
         'customer_id',
+        'sale_order_id',
         'date',
         'discount',
         'discount_type',
@@ -52,6 +57,7 @@ class Sale extends Model
     {
         return [
             'customer_id' => 'string',
+            'sale_order_id' => 'string',
             'date' => 'date',
             'discount' => 'float',
             'created_by' => 'string',
@@ -83,6 +89,7 @@ class Sale extends Model
         'transaction.currency_id',
         'type',
         'warehouse_id',
+        'payment_status',
         'date',
         'due_date',
         'created_by',
@@ -107,6 +114,11 @@ class Sale extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Ledger\Ledger::class);
+    }
+
+    public function saleOrder(): BelongsTo
+    {
+        return $this->belongsTo(SaleOrder::class);
     }
 
     public function transaction(): HasOne
@@ -140,14 +152,39 @@ class Sale extends Model
             });
     }
 
+    public function returns(): HasMany
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
+
+    public function saleReturnItems(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            SaleReturnItem::class,
+            SaleItem::class,
+            'sale_id',
+            'sale_item_id',
+            'id',
+            'id'
+        );
+    }
+
+    /**
+     * The stock this sale moved.
+     *
+     * This pointed at App\Models\Inventory\StockOut on a source_id column —
+     * neither of which exists — so every caller (force-deleting a sale, most
+     * visibly) died trying to autoload the missing class. Movements are keyed
+     * by reference_id, the same way Purchase::stocks() reads them.
+     */
     public function stockOuts()
     {
-        return $this->hasMany(\App\Models\Inventory\StockOut::class, 'source_id', 'id');
+        return $this->hasMany(\App\Models\Inventory\StockMovement::class, 'reference_id', 'id');
     }
 
     public function getDependencyMessage(): string
     {
-        return 'You cannot delete this sale because it has dependencies.';
+        return __('messages.dependency.cannot_delete_document', ['document' => __('messages.dependency.documents.sale')]);
     }
     public function warehouse()
     {

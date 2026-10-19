@@ -15,6 +15,7 @@ use App\Models\Administration\Currency;
 use App\Http\Requests\JournalEntry\JournalEntryStoreRequest;
 use App\Http\Requests\JournalEntry\JournalEntryUpdateRequest;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
@@ -23,6 +24,9 @@ use App\Models\JournalEntry\JournalClass;
 use App\Http\Resources\JournalEntry\JournalClassResource;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
+use Illuminate\Support\Facades\Auth;
+
 class JournalEntryController extends Controller
 {
     /**
@@ -31,7 +35,7 @@ class JournalEntryController extends Controller
 
     public function __construct()
     {
-        $this->authorizeResource(JournalEntry::class, 'journalEntry'); 
+        $this->authorizeResource(JournalEntry::class, 'journalEntry');
     }
     public function index( Request $request )
     {
@@ -49,7 +53,9 @@ class JournalEntryController extends Controller
         return inertia('JournalEntry/JournalEntries/Index', [
             'journalEntries' => JournalEntryResource::collection($journalEntries),
             'filterOptions' => [
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
+                'journalClasses' => JournalClass::orderBy('name')->get(['id', 'name']),
+                'ledgers' => Ledger::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -68,29 +74,40 @@ class JournalEntryController extends Controller
      */
     public function create()
     {
+        $latestNumber = (string) ((int) JournalEntry::max('number') + 1);
         return inertia('JournalEntry/JournalEntries/Create', [
-            'accounts' => AccountResource::collection(Account::all()),
-            'ledgers' => LedgerResource::collection(Ledger::all()),
+            'accounts' => AccountResource::collection(Account::query()->orderBy('created_at', 'desc')->get()),
+            'ledgers' => LedgerResource::collection(Ledger::query()->orderBy('created_at', 'desc')->get()),
             'journalClasses' => JournalClass::all(),
+            'latestNumber' => $latestNumber,
         ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(JournalEntryStoreRequest $request, ActivityLogService $activityLogService)
+    public function store(JournalEntryStoreRequest $request, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
-        DB::transaction(function () use ($request, $activityLogService) {
+        DB::transaction(function () use ($request, $activityLogService, $attachmentService) {
             $validated = $request->validated();
+            $postImmediately = (bool) user_preference('transaction.journal_entry_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
             $date = $validated['date'] ? app(DateConversionService::class)->toGregorian($validated['date']) : null;
             $journalEntry = JournalEntry::create([
                 'number' => $validated['number'],
                 'date' => $date,
-                'status' => 'posted',
+                'status' => $documentStatus,
+                'posted_at' => $postImmediately ? now() : null,
+                'posted_by' => $postImmediately ? Auth::id() : null,
                 'currency_id' => $validated['currency_id'],
                 'rate' => $validated['rate'],
-                'remarks' => $validated['remarks'],
+                'remark' => $validated['remarks'],
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($journalEntry, $request->file('attachments'));
+            }
+
             $transactionService = app(TransactionService::class);
             $lines = collect($validated['lines'])
                 ->map(fn ($line) => [
@@ -98,9 +115,9 @@ class JournalEntryController extends Controller
                     'ledger_id'   => $line['ledger_id'] ?? null,
                     'debit'       => $line['debit'] ?? 0,
                     'credit'      => $line['credit'] ?? 0,
-                    'remark'      => $line['remark'] ?? null,
-                    'remark_fa'   => $line['remark'] ?? null,
-                    'remark_ps'   => $line['remark'] ?? null,
+                    'remark'      => $line['remark'] ?? $validated['remarks'],
+                    'remark_fa'   => $line['remark'] ?? $validated['remarks'],
+                    'remark_ps'   => $line['remark'] ?? $validated['remarks'],
                     'journal_class_id' => $line['journal_class_id'] ?? null,
                 ])
                 ->toArray();
@@ -111,11 +128,12 @@ class JournalEntryController extends Controller
                 header: [
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'],
+                    'voucher_number' =>  'journal #'.$validated['number'],
                     'date' => $date,
                     'remark' => $validated['remarks'],
                     'reference_type' => JournalEntry::class,
                     'reference_id' => $journalEntry->id,
-                    'status' => 'posted',
+                    'status' => $documentStatus,
                 ],
                 lines: $lines,
             );
@@ -155,9 +173,15 @@ class JournalEntryController extends Controller
             'transaction.lines.account',
             'transaction.lines.journalClass',
             'transaction.lines.ledger',
+            'attachments',
         ]);
-        return response()->json([
-            'data' => new JournalEntryResource($journalEntry),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new JournalEntryResource($journalEntry),
+            ]);
+        }
+        return inertia('JournalEntry/JournalEntries/Show', [
+            'journalEntry' => new JournalEntryResource($journalEntry),
         ]);
     }
 
@@ -166,7 +190,7 @@ class JournalEntryController extends Controller
      */
     public function edit(Request $request, JournalEntry $journalEntry)
     {
-        $journalEntry->load(['transaction.currency', 'transaction.lines.account', 'transaction.lines.journalClass','transaction.lines.ledger']);
+        $journalEntry->load(['transaction.currency', 'transaction.lines.account', 'transaction.lines.journalClass','transaction.lines.ledger', 'attachments']);
         return inertia('JournalEntry/JournalEntries/Edit', [
             'journalEntry' => new JournalEntryResource($journalEntry),
             'accounts' => AccountResource::collection(Account::all()),
@@ -181,9 +205,14 @@ class JournalEntryController extends Controller
     public function update(
         JournalEntryUpdateRequest $request,
         JournalEntry $journalEntry,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
+        if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
+        }
+
         $validated = $request->validated();
         $beforeState = [
             'number' => $journalEntry->number,
@@ -196,13 +225,17 @@ class JournalEntryController extends Controller
             'line_count' => $journalEntry->transaction?->lines()->count() ?? 0,
         ];
 
-        DB::transaction(function () use ($validated, $journalEntry, $beforeState, $activityLogService) {
+        DB::transaction(function () use ($request, $validated, $journalEntry, $beforeState, $activityLogService, $attachmentService) {
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($journalEntry, $request->file('attachments'));
+            }
+
             // Update journal entry details
             $date =  $validated['date'] ? app(DateConversionService::class)->toGregorian($validated['date']) : null;
             $journalEntry->update([
                 'number' => $validated['number'],
                 'date' => $date,
-                'status' => 'posted',
+                'status' => TransactionStatus::DRAFT->value,
                 'currency_id' => $validated['currency_id'],
                 'rate' => $validated['rate'],
                 'remarks' => $validated['remarks'],
@@ -225,9 +258,9 @@ class JournalEntryController extends Controller
                 'ledger_id'   => $line['ledger_id'] ?? null,
                 'debit'       => $line['debit'] ?? 0,
                 'credit'      => $line['credit'] ?? 0,
-                'remark'      => $line['remark'] ?? null,
-                'remark_fa'   => $line['remark'] ?? null,
-                'remark_ps'   => $line['remark'] ?? null,
+                'remark'      => $line['remark'] ?? $validated['remarks'],
+                'remark_fa'   => $line['remark'] ?? $validated['remarks'],
+                'remark_ps'   => $line['remark'] ?? $validated['remarks'],
                 'journal_class_id' => $line['journal_class_id'] ?? null,
             ])
             ->toArray();
@@ -241,7 +274,7 @@ class JournalEntryController extends Controller
                     'remark' => $validated['remarks'],
                     'reference_type' => JournalEntry::class,
                     'reference_id' => $journalEntry->id,
-                    'status' => 'posted',
+                    'status' => TransactionStatus::DRAFT->value,
                 ],
                 lines: $lines,
             );
@@ -276,6 +309,10 @@ class JournalEntryController extends Controller
      */
     public function destroy(Request $request, JournalEntry $journalEntry, ActivityLogService $activityLogService)
     {
+        if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
+        }
+
         $oldValues = [
             'number' => $journalEntry->number,
             'date' => $journalEntry->date?->toDateString(),
@@ -305,6 +342,55 @@ class JournalEntryController extends Controller
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return redirect()->route('journal-entries.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.journal_entry')]));
+    }
+
+    public function post(JournalEntry $journalEntry, TransactionService $transactionService)
+    {
+        $this->authorize('update', $journalEntry);
+
+        if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
+            abort(422, __('messages.document.only_draft_can_be_posted'));
+        }
+
+        DB::transaction(function () use ($journalEntry, $transactionService) {
+            $transaction = $journalEntry->transaction()->firstOrFail();
+            $transactionService->postDraft($transaction);
+
+            $journalEntry->update([
+                'status' => TransactionStatus::POSTED->value,
+                'posted_at' => now(),
+                'posted_by' => Auth::id(),
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.journal_entry')]));
+    }
+
+    public function reverse(Request $request, JournalEntry $journalEntry, TransactionService $transactionService)
+    {
+        $this->authorize('update', $journalEntry);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($journalEntry->status !== TransactionStatus::POSTED->value) {
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
+        }
+
+        DB::transaction(function () use ($journalEntry, $transactionService, $validated) {
+            $transaction = $journalEntry->transaction()->firstOrFail();
+            $transactionService->reverse($transaction, $validated['reason'], $journalEntry->number, JournalEntry::class);
+
+            $journalEntry->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'reversed_at' => now(),
+                'reversal_reason' => $validated['reason'],
+                'reversal_of_id' => $journalEntry->id,
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.journal_entry')]));
     }
 
     public function restore(Request $request, JournalEntry $journalEntry, ActivityLogService $activityLogService)

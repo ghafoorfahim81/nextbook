@@ -11,7 +11,7 @@ enum TransactionStatus: string
     case CANCELLED = 'cancelled';
 
     case REVERSED = 'reversed';
-
+    case VOIDED = 'voided';
     public function getLabel(): string
     {
         return match($this) {
@@ -21,6 +21,25 @@ enum TransactionStatus: string
             self::REJECTED => __('enums.transaction_status.rejected'),
             self::CANCELLED => __('enums.transaction_status.cancelled'),
             self::REVERSED => __('enums.transaction_status.reversed'),
+            self::VOIDED => __('enums.transaction_status.voided'),
+        };
+    }
+
+    public function label(): string
+    {
+        return $this->getLabel();
+    }
+
+    public function color(): string
+    {
+        return match($this) {
+            self::DRAFT => 'gray',
+            self::POSTED => 'green',
+            self::REVERSED => 'red',
+            self::CANCELLED => 'yellow',
+            self::APPROVED => 'blue',
+            self::REJECTED => 'red',
+            self::VOIDED => 'gray',
         };
     }
 

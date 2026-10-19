@@ -1,0 +1,334 @@
+<?php
+
+namespace App\Http\Requests\Inventory\Concerns;
+
+use App\Enums\CostingMethod;
+use App\Enums\ItemType;
+use App\Enums\PricingMethod;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
+
+/**
+ * Rules shared by the item store and update requests.
+ *
+ * They were previously duplicated and had drifted apart — the update request
+ * still carried the store request's `sku` rule, which meant an item conflicted
+ * with itself on save.
+ *
+ * @mixin \Illuminate\Foundation\Http\FormRequest
+ */
+trait ValidatesItemPayload
+{
+    /**
+     * The branch every uniqueness check is scoped to.
+     */
+    /**
+     * The company an item's name and code have to be unique within.
+     *
+     * The catalogue is shared by every branch of a company, so this is a
+     * company question: one "Paracetamol 500mg" per company, not one per
+     * branch. Never read from request input — that would let the caller pick
+     * which company their uniqueness is checked against.
+     */
+    protected function companyId(): ?string
+    {
+        if (app()->bound('active_company_id')) {
+            $companyId = app('active_company_id');
+
+            if ($companyId) {
+                return (string) $companyId;
+            }
+        }
+
+        $companyId = $this->user()?->company_id;
+
+        return $companyId ? (string) $companyId : null;
+    }
+
+    /**
+     * @param  string|null  $ignoreId  Item being updated, if any.
+     */
+    protected function itemRules(?string $ignoreId = null): array
+    {
+        $companyId = $this->companyId();
+
+        // Scope to the live rows of this company. The original rule read
+        // `unique:items,name,NULL,id,branch_id,NULL,...`, which tests
+        // `branch_id IS NULL` and therefore never matched anything.
+        $unique = fn (string $column) => Rule::unique('items', $column)
+            ->where(fn ($query) => $query
+                ->where('company_id', $companyId)
+                ->whereNull('deleted_at'))
+            ->when($ignoreId !== null, fn ($rule) => $rule->ignore($ignoreId));
+
+        return [
+            'name' => ['required', 'string', 'max:256', $unique('name')],
+            'code' => ['required', 'string', 'max:256', $unique('code')],
+            // SKU and barcode are variant-level now — uniqueness is enforced on
+            // item_variants. These stay only so a legacy payload still validates;
+            // the value is overwritten from the default variant on save.
+            'sku' => ['nullable', 'string', 'max:100'],
+            'barcode' => ['nullable', 'string', 'max:100'],
+
+            'item_type' => ['nullable', 'string', Rule::in(ItemType::values())],
+            'generic_name' => ['nullable', 'string', 'max:256'],
+            'packing' => ['nullable', 'string', 'max:256'],
+            'description' => ['nullable', 'string', 'max:2000'],
+
+            'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
+            'brand_id' => ['nullable', 'string', 'exists:brands,id'],
+            'category_id' => ['nullable', 'string', 'exists:categories,id'],
+            'default_warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+
+            'asset_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'income_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'cost_account_id' => ['required', 'string', 'exists:accounts,id'],
+
+            // --- Tracking -------------------------------------------------
+            'is_batch_tracked' => ['nullable', 'boolean'],
+            'is_expiry_tracked' => ['nullable', 'boolean'],
+            'is_serial_tracked' => ['nullable', 'boolean'],
+
+            // --- Behaviour ------------------------------------------------
+            'is_active' => ['nullable', 'boolean'],
+            'is_stockable' => ['nullable', 'boolean'],
+            'is_sellable' => ['nullable', 'boolean'],
+            'is_purchasable' => ['nullable', 'boolean'],
+            'is_weighted' => ['nullable', 'boolean'],
+            'has_variants' => ['nullable', 'boolean'],
+            'allow_negative_stock' => ['nullable', 'boolean'],
+            'show_in_pos' => ['nullable', 'boolean'],
+            'requires_prescription' => ['nullable', 'boolean'],
+            'is_controlled' => ['nullable', 'boolean'],
+
+            'costing_method' => ['nullable', Rule::in(CostingMethod::values())],
+            'pricing_method' => ['nullable', Rule::in(PricingMethod::values())],
+
+            // --- Pricing --------------------------------------------------
+            // purchase_price / sale_price stay only for the mirror shim; they
+            // are written from the default variant, not entered on the item.
+            'purchase_price' => ['nullable', 'numeric', 'min:0'],
+            'sale_price' => ['nullable', 'numeric', 'min:0'],
+            'rate_a' => ['nullable', 'numeric', 'min:0'],
+            'rate_b' => ['nullable', 'numeric', 'min:0'],
+            'rate_c' => ['nullable', 'numeric', 'min:0'],
+
+            // --- Stock control --------------------------------------------
+            // Reorder thresholds are validated per variant (variantRules); the
+            // item columns are written from the default variant on save.
+            'minimum_stock' => ['nullable', 'numeric', 'min:0'],
+            'maximum_stock' => ['nullable', 'numeric', 'min:0'],
+            'reorder_quantity' => ['nullable', 'numeric', 'min:0'],
+            'lead_time_days' => ['nullable', 'integer', 'min:0'],
+            'rack_no' => ['nullable', 'string', 'max:100'],
+            'fast_search' => ['nullable', 'string', 'max:100'],
+
+            // --- Physical --------------------------------------------------
+            'weight' => ['nullable', 'numeric', 'min:0'],
+            'length' => ['nullable', 'numeric', 'min:0'],
+            'width' => ['nullable', 'numeric', 'min:0'],
+            'height' => ['nullable', 'numeric', 'min:0'],
+
+            // --- Sourcing & compliance --------------------------------------
+            'manufacturer' => ['nullable', 'string', 'max:256'],
+            'model' => ['nullable', 'string', 'max:256'],
+            'country_of_origin' => ['nullable', 'string', 'max:256'],
+            'hs_code' => ['nullable', 'string', 'max:50'],
+            'warranty_months' => ['nullable', 'integer', 'min:0'],
+            'shelf_life_days' => ['nullable', 'integer', 'min:0'],
+            'min_shelf_life_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'storage_zone' => ['nullable', 'string', 'max:50'],
+
+            'attributes' => ['nullable', 'array'],
+            'photo' => ['nullable', 'file', 'image', 'max:5120'],
+
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => [
+                'file',
+                'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp',
+                'max:10240',
+            ],
+        ];
+    }
+
+    /**
+     * Every item carries at least one variant, so `variant_id` can be relied
+     * on downstream without a null check.
+     */
+    protected function variantRules(): array
+    {
+        return [
+            'variants' => ['required', 'array', 'min:1'],
+            'variants.*.id' => ['nullable', 'string', 'exists:item_variants,id'],
+            'variants.*.attributes' => ['nullable', 'array'],
+            'variants.*.name' => ['nullable', 'string', 'max:256'],
+            'variants.*.sku' => ['nullable', 'string', 'max:100'],
+            'variants.*.barcode' => ['nullable', 'string', 'max:100'],
+            'variants.*.sale_price' => ['nullable', 'numeric', 'min:0'],
+            'variants.*.purchase_price' => ['nullable', 'numeric', 'min:0'],
+            'variants.*.minimum_stock' => ['nullable', 'numeric', 'min:0'],
+            'variants.*.maximum_stock' => ['nullable', 'numeric', 'min:0'],
+            'variants.*.weight' => ['nullable', 'numeric', 'min:0'],
+            'variants.*.sort_order' => ['nullable', 'integer', 'min:0'],
+            'variants.*.is_default' => ['nullable', 'boolean'],
+            'variants.*.is_active' => ['nullable', 'boolean'],
+        ];
+    }
+
+    protected function openingRules(): array
+    {
+        return [
+            'openings' => ['nullable', 'array'],
+            'openings.*.id' => ['nullable', 'string'],
+            'openings.*.variant_index' => ['nullable', 'integer', 'min:0'],
+            'openings.*.batch' => ['nullable', 'string', 'max:100'],
+            'openings.*.expire_date' => ['nullable', 'date'],
+            'openings.*.quantity' => ['nullable', 'numeric', 'min:0'],
+            // The old rule was `required_with:openings.*.quantity>0`, which is
+            // not a valid rule expression and never fired.
+            'openings.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+            'openings.*.status' => ['nullable', 'string'],
+        ];
+    }
+
+    /**
+     * Cross-field checks the rule array cannot express.
+     */
+    protected function applyPayloadChecks(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $variants = (array) $this->input('variants', []);
+
+            $this->assertSingleDefaultVariant($validator, $variants);
+            $this->assertUniqueWithinPayload($validator, $variants, 'sku');
+            $this->assertUniqueWithinPayload($validator, $variants, 'barcode');
+            $this->assertUniqueVariantAttributes($validator, $variants);
+            $this->assertVariantStockBounds($validator, $variants);
+            $this->assertOpeningPricesPresent($validator);
+            $this->assertOpeningVariantPresent($validator, $variants);
+        });
+    }
+
+    /**
+     * A variant's maximum stock, when given, cannot sit below its minimum.
+     *
+     * @param  array<int, array<string, mixed>>  $variants
+     */
+    private function assertVariantStockBounds(Validator $validator, array $variants): void
+    {
+        foreach ($variants as $index => $variant) {
+            $min = $variant['minimum_stock'] ?? null;
+            $max = $variant['maximum_stock'] ?? null;
+
+            if ($min !== null && $min !== '' && $max !== null && $max !== '' && (float) $max < (float) $min) {
+                $validator->errors()->add(
+                    "variants.{$index}.maximum_stock",
+                    __('item.validation.variant_max_below_min')
+                );
+            }
+        }
+    }
+
+    private function assertSingleDefaultVariant(Validator $validator, array $variants): void
+    {
+        $defaults = collect($variants)->filter(fn ($v) => (bool) ($v['is_default'] ?? false));
+
+        if ($defaults->count() > 1) {
+            $validator->errors()->add('variants', __('item.validation.single_default_variant'));
+        }
+    }
+
+    private function assertUniqueWithinPayload(Validator $validator, array $variants, string $field): void
+    {
+        $seen = [];
+
+        foreach ($variants as $index => $variant) {
+            $value = $variant[$field] ?? null;
+
+            if (blank($value)) {
+                continue;
+            }
+
+            if (isset($seen[$value])) {
+                $validator->errors()->add(
+                    "variants.{$index}.{$field}",
+                    __('item.validation.duplicate_variant_field', ['field' => $field])
+                );
+            }
+
+            $seen[$value] = true;
+        }
+    }
+
+    /**
+     * Two variants meaning the same thing — "16GB / Black" twice — would
+     * otherwise split the stock between them.
+     */
+    private function assertUniqueVariantAttributes(Validator $validator, array $variants): void
+    {
+        $seen = [];
+
+        foreach ($variants as $index => $variant) {
+            $key = \App\Models\Inventory\ItemVariant::makeKey(
+                (array) ($variant['attributes'] ?? [])
+            );
+
+            if (isset($seen[$key])) {
+                $validator->errors()->add(
+                    "variants.{$index}.attributes",
+                    __('item.validation.duplicate_variant')
+                );
+            }
+
+            $seen[$key] = true;
+        }
+    }
+
+    private function assertOpeningPricesPresent(Validator $validator): void
+    {
+        foreach ((array) $this->input('openings', []) as $index => $opening) {
+            $quantity = (float) ($opening['quantity'] ?? 0);
+
+            if ($quantity > 0 && blank($opening['unit_price'] ?? null)) {
+                $validator->errors()->add(
+                    "openings.{$index}.unit_price",
+                    __('item.validation.opening_price_required')
+                );
+            }
+
+            if ($quantity > 0 && blank($opening['warehouse_id'] ?? null)) {
+                $validator->errors()->add(
+                    "openings.{$index}.warehouse_id",
+                    __('item.validation.opening_warehouse_required')
+                );
+            }
+        }
+    }
+
+    /**
+     * When an item has more than one variant, an opening quantity has to say
+     * which variant it belongs to — otherwise the stock cannot be placed. A
+     * single-variant item needs no choice: the lone variant is implied.
+     *
+     * @param  array<int, array<string, mixed>>  $variants
+     */
+    private function assertOpeningVariantPresent(Validator $validator, array $variants): void
+    {
+        if (count($variants) < 2) {
+            return;
+        }
+
+        foreach ((array) $this->input('openings', []) as $index => $opening) {
+            $quantity = (float) ($opening['quantity'] ?? 0);
+            $variantIndex = $opening['variant_index'] ?? null;
+
+            if ($quantity > 0 && ($variantIndex === null || $variantIndex === '')) {
+                $validator->errors()->add(
+                    "openings.{$index}.variant_index",
+                    __('item.validation.opening_variant_required')
+                );
+            }
+        }
+    }
+}

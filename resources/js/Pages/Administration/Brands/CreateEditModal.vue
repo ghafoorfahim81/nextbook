@@ -105,7 +105,7 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid col-span-2 gap-4 py-4">
                 <div class="grid items-center grid-cols-3 gap-4">
-                    <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors?.name"  />
+                    <NextInput is-required :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors?.name"  />
                     <NextInput :label="t('admin.brand.legal_name')" :placeholder="t('general.enter', { text: t('admin.brand.legal_name') })" v-model="form.legal_name" :error="form.errors?.legal_name"/>
                     <NextInput :label="t('admin.brand.registration_number')" :placeholder="t('general.enter', { text: t('admin.brand.registration_number') })" v-model="form.registration_number" :error="form.errors?.registration_number"/>
                     <NextInput :label="t('admin.shared.email')" :placeholder="t('general.enter', { text: t('admin.shared.email') })" v-model="form.email" type="email" :error="form.errors?.email"/>

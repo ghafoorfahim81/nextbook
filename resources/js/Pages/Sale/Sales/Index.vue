@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { router } from '@inertiajs/vue3'
+import { printDocument } from '@/composables/usePrintDocument'
 const { t } = useI18n();
 
 const props = defineProps({
@@ -21,6 +22,7 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('sales.destroy', id, {
         title: t('general.delete', { name: t('sale.sales') }),
+        name: t('sale.sales'),
     })
 }
 
@@ -29,7 +31,7 @@ const showItem = (id) => {
 }
 
 const printItem = (id) => {
-    window.open(route('sales.print', id), '_blank');
+    printDocument(route('sales.print', id));
 }
 
 const columns = computed(() => ([
@@ -40,7 +42,7 @@ const columns = computed(() => ([
     { key: 'currency_code', label: t('general.currency') },
     { key: 'date', label: t('general.date'), sortable: true },
     { key: 'type', label: t('general.type'), sortable: true },
-    { key: 'status', label: t('general.status') },
+    { key: 'status_label', label: t('general.status') },
     { key: 'actions', label: t('general.actions') },
 ]))
 
@@ -68,6 +70,12 @@ const filterFields = computed(() => ([
         label: t('admin.warehouse.warehouse'),
         type: 'select',
         options: (props.filterOptions?.warehouses || []).map((w) => ({ id: w.id, name: w.name })),
+    },
+    {
+        key: 'payment_status',
+        label: t('general.payment_status'),
+        type: 'select',
+        options: (props.filterOptions?.paymentStatuses || []).map((s) => ({ id: s.id, name: s.name })),
     },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {

@@ -24,7 +24,7 @@ class AccountTransferFeatureTest extends TestCase
     public function test_it_creates_balanced_account_transfer_transaction(): void
     {
         $toAccount = Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'account_type_id' => $this->ctx['account_types']['cash-or-bank']->id,
             'name' => 'Cash In Bank',
             'slug' => 'cash-in-bank-test',

@@ -22,6 +22,8 @@ class AccountTransferStoreRequest extends FormRequest
             'currency_id' => ['required', 'exists:currencies,id'],
             'rate' => ['required', 'numeric', 'min:0'],
             'remark' => ['nullable', 'string'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

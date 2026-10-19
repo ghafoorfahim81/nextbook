@@ -21,11 +21,11 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Ledger\LedgerResource;
-use App\Support\Preferences\InvoiceThemeOptions;
+use App\Support\Preferences\SoundOptions;
 use App\Services\ActivityLogService;
-use App\Models\Sale\InvoiceFormat;
 
 class PreferencesController extends Controller
 {
@@ -33,62 +33,46 @@ class PreferencesController extends Controller
     {
         $user = $request->user();
         $preferences = $user->getAllPreferences();
-        $company = $user->company;
-
         // Get accounts for default cash account dropdown
         $cashAccounts = Account::select('id', 'name')
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        $unitMeasures = UnitMeasureResource::collection(
-            UnitMeasure::query()
-                ->orderBy('name')
-                ->get()
-        );
-
-        $categories = CategoryResource::collection(Category::query()->orderBy('name')->where('is_active', false)->get());
-        $warehouses = WarehouseResource::collection(Warehouse::query()->orderBy('name')->where('is_active', false)->get());
-        $sizes = SizeResource::collection(Size::query()->orderBy('name')->where('is_active', false)->get());
-        $currencies = CurrencyResource::collection(Currency::query()->orderBy('name')->where('is_active', false)->get());
-
-        $ledgers = LedgerResource::collection(
-            Ledger::query()
-                ->whereIn('type', ['customer', 'supplier'])
-                ->orderBy('name')
-                ->where('is_active', false)
-                ->limit(500)
-                ->get()
-        );
-
-        $invoiceFormats = $company
-            ? InvoiceFormat::where('company_id', $company->id)
-                ->orderByDesc('is_default')
-                ->orderBy('name')
-                ->get()
-            : collect();
-
         return Inertia::render('Preferences/Index', [
             'preferences' => $preferences,
             'defaultPreferences' => User::DEFAULT_PREFERENCES,
+            // Kept on first load: small, and the settings search matches
+            // account names and timezones to jump to their tab.
             'cashAccounts' => $cashAccounts,
             'sidebarMenus' => $this->getSidebarMenuOptions(),
             'timezones' => $this->getTimezones(),
-            'unitMeasures' => $unitMeasures,
-            'categories' => $categories,
-            'warehouses' => $warehouses,
-            'sizes' => $sizes,
-            'currencies' => $currencies,
-            'ledgers' => $ledgers,
-            'invoiceThemes' => InvoiceThemeOptions::all(),
-            'invoiceFormats' => $invoiceFormats,
-            'invoiceFormatDefaults' => InvoiceFormat::defaultConfig(),
+            'soundOptions' => SoundOptions::grouped(),
+
+            // Only the "Install plugins" tab uses these, and they were the
+            // bulk of the page. Lazy: not queried until that tab asks for them
+            // with a partial reload the first time it is opened.
+            'unitMeasures' => Inertia::lazy(fn () => UnitMeasureResource::collection(
+                UnitMeasure::query()->orderBy('name')->get()
+            )),
+            'categories' => Inertia::lazy(fn () => CategoryResource::collection(Category::query()->orderBy('name')->get())),
+            'warehouses' => Inertia::lazy(fn () => WarehouseResource::collection(Warehouse::query()->orderBy('name')->get())),
+            'sizes' => Inertia::lazy(fn () => SizeResource::collection(Size::query()->orderBy('name')->get())),
+            'currencies' => Inertia::lazy(fn () => CurrencyResource::collection(Currency::query()->orderBy('name')->get())),
+            'ledgers' => Inertia::lazy(fn () => LedgerResource::collection(
+                Ledger::query()
+                    ->whereIn('type', ['customer', 'supplier'])
+                    ->orderBy('name')
+                    ->limit(500)
+                    ->get()
+            )),
         ]);
     }
 
     public function update(UpdatePreferencesRequest $request)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.update'), 403);
         $validated = $request->validated();
 
         // Merge validated preferences with existing ones
@@ -115,16 +99,30 @@ class PreferencesController extends Controller
             ],
         );
         Cache::forget(CacheKey::forUser($request, 'preferences'));
+        Cache::forget(CacheKey::forUser($request, 'business_profile'));
         Cache::forget(CacheKey::forUser($request, 'recordsPerPage'));
         Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
         Cache::forget('balance_nature_format');
         Cache::put('balance_nature_format', $newPreferences['appearance']['balance_nature_format']);
+
+        // AJAX saves (e.g. inline preference panel on Create/Edit forms) expect a JSON
+        // response. Returning a redirect here causes the browser to follow it with the
+        // original PUT method, hitting unrelated resource routes (e.g. PUT /sales/create).
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('preferences.preferences_saved'),
+                'preferences' => $newPreferences,
+            ]);
+        }
+
         return redirect()->back()->with('success', value: __('preferences.preferences_saved'));
     }
 
     public function resetPreferences(Request $request, ?string $category = null)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.update'), 403);
         $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
         $user->resetPreferences($category)->save();
         $afterPreferences = $user->fresh()->preferences ?? User::DEFAULT_PREFERENCES;
@@ -142,12 +140,14 @@ class PreferencesController extends Controller
             ],
         );
         Cache::forget(CacheKey::forUser($request, 'preferences'));
+        Cache::forget(CacheKey::forUser($request, 'business_profile'));
         return redirect()->back()->with('success', __('preferences.preferences_reset'));
     }
 
     public function updateInstallPlugins(Request $request)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.update') && $user->can('companies.update'), 403);
         $beforeState = [
             'unit_measures' => UnitMeasure::query()->where('is_active', true)->pluck('id')->values()->all(),
             'categories' => Category::query()->where('is_active', true)->pluck('id')->values()->all(),
@@ -185,7 +185,12 @@ class PreferencesController extends Controller
             Warehouse::query()->update(['is_active' => false]);
             Size::query()->update(['is_active' => false]);
             Currency::query()->update(['is_active' => false]);
-            Ledger::query()->whereIn('type', ['customer', 'supplier'])->update(['is_active' => false]);
+            // Customers and suppliers are transactional data, not installable defaults: an empty
+            // selection here would hide every party from the sale/purchase forms in one save, so
+            // leave their flags untouched and only apply an explicit selection.
+            if ($ledgerIds->isNotEmpty()) {
+                Ledger::query()->whereIn('type', ['customer', 'supplier'])->update(['is_active' => false]);
+            }
 
             if ($unitMeasureIds->isNotEmpty()) UnitMeasure::query()->whereIn('id', $unitMeasureIds)->update(['is_active' => true]);
             if ($categoryIds->isNotEmpty()) Category::query()->whereIn('id', $categoryIds)->update(['is_active' => true]);
@@ -226,6 +231,7 @@ class PreferencesController extends Controller
     public function exportPreferences(Request $request)
     {
         $user = $request->user();
+        abort_unless($user->can('preferences.export'), 403);
         $preferences = $user->getAllPreferences();
 
         app(ActivityLogService::class)->logAction(
@@ -245,6 +251,7 @@ class PreferencesController extends Controller
 
     public function importPreferences(Request $request)
     {
+        abort_unless($request->user()->can('preferences.import'), 403);
         $request->validate([
             'file' => 'required|file|mimes:json|max:1024',
         ]);
@@ -256,9 +263,28 @@ class PreferencesController extends Controller
             return redirect()->back()->with('error', __('preferences.invalid_preferences_file'));
         }
 
+        $unknownCategories = array_diff(array_keys($preferences), array_keys(User::DEFAULT_PREFERENCES));
+        if ($unknownCategories !== []) {
+            return redirect()->back()->withErrors([
+                'file' => __('preferences.invalid_preferences_file'),
+            ]);
+        }
+
+        $validator = Validator::make($preferences, (new UpdatePreferencesRequest())->rules());
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $validated = $validator->validated();
+        unset($validated['sale']['invoice_theme']);
+
         $user = $request->user();
         $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
-        $user->update(['preferences' => array_replace_recursive(User::DEFAULT_PREFERENCES, $preferences)]);
+        $user->update(['preferences' => array_replace_recursive(User::DEFAULT_PREFERENCES, $validated)]);
+        Cache::forget(CacheKey::forUser($request, 'preferences'));
+        Cache::forget(CacheKey::forUser($request, 'business_profile'));
 
         app(ActivityLogService::class)->logUpdate(
             reference: $user,
@@ -274,13 +300,19 @@ class PreferencesController extends Controller
         return redirect()->back()->with('success', __('settings.settings_imported'));
     }
 
+    /**
+     * Toggleable sidebar menu groups.
+     *
+     * Every `value` here must match a top-level `key` in the sidebar's
+     * `navMain` (resources/js/Layouts/Layout.vue) or the checkbox does nothing.
+     * `home` is intentionally omitted — it is always shown so a user can never
+     * hide their way out of the app. Order mirrors the sidebar.
+     */
     private function getSidebarMenuOptions(): array
     {
         return [
-            ['value' => 'home', 'label' => 'sidebar.main.home'],
             ['value' => 'dashboard', 'label' => 'sidebar.main.dashboard'],
             ['value' => 'account', 'label' => 'sidebar.main.account'],
-            ['value' => 'administration', 'label' => 'sidebar.main.administration'],
             ['value' => 'inventory', 'label' => 'sidebar.main.inventory'],
             ['value' => 'ledger', 'label' => 'sidebar.main.ledger'],
             ['value' => 'hr', 'label' => 'sidebar.main.hr'],
@@ -292,12 +324,11 @@ class PreferencesController extends Controller
             ['value' => 'expense', 'label' => 'sidebar.main.expense'],
             ['value' => 'purchase', 'label' => 'sidebar.main.purchase'],
             ['value' => 'sale', 'label' => 'sidebar.main.sale'],
-            ['value' => 'receipt', 'label' => 'sidebar.main.receipt'],
-            ['value' => 'payment', 'label' => 'sidebar.main.payment'],
-            ['value' => 'transfer', 'label' => 'sidebar.main.transfer'],
+            ['value' => 'cash_transactions', 'label' => 'sidebar.main.cash_transactions'],
             ['value' => 'user_management', 'label' => 'sidebar.main.user_management'],
-            ['value' => 'trash', 'label' => 'sidebar.main.trash'],
+            ['value' => 'administration', 'label' => 'sidebar.main.administration'],
             ['value' => 'reports', 'label' => 'sidebar.main.reports'],
+            ['value' => 'system', 'label' => 'sidebar.main.system'],
         ];
     }
 

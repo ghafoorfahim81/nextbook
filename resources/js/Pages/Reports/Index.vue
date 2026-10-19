@@ -6,6 +6,7 @@ import {
   BookOpenText,
   FileSpreadsheet,
   Landmark,
+  Scale,
   ArrowLeftRight,
   Receipt,
   Wallet,
@@ -13,6 +14,7 @@ import {
   ShoppingCart,
   Package,
   Boxes,
+  Palette,
   Archive,
   TrendingUp,
   TrendingDown,
@@ -26,6 +28,7 @@ import {
   LayoutList,
   Layers,
   Banknote,
+  SlidersHorizontal,
   Coins,
   UserCheck,
   UserPlus,
@@ -46,6 +49,9 @@ import ReportDataTable from '@/Components/reports/ReportDataTable.vue'
 import ReportStatement from '@/Components/reports/ReportStatement.vue'
 import ReportGroupedTable from '@/Components/reports/ReportGroupedTable.vue'
 import ReportUserActivity from '@/Components/reports/ReportUserActivity.vue'
+import ReportBarChart from '@/Components/reports/ReportBarChart.vue'
+import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
+import { ensureCatalogBehind, hasCatalogBehind } from '@/lib/reportHistory'
 
 const props = defineProps({
   filters: { type: Object, required: true },
@@ -77,10 +83,12 @@ function normalizeFilters(filters) {
     customer_id: filters.customer_id || '',
     supplier_id: filters.supplier_id || '',
     item_id: filters.item_id || '',
+    variant_id: filters.variant_id || '',
     account_id: filters.account_id || '',
     currency_id: filters.currency_id || '',
     warehouse_id: filters.warehouse_id || '',
     type: filters.type || '',
+    reason: filters.reason || '',
     balance_type: filters.balance_type || 'all',
     category_id: filters.category_id || '',
     expense_account_id: filters.expense_account_id || '',
@@ -91,7 +99,7 @@ function normalizeFilters(filters) {
     leave_type_id: filters.leave_type_id || '',
     employment_type: filters.employment_type || '',
     employment_status: filters.employment_status || '',
-    view_type: filters.view_type || 'itemwise',
+    view_type: filters.view_type || 'general',
     per_page: Number(filters.per_page || 25),
     page: Number(filters.page || 1),
   }
@@ -182,7 +190,7 @@ const reportDefinitions = computed(() => ({
       { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
     ],
     columns: [
-      { key: 'ledger_name', label: t('report.columns.ledger_name') },
+      { key: 'account_name', label: t('report.columns.account_name') },
       { key: 'total_debit', label: t('report.columns.total_debit'), type: 'money', align: 'right' },
       { key: 'total_credit', label: t('report.columns.total_credit'), type: 'money', align: 'right' },
       { key: 'balance', label: t('report.columns.balance'), type: 'money', align: 'right' },
@@ -193,7 +201,7 @@ const reportDefinitions = computed(() => ({
     description: t('report.reports.balance_sheet.description'),
     filters: [],
     group: 'financial',
-    icon: Landmark,
+    icon: Scale,
     summary: [
       { key: 'total_assets', label: t('report.summary.total_assets'), type: 'money' },
       { key: 'total_liabilities', label: t('report.summary.total_liabilities'), type: 'money' },
@@ -337,12 +345,56 @@ const reportDefinitions = computed(() => ({
     // A credit balance on a supplier is money we owe — flag it.
     columns: partyStatementColumns(t('report.columns.supplier'), { payable: true }),
   },
+  aged_receivables: {
+    label: t('report.reports.aged_receivables.label'),
+    description: t('report.reports.aged_receivables.description'),
+    filters: ['customer_id'],
+    group: 'party',
+    icon: CalendarClock,
+    summary: [
+      { key: 'current', label: t('report.summary.current'), type: 'money' },
+      { key: 'days_31_60', label: t('report.summary.days_31_60'), type: 'money' },
+      { key: 'days_61_90', label: t('report.summary.days_61_90'), type: 'money' },
+      { key: 'days_90_plus', label: t('report.summary.days_90_plus'), type: 'money' },
+      { key: 'total_outstanding', label: t('report.summary.total_outstanding'), type: 'money' },
+    ],
+    columns: [
+      { key: 'customer', label: t('report.columns.customer') },
+      { key: 'current', label: t('report.columns.current'), type: 'money', align: 'right' },
+      { key: 'days_31_60', label: t('report.columns.days_31_60'), type: 'money', align: 'right' },
+      { key: 'days_61_90', label: t('report.columns.days_61_90'), type: 'money', align: 'right' },
+      { key: 'days_90_plus', label: t('report.columns.days_90_plus'), type: 'money', align: 'right' },
+      { key: 'total_outstanding', label: t('report.columns.total_outstanding'), type: 'money', align: 'right' },
+    ],
+  },
+  aged_payables: {
+    label: t('report.reports.aged_payables.label'),
+    description: t('report.reports.aged_payables.description'),
+    filters: ['supplier_id'],
+    group: 'party',
+    icon: Banknote,
+    summary: [
+      { key: 'current', label: t('report.summary.current'), type: 'money' },
+      { key: 'days_31_60', label: t('report.summary.days_31_60'), type: 'money' },
+      { key: 'days_61_90', label: t('report.summary.days_61_90'), type: 'money' },
+      { key: 'days_90_plus', label: t('report.summary.days_90_plus'), type: 'money' },
+      { key: 'total_outstanding', label: t('report.summary.total_outstanding'), type: 'money' },
+    ],
+    columns: [
+      { key: 'supplier', label: t('report.columns.supplier') },
+      { key: 'current', label: t('report.columns.current'), type: 'money', align: 'right' },
+      { key: 'days_31_60', label: t('report.columns.days_31_60'), type: 'money', align: 'right' },
+      { key: 'days_61_90', label: t('report.columns.days_61_90'), type: 'money', align: 'right' },
+      { key: 'days_90_plus', label: t('report.columns.days_90_plus'), type: 'money', align: 'right' },
+      { key: 'total_outstanding', label: t('report.columns.total_outstanding'), type: 'money', align: 'right' },
+    ],
+  },
   sales_report: {
     label: t('report.reports.sales_report.label'),
     description: t('report.reports.sales_report.description'),
     filters: localFilters.value.view_type === 'general'
       ? ['customer_id', 'type', 'currency_id', 'warehouse_id']
-      : ['item_id', 'warehouse_id'],
+      : ['item_id', 'variant_id', 'warehouse_id'],
     group: 'operations',
     icon: ShoppingCart,
     summary: localFilters.value.view_type === 'general'
@@ -369,6 +421,7 @@ const reportDefinitions = computed(() => ({
           { key: 'sale_number', label: t('report.columns.sale_number') },
           { key: 'customer', label: t('report.columns.customer') },
           { key: 'item', label: t('report.columns.item') },
+          { key: 'variant', label: t('report.columns.variant') },
           { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
           { key: 'unit_measure', label: t('report.columns.unit_measure') },
           { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
@@ -381,7 +434,7 @@ const reportDefinitions = computed(() => ({
     description: t('report.reports.purchase_report.description'),
     filters: localFilters.value.view_type === 'general'
       ? ['supplier_id', 'type', 'currency_id', 'warehouse_id']
-      : ['item_id', 'warehouse_id'],
+      : ['item_id', 'variant_id', 'warehouse_id'],
     group: 'operations',
     icon: ClipboardList,
     summary: localFilters.value.view_type === 'general'
@@ -407,6 +460,7 @@ const reportDefinitions = computed(() => ({
           { key: 'purchase_number', label: t('report.columns.purchase_number') },
           { key: 'supplier', label: t('report.columns.supplier') },
           { key: 'item', label: t('report.columns.item') },
+          { key: 'variant', label: t('report.columns.variant') },
           { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
           { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
           { key: 'discount', label: t('report.columns.discount'), type: 'money', align: 'right' },
@@ -435,11 +489,12 @@ const reportDefinitions = computed(() => ({
   inventory_stock: {
     label: t('report.reports.inventory_stock.label'),
     description: t('report.reports.inventory_stock.description'),
-    filters: ['item_id'],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Package,
     summary: [
+      { key: 'total_items', label: t('report.summary.total_items'), type: 'integer' },
       { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
       { key: 'total_value', label: t('report.summary.total_value'), type: 'money' },
     ],
@@ -454,11 +509,13 @@ const reportDefinitions = computed(() => ({
   stock_movement: {
     label: t('report.reports.stock_movement.label'),
     description: t('report.reports.stock_movement.description'),
-    filters: ['item_id'],
+    filters: ['item_id', 'variant_id'],
     group: 'inventory',
     icon: ArrowLeftRight,
     summary: [
-      { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
+      { key: 'total_quantity', label: t('report.summary.total_movement'), type: 'quantity' },
+      { key: 'total_in', label: t('report.summary.total_in'), type: 'quantity' },
+      { key: 'total_out', label: t('report.summary.total_out'), type: 'quantity' },
     ],
     columns: [
       { key: 'date', label: t('report.columns.date') },
@@ -474,10 +531,38 @@ const reportDefinitions = computed(() => ({
       { key: 'number', label: t('report.columns.reference_number') },
     ],
   },
+  stock_adjustment_report: {
+    label: t('report.reports.stock_adjustment_report.label'),
+    description: t('report.reports.stock_adjustment_report.description'),
+    filters: ['warehouse_id', 'item_id', 'variant_id', 'reason'],
+    group: 'inventory',
+    icon: SlidersHorizontal,
+    summary: [
+      { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
+      { key: 'total_in', label: t('report.summary.total_in'), type: 'quantity' },
+      { key: 'total_out', label: t('report.summary.total_out'), type: 'quantity' },
+      { key: 'total_cost', label: t('report.summary.total_cost'), type: 'money' },
+    ],
+    columns: [
+      { key: 'date', label: t('report.columns.date') },
+      { key: 'reference', label: t('report.columns.reference') },
+      { key: 'item', label: t('report.columns.item') },
+      { key: 'warehouse', label: t('report.columns.warehouse') },
+      { key: 'type', label: t('report.columns.type') },
+      { key: 'reason', label: t('report.columns.reason') },
+      { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
+      { key: 'unit_measure', label: t('report.columns.unit_measure') },
+      { key: 'unit_cost', label: t('report.columns.unit_cost'), type: 'money', align: 'right' },
+      { key: 'total_cost', label: t('report.columns.total_cost'), type: 'money', align: 'right' },
+      { key: 'batch', label: t('report.columns.batch') },
+      { key: 'expire_date', label: t('report.columns.expire_date') },
+      { key: 'status', label: t('report.columns.status') },
+    ],
+  },
   low_stock: {
     label: t('report.reports.low_stock.label'),
     description: t('report.reports.low_stock.description'),
-    filters: ['item_id'],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Boxes,
@@ -494,7 +579,7 @@ const reportDefinitions = computed(() => ({
   inventory_valuation: {
     label: t('report.reports.inventory_valuation.label'),
     description: t('report.reports.inventory_valuation.description'),
-    filters: ['item_id'],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Archive,
@@ -512,7 +597,7 @@ const reportDefinitions = computed(() => ({
   batch_wise_report: {
     label: t('report.reports.batch_wise_report.label'),
     description: t('report.reports.batch_wise_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Boxes,
@@ -534,7 +619,7 @@ const reportDefinitions = computed(() => ({
   expiry_wise_report: {
     label: t('report.reports.expiry_wise_report.label'),
     description: t('report.reports.expiry_wise_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: CalendarClock,
@@ -552,10 +637,33 @@ const reportDefinitions = computed(() => ({
       { key: 'on_hand', label: t('report.columns.on_hand'), type: 'quantity', align: 'right' },
     ],
   },
+  variant_wise_report: {
+    label: t('report.reports.variant_wise_report.label'),
+    description: t('report.reports.variant_wise_report.description'),
+    filters: ['item_id', 'variant_id', 'warehouse_id'],
+    snapshot: true,
+    group: 'inventory',
+    icon: Palette,
+    summary: [
+      { key: 'total_in', label: t('report.summary.total_in'), type: 'quantity' },
+      { key: 'total_out', label: t('report.summary.total_out'), type: 'quantity' },
+      { key: 'total_on_hand', label: t('report.summary.total_on_hand'), type: 'quantity' },
+      { key: 'total_value', label: t('report.summary.total_value'), type: 'money' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'variant', label: t('item.variant') },
+      { key: 'in_quantity', label: t('report.columns.in_quantity'), type: 'quantity', align: 'right' },
+      { key: 'out_quantity', label: t('report.columns.out_quantity'), type: 'quantity', align: 'right' },
+      { key: 'on_hand', label: t('report.columns.on_hand'), type: 'quantity', align: 'right' },
+      { key: 'stock_value', label: t('report.columns.stock_value'), type: 'money', align: 'right' },
+    ],
+  },
   zero_on_hand_report: {
     label: t('report.reports.zero_on_hand_report.label'),
     description: t('report.reports.zero_on_hand_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: PackageX,
@@ -575,7 +683,7 @@ const reportDefinitions = computed(() => ({
   fast_moving_report: {
     label: t('report.reports.fast_moving_report.label'),
     description: t('report.reports.fast_moving_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     group: 'inventory',
     icon: TrendingUp,
     summary: [
@@ -594,7 +702,7 @@ const reportDefinitions = computed(() => ({
   slow_moving_report: {
     label: t('report.reports.slow_moving_report.label'),
     description: t('report.reports.slow_moving_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     group: 'inventory',
     icon: TrendingDown,
     summary: [
@@ -614,7 +722,7 @@ const reportDefinitions = computed(() => ({
   today_sale_purchase_closing_stock_report: {
     label: t('report.reports.today_sale_purchase_closing_stock_report.label'),
     description: t('report.reports.today_sale_purchase_closing_stock_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: ClipboardList,
@@ -636,7 +744,7 @@ const reportDefinitions = computed(() => ({
   near_expiry_report: {
     label: t('report.reports.near_expiry_report.label'),
     description: t('report.reports.near_expiry_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: CalendarClock,
@@ -656,7 +764,7 @@ const reportDefinitions = computed(() => ({
   maximum_stock_report: {
     label: t('report.reports.maximum_stock_report.label'),
     description: t('report.reports.maximum_stock_report.description'),
-    filters: [],
+    filters: ['item_id', 'variant_id'],
     snapshot: true,
     group: 'inventory',
     icon: Archive,
@@ -1042,19 +1150,55 @@ const emptyMessage = computed(() => {
 const isStatementLayout = computed(() => props.result.meta?.layout === 'statement')
 const isUserActivityLayout = computed(() => props.result.meta?.layout === 'user_activity')
 
+// Profit & loss at a glance: what came in, what it cost, what was left.
+// Shown only once the report has run (its summary is present).
+const incomeChartBars = computed(() => {
+  const summary = props.result.summary || {}
+  if (localFilters.value.report !== 'income_statement' || summary.net_profit === undefined) return []
+
+  const netProfit = Number(summary.net_profit || 0)
+
+  return [
+    { key: 'revenue', label: t('report.chart.revenue'), value: summary.total_revenue, tone: 'emerald' },
+    { key: 'cogs', label: t('report.chart.cost_of_goods_sold'), value: summary.total_cost_of_goods_sold, tone: 'amber' },
+    { key: 'gross', label: t('report.chart.gross_profit'), value: summary.gross_profit, tone: 'sky' },
+    { key: 'expenses', label: t('report.chart.expenses'), value: summary.total_expenses, tone: 'rose' },
+    // A loss is drawn below zero in the warning colour.
+    { key: 'net', label: t('report.chart.net_profit'), value: netProfit, tone: netProfit < 0 ? 'rose' : 'violet' },
+  ]
+})
+
 function compactFilters(filters) {
   return Object.fromEntries(
     Object.entries(filters).filter(([, value]) => value !== '' && value !== null && value !== undefined),
   )
 }
 
-function visitReports(filters) {
+// Opening a report from the catalog adds a history entry, so the back button
+// returns to the catalog; filter, paging and view changes inside a report
+// replace it, so back never steps through them one at a time.
+let openingFromCatalog = false
+
+watch(
+  () => props.reportSelected,
+  (selected) => {
+    if (!selected) return
+    // After Inertia has written this page's history entry.
+    setTimeout(() => {
+      ensureCatalogBehind({ openedFromCatalog: openingFromCatalog })
+      openingFromCatalog = false
+    })
+  },
+  { immediate: true },
+)
+
+function visitReports(filters, { preserveScroll = true, replace = true } = {}) {
   isLoadingReport.value = true
 
   router.get('/reports', compactFilters(filters), {
     preserveState: true,
-    preserveScroll: true,
-    replace: true,
+    preserveScroll,
+    replace,
     onFinish: () => {
       isLoadingReport.value = false
     },
@@ -1081,10 +1225,12 @@ function resetFilters() {
     customer_id: '',
     supplier_id: '',
     item_id: '',
+    variant_id: '',
     account_id: '',
     currency_id: '',
     warehouse_id: '',
     type: '',
+    reason: '',
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
@@ -1117,10 +1263,12 @@ function selectReport(reportKey) {
     customer_id: '',
     supplier_id: '',
     item_id: '',
+    variant_id: '',
     account_id: '',
     currency_id: '',
     warehouse_id: '',
     type: '',
+    reason: '',
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
@@ -1131,11 +1279,12 @@ function selectReport(reportKey) {
     leave_type_id: '',
     employment_type: '',
     employment_status: '',
-    view_type: 'itemwise',
+    view_type: 'general',
     page: 1,
   }
 
-  visitReports({ ...localFilters.value, report: reportKey, page: 1 })
+  openingFromCatalog = true
+  visitReports({ ...localFilters.value, report: reportKey, page: 1 }, { preserveScroll: false, replace: false })
 }
 
 function switchViewType(viewType) {
@@ -1145,6 +1294,7 @@ function switchViewType(viewType) {
     customer_id: '',
     supplier_id: '',
     item_id: '',
+    variant_id: '',
     currency_id: '',
     warehouse_id: '',
     type: '',
@@ -1154,6 +1304,13 @@ function switchViewType(viewType) {
 }
 
 function goBackToCatalog() {
+  // The catalog is the entry right behind the report: step back to it, the
+  // same as the browser's back button, instead of stacking another copy.
+  if (hasCatalogBehind()) {
+    window.history.back()
+    return
+  }
+
   visitReports({
     branch_id: localFilters.value.branch_id,
     date_from: localFilters.value.date_from,
@@ -1173,13 +1330,15 @@ function exportReport() {
     <Head :title="t('report.title')" />
 
     <div class="space-y-6 text-foreground">
-      <section class="overflow-hidden rounded-[30px] border border-emerald-800/30 bg-gradient-to-br from-violet-500 via-violet-900 to-violet-950 p-6 text-white shadow-[0_20px_50px_rgba(6,78,59,0.35)]">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div class="space-y-2">
-            <h1 class="text-3xl font-semibold tracking-tight">{{ t('report.title') }}</h1>
-            <p class="max-w-3xl text-sm leading-7 text-emerald-100/85">{{ t('report.subtitle') }}</p>
+      <!-- A slim header: the page's title and where you are, without taking a
+           third of the screen above the report itself. -->
+      <section class="overflow-hidden rounded-xl border border-emerald-800/30 bg-gradient-to-br from-violet-500 via-violet-900 to-violet-950 px-5 py-3 text-white shadow-[0_8px_24px_rgba(6,78,59,0.25)]">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h1 class="text-lg font-semibold leading-7 tracking-tight">{{ t('report.title') }}</h1>
+            <p class="truncate text-xs leading-5 text-emerald-100/85">{{ t('report.subtitle') }}</p>
           </div>
-          <div class="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-emerald-50/85 backdrop-blur">
+          <div class="shrink-0 rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm text-emerald-50/90 backdrop-blur">
             {{ heroBadgeLabel }}
           </div>
         </div>
@@ -1258,14 +1417,14 @@ function exportReport() {
         <template v-else>
           <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_auto] lg:items-start">
             <p class="text-xs font-semibold uppercase tracking-[0.28em] text-primary lg:self-center">{{ t('report.active_report') }}</p>
-            <Button variant="outline" class="w-fit shrink-0 lg:justify-self-end" @click="goBackToCatalog">
+            <Button variant="outline" class="h-9 w-fit shrink-0 border-primary text-primary hover:bg-primary hover:text-white lg:justify-self-end" @click="goBackToCatalog">
               {{ t('report.back_to_reports') }}
             </Button>
             <div class="space-y-3">
               <h2 class="text-2xl font-semibold tracking-tight text-foreground">{{ activeDefinition.label }}</h2>
               <p class="max-w-3xl text-sm leading-7 text-muted-foreground">{{ activeDefinition.description }}</p>
             </div>
-            <Button class="gap-2 lg:self-end lg:justify-self-end" @click="exportReport">
+            <Button variant="outline" class="h-9 gap-2 border-primary text-primary hover:bg-primary hover:text-white lg:self-end lg:justify-self-end" @click="exportReport">
               <Download class="h-4 w-4" />
               {{ t('report.export_excel') }}
             </Button>
@@ -1298,6 +1457,12 @@ function exportReport() {
           />
 
           <ReportSummaryCards v-if="!isUserActivityLayout" :cards="summaryCards" />
+
+          <ReportBarChart
+            v-if="incomeChartBars.length"
+            :title="t('report.chart.income_statement_title')"
+            :bars="incomeChartBars"
+          />
 
           <section class="space-y-3">
             <div>
@@ -1335,7 +1500,13 @@ function exportReport() {
               :pagination="result.pagination"
               :empty-message="emptyMessage"
               @page-change="submit"
-            />
+            >
+              <template #cell-payment_status="{ row }">
+                <span :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(row.payment_status_value ?? row.payment_status)]">
+                  {{ row.payment_status }}
+                </span>
+              </template>
+            </ReportDataTable>
           </section>
         </template>
       </section>

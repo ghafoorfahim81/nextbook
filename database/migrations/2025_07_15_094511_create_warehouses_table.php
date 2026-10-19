@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('warehouses', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('name')->index();
             $table->string('address')->nullable();
             $table->boolean('is_main')->default(false);

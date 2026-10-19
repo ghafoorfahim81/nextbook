@@ -65,7 +65,7 @@ final class UnitMeasureControllerTest extends TestCase
             ->where('name', $name)
             ->where('unit', $unit)
             ->where('symbol', $symbol)
-            ->where('branch_id', $branch->id)
+            ->where('company_id', $company->id)
             ->where('quantity_id', $quantity->id)
             ->where('created_by', $created_by->id)
             ->get();

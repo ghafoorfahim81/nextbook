@@ -19,7 +19,7 @@ return new class extends Migration
             $table->ulid('department_id')->nullable()->index()->after('code');
             $table->integer('grade_level')->nullable()->after('department_id');
 
-            $table->unique(['branch_id', 'code', 'deleted_at']);
+            $table->unique(['company_id', 'code', 'deleted_at']);
         });
 
         Schema::table('designations', function (Blueprint $table) {
@@ -31,7 +31,7 @@ return new class extends Migration
     {
         Schema::table('designations', function (Blueprint $table) {
             $table->dropForeign(['department_id']);
-            $table->dropUnique(['branch_id', 'code', 'deleted_at']);
+            $table->dropUnique(['company_id', 'code', 'deleted_at']);
             $table->dropColumn(['code', 'department_id', 'grade_level']);
         });
     }

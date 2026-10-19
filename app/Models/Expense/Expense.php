@@ -2,7 +2,9 @@
 
 namespace App\Models\Expense;
 
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -16,18 +18,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Models\Transaction\Transaction;
 class Expense extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasUserAuditable, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
+        'number',
         'date',
         'remarks',
         'category_id',
+        'status',
         'rate',
         'attachment',
         'created_by',
@@ -38,6 +44,7 @@ class Expense extends Model
         'id' => 'string',
         'date' => 'date',
         'category_id' => 'string',
+        'status' => 'string',
         'rate' => 'float',
         'created_by' => 'string',
         'updated_by' => 'string',

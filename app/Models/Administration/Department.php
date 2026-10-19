@@ -3,8 +3,8 @@
 namespace App\Models\Administration;
 
 use App\Models\Hr\Employee;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -21,7 +21,7 @@ use Symfony\Component\Uid\Ulid;
 class Department extends Model
 {
     use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting,
-        HasDependencyCheck, BranchSpecific, HasBranch, SoftDeletes;
+        HasDependencyCheck, CompanySpecific, HasCompany, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

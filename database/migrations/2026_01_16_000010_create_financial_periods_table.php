@@ -20,16 +20,17 @@ return new class extends Migration
                 ->default(FinancialPeriodStatus::Open->value);
             $table->timestamp('closed_at')->nullable();
             $table->ulid('closed_by')->nullable()->index();
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
             $table->softDeletes();
         });
 
         Schema::table('financial_periods', function (Blueprint $table) {
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('closed_by')->references('id')->on('users');

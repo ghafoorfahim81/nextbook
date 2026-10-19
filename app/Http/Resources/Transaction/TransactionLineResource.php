@@ -15,7 +15,7 @@ class TransactionLineResource extends JsonResource
     public function toArray(Request $request): array
     {
         $remark = $this->{'remark_' . app()->getLocale()} ?? $this->remark ?? '';
-   
+
         return [
             'id' => $this->id,
             'account_id' => $this->account_id,
@@ -30,6 +30,7 @@ class TransactionLineResource extends JsonResource
             'base_debit' => $this->base_debit,
             'base_credit' => $this->base_credit,
             'remark' => $remark?? $this->remark,
+            'status' => $this->tansaction?->status,
             'ledger_id' => $this->ledger_id,
             'reference_number' => $this->transaction?->voucher_number,
             'ledger' => $this->whenLoaded('ledger', fn () => new LedgerResource($this->ledger)),

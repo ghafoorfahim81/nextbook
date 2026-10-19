@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Account;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Branch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Account\AccountType;
@@ -27,7 +28,7 @@ class AccountTypeFactory extends Factory
             'slug' => fake()->unique()->slug(2),
             'nature' => fake()->randomElement(['asset', 'liability', 'equity', 'income', 'expense', 'non-posting']),
             'remark' => fake()->optional()->sentence(),
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
             'is_main' => false,
         ];
     }

@@ -9,8 +9,10 @@ use App\Models\Administration\Currency;
 use App\Models\Concerns\HasSequentialNumber;
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasBranch as HasBranchTrait;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -35,13 +37,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class EmployeeLoan extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasAttachments, HasSequentialNumber, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, HasSequentialNumber, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'number', 'employee_id', 'loan_type', 'currency_id', 'rate',
         'principal_amount', 'installment_amount', 'installments_count',
         'deduct_from_payroll', 'issue_date', 'first_deduction_period',

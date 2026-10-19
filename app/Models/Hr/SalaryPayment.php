@@ -10,7 +10,9 @@ use App\Models\Concerns\HasSequentialNumber;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -36,13 +38,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SalaryPayment extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasSequentialNumber, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasSequentialNumber, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'number', 'date', 'payroll_id', 'employee_id', 'ledger_id',
         'currency_id', 'rate', 'amount', 'payment_mode', 'bank_account_id',
         'cheque_no', 'transaction_id', 'narration', 'created_by', 'updated_by',

@@ -25,7 +25,7 @@ class AccountDetailCurrencyTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
 
         $this->usd = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'US Dollar',
             'code' => 'USD',
             'symbol' => '$',
@@ -39,7 +39,7 @@ class AccountDetailCurrencyTest extends TestCase
     private function cashAccount(string $name, string $number): Account
     {
         return Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => $name,
             'local_name' => $name,
             'number' => $number,

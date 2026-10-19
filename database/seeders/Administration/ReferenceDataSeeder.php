@@ -32,10 +32,10 @@ class ReferenceDataSeeder extends Seeder
             ['VIP', 'ویژه'],
             ['Government', 'دولتی'],
             ['Online', 'آنلاین'],
-        ] as [$nameEn, $nameFa]) {
+        ] as [$nameEn, $localName]) {
             CustomerGroup::query()->firstOrCreate(
-                ['branch_id' => null, 'name_en' => $nameEn],
-                ['name_fa' => $nameFa],
+                ['company_id' => null, 'name_en' => $nameEn],
+                ['local_name' => $localName],
             );
         }
 
@@ -48,7 +48,7 @@ class ReferenceDataSeeder extends Seeder
             ['End of Month', 30, 'end_of_month'],
         ] as [$name, $days, $type]) {
             PaymentTerm::query()->firstOrCreate(
-                ['branch_id' => null, 'name' => $name],
+                ['company_id' => null, 'name' => $name],
                 ['days' => $days, 'type' => $type],
             );
         }

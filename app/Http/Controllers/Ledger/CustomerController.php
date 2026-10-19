@@ -25,6 +25,9 @@ use App\Services\Accounting\PaymentStatusService;
 use App\Services\Accounting\SettlementService;
 use App\Services\AttachmentService;
 use App\Services\DateConversionService;
+use App\Enums\TransactionStatus;
+use App\Models\Accounting\ContraSettlement;
+use App\Services\Accounting\LedgerLinkService;
 use App\Services\LedgerOpeningService;
 use App\Services\LedgerStatementService;
 use App\Services\TransactionService;
@@ -65,7 +68,7 @@ class CustomerController extends Controller
         $customers = Ledger::search($request->query('search'))
             ->where('type', $type) // Filter by type
             ->filter($filters)
-            ->with(['currency', 'branch', 'group', 'country', 'province'])
+            ->with(['currency', 'group', 'country', 'province'])
             // Feeds the `statement` accessor so the list doesn't run one aggregate
             // query per row.
             ->withStatementTotals()
@@ -76,8 +79,8 @@ class CustomerController extends Controller
         return inertia('Ledgers/Customers/Index', [
             'customers' => LedgerResource::collection($customers),
             'filterOptions' => [
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
-                'groups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
+                'groups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'local_name']),
                 'countries' => Country::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
                 'provinces' => Province::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa', 'country_id']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
@@ -101,7 +104,7 @@ class CustomerController extends Controller
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
             ...$this->referenceData(),
-            'nextCode' => $this->nextCode($request->user()?->branch_id),
+            'nextCode' => $this->nextCode($request->user()?->company_id),
             'accountTypes' => [],
         ]);
     }
@@ -116,7 +119,7 @@ class CustomerController extends Controller
     ) {
         $validated = $request->validated();
         $validated['type'] = 'customer';
-        $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
+        $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->company_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
 
         if ($request->hasFile('photo')) {
@@ -130,6 +133,11 @@ class CustomerController extends Controller
         }
 
         $ledgerOpeningService->sync($ledger, $validated['openings'] ?? []);
+
+        // The same person's other account, if one was named. Written through
+        // the service because the link is symmetric — both rows point at each
+        // other, and setting one alone leaves a pairing that is only half true.
+        app(LedgerLinkService::class)->sync($ledger, $validated);
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
@@ -164,9 +172,14 @@ class CustomerController extends Controller
             'openings.transaction.currency',
             'openings.transaction.lines',
             'attachments',
+            'counterpart',
         ]);
 
         $lists = $this->transactionLists($customer);
+
+        // Both sides of a party who also trades the other way. Null when this
+        // account is not paired, which is the ordinary case.
+        $combinedPosition = app(LedgerLinkService::class)->combinedPosition($customer);
 
         $ledgerStatement = $statementService->build($customer, $this->statementFilters($request));
 
@@ -191,6 +204,7 @@ class CustomerController extends Controller
                 'openItems' => $openItems,
                 'settlementHistory' => $settlementHistory,
                 'settlementBalances' => $settlementBalances,
+                'combinedPosition' => $combinedPosition,
             ]);
         }
 
@@ -202,6 +216,7 @@ class CustomerController extends Controller
             'openItems' => $openItems,
             'settlementHistory' => $settlementHistory,
             'settlementBalances' => $settlementBalances,
+            'combinedPosition' => $combinedPosition,
         ]);
     }
 
@@ -265,7 +280,34 @@ class CustomerController extends Controller
             ->orderByDesc('date')->orderByDesc('id')->get()
             ->map(fn ($m) => $mapMovement($m, $m->paidAmount()))->all();
 
-        return compact('sales', 'receipts', 'payments');
+        // Set-offs move this party's balance without a sale, a purchase or any
+        // cash, so none of the lists above would ever show them — the balance
+        // simply changed and nothing on the page said why. Matched on either
+        // side, because one document touches both accounts of the pair.
+        $contraSettlements = ContraSettlement::query()
+            ->with(['customerLedger', 'supplierLedger', 'currency'])
+            ->where(fn ($query) => $query
+                ->where('customer_ledger_id', $ledger->id)
+                ->orWhere('supplier_ledger_id', $ledger->id))
+            ->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'number' => $c->number,
+                'date' => $dateService->toDisplay($c->date),
+                'amount' => (float) $c->amount,
+                'currency_code' => $c->currency?->code,
+                'rate' => (float) $c->rate,
+                // The OTHER account of the pair, which is the one thing that
+                // explains the entry when read from this party's page.
+                'counterparty' => $c->customer_ledger_id === $ledger->id
+                    ? $c->supplierLedger?->name
+                    : $c->customerLedger?->name,
+                'status' => $c->status,
+                'status_label' => TransactionStatus::tryFrom((string) $c->status)?->getLabel() ?? (string) $c->status,
+                'narration' => $c->narration,
+            ])->all();
+
+        return compact('sales', 'receipts', 'payments', 'contraSettlements');
     }
 
     /**
@@ -296,7 +338,7 @@ class CustomerController extends Controller
 
         $list = $validated['list'] ?? 'sales';
         $format = $validated['format'] ?? 'xlsx';
-        $customer->loadMissing(['currency', 'branch']);
+        $customer->loadMissing(['currency']);
 
         $translate = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
 
@@ -369,7 +411,7 @@ class CustomerController extends Controller
         $customer->load([
             'currency', 'group', 'paymentTerm', 'country', 'province',
             'openings', 'openings.transaction.currency', 'openings.transaction.lines',
-            'attachments',
+            'attachments', 'counterpart',
         ]);
 
         return inertia('Ledgers/Customers/Edit', [
@@ -504,6 +546,8 @@ class CustomerController extends Controller
         // Openings are rebuilt wholesale rather than diffed: the form always posts
         // the party's complete set, one row per currency.
         $ledgerOpeningService->sync($customer, $validated['openings'] ?? []);
+
+        app(LedgerLinkService::class)->sync($customer, $validated);
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
@@ -653,11 +697,11 @@ class CustomerController extends Controller
         ]);
     }
 
-    protected function nextCode(?string $branchId): string
+    protected function nextCode(?string $companyId): string
     {
         $latestNumber = Ledger::query()
             ->where('type', 'customer')
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereRaw('code ~ ?', ['^(CUST-)?[0-9]+$'])
             ->selectRaw("MAX(CAST(REGEXP_REPLACE(code, '^CUST-', '') AS INTEGER)) as max_code")
             ->value('max_code');

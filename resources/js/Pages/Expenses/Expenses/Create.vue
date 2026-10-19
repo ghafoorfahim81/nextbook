@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -7,17 +8,20 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n();
 const page = usePage()
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 
 const props = defineProps({
+    latestNumber: String,
     categories: { type: Object, required: true },
     expenseAccounts: { type: Object, required: true },
     bankAccounts: { type: Object, required: true },
@@ -31,6 +35,7 @@ const currencies = computed(() => props.currencies.data || props.currencies);
 const homeCurrency = computed(() => props.homeCurrency || {});
 
 const form = useForm({
+    number: props.latestNumber ?? '',
     date: '',
     category_id: '',
     expense_account_id: '',
@@ -38,7 +43,7 @@ const form = useForm({
     currency_id: '',
     rate: 1,
     remarks: '',
-    attachment: null,
+    attachments: [],
     details: [
         { amount: '', title: '' },
     ],
@@ -61,8 +66,6 @@ const handleSubmitAction = (createAndNew = false) => {
     handleSubmit(isCreateAndNew);
 };
 
-const fileInput = ref(null);
-const attachmentPreview = ref(null);
 
 // Set default currency
 watch(() => props.currencies, (currencies) => {
@@ -114,31 +117,6 @@ const removeDetailLine = (index) => {
     }
 };
 
-// Handle file upload
-const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        form.attachment = file;
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                attachmentPreview.value = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            attachmentPreview.value = null;
-        }
-    }
-};
-
-const removeAttachment = () => {
-    form.attachment = null;
-    attachmentPreview.value = null;
-    if (fileInput.value) {
-        fileInput.value.value = '';
-    }
-};
-
 // Submit form
 const handleSubmit = (createAndNew = false) => {
     // Validate at least one detail
@@ -152,6 +130,7 @@ const handleSubmit = (createAndNew = false) => {
     }
 
     const formData = new FormData();
+    if (form.number) formData.append('number', form.number);
     formData.append('date', form.date);
     formData.append('category_id', form.category_id);
     formData.append('expense_account_id', form.expense_account_id);
@@ -160,9 +139,9 @@ const handleSubmit = (createAndNew = false) => {
     formData.append('rate', form.rate);
     formData.append('remarks', form.remarks || '');
 
-    if (form.attachment) {
-        formData.append('attachment', form.attachment);
-    }
+    form.attachments.forEach((file, index) => {
+        formData.append(`attachments[${index}]`, file);
+    });
 
     validDetails.forEach((detail, index) => {
         formData.append(`details[${index}][amount]`, detail.amount);
@@ -184,7 +163,7 @@ const handleSubmit = (createAndNew = false) => {
             if (createAndNew) {
                 form.reset();
                 form.details = defaultExpenseDetails();
-                attachmentPreview.value = null;
+                form.attachments = [];
                 applyCreateDefaults();
             }
         },
@@ -220,18 +199,27 @@ onUnmounted(() => {
         sidebar.setOpen(prevSidebarOpen.value);
     }
 });
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
-    <AppLayout :title="t('general.create', { name: t('expense.expense') })" :sidebar-collapsed="true">
-        <FormPageToolbar back-route="expenses.index" module="expense" />
-        <form @submit.prevent="handleSubmitAction(false)">
+    <AppLayout :title="t('general.create', { name: t('expense.expense') })" >
+        <FormPageToolbar confirm-module="expense" back-route="expenses.index" module="expense" />
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
                     {{ t('general.general_info') }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                    <NextInput
+                        v-model="form.number"
+                        :label="t('general.number')"
+                        :error="form.errors?.number"
+                    />
                     <NextDate
                         v-model="form.date"
                         :current-date="true"
@@ -247,6 +235,7 @@ onUnmounted(() => {
                         value-key="id"
                         :reduce="cat => cat"
                         :floating-text="t('expense.category')"
+                        is-required
                         :error="form.errors?.category_id"
                         :searchable="true"
                         resource-type="expense_categories"
@@ -260,6 +249,7 @@ onUnmounted(() => {
                         value-key="id"
                         :reduce="acc => acc"
                         :floating-text="t('expense.expense_account')"
+                        is-required
                         :error="form.errors?.expense_account_id"
                         :searchable="true"
                         resource-type="accounts"
@@ -273,6 +263,7 @@ onUnmounted(() => {
                         value-key="id"
                         :reduce="acc => acc"
                         :floating-text="t('expense.bank_account')"
+                        is-required
                         :error="form.errors?.bank_account_id"
                         :searchable="true"
                         resource-type="accounts"
@@ -283,14 +274,16 @@ onUnmounted(() => {
                             :options="currencies.data || currencies"
                             v-model="form.selected_currency"
                             @update:modelValue="handleCurrencyChange"
-                            label-key="code"
+                            label-key="display_name"
                             value-key="id"
                             :reduce="cur => cur"
                             :floating-text="t('admin.currency.currency')"
+                            is-required
                             :error="form.errors?.currency_id"
                             :searchable="true"
                         />
                         <NextInput
+                            is-required
                             v-model="form.rate"
                             type="number"
                             step="any"
@@ -308,40 +301,12 @@ onUnmounted(() => {
                     />
                 </div>
 
-                <!-- Attachment -->
+                <!-- Attachments -->
                 <div class="mt-4">
-                    <label class="block text-sm font-medium mb-2">{{ t('general.attachment') }}</label>
-                    <div class="flex items-center gap-4">
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            @change="handleFileChange"
-                            class="hidden"
-                            accept="image/*,.pdf,.doc,.docx"
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            @click="() => fileInput?.click()"
-                        >
-                            <Upload class="w-4 h-4 mr-2" />
-                            {{ t('general.upload_file') }}
-                        </Button>
-                        <span v-if="form.attachment" class="text-sm text-muted-foreground">
-                            {{ form.attachment.name }}
-                            <button
-                                type="button"
-                                @click="removeAttachment"
-                                class="ml-2 text-red-500 hover:text-red-700"
-                            >
-                                <Trash2 class="w-4 h-4 inline" />
-                            </button>
-                        </span>
-                    </div>
-                    <img
-                        v-if="attachmentPreview"
-                        :src="attachmentPreview"
-                        class="mt-2 max-h-32 rounded border"
+                    <AttachmentUploader
+                        v-model="form.attachments"
+                        :label="t('general.attachments')"
+                        :error="form.errors['attachments.0']"
                     />
                 </div>
             </div>
@@ -359,8 +324,8 @@ onUnmounted(() => {
                     <thead class="bg-muted/50">
                         <tr class="text-sm text-muted-foreground">
                             <th class="px-4 py-2 w-12">#</th>
-                            <th class="px-4 py-2 text-left">{{ t('general.description') }} *</th>
-                            <th class="px-4 py-2 w-40 text-right">{{ t('general.amount') }} *</th>
+                            <th class="px-4 py-2 text-left">{{ t('general.description') }} <span class="text-red-500">*</span></th>
+                            <th class="px-4 py-2 w-40 text-right">{{ t('general.amount') }} <span class="text-red-500">*</span></th>
                             <th class="px-4 py-2 w-12"></th>
                         </tr>
                     </thead>
@@ -420,7 +385,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Action Buttons -->
-            <SubmitButtons
+            <SubmitButtons module="expense"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :cancel-label="t('general.cancel')"

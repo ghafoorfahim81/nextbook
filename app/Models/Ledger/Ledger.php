@@ -3,7 +3,7 @@
 namespace App\Models\Ledger;
 
 use App\Enums\CreditTerms;
-use App\Models\Administration\Branch;
+use App\Models\Administration\Company;
 use App\Models\Administration\Country;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
@@ -12,7 +12,7 @@ use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
 use App\Traits\HasAttachments;
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -33,11 +33,14 @@ use App\Models\Purchase\Purchase;
 use App\Models\Payment\Payment;
 use App\Enums\LedgerType;
 use App\Models\Transaction\TransactionLine;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, HasCompany, HasDependencyCheck, HasAttachments, SoftDeletes;
+
+    /** Transaction statuses that count toward a party's balance. */
+    private const STATEMENT_STATUSES = ['posted', 'reversed'];
 
     // ... your existing code ...
 
@@ -68,12 +71,14 @@ class Ledger extends Model
                     $totalDebit  = (float) $this->attributes['statement_total_debit'];
                     $totalCredit = (float) $this->attributes['statement_total_credit'];
                 } else {
-                    // Calculate total debit and credit, multiplying each by its transaction's rate
-                    $totals = TransactionLine::whereHas('transaction', function ($query) {
-                            $query->where('ledger_id', $this->id);
-                            //->where('status', 'posted');
-                        })
+                    // Same rule as scopeWithStatementTotals(): this party's lines on
+                    // posted and reversed transactions of its branch, in base currency.
+                    $totals = TransactionLine::query()
                         ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
+                        ->where('transaction_lines.ledger_id', $this->id)
+                        ->where('transactions.company_id', $this->company_id)
+                        ->whereIn('transactions.status', self::STATEMENT_STATUSES)
+                        ->whereNull('transactions.deleted_at')
                         ->selectRaw('
                             SUM(transaction_lines.base_debit) as total_debit,
                             SUM(transaction_lines.base_credit) as total_credit
@@ -133,7 +138,6 @@ class Ledger extends Model
                     'balance_nature' => $balanceNature,
                     'normal_balance_nature' => $normalNature,
                     'is_normal_balance' => $balanceNature === $normalNature,
-
                     'total_debit' => $totalDebit,
                     'total_credit' => $totalCredit,
                     'net_balance' => $netBalance,
@@ -163,7 +167,7 @@ class Ledger extends Model
         'address',
         'contact_person',
         'phone_no',
-        'branch_id',
+        'company_id',
         'email',
         'currency_id',
         'group_id',
@@ -177,6 +181,10 @@ class Ledger extends Model
         'whatsapp_number',
         'is_main',
         'type',
+        // counterpart_ledger_id is deliberately NOT fillable. The link is
+        // symmetric, and mass-assigning one side would leave a pairing that
+        // is true read from here and false read from the other account.
+        // LedgerLinkService writes both sides together.
         'is_active',
         'created_by',
         'updated_by',
@@ -201,7 +209,8 @@ class Ledger extends Model
             'discount' => 'double',
             'created_by' => 'string',
             'updated_by' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
+            'counterpart_ledger_id' => 'string',
             'is_active' => 'boolean',
             'is_main' => 'boolean',
             'type' => LedgerType::class,
@@ -251,7 +260,7 @@ class Ledger extends Model
                    FROM transaction_lines tl
                    JOIN transactions t ON t.id = tl.transaction_id
                   WHERE tl.ledger_id = ledgers.id
-                    AND t.branch_id = ledgers.branch_id
+                    AND t.company_id = ledgers.company_id
                     AND tl.deleted_at IS NULL
                     AND t.deleted_at IS NULL)";
 
@@ -271,7 +280,10 @@ class Ledger extends Model
         $lineTotals = DB::table('transaction_lines')
             ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
             ->whereColumn('transaction_lines.ledger_id', 'ledgers.id')
-            ->whereColumn('transactions.branch_id', 'ledgers.branch_id')
+            ->whereColumn('transactions.company_id', 'ledgers.company_id')
+            // Drafts are not owed yet; a reversed original and its posted
+            // mirror are both kept so they cancel out.
+            ->whereIn('transactions.status', self::STATEMENT_STATUSES)
             ->whereNull('transaction_lines.deleted_at')
             ->whereNull('transactions.deleted_at');
 
@@ -296,9 +308,20 @@ class Ledger extends Model
         return $this->belongsTo(\App\Models\Administration\Currency::class);
     }
 
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * The same person's other account — their supplier ledger if this is the
+     * customer one, and the other way round.
+     *
+     * @see \App\Services\Accounting\LedgerLinkService
+     */
+    public function counterpart(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'counterpart_ledger_id');
     }
 
     public function group(): BelongsTo

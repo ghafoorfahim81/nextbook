@@ -15,6 +15,24 @@ class AddExtraDataSeeder extends Seeder
         // For running this seeder, you need to run the following command: php artisan db:seed --class=\Database\Seeders\AddExtraDataSeeder
         $accounts = [
             [
+                'name' => 'Inventory Shrinkage & Wastage',
+                'local_name' => 'ضایعات و کسری انبار',
+                'number' => '9040',
+                'account_type_id' => \App\Models\Account\AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id, 
+                'slug' => 'inventory-shrinkage-and-wastage',
+                'remark' => 'Inventory shrinkage and wastage',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Inventory Adjustments',
+                'local_name' => 'تعدیلات موجودی',
+                'number' => '9050',
+                'account_type_id' => \App\Models\Account\AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id, 
+                'slug' => 'inventory-adjustments',
+                'remark' => 'Inventory adjustments',
+                'is_main' => true,
+            ],
+            [
                 'name' => 'Other Income',
                 'local_name' => 'درآمد دیگر',
                 'number' => '9060',

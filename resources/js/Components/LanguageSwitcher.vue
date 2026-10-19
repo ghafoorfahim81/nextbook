@@ -26,6 +26,13 @@ const current = computed({
     },
 })
 
+// Resolve the trigger text ourselves. radix-vue's <SelectValue> collects its
+// text from the portalled items, which briefly concatenates every option
+// ("فارسی English پښتو") while they re-register after a preserveState:false nav.
+const currentLabel = computed(
+    () => options.value.find((o) => o.value === current.value)?.label ?? t('general.language'),
+)
+
 const selectDir = computed(() =>
     page.props.direction === 'rtl' ? 'rtl' : 'ltr',
 )
@@ -34,7 +41,7 @@ const selectDir = computed(() =>
 <template>
     <Select v-model="current" :dir="selectDir">
         <SelectTrigger class="h-7 w-[110px] text-xs border-input md:w-[130px]">
-            <SelectValue :placeholder="t('general.language')" />
+            <span class="truncate">{{ currentLabel }}</span>
         </SelectTrigger>
         <SelectContent>
             <SelectItem

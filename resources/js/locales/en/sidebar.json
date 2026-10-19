@@ -11,7 +11,7 @@
         "purchase": "Purchase",
         "sale": "Sale",
         "ledger": "Ledger",
-        "hr": "Human Resources",
+        "cash_transactions": "Cash Transactions",
         "receipt": "Receipt",
         "payment": "Payment",
         "transfer": "Account Transfers",
@@ -22,10 +22,12 @@
         "system": "System",
         "deleted_records": "Deleted Records",
         "trash": "Trash",
+        "hr": "Human Resources",
         "attendance": "Attendance",
         "leave": "Leave",
         "payroll": "Payroll",
-        "recruitment": "Recruitment"
+        "recruitment": "Recruitment",
+        "contra_settlement": "Set-off"
     },
     "expense": {
         "expense": "Expense",
@@ -52,7 +54,9 @@
         "fast_opening": "Fast Opening",
         "barcode_print": "Barcode Print",
         "item_transfer": "Item Transfer",
+        "stock_adjustment": "Stock Adjustment",
         "pricing": "Pricing",
+        "landed_cost": "Landed Cost",
         "landed_costs": "Landed Costs"
     },
     "account": {
@@ -67,6 +71,8 @@
     },
     "purchase": {
         "purchase": "Purchase",
+        "purchase_order": "Purchase Order",
+        "purchase_quotation": "Purchase Quotation",
         "purchase_return": "Purchase Return"
     },
     "sale": {
@@ -76,7 +82,9 @@
         "edit_sale": "Edit Sale",
         "sale_created_successfully": "Sale created successfully",
         "sale_updated_successfully": "Sale updated successfully",
-        "sale_return": "Sale Return"
+        "sale_return": "Sale Return",
+        "sale_order": "Sale Order",
+        "sale_quotation": "Sale Quotation"
     },
     "ledger": {
         "customer": "Customer",
@@ -96,8 +104,9 @@
         "activity_logs": "User Activity"
     },
     "system": {
+        "trash": "Trash",
         "deleted_records": "Deleted Records",
-        "activity_logs": "Activity Logs"
+        "activity_logs": "User Activity"
     },
     "hr": {
         "employee": "Employees",

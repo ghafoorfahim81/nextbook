@@ -14,6 +14,7 @@ return new class extends Migration
     {
         Schema::create('stock_balances', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
 
             $table->ulid('item_id')->index();
             $table->ulid('warehouse_id')->index();

@@ -4,6 +4,7 @@ namespace Database\Seeders;
    
 use Database\Seeders\Account\AccountSeeder;
 use Database\Seeders\Administration\BranchSeeder;
+use Database\Seeders\Administration\CategorySeeder;
 use Database\Seeders\Administration\LandedCostCategorySeeder;
 use Database\Seeders\Administration\SizeSeeder;
 use Database\Seeders\Administration\WarehouseSeeder;
@@ -26,11 +27,16 @@ class DatabaseSeeder extends Seeder
     {
 
 
+        // CompanySeeder runs first: a branch cannot exist without a company,
+        // and every table below is scoped to one. It is called a second time at
+        // the end to fill in the company's home currency, which only exists
+        // once CurrencySeeder has run — the same two-pass shape UserSeeder
+        // already uses to pick up its branch.
         if(app()->environment('local')){
+            $this->call(CompanySeeder::class);
             $this->call(UserSeeder::class);
             $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);
-            // $this->call(CategorySeeder::class);
             $this->call(WarehouseSeeder::class);
             $this->call(UnitMeasureSeeder::class);
             // $this->call(BrandSeeder::class);
@@ -42,10 +48,12 @@ class DatabaseSeeder extends Seeder
             $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
             $this->call(SizeSeeder::class);
+            $this->call(CategorySeeder::class);
             $this->call(LandedCostCategorySeeder::class);
             // $this->call(ItemSeeder::class);
         }
         if(app()->environment('production')){
+            $this->call(CompanySeeder::class);
             $this->call(UserSeeder::class);
             $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);
@@ -59,6 +67,7 @@ class DatabaseSeeder extends Seeder
             $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
             $this->call(SizeSeeder::class);
+            $this->call(CategorySeeder::class);
             $this->call(LandedCostCategorySeeder::class);
         }
         // $this->call(PerformanceLoadSeeder::class);

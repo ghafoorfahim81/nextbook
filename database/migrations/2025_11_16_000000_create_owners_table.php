@@ -24,23 +24,24 @@ return new class extends Migration
             $table->boolean('is_active')->default(true); 
             $table->ulid('capital_account_id')->nullable()->index();
             $table->ulid('drawing_account_id')->nullable()->index();
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
             $table->softDeletes();
-            $table->unique(['branch_id', 'name', 'deleted_at']);
-            $table->unique(['branch_id', 'nic', 'deleted_at']);
-            $table->unique(['branch_id', 'email', 'deleted_at']);
-            $table->unique(['branch_id', 'phone_number', 'deleted_at']);
+            $table->unique(['company_id', 'name', 'deleted_at']);
+            $table->unique(['company_id', 'nic', 'deleted_at']);
+            $table->unique(['company_id', 'email', 'deleted_at']);
+            $table->unique(['company_id', 'phone_number', 'deleted_at']);
         });
 
         Schema::table('owners', function (Blueprint $table) {
             // Foreign keys 
             $table->foreign('capital_account_id')->references('id')->on('accounts')->onDelete('set null');
             $table->foreign('drawing_account_id')->references('id')->on('accounts')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('set null');

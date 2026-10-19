@@ -6,7 +6,9 @@ use App\Enums\ComponentCalculationType;
 use App\Enums\SalaryComponentType;
 use App\Models\Account\Account;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,13 +26,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class PayrollLineComponent extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'payroll_line_id', 'salary_component_id',
         'component_code', 'component_name', 'component_type', 'calculation_type',
         'rate_or_percentage', 'base_amount', 'amount',

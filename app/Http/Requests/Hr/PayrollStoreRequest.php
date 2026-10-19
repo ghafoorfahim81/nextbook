@@ -52,7 +52,7 @@ class PayrollStoreRequest extends FormRequest
             'rate' => ['nullable', 'numeric', 'gt:0'],
             // Optional scoping: a run for one department, or for daily-wage
             // staff only.
-            'department_id' => ['nullable', 'string', $this->existsInBranch('departments')],
+            'department_id' => ['nullable', 'string', $this->existsInCompany('departments')],
             'employment_type' => ['nullable', Rule::in(EmploymentType::values())],
             'remark' => ['nullable', 'string'],
         ];

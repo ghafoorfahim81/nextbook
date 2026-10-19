@@ -4,7 +4,9 @@ namespace App\Models\Hr;
 
 use App\Models\Administration\Currency;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,13 +23,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class SalaryPaymentLine extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'salary_payment_id', 'payroll_line_id', 'employee_id',
         'amount', 'currency_id', 'rate', 'created_by', 'updated_by',
     ];

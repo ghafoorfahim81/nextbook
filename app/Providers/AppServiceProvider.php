@@ -17,7 +17,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One instance per request, so the observer and the controllers add to
+        // the same batch of activity entries (see ActivityLogService::$batch).
+        $this->app->scoped(\App\Services\ActivityLogService::class);
     }
 
     /**
@@ -41,14 +43,17 @@ class AppServiceProvider extends ServiceProvider
             'income' => 'App\Models\Income\Income',
             'transfer' => 'App\Models\Transfer\Transfer',
             'item_transfer' => 'App\Models\ItemTransfer\ItemTransfer',
-            'stock_adjustment' => 'App\Models\Adjustment\Adjustment',
+            'stock_adjustment' => 'App\Models\Inventory\StockAdjustment',
             'opening' => 'App\Models\Inventory\StockOpening',
-            'stock_out' => 'App\Models\Inventory\StockOut',
             'item' => 'App\Models\Inventory\Item',
             'owner' => 'App\Models\Owner\Owner',
             'drawing' => 'App\Models\Owner\Drawing',
             'journal_entry' => 'App\Models\JournalEntry\JournalEntry',
+            'account_transfer' => 'App\Models\AccountTransfer\AccountTransfer',
             'landed_cost' => 'App\Models\Inventory\LandedCost',
+            'payment' => 'App\Models\Payment\Payment',
+            'receipt' => 'App\Models\Receipt\Receipt',
+            'attachment' => 'App\Models\Attachment', 
             // Human resources
             'employee' => 'App\Models\Hr\Employee',
             'employee_contract' => 'App\Models\Hr\EmployeeContract',
@@ -78,7 +83,12 @@ class AppServiceProvider extends ServiceProvider
         // behaviour and must run even where audit logging is switched off.
         Employee::observe(EmployeeObserver::class);
 
-        foreach (config('activity_log.observer.models', []) as $modelClass) {
+        $auditedModels = array_unique([
+            ...config('activity_log.observer.models', []),
+            ...config('activity_log.observer.detail_models', []),
+        ]);
+
+        foreach ($auditedModels as $modelClass) {
             if (class_exists($modelClass)) {
                 $modelClass::observe(ModelActivityObserver::class);
             }

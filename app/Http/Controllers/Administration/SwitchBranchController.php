@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Administration;
 
 use App\Http\Controllers\Controller;
+use App\Support\Inertia\CacheKey;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SwitchBranchController extends Controller
 {
@@ -20,8 +22,17 @@ class SwitchBranchController extends Controller
             abort(403);
         }
 
+        // Scoped to the user's own company. A bare `exists:branches,id` accepts
+        // any branch id in the database, so a super-admin of one company could
+        // switch into another company's branch and read its books — and once
+        // switched, every branch-scoped query follows along. Widening access is
+        // a company-membership decision, not something a posted id may do.
         $validated = $request->validate([
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
+            'branch_id' => [
+                'required',
+                'string',
+                Rule::exists('branches', 'id')->where('company_id', $user->company_id),
+            ],
         ]);
         $branchId = $validated['branch_id'];
 
@@ -33,7 +44,6 @@ class SwitchBranchController extends Controller
         cache()->forget('accountTypes');
         cache()->forget('unitMeasures');
         cache()->forget('sizes');
-        cache()->forget('colors');
         cache()->forget('brands');
         cache()->forget('items');
         cache()->forget('stocks');
@@ -42,7 +52,8 @@ class SwitchBranchController extends Controller
         cache()->forget('home_currency');
         cache()->forget('account_types');
         cache()->forget('roles');
-        cache()->forget('user_preferences');
+        cache()->forget(CacheKey::forUser($request, 'preferences'));
+        cache()->forget(CacheKey::forUser($request, 'business_profile'));
         cache()->forget('transaction_types');
         cache()->forget('transaction_statuses');
         cache()->forget('capital_accounts');

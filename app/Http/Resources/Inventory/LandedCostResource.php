@@ -6,6 +6,7 @@ use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Http\Resources\AttachmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -47,7 +48,7 @@ class LandedCostResource extends JsonResource
                 'id' => $row->id,
                 'landed_cost_category_id' => $row->landed_cost_category_id,
                 'amount' => $row->amount,
-                'category_name' => $row->category?->name,
+                'category_name' => $row->category?->localized_name,
             ])->values()),
             'category_allocations_total' => $this->whenLoaded('categoryAllocations', fn () => round((float) $this->categoryAllocations->sum('amount'), 2)),
             'total_cost' => $this->total_cost,
@@ -60,6 +61,7 @@ class LandedCostResource extends JsonResource
             'items' => LandedCostItemResource::collection($this->whenLoaded('items')),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
             'created_at' => $this->created_at ? $dateConversionService->toDisplay($this->created_at) : null,
             'updated_at' => $this->updated_at ? $dateConversionService->toDisplay($this->updated_at) : null,
         ];

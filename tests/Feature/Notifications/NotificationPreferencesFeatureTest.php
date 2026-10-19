@@ -61,6 +61,11 @@ class NotificationPreferencesFeatureTest extends TestCase
         $user = User::query()->findOrFail($this->ctx['user']->id);
         $merged = $user->getAllPreferences();
 
-        $this->assertEquals($payload['notifications'], $merged['notifications']);
+        // getAllPreferences() merges the submitted keys over the full default
+        // set, so it always carries every key. Assert the submitted subset was
+        // persisted rather than comparing against the whole structure.
+        foreach ($payload['notifications'] as $key => $expected) {
+            $this->assertSame($expected, $merged['notifications'][$key], "notifications.{$key}");
+        }
     }
 }

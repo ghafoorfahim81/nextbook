@@ -22,7 +22,6 @@ const columns = computed(() => ([
         render: (row) => row.parent?.name ?? '-',
     },
     { key: 'location', label: t('admin.branch.location') },
-    { key: 'sub_domain', label: t('admin.branch.sub_domain') },
     { key: 'remark', label: t('admin.shared.remark') },
     {
         key: 'created_by.name',
@@ -45,7 +44,7 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('branches.destroy', id, {
         title: t('general.delete', { name: t('admin.branch.branch') }),
-        description: t('general.delete_description', { name: t('admin.branch.branch') }),
+        name: t('admin.branch.branch'),
         successMessage: t('general.delete_success', { name: t('admin.branch.branch') }),
     })
 

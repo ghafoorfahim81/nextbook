@@ -14,5 +14,9 @@
   "completed_successfully": "Transfer completed successfully",
   "cancelled_successfully": "Transfer cancelled successfully",
   "cannot_edit_completed_or_cancelled_transfer": "Cannot edit completed or cancelled transfers",
-  "cannot_delete_completed_transfer": "Cannot delete completed transfers"
+  "cannot_delete_completed_transfer": "Cannot delete completed transfers",
+  "has_transfer_cost": "This transfer has a transfer cost",
+  "bank_account": "Bank Account",
+  "expense_account": "Expense Account",
+  "expense_account_hint": "Freight for moving goods between your own warehouses is charged here. It defaults to the Item Transfer Expense account so this cost shows on its own line in the profit and loss."
 }

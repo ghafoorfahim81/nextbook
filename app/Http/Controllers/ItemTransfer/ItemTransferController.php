@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\ItemTransfer;
 
-use App\Enums\TransferStatus;
+use App\Enums\TransactionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ItemTransfer\ItemTransferStoreRequest;
 use App\Http\Requests\ItemTransfer\ItemTransferUpdateRequest;
@@ -10,6 +10,9 @@ use App\Http\Resources\ItemTransfer\ItemTransferResource;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Models\Administration\Warehouse;
 use App\Models\Inventory\Item;
+use App\Models\Account\Account;
+use App\Http\Resources\Account\AccountResource;
+use App\Support\BranchContext;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ItemTransferService;
@@ -17,6 +20,7 @@ use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Support\Facades\Cache;
 class ItemTransferController extends Controller
 {
@@ -65,13 +69,40 @@ class ItemTransferController extends Controller
      */
     public function create(Request $request)
     {
-        return inertia('ItemTransfer/ItemTransfers/Create');
+        return inertia('ItemTransfer/ItemTransfers/Create', $this->transferCostOptions());
+    }
+
+    /**
+     * Lookups the transfer-cost switch needs once it is turned on.
+     *
+     * The expense side is pre-selected rather than left to the operator: moving
+     * stock between the company's own warehouses always lands on the same
+     * account, and letting each transfer pick its own would scatter freight
+     * across the chart of accounts.
+     *
+     * @return array<string, mixed>
+     */
+    private function transferCostOptions(): array
+    {
+        return [
+            'bankAccounts' => AccountResource::collection(
+                Account::whereHas('accountType', fn ($q) => $q->where('slug', 'cash-or-bank'))
+                    ->orderBy('name')
+                    ->get()
+            ),
+            'expenseAccounts' => AccountResource::collection(
+                Account::whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
+                    ->orderBy('name')
+                    ->get()
+            ),
+            'defaultExpenseAccountId' => BranchContext::glAccount('item-transfer-expense'),
+        ];
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ItemTransferStoreRequest $request)
+    public function store(ItemTransferStoreRequest $request, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
 
@@ -82,6 +113,12 @@ class ItemTransferController extends Controller
             }, $validated['items']);
         }
         $transfer = $this->transferService->createTransfer($validated);
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($transfer, $request->file('attachments'));
+        }
+        if ((bool) user_preference('transaction.item_transfer_post_immediately', true)) {
+            $transfer = $this->transferService->completeTransfer($transfer);
+        }
         if ((bool) $request->create_and_new) {
             return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.item_transfer')]));
         }
@@ -94,10 +131,22 @@ class ItemTransferController extends Controller
      */
     public function show(Request $request, ItemTransfer $itemTransfer)
     {
-        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure', 'branch', 'createdBy', 'updatedBy']);
+        $itemTransfer->load([
+            'fromWarehouse', 'toWarehouse', 'items.item', 'items.variant', 'items.unitMeasure',
+            'branch', 'createdBy', 'updatedBy', 'attachments',
+            'bankAccount', 'expenseAccount', 'currency',
+        ]);
 
-        return response()->json([
-            'data' => new ItemTransferResource($itemTransfer),
+        // The listing still fetches a transfer over XHR for its quick preview;
+        // a normal visit gets the full page.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => new ItemTransferResource($itemTransfer),
+            ]);
+        }
+
+        return inertia('ItemTransfer/ItemTransfers/Show', [
+            'transfer' => new ItemTransferResource($itemTransfer),
         ]);
     }
 
@@ -106,22 +155,34 @@ class ItemTransferController extends Controller
      */
     public function edit(Request $request, ItemTransfer $itemTransfer)
     {
-        if ($itemTransfer->status === TransferStatus::COMPLETED || $itemTransfer->status === TransferStatus::CANCELLED) {
+        if ($itemTransfer->status === TransactionStatus::POSTED || $itemTransfer->status === TransactionStatus::REVERSED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_edit_completed_or_cancelled_transfer')]);
         }
-        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure']);
+        $itemTransfer->load([
+            'fromWarehouse', 'toWarehouse', 'items.item', 'items.item.variants', 'items.variant',
+            'items.unitMeasure', 'attachments', 'bankAccount', 'expenseAccount', 'currency',
+        ]);
 
         return inertia('ItemTransfer/ItemTransfers/Edit', [
             'transfer' => new ItemTransferResource($itemTransfer),
+            ...$this->transferCostOptions(),
         ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(ItemTransferUpdateRequest $request, ItemTransfer $itemTransfer)
+    public function update(ItemTransferUpdateRequest $request, ItemTransfer $itemTransfer, AttachmentService $attachmentService)
     {
+        if ($itemTransfer->status !== TransactionStatus::DRAFT) {
+            abort(403, __('messages.document.only_draft_can_be_edited'));
+        }
+
         $validated = $request->validated();
+
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($itemTransfer, $request->file('attachments'));
+        }
 
         // Convert item expire dates if items are being updated
         if (isset($validated['items'])) {
@@ -141,7 +202,7 @@ class ItemTransferController extends Controller
     public function destroy(Request $request, ItemTransfer $itemTransfer, ActivityLogService $activityLogService)
     {
         // Only allow deletion of pending transfers
-        if ($itemTransfer->status === TransferStatus::COMPLETED) {
+        if ($itemTransfer->status === TransactionStatus::POSTED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_delete_completed_transfer')]);
         }
 
@@ -211,6 +272,25 @@ class ItemTransferController extends Controller
         return redirect()->back()->with('success', __('general.completed_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
 
+    public function post(Request $request, ItemTransfer $itemTransfer)
+    {
+        return $this->complete($request, $itemTransfer);
+    }
+
+    public function reverse(Request $request, ItemTransfer $itemTransfer)
+    {
+        $request->validate(['reason' => ['nullable', 'string', 'max:255']]);
+
+        // Every other module reverses posted documents only — a draft has moved
+        // no stock and posted no ledger, so there is nothing to undo. A draft
+        // that is no longer wanted is deleted instead.
+        if ($itemTransfer->status !== TransactionStatus::POSTED) {
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
+        }
+
+        return $this->cancel($request, $itemTransfer);
+    }
+
     /**
      * Cancel a transfer.
      */
@@ -249,7 +329,7 @@ class ItemTransferController extends Controller
             'date'          => $tr->date ? $dateService->toDisplay($tr->date) : '-',
             'from_warehouse'=> $tr->fromWarehouse?->name ?? '-',
             'to_warehouse'  => $tr->toWarehouse?->name ?? '-',
-            'status'        => $tr->status instanceof \App\Enums\TransferStatus ? $tr->status->getLabel() : (string) $tr->status,
+            'status'        => $tr->status instanceof TransactionStatus ? $tr->status->getLabel() : (string) $tr->status,
             'transfer_cost' => (float) ($tr->transfer_cost ?? 0),
         ])->all();
 

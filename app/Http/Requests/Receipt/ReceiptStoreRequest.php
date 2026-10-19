@@ -30,6 +30,8 @@ class ReceiptStoreRequest extends FormRequest
             'rate' => ['required', 'numeric', 'gt:0'],
             'cheque_no' => ['nullable', 'string', 'max:255'],
             'narration' => ['nullable', 'string'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ], $this->settlementRules());
     }
 

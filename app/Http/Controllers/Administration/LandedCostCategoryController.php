@@ -24,6 +24,7 @@ class LandedCostCategoryController extends Controller
 
         $sortableFields = [
             'name' => 'name',
+            'local_name' => 'local_name',
         ];
         $sortColumn = $sortableFields[$request->input('sortField', 'name')] ?? 'name';
 

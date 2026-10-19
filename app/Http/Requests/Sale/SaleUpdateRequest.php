@@ -23,7 +23,7 @@ class SaleUpdateRequest extends FormRequest
     {
         return [
             'number' => ['required', 'integer', 'min:1', Rule::unique('sales', 'number')->ignore($this->sale)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
-            'customer_id' => ['required', 'string', 'exists:ledgers,id'],
+            'customer_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'customer')],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
@@ -43,6 +43,7 @@ class SaleUpdateRequest extends FormRequest
             'status' => ['nullable', 'string'],
             'item_list' => ['required', 'array'],
             'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],
+            'item_list.*.variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
             'item_list.*.batch' => ['nullable', 'string'],
             'item_list.*.expire_date' => ['nullable', 'date'],
             'item_list.*.quantity' => ['required', 'numeric', 'min:0.01'],
@@ -51,6 +52,8 @@ class SaleUpdateRequest extends FormRequest
             'item_list.*.item_discount' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.free' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.tax' => ['nullable', 'numeric', 'min:0'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

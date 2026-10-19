@@ -24,6 +24,7 @@ watch(() => localDialogOpen.value, (val) => emit('update:isDialogOpen', val));
 
 const form = useForm({
     name: '',
+    local_name: '',
     remark: '',
 });
 
@@ -31,6 +32,7 @@ watch(() => props.editingItem, (item) => {
     if (item) {
         Object.assign(form, {
             name: item.name ?? '',
+            local_name: item.local_name ?? '',
             remark: item.remark ?? '',
         });
     } else {
@@ -89,6 +91,12 @@ const handleSubmit = async () => {
                     v-model="form.name"
                     :error="form.errors?.name"
                     autofocus
+                />
+                <NextInput
+                    :label="t('admin.shared.local_name')"
+                    :placeholder="t('general.enter', { text: t('admin.shared.local_name') })"
+                    v-model="form.local_name"
+                    :error="form.errors?.local_name"
                 />
                 <NextTextarea
                     :label="t('admin.shared.remark')"

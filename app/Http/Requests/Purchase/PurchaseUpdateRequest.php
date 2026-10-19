@@ -23,7 +23,7 @@ class PurchaseUpdateRequest extends FormRequest
     {
         return [
             'number' => ['required', 'integer', 'min:1', Rule::unique('purchases', 'number')->ignore($this->purchase)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
-            'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
+            'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
             'date' => ['required', 'date'],
             'warehouse_id' => ['required', 'string', 'exists:warehouses,id'],
             'discount' => ['nullable', 'numeric'],
@@ -38,6 +38,7 @@ class PurchaseUpdateRequest extends FormRequest
             'due_date' => ['nullable', 'date'],
             'item_list' => ['required', 'array'],
             'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],
+            'item_list.*.variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
             'item_list.*.quantity' => ['required', 'numeric', 'min:0.0000001'],
             'item_list.*.unit_price' => ['required', 'numeric', 'min:0'],
             'item_list.*.free' => ['nullable', 'numeric', 'min:0'],
@@ -51,6 +52,8 @@ class PurchaseUpdateRequest extends FormRequest
             'payment.account_id' => ['nullable', 'string', 'exists:accounts,id'],
             'payment.amount' => ['nullable', 'numeric', 'min:0'],
             'payment.note' => ['nullable', 'string'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

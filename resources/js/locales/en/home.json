@@ -50,6 +50,61 @@
     "receipts": "Receipts",
     "payments": "Payments"
   },
+  "tools": {
+    "swap": "Swap"
+  },
+  "game": {
+    "title": "Debit or Credit?",
+    "intro": "Sixty seconds of double-entry drill. An account and the way it moves appear — call the side it posts to.",
+    "rule_debit": "Assets & expenses rise on the debit side",
+    "rule_credit": "Liabilities, equity & income rise on the credit side",
+    "start": "Start round",
+    "restart": "Restart",
+    "play_again": "Play again",
+    "prompt": "Which side does it post to?",
+    "debit": "Debit",
+    "credit": "Credit",
+    "increase": "Increases",
+    "decrease": "Decreases",
+    "moves": {
+      "increase": "increase",
+      "decrease": "decrease"
+    },
+    "score": "Score",
+    "accuracy": "Accuracy",
+    "streak": "{count} in a row",
+    "best_streak": "Best streak",
+    "best": "Session best",
+    "correct": "Correct",
+    "wrong": "Not quite",
+    "because": "{category} accounts {movement} on the {side} side",
+    "time_up": "Time's up — here's the round.",
+    "categories": {
+      "asset": "Asset",
+      "liability": "Liability",
+      "equity": "Equity",
+      "income": "Income",
+      "expense": "Expense"
+    },
+    "accounts": {
+      "cash": "Cash",
+      "bank": "Bank",
+      "accounts_receivable": "Accounts Receivable",
+      "inventory": "Inventory",
+      "equipment": "Equipment",
+      "accounts_payable": "Accounts Payable",
+      "loan_payable": "Loan Payable",
+      "salaries_payable": "Salaries Payable",
+      "owner_capital": "Owner's Capital",
+      "retained_earnings": "Retained Earnings",
+      "sales_revenue": "Sales Revenue",
+      "service_income": "Service Income",
+      "rent_expense": "Rent Expense",
+      "salaries_expense": "Salaries Expense",
+      "utilities_expense": "Utilities Expense",
+      "purchases": "Purchases"
+    }
+  },
   "currency_rates": {
     "title": "Currency Rates",
     "description": "Monitor configured rates and identify the base currency.",
@@ -81,7 +136,21 @@
     "no_api_key": "Weather API key not configured",
     "search": "Search city",
     "forecast": "7-Day Forecast",
-    "today": "Today"
+    "today": "Today",
+    "conditions": {
+      "clear": "Clear sky",
+      "partly_cloudy": "Partly cloudy",
+      "overcast": "Overcast",
+      "fog": "Fog",
+      "drizzle": "Drizzle",
+      "rain": "Rain",
+      "snow": "Snow",
+      "rain_showers": "Rain showers",
+      "snow_showers": "Snow showers",
+      "thunderstorm": "Thunderstorm",
+      "thunderstorm_hail": "Thunderstorm with hail",
+      "unknown": "Unknown"
+    }
   },
   "date_conversion": {
     "title": "Date Conversion",
@@ -107,5 +176,96 @@
     "type": "Type",
     "incompatible": "Units are not compatible",
     "no_units": "No units available"
+  },
+  "journal": {
+    "title": "Journal Entry Scratchpad",
+    "description": "Draft a double-entry posting and see instantly whether it balances.",
+    "account": "Account",
+    "debit": "Debit",
+    "credit": "Credit",
+    "add_line": "Add line",
+    "remove_line": "Remove line",
+    "reset": "Reset",
+    "total_debit": "Total debit",
+    "total_credit": "Total credit",
+    "balanced": "Balanced",
+    "out_by": "Out by {amount}"
+  },
+  "depreciation": {
+    "title": "Depreciation",
+    "description": "Build a yearly schedule for a fixed asset.",
+    "cost": "Cost",
+    "salvage": "Salvage value",
+    "life": "Useful life (years)",
+    "method": "Method",
+    "straight_line": "Straight-line",
+    "declining_balance": "Declining balance",
+    "year": "Year",
+    "expense": "Expense",
+    "book_value": "Book value",
+    "hint": "Enter a cost above the salvage value to see the schedule."
+  },
+  "tax": {
+    "title": "Tax Calculator",
+    "description": "Add or peel out business receipts tax (BRT) at any rate.",
+    "mode_add": "Add tax",
+    "mode_extract": "Extract tax",
+    "amount": "Amount",
+    "rate": "Rate (%)",
+    "net": "Net",
+    "tax": "Tax",
+    "gross": "Gross"
+  },
+  "markup": {
+    "title": "Markup & Margin",
+    "description": "Work out a selling price, or the margin behind one.",
+    "from_margin": "Margin → price",
+    "from_price": "Price → margin",
+    "cost": "Cost",
+    "price": "Selling price",
+    "margin_pct": "Margin (%)",
+    "profit": "Profit",
+    "margin": "Margin",
+    "markup": "Markup",
+    "hint": "Enter a cost and a margin or price to see the result."
+  },
+  "term": {
+    "title": "Term of the Day",
+    "description": "A quick accounting refresher, one term at a time.",
+    "another": "Another term",
+    "terms": {
+      "accrual": {
+        "name": "Accrual",
+        "definition": "Recording revenue or expense when it is earned or incurred, not when cash changes hands."
+      },
+      "deferral": {
+        "name": "Deferral",
+        "definition": "Postponing recognition of cash already received or paid until the related revenue or expense belongs to the period."
+      },
+      "contra_account": {
+        "name": "Contra Account",
+        "definition": "An account that offsets a related account, such as accumulated depreciation against a fixed asset."
+      },
+      "double_entry": {
+        "name": "Double Entry",
+        "definition": "Every transaction posts equal debits and credits, so the accounting equation always stays in balance."
+      },
+      "trial_balance": {
+        "name": "Trial Balance",
+        "definition": "A list of every ledger balance used to check that total debits equal total credits before preparing statements."
+      },
+      "depreciation": {
+        "name": "Depreciation",
+        "definition": "Spreading the cost of a long-lived asset over the years it is expected to be useful."
+      },
+      "working_capital": {
+        "name": "Working Capital",
+        "definition": "Current assets minus current liabilities — the short-term funds available to run day-to-day operations."
+      },
+      "fifo": {
+        "name": "FIFO",
+        "definition": "First-in, first-out: the earliest stock purchased is treated as the first sold when costing inventory."
+      }
+    }
   }
 }

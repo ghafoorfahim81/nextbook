@@ -1,26 +1,33 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { useFormGuard } from '@/composables/useFormGuard'
+import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
+import { firstServerError } from '@/composables/useDocumentAction'
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
-import DiscountSummary from '@/Components/next/DiscountSummary.vue';
-import TaxSummary from '@/Components/next/TaxSummary.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast';
 import { useToast } from '@/Components/ui/toast/use-toast';
+import { printDocument } from '@/composables/usePrintDocument';
 import NextDate from '@/Components/next/NextDatePicker.vue';
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantAverageCost } from '@/composables/useVariantLine'
+import VariantCell from '@/Components/inventory/VariantCell.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps';
+import { useLineDiscounts } from '@/composables/useLineDiscounts';
 import { toDocumentCurrency } from '@/utils/currency';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -38,19 +45,33 @@ const props = defineProps({
 });
 
 const userPreferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? {});
-const generalFields = computed(() => userPreferences.value?.sale?.general_fields ?? {});
-const itemColumns = computed(() => userPreferences.value?.sale?.item_columns ?? {});
+// Single reactive copy of the sale preferences so the panel and form stay in sync live.
+const salePrefs = reactive(JSON.parse(JSON.stringify(userPreferences.value?.sale ?? {})));
+if (!salePrefs.general_fields || typeof salePrefs.general_fields !== 'object') salePrefs.general_fields = {};
+if (!salePrefs.item_columns || typeof salePrefs.item_columns !== 'object') salePrefs.item_columns = {};
+if (salePrefs.item_columns.reserved_out === undefined) salePrefs.item_columns.reserved_out = true;
+const showAttachmentsField = computed(() => salePrefs.show_attachments === true);
+const generalFields = computed(() => salePrefs.general_fields);
+const itemColumns = computed(() => salePrefs.item_columns);
+const showPreferencesPanel = ref(false);
 const itemManagement = computed(() => userPreferences.value?.item_management ?? {});
 const specText = computed(() => itemManagement.value?.spec_text ?? 'batch');
 const decimalPlaces = computed(() => Number(userPreferences.value?.appearance?.decimal_places ?? 2));
 const saleRecord = props.sale?.data ?? props.sale ?? {};
 const MIN_SALE_ROWS = 6;
 
-useLazyProps(props, ['ledgers', 'accounts']);
+const { loading: lazyLoading } = useLazyProps(props, ['ledgers', 'accounts']);
 
 const toNum = (value, fallback = 0) => {
     const number = Number(value);
     return Number.isNaN(number) ? fallback : number;
+};
+
+// Money formatter for footer cards: "1,234.00 AFN"
+const fmtMoney = (value) => {
+    const code = form.selected_currency?.code ?? '';
+    const amount = toNum(value, 0).toFixed(decimalPlaces.value);
+    return code ? `${amount} ${code}` : amount;
 };
 
 const quantityOutInBaseUnits = ({ quantity = 0, free = 0, selectedMeasure = null, selectedItem = null } = {}) => {
@@ -66,13 +87,23 @@ const buildEmptyRow = () => ({
     unit_measure_id: '',
     batch: '',
     selected_batch: null,
+    variant_id: null,
+    selected_item_variant: null,
+    item_variants: [],
     expire_date: '',
     unit_price: '',
     base_unit_price: '',
     on_hand: '',
+    reserved_out: '',
+    reserved_in: '',
+    available: '',
     available_measures: [],
     selected_measure: '',
     item_discount: '',
+    // Which rule filled item_discount in, and whether it has since been
+    // overruled by hand. Both are UI-only and never posted.
+    discount_rule: null,
+    discount_touched: false,
     free: '',
     tax: '',
     persisted_item_id: '',
@@ -126,13 +157,22 @@ const initialRows = (saleRecord?.items || []).map((item) => {
         unit_measure_id: item.unit_measure_id,
         batch: item.batch || '',
         selected_batch: item.batch ? { batch: item.batch, expire_date: item.expire_date, on_hand: 0 } : null,
+        variant_id: item.variant_id || null,
+        selected_item_variant: item.variant || null,
+        item_variants: selectedItem?.item_variants || [],
         expire_date: item.expire_date || '',
         unit_price: item.unit_price,
         base_unit_price: Number.isFinite(baseUnitPrice) ? baseUnitPrice : toNum(item.unit_price, 0),
         on_hand: selectedItem?.on_hand ?? 0,
+        reserved_out: selectedItem?.reserved_out ?? 0,
+        reserved_in: selectedItem?.reserved_in ?? 0,
+        available: selectedItem?.available ?? 0,
         available_measures: availableMeasures,
         selected_measure: selectedMeasure,
         item_discount: item.discount || '',
+        // A saved line's discount is settled history. Only a line whose item is
+        // picked afresh in this edit asks the rules for a figure.
+        discount_touched: true,
         free: item.free || '',
         tax: item.tax || '',
         persisted_item_id: item.item_id,
@@ -173,13 +213,21 @@ const form = useForm({
     selected_warehouse: findById(props.warehouses?.data, saleRecord.warehouse_id) || saleRecord.warehouse || '',
     item_list: saleRecord.item_list || [],
     items: initialRows.length ? [...initialRows] : Array.from({ length: MIN_SALE_ROWS }, buildEmptyRow),
+    attachments: [],
 });
+
+const existingAttachments = ref(saleRecord.attachments || []);
+const removeExistingAttachment = (id) => {
+    router.delete(route('attachments.destroy', id), {
+        preserveScroll: true,
+        onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id); },
+    });
+};
 
 const hydratedExistingRows = ref(false);
 const itemOptions = ref([]);
 const showPaymentDialog = ref(false);
 const submitAction = ref(null);
-const pendingPrintWindow = ref(null);
 
 const itemSearchOptions = computed(() => {
     const additionalParams = {};
@@ -289,17 +337,12 @@ watch(() => form.selected_sale_type, (newType) => {
     if (newType?.id === 'credit') showPaymentDialog.value = true;
 });
 
-let disabled = false;
-
 const createLoading = computed(() => form.processing && submitAction.value === 'update');
 const createAndNewLoading = computed(() => false);
 const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'save_and_print');
 
 const handleSubmitAction = (action = 'update') => {
     submitAction.value = action;
-    if (action === 'save_and_print') {
-        pendingPrintWindow.value = window.open('about:blank', '_blank');
-    }
     handleSubmit({ saveAndPrint: action === 'save_and_print' });
 };
 
@@ -315,24 +358,10 @@ const handleSelectChange = (field, value) => {
 };
 
 const finalizePrint = (page) => {
-    const printUrl = page?.props?.flash?.print_url;
-    if (!printUrl) {
-        if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) pendingPrintWindow.value.close();
-        pendingPrintWindow.value = null;
-        return;
-    }
-    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-        pendingPrintWindow.value.location = printUrl;
-        pendingPrintWindow.value.focus?.();
-    } else {
-        window.open(printUrl, '_blank');
-    }
-    pendingPrintWindow.value = null;
+    printDocument(page?.props?.flash?.print_url);
 };
 
 const cleanupPrintWindow = () => {
-    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) pendingPrintWindow.value.close();
-    pendingPrintWindow.value = null;
 };
 
 const notifySound = (type) => {
@@ -349,12 +378,18 @@ const isRowEnabled = (index) => {
     return true;
 };
 
-const buildRowKey = (row) => [
-    (row.item_id || row.selected_item?.id || '').toString(),
-    (row.batch || '').toString().trim().toLowerCase(),
-    (row.expire_date || '').toString().trim(),
-    (row?.selected_measure?.id || '').toString(),
-].join('|');
+const buildRowKey = (row) => {
+    const measureId = row?.selected_measure?.id
+        || (typeof row?.selected_measure === 'object' ? (row?.selected_measure?.name || row?.selected_measure?.unit) : row?.selected_measure)
+        || '';
+    return [
+        (row.item_id || row.selected_item?.id || '').toString(),
+        (row.variant_id || row.selected_item_variant?.id || '').toString(),
+        (row.batch || '').toString().trim().toLowerCase(),
+        (row.expire_date || '').toString().trim(),
+        measureId.toString(),
+    ].join('|');
+};
 
 const isDuplicateRow = (index) => {
     const row = form.items[index];
@@ -371,32 +406,87 @@ const isDuplicateRow = (index) => {
 
 const resetRow = (index) => {
     form.items[index] = buildEmptyRow();
-    disabled = false;
 };
+
+const duplicateToast = ref(null);
+
+const hasDuplicateRows = computed(() => {
+    const seen = new Set();
+    for (const row of form.items) {
+        if (!row?.selected_item || !row?.selected_measure) continue;
+        const key = buildRowKey(row);
+        if (seen.has(key)) return true;
+        seen.add(key);
+    }
+    return false;
+});
+
+watch(hasDuplicateRows, (hasDuplicates) => {
+    if (!hasDuplicates && duplicateToast.value) {
+        duplicateToast.value.dismiss();
+        duplicateToast.value = null;
+    }
+});
 
 const notifyIfDuplicate = (index) => {
     if (isDuplicateRow(index)) {
         const item = form.items[index];
-        const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch';
-        const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry';
-        disabled = true;
-        toast({
-            title: 'Duplicate item detected',
-            description: `Same item with ${batchText} and ${expiryText} already exists.`,
+        const batchText = item.batch ? t('general.batch_value', { batch: item.batch }) : t('general.no_batch');
+        const expiryText = item.expire_date ? t('general.expiry_value', { expiry: item.expire_date }) : t('general.no_expiry');
+        duplicateToast.value = toast({
+            title: t('general.duplicate_item_detected'),
+            description: t('general.duplicate_item_detected_description', { batchText, expiryText }),
             variant: 'destructive',
             class: 'bg-pink-600 text-white',
             duration: Infinity,
             action: h(ToastAction, {
-                altText: 'Unselect',
+                altText: t('general.unselect'),
                 onClick: () => resetRow(index),
-            }, { default: () => 'Unselect' }),
+            }, { default: () => t('general.unselect') }),
         });
-    } else {
-        disabled = false;
     }
 };
 
-const handleItemChange = (index, selectedItem) => {
+// ---------------------------------------------------------------------------
+// Automatic item discounts
+//
+// Same arrangement as the create form, with one difference: every line that
+// arrived from the saved sale starts out overruled, so re-opening an invoice
+// never rewrites figures the customer has already been given.
+// ---------------------------------------------------------------------------
+const lineDiscounts = useLineDiscounts();
+
+const applyRuleDiscount = (row) => {
+    if (!row?.item_id || row.discount_touched) return;
+
+    const { rule, amount } = lineDiscounts.discountFor(row.item_id, row.quantity, row.unit_price);
+    row.discount_rule = rule;
+    row.item_discount = amount > 0 ? Number(amount.toFixed(decimalPlaces.value)) : '';
+};
+
+/** The box is the salesperson's from the first keystroke. */
+const setLineDiscount = (row, value) => {
+    row.item_discount = value;
+    row.discount_touched = true;
+};
+
+/** The rule an overruled line would go back to, if there is one. */
+const ruleWaitingFor = (row) => (
+    row?.item_id ? lineDiscounts.ruleFor(row.item_id, row.quantity) : null
+);
+
+/** Hand the line back to the rules. */
+const restoreRuleDiscount = (row) => {
+    row.discount_touched = false;
+    applyRuleDiscount(row);
+};
+
+watch(
+    () => form.items.map((row) => `${row?.item_id || ''}:${row?.quantity || ''}:${row?.unit_price || ''}`).join('|'),
+    () => form.items.forEach(applyRuleDiscount),
+);
+
+const handleItemChange = async (index, selectedItem) => {
     const row = form.items[index];
     if (!row) return;
 
@@ -410,6 +500,9 @@ const handleItemChange = (index, selectedItem) => {
     row.item_id = selectedItem.id;
     row.unit_measure_id = selectedItem.unit_measure_id;
     row.on_hand = selectedItem.on_hand;
+    row.reserved_out = selectedItem.reserved_out;
+    row.reserved_in = selectedItem.reserved_in;
+    row.available = selectedItem.available;
     row.selected_batch = null;
     row.batch = '';
     row.expire_date = '';
@@ -418,15 +511,42 @@ const handleItemChange = (index, selectedItem) => {
     row.free = '';
     row.tax = '';
 
-    const marginPercentage = toNum(selectedItem.margin_percentage, 0);
-    row.base_unit_price = selectedItem.sale_price ?? (toNum(selectedItem.avg_cost, 0) * (1 + marginPercentage / 100));
+    row.item_variants = selectedItem.item_variants || [];
+    row.selected_item_variant = pickDefaultVariant(row.item_variants);
+    row.variant_id = row.selected_item_variant?.id || null;
+
+    // What we sell it for, not what it cost us.
+    row.base_unit_price = resolveVariantUnitPrice(selectedItem, row.selected_item_variant, 'sale');
 
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1;
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
     row.unit_price = Number(toDocumentCurrency((toNum(row.base_unit_price, 0) * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces.value));
     row.selected_item = selectedItem;
 
+    // A newly picked item is not saved history, so the rules may speak.
+    row.discount_touched = false;
+    row.discount_rule = null;
+    await lineDiscounts.load([selectedItem.id], {
+        customerId: form.customer_id || null,
+        date: form.date || null,
+    });
+    applyRuleDiscount(row);
+
     if (index === form.items.length - 1) form.items.push(buildEmptyRow());
+    notifyIfDuplicate(index);
+};
+
+const handleItemVariantChange = (index, variant) => {
+    const row = form.items[index];
+    if (!row) return;
+    row.selected_item_variant = variant ?? null;
+    row.variant_id = variant?.id || null;
+    // Switching variant moves the price with it — that is what pricing a
+    // variant separately is for.
+    repriceRow(row, variant, 'sale')
+    const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces.value))
     notifyIfDuplicate(index);
 };
 
@@ -443,7 +563,8 @@ const onhand = (index) => {
     const item = form.items[index];
     if (!item || !item.selected_item) return '';
 
-    const onHandBase = Number(item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0;
+    const variantOnHand = item.selected_item_variant?.has_stock ? item.selected_item_variant.on_hand : null;
+    const onHandBase = Number(variantOnHand ?? item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0;
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1;
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit;
     const persistedQuantityBase = (item.selected_item?.id || item.item_id) === item.persisted_item_id
@@ -459,6 +580,18 @@ const onhand = (index) => {
     const converted = (adjustedOnHandBase * baseUnit) / selectedUnit;
 
     return Number.isFinite(converted) ? Number(converted.toFixed(2)) : 0;
+};
+
+const reservedOut = (index) => {
+    const item = form.items[index];
+    if (!item || !item.selected_item) return 0;
+    return Number(item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out) || 0;
+};
+
+const reservedIn = (index) => {
+    const item = form.items[index];
+    if (!item || !item.selected_item) return 0;
+    return Number(item.selected_batch?.reserved_in ?? item.selected_item?.reserved_in ?? item.reserved_in) || 0;
 };
 
 const rowTotal = (index) => {
@@ -494,7 +627,11 @@ const displayedAverageCost = (row) => {
 
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1;
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
-    return toDocumentCurrency((toNum(row.selected_item?.avg_cost, 0) * selectedUnit) / baseUnit, form.rate);
+    // A selected variant is costed at its own average — the same figure the
+    // posting relieves inventory at — so the below-cost warning cannot fire
+    // against a blended item average the sale will never actually use.
+    const avgCost = resolveVariantAverageCost(row.selected_item, row.selected_item_variant);
+    return toDocumentCurrency((avgCost * selectedUnit) / baseUnit, form.rate);
 };
 
 const getLossWarning = (row) => {
@@ -533,15 +670,21 @@ const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc
 const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(decimalPlaces.value)));
 
 const transactionSummary = computed(() => {
-    const type = form.selected_sale_type?.id || form.sale_type;
+    const saleType = form.selected_sale_type?.id;
+    let cashReceived = 0;
+    if (saleType === 'cash') {
+        cashReceived = goodsTotal.value; // transaction total
+    } else if (saleType === 'credit') {
+        cashReceived = paid; // on loan = 0, default
+    }
+    else {
+        cashReceived = 0;
+    }
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0);
     const balanceNature = form?.selected_ledger?.statement?.balance_nature;
     const hasSelectedItem = Array.isArray(form.items) && form.items.some((row) => !!row.selected_item);
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value;
-    const paid = type === 'cash'
-        ? netAmount
-        : (type === 'credit' ? toNum(form.payment.amount, 0) : 0);
-    const receivableDelta = netAmount - paid;
+    const receivableDelta = netAmount - cashReceived;
     const signedOldBalance = balanceNature === 'dr' ? oldBalance : -oldBalance;
     const signedBalance = hasSelectedItem ? signedOldBalance + receivableDelta : signedOldBalance;
 
@@ -550,7 +693,7 @@ const transactionSummary = computed(() => {
         billDiscountPercent: billDiscountPercent.value,
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
-        cashReceived: paid,
+        cashReceived: cashReceived,
         balance: Math.abs(signedBalance),
         grandTotal: netAmount,
         oldBalance,
@@ -566,8 +709,8 @@ const handleSubmit = ({ saveAndPrint = false } = {}) => {
         cleanupPrintWindow();
         notifySound('error');
         toast({
-            title: 'Please add items',
-            description: 'Please add at least one item to update the sale',
+            title: t('general.please_add_items'),
+            description: t('general.please_add_at_least_one_item_to_update_sale'),
             variant: 'destructive',
             class: 'bg-yellow-600 text-white',
         });
@@ -576,6 +719,7 @@ const handleSubmit = ({ saveAndPrint = false } = {}) => {
 
     form.item_list = selectedItems.map((item) => ({
         item_id: item.item_id,
+        variant_id: item.variant_id || item.selected_item_variant?.id || null,
         quantity: item.quantity,
         unit_price: item.unit_price,
         free: item.free || 0,
@@ -607,12 +751,12 @@ const handleSubmit = ({ saveAndPrint = false } = {}) => {
                 class: 'bg-green-600 text-white',
             });
         },
-        onError: () => {
+        onError: (errors) => {
             cleanupPrintWindow();
             notifySound('error');
             toast({
                 title: t('general.error'),
-                description: t('general.update_error', { name: t('sale.sale') }),
+                description: firstServerError(errors) ?? t('general.update_error', { name: t('sale.sale') }),
                 variant: 'destructive',
                 class: 'bg-pink-600 text-white',
             });
@@ -652,17 +796,33 @@ onUnmounted(() => {
         sidebar.setOpen(previousSidebarOpen.value);
     }
 });
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('sale.sale') })" :sidebar-collapsed="true">
-        <FormPageToolbar back-route="sales.index" module="sales" />
-        <form @submit.prevent="handleSubmitAction('update')">
+        <FormPageToolbar
+            back-route="sales.index"
+            module="sales"
+            :show-preferences="true"
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel module="sale"
+            v-model:open="showPreferencesPanel"
+            pref-group="sale"
+            :prefs="salePrefs"
+            :title="t('preferences.tabs.sale')"
+        />
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction('update')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('sale.sale') }) }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="ledgers?.data || []"
                         v-model="form.selected_ledger"
                         @update:modelValue="(value) => handleSelectChange('customer_id', value)"
@@ -670,6 +830,7 @@ onUnmounted(() => {
                         value-key="id"
                         :reduce="(ledger) => ledger"
                         :floating-text="t('ledger.customer.customer')"
+                        is-required
                         :error="form.errors?.customer_id"
                         :searchable="true"
                         resource-type="ledgers"
@@ -677,9 +838,10 @@ onUnmounted(() => {
                         :search-options="{ type: 'customer' }"
                     />
                     <NextInput
+                        is-required
                         v-if="generalFields.number"
                         v-model="form.number"
-                        placeholder="Number"
+                        :placeholder="t('general.number')"
                         :error="form.errors?.number"
                         type="number"
                         :label="t('general.bill_number')"
@@ -695,7 +857,7 @@ onUnmounted(() => {
                         <NextSelect
                             :options="currencies.data"
                             v-model="form.selected_currency"
-                            label-key="code"
+                            label-key="display_name"
                             value-key="id"
                             :clearable="false"
                             @update:modelValue="(value) => handleSelectChange('currency_id', value)"
@@ -708,7 +870,7 @@ onUnmounted(() => {
                         />
                         <NextInput
                             v-model="form.rate"
-                            placeholder="Rate"
+                            :placeholder="t('general.rate')"
                             :error="form.errors?.rate"
                             type="number"
                             step="any"
@@ -716,34 +878,6 @@ onUnmounted(() => {
                             :label="t('general.rate')"
                         />
                     </div>
-                      <div class="grid grid-cols-1 gap-2" v-if="generalFields.type">
-                        <NextSelect
-                            :options="salePurchaseTypes"
-                            v-model="form.selected_sale_type"
-                            :clearable="false"
-                            @update:modelValue="(value) => handleSelectChange('sale_type', value)"
-                            label-key="name"
-                            value-key="id"
-                            :reduce="(salePurchaseType) => salePurchaseType"
-                            :floating-text="t('general.sale_type')"
-                            :error="form.errors?.sale_type"
-                        />
-                    </div>
-                    <NextSelect
-                        v-if="form.sale_type === 'cash'"
-                        :options="bankAccounts"
-                        v-model="form.selected_bank_account"
-                        @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
-                        label-key="name"
-                        :searchable="true"
-                        :floating-text="t('general.bank_account')"
-                        :error="form.errors?.bank_account_id"
-                        resource-type="accounts"
-                        :search-fields="['name', 'number', 'slug']"
-                        value-key="id"
-                        :reduce="(bankAccount) => bankAccount"
-                    />
-
                     <NextSelect
                         v-if="generalFields.warehouse"
                         :options="warehouses.data"
@@ -754,6 +888,7 @@ onUnmounted(() => {
                         value-key="id"
                         :reduce="(warehouse) => warehouse"
                         :floating-text="t('admin.warehouse.warehouse')"
+                        is-required
                         :error="form.errors?.warehouse_id"
                         resource-type="warehouses"
                         :search-fields="['name', 'code', 'address']"
@@ -770,16 +905,18 @@ onUnmounted(() => {
 
             <div class="rounded-xl border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] sale-table border-separate">
-                    <thead class="" :class="form.sale_type === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
+                    <thead class="" :class="form.sale_type === 'cash' ? 'bg-card sticky top-0 z-10' : ''">
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
-                            <th class="px-1 py-1 w-5 min-w-5">#</th>
-                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+                            <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
+                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-36">{{ t('item.variant') }}</th>
                             <th class="px-1 py-1 w-32" v-if="itemColumns.batch">{{ t(specText) }}</th>
                             <th class="px-1 py-1 w-36" v-if="itemColumns.expiry">{{ t('general.expire_date') }}</th>
-                            <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.on_hand">{{ t('general.on_hand') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="itemColumns.measure">{{ t('general.unit') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="itemColumns.reserved_out">{{ t('general.reserved_out') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="itemColumns.measure">{{ t('general.unit') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-24">{{ t('general.price') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.discount">{{ t('general.discount') }}</th>
                             <th class="px-1 py-1 w-16" v-if="itemColumns.free">{{ t('general.free') }}</th>
                             <th class="px-1 py-1 w-16" v-if="itemColumns.tax">{{ t('general.tax') }}</th>
@@ -791,7 +928,7 @@ onUnmounted(() => {
                     </thead>
                     <tbody class="p-2">
                         <tr v-for="(item, index) in form.items" :key="`${index}-${item.item_id || 'row'}`" class="hover:bg-muted/40 transition-colors">
-                            <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
+                            <td class="px-1 py-2 align-top w-5 text-center">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="itemOptions"
@@ -802,12 +939,23 @@ onUnmounted(() => {
                                     :error="form.errors?.[`item_list.${index}.item_id`]"
                                     :show-arrow="false"
                                     :searchable="true"
+                                    :has-add-button="false"
                                     resource-type="items-list"
                                     :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search']"
                                     value-key="id"
                                     :reduce="(itemValue) => itemValue"
                                     :search-options="itemSearchOptions"
                                     @update:modelValue="(value) => handleItemChange(index, value)"
+                                />
+                            </td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                                <VariantCell
+                                    v-model="item.selected_item_variant"
+                                    :item-variants="item.item_variants"
+                                    :disabled="!item.selected_item"
+                                    :id="`sale_edit_variant_${index}`"
+                                    :error="form.errors?.[`item_list.${index}.variant_id`]"
+                                    @update:modelValue="(value) => handleItemVariantChange(index, value)"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.batch">
@@ -827,8 +975,8 @@ onUnmounted(() => {
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.expiry">
                                 <NextDate
                                     v-model="item.expire_date"
+                                    :lock-future-dates="false"
                                     popover="top-left"
-                                    disabled="true"
                                     :error="form.errors?.[`item_list.${index}.expire_date`]"
                                 />
                             </td>
@@ -844,6 +992,9 @@ onUnmounted(() => {
                             </td>
                             <td class="text-center" v-if="itemColumns.on_hand">
                                 <span :title="String(onhand(index))">{{ Number(onhand(index) || 0)  }}</span>
+                            </td>
+                            <td class="text-center" v-if="itemColumns.reserved_out">
+                                <span class="text-amber-600" :title="t('general.reserved_in') + ': ' + reservedIn(index)">{{ reservedOut(index) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.measure">
                                 <NextSelect
@@ -884,13 +1035,30 @@ onUnmounted(() => {
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.discount">
                                 <NextInput
-                                    v-model="item.item_discount"
+                                    :model-value="item.item_discount"
+                                    @update:model-value="setLineDiscount(item, $event)"
                                     :disabled="!item?.selected_item"
                                     type="number"
                                     step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.item_discount`]"
                                 />
+                                <!-- Why this figure is here, and the way back to it. -->
+                                <div
+                                    v-if="item.discount_rule && !item.discount_touched"
+                                    class="mt-0.5 truncate text-xs text-violet-500"
+                                    :title="item.discount_rule.name"
+                                >
+                                    {{ item.discount_rule.name }}
+                                </div>
+                                <button
+                                    v-else-if="item.discount_touched && ruleWaitingFor(item)"
+                                    type="button"
+                                    class="mt-0.5 truncate text-xs text-muted-foreground underline hover:text-violet-500"
+                                    @click="restoreRuleDiscount(item)"
+                                >
+                                    {{ t('discount_rule.restore', { name: ruleWaitingFor(item).name }) }}
+                                </button>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.free">
                                 <NextInput
@@ -924,10 +1092,12 @@ onUnmounted(() => {
                         <tr class="bg-violet-500/10 hover:bg-violet-500/30 transition-colors">
                             <td></td>
                             <td class="text-center">{{ totalRows }}</td>
+                            <td></td>
                             <td v-if="itemColumns.batch"></td>
                             <td v-if="itemColumns.expiry"></td>
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="itemColumns.on_hand"></td>
+                            <td v-if="itemColumns.reserved_out"></td>
                             <td v-if="itemColumns.measure"></td>
                             <td class="text-center">{{ goodsTotal || 0 }}</td>
                             <td class="text-center" v-if="itemColumns.discount">{{ totalItemDiscount || 0 }}</td>
@@ -941,28 +1111,87 @@ onUnmounted(() => {
             </div>
 
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
-                <DiscountSummary
-                    :summary="form.summary"
-                    :total-item-discount="totalItemDiscount"
-                    :bill-discount="billDiscountCurrency"
-                    :total-discount="totalDiscount"
-                />
-                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4">
-                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.bill_discount') }}</div>
-                    <DiscountField
-                        v-model="form.discount"
-                        v-model:discount-type="form.discount_type"
-                        :error="form.errors?.discount"
-                    />
+                <!-- Discount Summary -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.discount_summary') }}</div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted-foreground">{{ t('general.total_item_discount') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(totalItemDiscount) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted-foreground">{{ t('general.bill_disc') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(billDiscountCurrency) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between font-semibold pt-1">
+                            <span class="text-sm">{{ t('general.total_discount') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(totalDiscount) }}</span>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Adjustments -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.adjustments') }}</div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-muted-foreground">{{ t('general.total_item_tax') }}</span>
+                        <span class="tabular-nums text-sm">{{ fmtMoney(totalTax) }}</span>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{{ t('general.bill_discount') }} ({{ form.discount_type === 'percentage' ? '%' : form.selected_currency?.symbol }})</div>
+                        <DiscountField
+                            v-model="form.discount"
+                            v-model:discount-type="form.discount_type"
+                            label=" "
+                            :error="form.errors?.discount"
+                        />
+                    </div>
+                </div>
+
+                <!-- Payment -->
+                 <div class="rounded-xl border bg-card p-4 shadow-sm space-y-4">
+                    <div class="text-sm font-semibold text-violet-500">{{ t('general.payment') }}</div>
+                    <div v-if="generalFields.type">
+                        <NextSelect
+                            :options="salePurchaseTypes"
+                            v-model="form.selected_sale_type"
+                            :floating-text="t('general.sale_type')"
+                            :clearable="false"
+                            @update:modelValue="(value) => handleSelectChange('sale_type', value)"
+                            label-key="name"
+                            value-key="id"
+                            :reduce="salePurchaseType => salePurchaseType"
+                            :error="form.errors?.sale_type"
+                        />
+                    </div>
+                    <div v-if="form.sale_type === 'cash'">
+                        <NextSelect
+                            :options="bankAccounts"
+                            :floating-text="t('general.bank_account')"
+                            v-model="form.selected_bank_account"
+                            @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                            label-key="name"
+                            :searchable="true"
+                            :error="form.errors?.bank_account_id"
+                            resource-type="accounts"
+                            :search-fields="['name', 'number', 'slug']"
+                            value-key="id"
+                            :reduce="bankAccount => bankAccount"
+                        />
+                    </div>
+                </div>
+
                 <TransactionSummary
                     :summary="transactionSummary"
                     :balance-nature="form?.selected_ledger?.statement?.balance_nature"
                 />
             </div>
 
-            <SubmitButtons
+            <div v-if="showAttachmentsField" class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+            </div>
+
+            <SubmitButtons module="sale"
                 :create-label="t('general.update')"
                 :create-and-new-label="t('general.update')"
                 :save-and-print-label="t('general.save_and_print')"
@@ -973,7 +1202,7 @@ onUnmounted(() => {
                 :save-and-print-loading="saveAndPrintLoading"
                 :show-create-and-new="false"
                 :show-save-and-print="true"
-                :disabled="disabled"
+                :disabled="hasDuplicateRows"
                 @save-and-print="handleSubmitAction('save_and_print')"
                 @cancel="() => $inertia.visit(route('sales.index'))"
             />
@@ -995,6 +1224,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+
 .sale-table thead {
     border: 2px solid hsl(var(--border));
     border-radius: 8px;
@@ -1006,4 +1236,5 @@ onUnmounted(() => {
     white-space: nowrap;
     overflow: hidden;
 }
+
 </style>

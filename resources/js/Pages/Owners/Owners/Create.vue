@@ -1,14 +1,17 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n'
 import { watch, computed, ref } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import { toast } from 'vue-sonner'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n()
 
 const page = usePage()
@@ -40,6 +43,7 @@ const form = useForm({
     amount: null, 
     selected_currency: null,
     rate: 1,
+    attachments: [],
 })
 
 const submitAction = ref(null)
@@ -93,19 +97,23 @@ const handleSubmitAction = (createAndNew = false) => {
         .transform(transformFn)
         .post(route('owners.store'), postOptions);
 };
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('owner.owner') })">
-    <FormPageToolbar back-route="owners.index" module="owner" />
-    <form @submit.prevent="handleSubmitAction(false)">
+    <FormPageToolbar confirm-module="owner" back-route="owners.index" module="owner" />
+    <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('owner.owner') }) }}
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-          <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" />
-          <NextInput :label="t('owner.father_name')" v-model="form.father_name" :error="form.errors?.father_name" />
+          <NextInput is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name" />
+          <NextInput is-required :label="t('owner.father_name')" v-model="form.father_name" :error="form.errors?.father_name" />
           <NextInput :label="t('owner.nic')" v-model="form.nic" :error="form.errors?.nic" />
           <NextInput :label="t('owner.email')" v-model="form.email" type="email" :error="form.errors?.email"/>
           <NextInput :label="t('owner.phone_number')" v-model="form.phone_number" type="text" :error="form.errors?.phone_number"/>
@@ -119,6 +127,7 @@ const handleSubmitAction = (createAndNew = false) => {
             v-model="form.selected_capital_account"
             @update:modelValue="(value) => handleSelectChange('capital_account_id', value?.id)"
             :floating-text="t('owner.capital_account')"
+            is-required
             :error="form.errors?.capital_account_id"
             :searchable="true"
             resource-type="accounts"
@@ -132,6 +141,7 @@ const handleSubmitAction = (createAndNew = false) => {
             v-model="form.selected_drawing_account"
             @update:modelValue="(value) => handleSelectChange('drawing_account_id', value?.id)"
             :floating-text="t('owner.drawing_account')"
+            is-required
             :error="form.errors?.drawing_account_id"
             :searchable="true"
             resource-type="accounts"
@@ -165,7 +175,7 @@ const handleSubmitAction = (createAndNew = false) => {
                         <NextSelect
                         :options="currencies"
                         v-model="form.selected_opening_currency"
-                        label-key="code"
+                        label-key="display_name"
                         value-key="id"
                         @update:modelValue="(value) => handleSelectChange('opening_currency_id', value)"
                         :reduce="currency => currency"
@@ -175,16 +185,19 @@ const handleSubmitAction = (createAndNew = false) => {
                         resource-type="currencies"
                         :search-fields="['name', 'code', 'symbol']"
                          />
-                        <NextInput placeholder="Rate" :disabled="form.selected_opening_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                        <NextInput :placeholder="t('general.rate')" :disabled="form.selected_opening_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
                         
                       </div>
-                      <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+                      <NextInput :placeholder="t('general.amount')" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                   </div>
               </div>
           </div>
       </div>
+        <div class="mt-4">
+          <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
+        </div>
       </div>
-      <SubmitButtons
+      <SubmitButtons module="owner"
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
         :cancel-label="t('general.cancel')"

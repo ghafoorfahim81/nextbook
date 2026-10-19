@@ -45,7 +45,7 @@ class LeaveRequestService
         }
 
         $shift = $employee->shift;
-        $holidays = $this->holidayDates($employee->branch_id, $from, $to);
+        $holidays = $this->holidayDates($employee->company_id, $from, $to);
 
         $days = 0.0;
 
@@ -67,10 +67,10 @@ class LeaveRequestService
     /**
      * @return array<int, string>
      */
-    private function holidayDates(string $branchId, Carbon $from, Carbon $to): array
+    private function holidayDates(string $companyId, Carbon $from, Carbon $to): array
     {
         return Holiday::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereNull('deleted_at')
             ->overlapping($from, $to)
             ->get()
@@ -226,7 +226,7 @@ class LeaveRequestService
         $employee = $request->employee;
         $type = $request->leaveType;
         $shift = $employee->shift;
-        $holidays = $this->holidayDates($employee->branch_id, $request->from_date, $request->to_date);
+        $holidays = $this->holidayDates($employee->company_id, $request->from_date, $request->to_date);
 
         $written = 0;
 
@@ -309,12 +309,18 @@ class LeaveRequestService
         $this->notifications->notifyUser(
             user: $user,
             type: 'leave_request_pending',
-            title: __('hr.notifications.leave_pending_title'),
-            message: __('hr.notifications.leave_pending_body', [
+            title: 'hr.notifications.leave_pending_title',
+            message: 'hr.notifications.leave_pending_body',
+            params: [
                 'employee' => $request->employee?->full_name ?? '',
                 'days' => (float) $request->days,
-            ]),
-            data: ['leave_request_id' => $request->id, 'employee_id' => $request->employee_id],
+            ],
+            data: [
+                'leave_request_id' => $request->id,
+                'employee_id' => $request->employee_id,
+                'employee' => $request->employee?->full_name ?? '',
+                'days' => (float) $request->days,
+            ],
             dedupeKey: 'leave-pending:'.$request->id,
         );
     }
@@ -332,12 +338,17 @@ class LeaveRequestService
         $this->notifications->notifyUser(
             user: $user,
             type: $key,
-            title: __("hr.notifications.{$key}_title"),
-            message: __("hr.notifications.{$key}_body", [
+            title: "hr.notifications.{$key}_title",
+            message: "hr.notifications.{$key}_body",
+            params: [
                 'from' => $request->from_date?->toDateString() ?? '',
                 'to' => $request->to_date?->toDateString() ?? '',
-            ]),
-            data: ['leave_request_id' => $request->id],
+            ],
+            data: [
+                'leave_request_id' => $request->id,
+                'from' => (string) ($request->from_date ?? ''),
+                'to' => (string) ($request->to_date ?? ''),
+            ],
             dedupeKey: $key.':'.$request->id,
         );
     }

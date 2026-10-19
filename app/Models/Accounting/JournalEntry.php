@@ -5,7 +5,9 @@ namespace App\Models\Accounting;
 use App\Enums\JournalEntrySource;
 use App\Enums\JournalEntryStatus;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,13 +18,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class JournalEntry extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $table = 'journal_entries';
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'number',
         'date',
         'status',
@@ -34,6 +37,7 @@ class JournalEntry extends Model
         'posted_by',
         'reversal_of_id',
         'reversed_at',
+        'reversal_reason',
         'post_blocked_reason',
         'description',
         'branch_id',

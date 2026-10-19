@@ -1,0 +1,358 @@
+# ادامهٔ کار فاز ۲ — وضعیت و نقشهٔ راه
+
+تاریخ: ۱۴۰۵/۰۷/۲۷ (2026-10-19)
+برنچ: `refactor-items-and-company-wise`
+سند دسته‌بندی: [phase-2-table-classification-fa.md](phase-2-table-classification-fa.md)
+سند مادر: [multi-company-plan-fa.md](multi-company-plan-fa.md)
+
+این سند برای ادامه دادن کار روی ماشین دیگر نوشته شده. هدفش این است که بدون
+خواندن تاریخچهٔ گفت‌وگو بتوان از همین نقطه ادامه داد.
+
+---
+
+## ۱. راه‌اندازی ماشین جدید
+
+```bash
+git clone <repo> && cd nextbook
+git checkout refactor-items-and-company-wise
+composer install
+npm install
+cp .env.example .env     # و تنظیم اتصال پستگرس
+php artisan key:generate
+```
+
+### ⚠️ دو نکتهٔ محیطی که وقت می‌گیرند
+
+**۱. رمز دیتابیس تست قدیمی است.**
+فایل `.env.testing` رمز `mark` دارد ولی سرور توسعه رمز دیگری می‌خواهد. تا وقتی
+این را درست نکنید دستور تست هیچ کاری نمی‌کند:
+
+```bash
+# در .env.testing، مقدار DB_PASSWORD را با مقدار .env یکی کنید
+php artisan test            # بدون این اصلاح کار نمی‌کند
+```
+
+**۲. دیتابیس تست باید وجود داشته باشد.**
+
+```sql
+CREATE DATABASE nextbook_test;
+```
+
+**۳. افزونهٔ bcmath و build فرانت‌اند.**
+بدون `php-bcmath` حدود ۱۲۰ تست با `Call to undefined function bcmul()` و بدون
+`npm run build` حدود ۷۰ تست با `Vite manifest not found` شکست می‌خورند. هیچ‌کدام
+باگ کد نیستند:
+
+```bash
+php -m | grep bcmath        # باید چیزی چاپ کند
+npm install && npm run build
+```
+
+---
+
+## ۲. وضعیت فعلی در یک نگاه
+
+| گام | کار | وضعیت |
+|---|---|---|
+| ۱ | جدول کمپنی‌ها به ابتدای ترتیب + soft delete + قیدهای معوق | ✅ |
+| ۲ | کالم کمپنی روی جدول شعبات + composite FK + حذف زیردامنه | ✅ |
+| ۳ | میان‌افزار کمپنی فعال + trait دامنه + بستن حفرهٔ سویچ شعبه | ✅ |
+| ۴ | ۳۰ جدول مستر دیتا به دامنهٔ کمپنی | ✅ |
+| ۵ | تجزیهٔ سرویس provisioning به کمپنی/شعبه | ✅ |
+| ۶ | کالم کمپنی روی ۷۲ جدول باقی‌مانده + انتقال کوئری‌ها | ✅ |
+| ۷ | حذف `branch_id` از ۵۷ جدولی که لازمش ندارند | ⬜ **قدم بعدی** |
+| ۸ | بازنویسی ۵۷ ایندکس یکتا به شکل partial | ⬜ |
+| ۹ | جدول واسط مشتری‑شعبه | ⬜ |
+| ۱۰ | فعال‌سازی RLS | ⬜ |
+
+### چه چیزی سبز است
+
+```bash
+php tools/phase-2/mkdb.php
+DB_DATABASE=nextbook_phase2_check php artisan migrate --force   # ✅ همهٔ ۱۸۳ تا
+DB_DATABASE=nextbook_phase2_check php artisan db:seed --force   # ✅ کامل
+
+php artisan test tests/Feature/Tenancy                          # ✅ ۴ سناریوی امنیتی
+```
+
+```bash
+php artisan test            # ✅ ۸۹۴ پاس — Unit + Feature + Integration
+```
+
+### چه چیزی قرمز است
+
+فقط پنج تستی که پایین‌تر آمده و از قبل از این کار خراب بوده‌اند.
+
+روند Feature تا اینجا: **۰ ← ۱۶۲ ← ۵۰۶ ← ۵۳۶ ← ۶۳۱ ← ۶۵۶ ← ۶۷۲ ← ۸۴۳**
+(از ۸۴۸؛ پنج تای باقی همان پنج تای قدیمی‌اند). Integration هم ۲۹ از ۲۹.
+
+### پنج تست که از قبل خراب بوده‌اند
+
+این‌ها ربطی به این کار ندارند — روی commit `8fe9e423` یعنی قبل از شروع هم
+شکست می‌خورند. وقت صرفشان نکنید:
+
+```
+DiscountRuleTest > a deleted rule cannot be restored
+SidebarMenuPreferencesTest > hiding menus is honoured exactly
+OpenItemsAfterReturnReversalTest > documents the unapplied credit note gap
+CashPositionByCurrencyReportTest > it returns one line per currency
+ReportsFeatureTest > reports export streams inventory valuation xlsx
+```
+
+---
+
+## ۳. 🔴 سه کلاس باگ که PHP هیچ‌کدام را نمی‌گیرد
+
+این مهم‌ترین چیزی است که از این مهاجرت یاد گرفته شد. وقتی یک کالم یک سطح بالا
+می‌رود، **سه چیز** باید با هم حرکت کنند و اسکریپت فقط اولی را می‌بیند:
+
+```
+۱. نام کالم        ← اسکریپت می‌گیرد
+۲. مقدار پاس‌شده    ← می‌ماند و بی‌صدا غلط می‌شود
+۳. امضای متد       ← می‌ماند و null می‌دهد
+```
+
+### کلاس اول: متغیر تعریف‌نشده
+
+```php
+private function systemComponents(string $branchId): array
+{
+    ...->where('company_id', $companyId)   // ← همیشه null
+```
+
+`php -l` ساکت است چون PHP متغیر تعریف‌نشده را خطای نحوی نمی‌داند.
+۱۴ متد در این وضعیت بودند.
+
+### کلاس دوم: کالم یک سطح، مقدار سطح دیگر
+
+```php
+->where('transactions.branch_id', $this->company_id)
+```
+
+**خطا نمی‌دهد.** SQL معتبر است و فقط صفر ردیف برمی‌گرداند — یعنی صورتحساب
+مشتری خالی نشان داده می‌شود بدون هیچ پیامی.
+
+### کلاس سوم: متدی که کمپنی می‌خواهد ولی شعبه می‌گیرد
+
+```php
+$branchId = $this->resolveBranchId($header);
+$baseCurrencyId = $this->resolveBaseCurrencyId($branchId);
+//                                              ↑ این متد حالا کمپنی می‌خواهد
+```
+
+کلاس سوم حالا اسکنر دارد: `signature_mismatch.php` هر تابعی که پارامتر
+`$companyId` دارد را جمع می‌کند و فراخوانی‌هایی را گزارش می‌دهد که در همان جایگاه
+چیزی شعبه‌ای می‌دهند. اولین اجرایش شش مورد پیدا کرد — از جمله رخصتی‌هایی که هرگز
+از روزهای رخصتی کم نمی‌شدند و مالیاتی که روی هیچ معاشی کسر نمی‌شد.
+
+### کلاس چهارم: خواندن `->branch_id` از مدل کمپنی‌محور
+
+```php
+->where('t.branch_id', '=', $ledger->branch_id)   // ← همیشه null
+if ($customer->branch_id !== $supplier->branch_id) // ← null !== null، همیشه رد می‌شود
+```
+
+مدل کالم ندارد و Eloquent برای attribute ناموجود بی‌صدا `null` می‌دهد. صورتحساب
+مشتری خالی نشان داده می‌شد و بررسی «طرفین باید در یک شعبه باشند» هیچ‌وقت چیزی را
+رد نمی‌کرد. اسکنر ندارد؛ این grep بر اساس نام متغیر پیدایش می‌کند:
+
+```bash
+grep -rnE "\$(category|brand|item|account|ledger|customer|supplier|currency|department|designation|shift|holiday|size)\??->branch_id\b" app
+```
+
+### پنج شکل دیگر که اسکنرهای قبلی نمی‌دیدند
+
+- قوانین validation: `existsInBranch('departments')` و `uniqueInBranch('items')`
+  روی جدول‌های کمپنی‌محور (۵۶ مورد). validator کوئری خودش را می‌سازد، پس از مدل رد
+  نمی‌شود. حالا `existsInCompany` / `uniqueInCompany`.
+- رشته‌های select رابطه: `'department:id,name,branch_id'`.
+- eager-load رابطهٔ `branch` روی مدلی که دیگر آن را ندارد (`Account`, `Ledger`).
+- `alias.branch_id` در DashboardService و NotificationService — همان مشکل
+  ReportService، در فایل‌هایی که هیچ تست Feature به آن نمی‌رسید.
+- درج خام یا `withoutEvents` در تست‌ها که `company_id` نمی‌گذارند؛ `raw_inserts.php`
+  فقط درج‌هایی را می‌بیند که `branch_id` دارند.
+
+### ⚠️ بعد از هر تغییر خودکار حتماً اینها را اجرا کنید
+
+```bash
+php tools/phase-2/undefined_company.php   # کلاس اول و دوم — باید صفر باشد
+php tools/phase-2/signature_mismatch.php  # کلاس سوم — باید صفر باشد
+php tools/phase-2/aliased_branch.php      # alias.branch_id روی جدول کمپنی — باید صفر باشد
+php tools/phase-2/raw_inserts.php         # درج‌های خامی که از مدل رد می‌شوند
+php tools/phase-2/branchcontext_callers.php --dry
+php tools/phase-2/select_lists.php
+git diff | grep -nE "branch_id.*company_id|company_id.*branch_id"
+```
+
+`aliased_branch.php` ده مورد «مبهم» در ReportService گزارش می‌دهد (`s` هم sales
+است هم shifts و…). هر ده تا بررسی شده‌اند و همه جدول سندی‌اند — درست‌اند.
+
+---
+
+## ۴. قدم بعدی
+
+### ۴-الف: گام ۷ — حذف `branch_id`
+
+گام ۶ تمام است و تست‌ها سبزند، پس این پاس حالا شروع می‌شود: از ۵۷ جدولی که لازمش
+ندارند (دستهٔ الف، ج، د در سند دسته‌بندی). بعد از هر دسته همهٔ اسکنرهای بالا و
+`php artisan test` را اجرا کنید.
+
+روش کار وقتی تست‌ها قرمز شدند:
+
+```bash
+php tools/phase-2/mkdb.php nextbook_test     # اول دیتابیس تست را تازه کنید
+php artisan test > /tmp/t.txt 2>&1
+```
+
+بعد خطاها را گروه‌بندی کنید و از پرتکرارترین شروع کنید — تقریباً همیشه یک ریشه
+ده‌ها شکست تولید می‌کند. Unit و Integration را هم اجرا کنید؛ DashboardService فقط
+از Integration دیده می‌شد.
+
+### ۴-ب: گام ۸ — ایندکس‌های یکتا
+
+هر ۵۷ تا باید به شکل partial در بیایند، نه فقط تعویض کالم. دلیلش در بخش ۱۲
+سند دسته‌بندی.
+
+### چیزهایی که در این مسیر کشف شد و هنوز باز است
+
+- `BranchContext` حالا محتوایش کمپنی‌محور است ولی نامش شعبه مانده. تغییر نامش
+  ۶۳ جا را لمس می‌کند — بهتر است جدا از این کار انجام شود.
+- سه trait موازی شعبه (`BranchSpecific`، `HasBranch`، `BelongsToBranch`) که
+  هم‌پوشانی دارند.
+- `HasCompany` و `HasBranch` هر دو روی `creating` قلاب می‌گذارند و قلاب‌ها به
+  ترتیب ثبت اجرا می‌شوند. `HasCompany` عمداً به `branch_id` سطر تکیه نمی‌کند و
+  مستقیم از شعبهٔ فعال می‌پرسد — به این وابستگی نامرئی دست نزنید.
+
+---
+
+## ۵. ابزارها
+
+همه در `tools/phase-2/` و از ریشهٔ پروژه اجرا می‌شوند. مسیر یا رمز ثابت ندارند؛
+اتصال دیتابیس را از `.env` می‌خوانند.
+
+### تشخیصی — بعد از هر تغییر اجرا شوند
+
+| اسکریپت | کار |
+|---|---|
+| `undefined_company.php` | متغیر تعریف‌نشده و ناسازگاری کالم/مقدار — **باید صفر باشد** |
+| `signature_mismatch.php` | شعبه‌ای که به پارامتر `$companyId` داده می‌شود — **باید صفر باشد** |
+| `aliased_branch.php` | `alias.branch_id` روی جدول کمپنی‌محور در کل `app/` — **باید صفر باشد** |
+| `raw_inserts.php` | درج خامی که شعبه می‌نویسد ولی کمپنی نه (`--fix` دارد) |
+| `branchcontext_callers.php` | callerهایی که به جستجوی اکونت شعبه می‌دهند |
+| `select_lists.php` | فهرست ستون که از جدول کمپنی‌محور شعبه می‌خواهد (`--fix` دارد) |
+| `scan.php` | خط‌هایی که هنوز یک مدل کمپنی‌محور را شعبه‌محور می‌کنند |
+
+### تبدیل انبوه
+
+| اسکریپت | کار |
+|---|---|
+| `add_company_column.php` | افزودن کالم کمپنی به migrationها |
+| `add_company_trait.php` | افزودن traitهای کمپنی به مدل‌ها |
+| `factory_company.php` | مشتق‌کردن کمپنی از شعبه در factoryها |
+| `anchored_rewrite.php` | تبدیل خودکار، با تشخیص مدل هر statement |
+| `rename_migrations.php` | تعویض کالم دامنه در بلاک‌های migration |
+| `rename_models.php` / `rename_factories.php` / `rename_seeders.php` | تعویض در هر لایه |
+
+### کمکی
+
+| اسکریپت | کار |
+|---|---|
+| `targets.php` | کدام جدول‌ها هنوز کالم کمپنی ندارند (محاسبه‌شده، نه فهرست دستی) |
+| `map.php` | نگاشت جدول ← migration ← مدل ← trait |
+| `classify.php` | فهرست جدول‌ها با کلیدهای خارجی |
+| `uniques.php` | فهرست ایندکس‌های یکتای حاوی کالم دامنه |
+| `report_aliases.php` | حل نام‌های مستعار SQL در سرویس گزارش |
+| `mkdb.php` | ساخت/حذف دیتابیس یکبارمصرف برای راستی‌آزمایی |
+
+### ⚠️ درس مهم دربارهٔ این اسکریپت‌ها
+
+`anchored_rewrite.php` مدل هر statement را از چند خط بالاتر حدس می‌زند. در ۲۳۹
+خط درست عمل کرد و در ۲۷ مورد خودش اعلام کرد که مطمئن نیست.
+
+**ولی یک اشتباه بی‌صدا تولید کرد** (همان خط ۷۹). بعد از هر اجرا حتماً:
+
+```bash
+git diff | grep -nE "branch_id.*company_id|company_id.*branch_id"
+```
+
+هر خطی که **هر دو** کالم را دارد مشکوک است.
+
+---
+
+## ۶. دستورهای راستی‌آزمایی
+
+```bash
+# ۱. schema از صفر ساخته می‌شود؟
+php tools/phase-2/mkdb.php
+DB_DATABASE=nextbook_phase2_check php artisan migrate --force
+DB_DATABASE=nextbook_phase2_check php artisan db:seed --force
+php tools/phase-2/mkdb.php nextbook_phase2_check drop
+
+# ۲. مرز کمپنی در دیتابیس اعمال می‌شود؟
+php artisan test tests/Feature/Tenancy/CompanyScopeTest.php
+
+# ۳. چیزی نشکسته؟
+php artisan test --testsuite=Feature
+```
+
+تست مرحلهٔ ۲ همیشه باید سبز بماند — چهار سناریوی پذیرش امنیتی را پوشش می‌دهد و
+هیچ ربطی به کار نیمه‌تمام گام ۴ ندارد.
+
+---
+
+## ۷. تصمیمات قطعی‌شده
+
+برای اینکه دوباره بحث نشود:
+
+| تصمیم | انتخاب |
+|---|---|
+| مشتری در چند شعبه | یک رکورد، یک بیلانس + جدول واسط `ledger_branches` برای تعیین شعبه‌های مجاز |
+| نمبرگذاری سند | کمپنی‌محور — یک سری به ازای کمپنی و نوع سند |
+| نرخ ارز | کمپنی‌محور با شعبهٔ nullable برای override |
+| کالم کمپنی | روی همهٔ جدول‌ها |
+| کالم شعبه | فقط جایی که واقعیت سطر است، نه جایی که قابل استخراج است |
+| ایندکس مستقل روی کالم کمپنی | ساخته نشود — فقط ستون اول ایندکس ترکیبی |
+| استراتژی migration | ویرایش migrationهای موجود در جای خود (دیتای زنده نداریم) |
+| جدول `transaction_line_currencies` | حذف شد (مرده بود) |
+
+---
+
+## ۸. کارهای باز که هنوز برنامه‌ریزی نشده‌اند
+
+- `BranchContext` نامش شعبه است ولی حساب‌های پیش‌فرض و ارز پایه‌اش کمپنی‌محور
+  شده‌اند. تغییر نام ۶۳ جا را لمس می‌کند
+- سه trait موازی شعبه (`BranchSpecific`، `HasBranch`، `BelongsToBranch`) که
+  هم‌پوشانی دارند و بهتر است یکی شوند
+- `BranchSpecific` در console و job از scope بیرون می‌زند (بدهی بخش ۱۱ سند مادر)
+- الگوی `MAX+1` در `HasSequentialNumber` و نبود قید یکتا روی نمبر فروش، خرید و
+  تراکنش (بخش ۱۳ سند دسته‌بندی). قوانین validation نمبر سند هم هنوز شکل
+  `unique:sales,number,NULL,id,branch_id,NULL,...` را دارند که به
+  `branch_id IS NULL` تبدیل می‌شود و هیچ تکراری را نمی‌گیرد. طبق تصمیم «نمبرگذاری
+  کمپنی‌محور» این‌ها باید با گام ۸ به کمپنی منتقل شوند
+- کلید ترجمهٔ `contra_parties_must_share_a_branch` و
+  `counterpart_must_share_a_branch` حالا کمپنی را بررسی می‌کنند؛ متن پیام هنوز
+  «شعبه» می‌گوید
+- `activity_logs.company_id` تنها کالم دامنهٔ nullable است. اگر روزی همهٔ
+  رویدادهای سطح پلتفرم به یک کمپنی سیستمی نسبت داده شوند، می‌شود سفتش کرد
+
+---
+
+## ۹. یادداشت‌های عملیاتی
+
+**دیتابیس تست بعد از یک اجرای شکست‌خورده خراب می‌ماند.** اگر خطاهایی مثل
+«جدول از قبل وجود دارد» یا «relation migrations does not exist» دیدید، این
+نشانهٔ باگ در کد نیست:
+
+```bash
+php tools/phase-2/mkdb.php nextbook_test
+```
+
+**راستی‌آزمایی schema هرگز روی دیتابیس توسعه انجام نشود.** یک دیتابیس
+یکبارمصرف بسازید و بعد پاکش کنید:
+
+```bash
+php tools/phase-2/mkdb.php
+DB_DATABASE=nextbook_phase2_check php artisan migrate --force
+DB_DATABASE=nextbook_phase2_check php artisan db:seed --force
+php tools/phase-2/mkdb.php nextbook_phase2_check drop
+```

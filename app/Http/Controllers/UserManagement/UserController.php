@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\UserManagement;
 
+use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserManagement\UserStoreRequest;
 use App\Http\Requests\UserManagement\UserUpdateRequest;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Enums\UserStatus;
 class UserController extends Controller
 {
+    use TogglesRecordStatus;
+
     public function __construct()
     {
         $this->authorizeResource(User::class, 'user');
@@ -24,12 +27,23 @@ class UserController extends Controller
         $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $users = User::with(['company', 'roles'])
+            // Users are managed company-wide; without this the list showed
+            // every tenant's accounts to anyone holding users.view_any.
+            ->where('company_id', $request->user()->company_id)
             ->when($request->query('search'), function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['role_id'] ?? null, function ($query, $roleId) {
+                $query->whereHas('roles', function ($q) use ($roleId) {
+                    is_array($roleId)
+                        ? $q->whereIn('roles.id', $roleId)
+                        : $q->where('roles.id', $roleId);
                 });
             })
             ->orderBy($sortField, $sortDirection)
@@ -38,6 +52,16 @@ class UserController extends Controller
 
         return inertia('UserManagement/Users/Index', [
             'users' => UserResource::collection($users),
+            'filterOptions' => [
+                'roles' => \App\Models\Role::orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
@@ -131,6 +155,8 @@ class UserController extends Controller
     public function restore(Request $request, $id)
     {
         $user = User::withTrashed()->findOrFail($id);
+        $this->authorize('restore', $user);
+
         $user->restore();
         return redirect()->route('users.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.user')]));
     }
@@ -138,8 +164,17 @@ class UserController extends Controller
     public function forceDelete(Request $request, $id)
     {
         $user = User::withTrashed()->findOrFail($id);
+        $this->authorize('forceDelete', $user);
+
         app(\App\Services\DeletedRecordService::class)->forceDelete('users', (string) $user->id);
 
         return redirect()->route('users.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.user')]));
     }
+
+    /** Flip the record between active and inactive; see the trait for why. */
+    public function toggleStatus(User $user)
+    {
+        return $this->toggleRecordStatus($user, 'general.resource.user');
+    }
 }
+

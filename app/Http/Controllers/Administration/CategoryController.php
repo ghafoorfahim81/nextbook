@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Administration;
 
+use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\CategoryStoreRequest;
 use App\Http\Requests\Administration\CategoryUpdateRequest;
@@ -13,8 +14,11 @@ use Illuminate\Http\Request;
 use App\Support\Inertia\CacheForget;
 use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\Cache;
+use App\Support\BranchContext;
 class CategoryController extends Controller
 {
+    use TogglesRecordStatus;
+
     public function __construct()
     {
         $this->authorizeResource(Category::class, 'category');
@@ -47,12 +51,13 @@ class CategoryController extends Controller
             description: "Category {$category->name} created.",
             newValues: [
                 'name' => $category->name,
+                'local_name' => $category->local_name,
                 'parent_id' => $category->parent_id,
                 'remark' => $category->remark,
                 'is_active' => $category->is_active,
-                'branch_id' => $category->branch_id,
+                'company_id' => $category->company_id,
             ],
-            branchId: $category->branch_id,
+            branchId: BranchContext::branchId(),
         );
 
         return redirect()->route('categories.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.category')]));
@@ -69,10 +74,11 @@ class CategoryController extends Controller
     {
         $beforeState = [
             'name' => $category->name,
+            'local_name' => $category->local_name,
             'parent_id' => $category->parent_id,
             'remark' => $category->remark,
             'is_active' => $category->is_active,
-            'branch_id' => $category->branch_id,
+            'company_id' => $category->company_id,
         ];
 
         $category->update($request->validated());
@@ -82,14 +88,15 @@ class CategoryController extends Controller
             before: $beforeState,
             after: [
                 'name' => $category->name,
+                'local_name' => $category->local_name,
                 'parent_id' => $category->parent_id,
                 'remark' => $category->remark,
                 'is_active' => $category->is_active,
-                'branch_id' => $category->branch_id,
+                'company_id' => $category->company_id,
             ],
             module: 'category',
             description: "Category {$category->name} updated.",
-            branchId: $category->branch_id,
+            branchId: BranchContext::branchId(),
         );
 
         return redirect()->back();
@@ -99,7 +106,7 @@ class CategoryController extends Controller
     {
         // Check for dependencies before deletion
         if (!$category->canBeDeleted()) {
-            $message = $category->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $category->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return inertia('Administration/Categories/Index', [
                 'error' => $message
             ]);
@@ -107,10 +114,11 @@ class CategoryController extends Controller
 
         $oldValues = [
             'name' => $category->name,
+            'local_name' => $category->local_name,
             'parent_id' => $category->parent_id,
             'remark' => $category->remark,
             'is_active' => $category->is_active,
-            'branch_id' => $category->branch_id,
+            'company_id' => $category->company_id,
         ];
 
         $category->delete();
@@ -120,7 +128,7 @@ class CategoryController extends Controller
             module: 'category',
             description: "Category {$category->name} deleted.",
             oldValues: $oldValues,
-            branchId: $category->branch_id,
+            branchId: BranchContext::branchId(),
         );
 
         return redirect()->route('categories.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.category')]));
@@ -137,9 +145,10 @@ class CategoryController extends Controller
             description: "Category {$category->name} restored.",
             newValues: [
                 'name' => $category->name,
+                'local_name' => $category->local_name,
                 'is_active' => $category->is_active,
             ],
-            branchId: $category->branch_id,
+            branchId: BranchContext::branchId(),
         );
 
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.category')]));
@@ -152,4 +161,11 @@ class CategoryController extends Controller
 
         return back()->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.category')]));
     }
+
+    /** Flip the record between active and inactive; see the trait for why. */
+    public function toggleStatus(Category $category)
+    {
+        return $this->toggleRecordStatus($category, 'general.resource.category');
+    }
 }
+

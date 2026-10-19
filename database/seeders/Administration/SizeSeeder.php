@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Administration;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Size;
 use Illuminate\Database\Seeder;
@@ -26,7 +27,7 @@ class SizeSeeder extends Seeder
             Size::create([
                 'name' => $size['name'],
                 'code' => $size['code'],
-                'branch_id' => Branch::where('is_main', true)->first()->id,
+                'company_id' => Company::withoutGlobalScopes()->value('id'),
                 'is_main' => true,
                 'is_active' => false,
             ]);

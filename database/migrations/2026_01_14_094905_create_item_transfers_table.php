@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\TransferStatus;
+use App\Enums\TransactionStatus;
 
 return new class extends Migration
 {
@@ -16,10 +16,11 @@ return new class extends Migration
 
         Schema::create('item_transfers', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->date('date')->index();
             $table->ulid('from_warehouse_id')->index();
             $table->ulid('to_warehouse_id')->index();
-            $table->enum('status', TransferStatus::values())->default(TransferStatus::PENDING->value);
+            $table->enum('status', TransactionStatus::values())->default(TransactionStatus::DRAFT->value);
             $table->decimal('transfer_cost', 19, 4)->nullable();
             $table->ulid('branch_id')->index();
             $table->text('remarks')->nullable();

@@ -13,6 +13,7 @@ return new class extends Migration
 
         Schema::create('pos_sessions', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->timestamp('opened_at');
             $table->timestamp('closed_at')->nullable();
             $table->enum('status', PosSessionStatus::values())

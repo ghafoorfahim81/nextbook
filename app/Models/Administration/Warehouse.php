@@ -3,7 +3,9 @@
 namespace App\Models\Administration;
 
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasCache;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -25,8 +27,8 @@ class Warehouse extends Model
     use HasCache;
     use HasSearch;
     use HasSorting;
-    use BranchSpecific;
-    use HasBranch;
+    use CompanySpecific, BranchSpecific;
+    use HasCompany, HasBranch;
     use SoftDeletes;
     use HasDependencyCheck;
 
@@ -36,6 +38,7 @@ class Warehouse extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'name',
         'address',
         'is_main',
@@ -87,7 +90,11 @@ class Warehouse extends Model
 
     public static function main()
     {
-        return self::where('is_main', true)->first();
+        // Prefer an active main warehouse; only fall back to an inactive one if no
+        // active main exists, so a stray inactive duplicate never wins.
+        return self::where('is_main', true)
+            ->orderByDesc('is_active')
+            ->first();
     }
 }
 

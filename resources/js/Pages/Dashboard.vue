@@ -28,6 +28,7 @@ import {
   RefreshCw,
   ShoppingCart,
   Truck,
+  TrendingUp,
   Wallet,
 } from 'lucide-vue-next'
 
@@ -169,6 +170,15 @@ const kpiCards = computed(() => ([
     tone: 'out',
     goodDirection: 'neutral',
   },
+  {
+    key: 'today_net_profit',
+    href: todayReportLink('income_statement'),
+    label: t('dashboard.kpis.todays_net_profit'),
+    help: t('dashboard.kpis.todays_net_profit_help'),
+    icon: TrendingUp,
+    tone: 'in',
+    goodDirection: 'up',
+  },
 ]).map((card) => ({
   ...card,
   value: state.value?.kpis?.[card.key],
@@ -236,6 +246,8 @@ const saleHref = (row) => route('sales.show', row.id)
 const purchaseHref = (row) => route('purchases.show', row.id)
 // A stock movement row opens the item it moved, not the movement itself.
 const stockItemHref = (row) => route('items.show', row.item_id)
+const topSellingItemHref = (row) => route('items.show', row.id)
+const topPurchasingItemHref = (row) => route('items.show', row.id)
 
 const chartTotals = computed(() => state.value?.sales_purchase_chart?.totals || {})
 
@@ -284,31 +296,32 @@ const generatedAt = computed(() => {
     <Head :title="t('dashboard.dashboard')" />
 
     <div class="space-y-6 text-foreground">
-      <header class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
-        <div>
+      <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div class="min-w-0">
           <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             {{ t('dashboard.operational_overview') }}
           </p>
           <h1 class="mt-1 text-2xl font-semibold tracking-tight text-foreground">
             {{ t('dashboard.branch_dashboard') }}
           </h1>
+          <!-- Timestamps are metadata, not controls: they read as a subtitle here
+               instead of a bordered chip competing with the period picker. -->
+          <p class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span>
+              {{ t('dashboard.today') }}
+              <span class="font-medium text-foreground">{{ state.meta?.today }}</span>
+            </span>
+            <span class="text-border" aria-hidden="true">&bull;</span>
+            <span>
+              {{ t('dashboard.generated') }}
+              <span class="font-medium text-foreground">{{ generatedAt }}</span>
+            </span>
+          </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <div class="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1">
-            <div>
-              <p class="text-[10px] leading-none text-muted-foreground">{{ t('dashboard.today') }}</p>
-              <p class="mt-0.5 text-xs font-semibold text-card-foreground">{{ state.meta?.today }}</p>
-            </div>
-            <div class="h-5 w-px bg-border" />
-            <div>
-              <p class="text-[10px] leading-none text-muted-foreground">{{ t('dashboard.generated') }}</p>
-              <p class="mt-0.5 text-xs font-semibold text-card-foreground">{{ generatedAt }}</p>
-            </div>
-          </div>
-
           <Select v-model="period">
-            <SelectTrigger class="h-7 w-[130px] text-xs border-input md:w-[150px]">
+            <SelectTrigger class="h-9 w-[150px] border-input text-sm md:w-[170px]">
               <SelectValue :placeholder="t('dashboard.period.label')" />
             </SelectTrigger>
             <SelectContent>
@@ -316,14 +329,14 @@ const generatedAt = computed(() => {
                 v-for="option in periodOptions"
                 :key="option.value"
                 :value="option.value"
-                class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
+                class="px-5 py-2 text-sm data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
               >
                 {{ option.label }}
               </SelectItem>
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="sm" :disabled="refreshing" @click="refreshDashboard">
+          <Button variant="outline" class="h-9 px-4" :disabled="refreshing" @click="refreshDashboard">
             <RefreshCw class="h-4 w-4" :class="refreshing ? 'animate-spin' : ''" />
             {{ t('dashboard.refresh_data') }}
           </Button>
@@ -406,7 +419,7 @@ const generatedAt = computed(() => {
         </div>
       </section>
 
-      <section class="grid items-start gap-4 xl:grid-cols-2">
+      <section class="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <MetricListCard
           :title="t('dashboard.top_lists.top_customers_title')"
           :description="t('dashboard.top_lists.top_customers_description')"
@@ -415,11 +428,27 @@ const generatedAt = computed(() => {
           :item-href="customerHref"
         />
         <MetricListCard
+          :title="t('dashboard.top_lists.top_selling_items_title')"
+          :description="t('dashboard.top_lists.top_selling_items_description')"
+          :items="state.top_lists?.top_selling_items || []"
+          tone="in"
+          :item-href="topSellingItemHref"
+          :count-label="t('dashboard.top_lists.units_sold')"
+        />
+        <MetricListCard
           :title="t('dashboard.top_lists.top_suppliers_title')"
           :description="t('dashboard.top_lists.top_suppliers_description')"
           :items="state.top_lists?.suppliers_by_purchases || []"
           tone="out"
           :item-href="supplierHref"
+        />
+        <MetricListCard
+          :title="t('dashboard.top_lists.top_purchasing_items_title')"
+          :description="t('dashboard.top_lists.top_purchasing_items_description')"
+          :items="state.top_lists?.top_purchasing_items || []"
+          tone="out"
+          :item-href="topPurchasingItemHref"
+          :count-label="t('dashboard.top_lists.units_purchased')"
         />
         <MetricListCard
           :title="t('dashboard.top_lists.receivables_title')"

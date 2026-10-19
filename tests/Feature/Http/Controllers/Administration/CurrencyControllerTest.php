@@ -73,7 +73,7 @@ final class CurrencyControllerTest extends TestCase
             ->where('exchange_rate', $exchange_rate)
             ->where('is_active', $is_active)
             ->where('flag', $flag)
-            ->where('branch_id', $branch->id)
+            ->where('company_id', $company->id)
             ->where('created_by', $created_by->id)
             ->get();
         $this->assertCount(1, $currencies);

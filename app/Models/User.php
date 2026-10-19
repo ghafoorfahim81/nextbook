@@ -52,9 +52,17 @@ class User extends Authenticatable
      * Default preferences structure.
      */
     public const DEFAULT_PREFERENCES = [
+        'onboarding' => [
+            // Set once the user opens the manual or dismisses the welcome
+            // prompt; while null, the first-login manual dialog is shown.
+            'manual_prompt_dismissed_at' => null,
+        ],
         'appearance' => [
             'theme' => 'system',
             'accent_color' => 'system',
+            // 'solid' keeps opaque surfaces; 'glass' switches the whole shell
+            // to the translucent material (resources/css/glass.css).
+            'surface_style' => 'solid',
             'font_size' => 14,
             'sidebar_font_size' => 14,
             'heading_font_size' =>14,
@@ -68,6 +76,9 @@ class User extends Authenticatable
             'decimal_places' => 2,
             'records_per_page' => 15,
             'balance_nature_format'=> 'with_nature',
+            // Inline one-line hints under form inputs. On by default; users who
+            // find the forms busy can switch every module's hints off here.
+            'show_field_hints' => true,
             'sidebar_menus' => [
                 'home',
                 'dashboard',
@@ -84,13 +95,10 @@ class User extends Authenticatable
                 'expense',
                 'purchase',
                 'sale',
-                'receipt',
-                'payment',
-                'transfer',
+                'cash_transactions',
                 'user_management',
-                'trash',
                 'reports',
-                'preferences',
+                'system',
             ],
         ],
         'item_management' => [
@@ -98,8 +106,6 @@ class User extends Authenticatable
                 'code' => true,
                 'generic_name' => false,
                 'packing' => true,
-                'colors' => false,
-                'size' => true,
                 'brand' => true,
                 'minimum_stock' => true,
                 'maximum_stock' => true,
@@ -112,17 +118,21 @@ class User extends Authenticatable
                 'fast_search' => true,
                 'item_type' => true,
                 'sku' => true,
+                // The asset/income/cost account trio is derived from the item
+                // type and the chart of accounts, and the form already fills
+                // all three. Most users never change them, so they are off by
+                // default and the accountant switches them on when they do.
+                'accounts' => false,
                 'is_batch_tracked' => false,
                 'is_expiry_tracked' => false,
             ],
             'spec_text' => 'Batch',
         ],
         'sale' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true, 'description' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'warehouse' => true, 'description' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => true,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -130,6 +140,7 @@ class User extends Authenticatable
                 'batch' => false,
                 'expiry' => false,
                 'on_hand' => true,
+                'reserved_out' => true,
                 'measure' => true,
                 'discount' => true,
                 'tax' => false,
@@ -138,7 +149,6 @@ class User extends Authenticatable
                 'total_price' => true,
             ],
             'invoice_prefix' => 'INV-',
-            'invoice_theme' => 'format1',
             'start_number' => 1,
             'terms' => '',
             'due_days' => 30,
@@ -150,13 +160,14 @@ class User extends Authenticatable
             'auto_calculate_tax' => true,
             'show_ledger_transactions' => true,
             'show_item_transactions' => true,
+            'show_attachments' => false,
+            'enforce_sale_stock_reservation' => false,
         ],
         'sale_order' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => false,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -176,16 +187,15 @@ class User extends Authenticatable
             'due_days' => 30,
         ],
         'sale_return' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => true,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
                 'rates' => false,
-                'batch' => false,
+                'batch' => true,
                 'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
@@ -199,11 +209,10 @@ class User extends Authenticatable
             'accepted_return_days' => 30,
         ],
         'sale_quotation' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => false,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -221,11 +230,10 @@ class User extends Authenticatable
             'start_number' => 1,
         ],
         'purchase' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true, 'description' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'warehouse' => true, 'description' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => true,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -233,6 +241,7 @@ class User extends Authenticatable
                 'batch' => false,
                 'expiry' => false,
                 'on_hand' => true,
+                'reserved_in' => true,
                 'measure' => true,
                 'discount' => true,
                 'tax' => false,
@@ -248,13 +257,79 @@ class User extends Authenticatable
             'late_fee_percentage' => 0,
             'show_ledger_transactions' => true,
             'show_item_transactions' => true,
+            'show_attachments' => false,
+        ],
+        'transaction' => [
+            'sale_post_immediately' => true,
+            'sale_order_post_immediately' => true,
+            'purchase_post_immediately' => true,
+            'expense_post_immediately' => true,
+            'journal_entry_post_immediately' => true,
+            'receipt_post_immediately' => true,
+            'payment_post_immediately' => true,
+            'account_transfer_post_immediately' => true,
+            'item_transfer_post_immediately' => true,
+            'drawing_post_immediately' => true,
+            'stock_adjustment_post_immediately' => true,
+            'purchase_order_post_immediately' => true,
+            'purchase_return_post_immediately' => true,
+            'purchase_quotation_post_immediately' => false,
+            'sale_return_post_immediately' => true,
+            'sale_quotation_post_immediately' => false,
+        ],
+        // Stock adjustment module settings. reason_accounts maps each reason to
+        // the offset expense account slug (9040 shrinkage vs 9050 adjustments).
+        'stock_adjustment' => [
+            'reference_prefix' => 'ADJ-',
+            'start_number' => 1,
+            'default_warehouse_id' => null,
+            'allow_in_cost_override' => true,
+            'reason_accounts' => [
+                'damage' => 'inventory-shrinkage-and-wastage',
+                'expiry' => 'inventory-shrinkage-and-wastage',
+                'theft' => 'inventory-shrinkage-and-wastage',
+                'loss' => 'inventory-shrinkage-and-wastage',
+                'internal_use' => 'inventory-shrinkage-and-wastage',
+                'sample' => 'inventory-shrinkage-and-wastage',
+                'wastage' => 'inventory-shrinkage-and-wastage',
+                'quality_rejection' => 'inventory-shrinkage-and-wastage',
+                'count_down' => 'inventory-adjustments',
+                'count_up' => 'inventory-adjustments',
+                'found' => 'inventory-adjustments',
+                'opening_stock' => 'inventory-adjustments',
+                'production_output' => 'inventory-adjustments',
+                'surplus' => 'inventory-adjustments',
+            ],
+        ],
+        // Per-module "confirm before save" dialog toggles. Defaults to enabled so the
+        // confirmation appears until a user disables it per module in Module Settings.
+        'confirmations' => [
+            'sale' => true,
+            'sale_order' => true,
+            'sale_return' => true,
+            'sale_quotation' => true,
+            'purchase' => true,
+            'purchase_order' => true,
+            'purchase_return' => true,
+            'purchase_quotation' => true,
+            'receipt' => true,
+            'payment' => true,
+            'expense' => true,
+            'journal_entry' => true,
+            'account_transfer' => true,
+            'item_transfer' => true,
+            'stock_adjustment' => true,
+            'drawing' => true,
+            'item' => true,
+            'ledger' => true,
+            'owner' => true,
+            'account' => true,
         ],
         'purchase_order' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => false,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -272,16 +347,15 @@ class User extends Authenticatable
             'start_number' => 1,
         ],
         'purchase_return' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => true,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
                 'rates' => false,
-                'batch' => false,
+                'batch' => true,
                 'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
@@ -294,11 +368,10 @@ class User extends Authenticatable
             'start_number' => 1,
         ],
         'purchase_quotation' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
-                'colors' => false,
-                'size' => false,
+                'variant' => false,
                 'brand' => true,
                 'rack_no' => false,
                 'category' => true,
@@ -343,6 +416,26 @@ class User extends Authenticatable
             'contract_expiry_alert' => true,
             'document_expiry_alert' => true,
             'probation_ending_alert' => true,
+            'leave_request_alert' => true,
+            'leave_status_alert' => true,
+            'sound' => [
+                'notification_enabled' => true,
+                'notification_choice' => 'notification1',
+                'notification_custom_path' => null,
+                'notification_custom_url' => null,
+                'warning_enabled' => true,
+                'warning_choice' => 'warning1',
+                'warning_custom_path' => null,
+                'warning_custom_url' => null,
+                'success_enabled' => true,
+                'success_choice' => 'filling-your-inbox-success',
+                'success_custom_path' => null,
+                'success_custom_url' => null,
+                'login_enabled' => true,
+                'login_choice' => 'login1',
+                'login_custom_path' => null,
+                'login_custom_url' => null,
+            ],
         ],
         'security' => [
             'session_timeout' => 60,
@@ -460,7 +553,57 @@ class User extends Authenticatable
      */
     public function getAllPreferences(): array
     {
-        return array_replace_recursive(self::DEFAULT_PREFERENCES, $this->preferences ?? []);
+        $preferences = array_replace_recursive(self::DEFAULT_PREFERENCES, $this->preferences ?? []);
+
+        // array_replace_recursive merges list-style preferences by numeric
+        // index, so a stored list that is shorter than the default keeps the
+        // default's leftover tail entries (e.g. a user who hides all but two
+        // sidebar menus still gets ~20 back). Restore the sidebar menu list
+        // from the raw stored value so the user's exact selection is honoured,
+        // and fold away legacy keys (receipt/payment were merged into the
+        // cash_transactions group; transfer moved under the Account menu;
+        // the standalone trash menu moved into the system group).
+        $storedMenus = data_get($this->preferences, 'appearance.sidebar_menus');
+
+        if (is_array($storedMenus)) {
+            $normalizedMenus = [];
+
+            foreach ($storedMenus as $menu) {
+                $menu = match ($menu) {
+                    'receipt', 'payment' => 'cash_transactions',
+                    'trash' => 'system',
+                    default => $menu,
+                };
+
+                if ($menu === 'transfer' || $menu === 'preferences' || ! is_string($menu) || $menu === '') {
+                    continue;
+                }
+
+                $normalizedMenus[$menu] = true;
+            }
+
+            data_set($preferences, 'appearance.sidebar_menus', array_keys($normalizedMenus));
+        }
+
+        foreach (['sale', 'sale_order', 'sale_return', 'sale_quotation', 'purchase', 'purchase_order', 'purchase_return', 'purchase_quotation'] as $module) {
+            $fields = &$preferences[$module]['general_fields'];
+            $legacyFields = data_get($this->preferences, "{$module}.general_fields", []);
+
+            if (is_array($legacyFields) && array_key_exists('store', $legacyFields) && ! array_key_exists('warehouse', $legacyFields)) {
+                $fields['warehouse'] = $legacyFields['store'];
+            }
+
+            unset($fields['store']);
+            unset($fields);
+        }
+
+        $itemFields = &$preferences['item_management']['visible_fields'];
+        if (is_array($itemFields) && array_key_exists('file_upload', $itemFields) && ! array_key_exists('photo', $itemFields)) {
+            $itemFields['photo'] = $itemFields['file_upload'];
+        }
+        unset($itemFields);
+
+        return $preferences;
     }
 
     /**

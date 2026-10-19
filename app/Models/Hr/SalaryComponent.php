@@ -5,8 +5,8 @@ namespace App\Models\Hr;
 use App\Enums\ComponentCalculationType;
 use App\Enums\SalaryComponentType;
 use App\Models\Account\Account;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SalaryComponent extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, HasCompany, HasDependencyCheck, SoftDeletes;
 
     /** Wage tax withheld from the employee. Created by payroll, never by hand. */
     public const CODE_WAGE_TAX = 'WAGE_TAX';
@@ -52,7 +52,7 @@ class SalaryComponent extends Model
         return [
             'id' => 'string',
             'account_id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'component_type' => SalaryComponentType::class,

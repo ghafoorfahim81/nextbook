@@ -62,7 +62,7 @@ final class AccountControllerTest extends TestCase
             ->where('name', $name)
             ->where('number', $number)
             ->where('account_type_id', $account_type->id)
-            ->where('branch_id', $branch->id)
+            ->where('company_id', $company->id)
             ->where('created_by', $created_by->id)
             ->get();
         $this->assertCount(1, $accounts);

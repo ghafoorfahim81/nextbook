@@ -6,15 +6,15 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 class ExpenseCategory extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting,BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting,CompanySpecific, HasCompany, HasUserAuditable, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

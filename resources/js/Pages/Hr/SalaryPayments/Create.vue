@@ -8,6 +8,7 @@ import { ref, computed, watch } from 'vue';
 import axios from 'axios';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 
@@ -102,13 +103,15 @@ const submit = () => {
         onFinish: () => { creating.value = false; },
     });
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('hr.salary_payment') })">
         <FormPageToolbar back-route="salary-payments.index" module="salary_payments" />
 
-        <form @submit.prevent="submit">
+        <form ref="saveFormRef" @submit.prevent="submit">
             <SalaryPaymentFormFields
                 :form="form"
                 :filter-options="filterOptions"

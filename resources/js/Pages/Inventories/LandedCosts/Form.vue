@@ -12,9 +12,11 @@ import { useForm, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
-import { AlertCircle, Trash2 } from 'lucide-vue-next';
+import { Plus, Trash2, AlertCircle } from 'lucide-vue-next';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import { todayValueForCalendar } from '@/utils/dateDefaults';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 const page = usePage();
@@ -82,6 +84,10 @@ const normalizeItem = (row) => ({
   item_cost_after: row?.item_cost_after ?? 0,
 });
 
+// An empty line, built by the same normaliser as a loaded one so the two can
+// never drift apart — every field in normalizeItem already falls back.
+const blankRow = () => normalizeItem({});
+
 const normalizePurchase = (purchase) => ({
   id: purchase?.id || '',
   number: purchase?.number || '',
@@ -120,8 +126,17 @@ const form = useForm({
   total_cost: currentRecord.value?.total_cost || '',
   allocation_method: currentRecord.value?.allocation_method_id || 'by_value',
   notes: currentRecord.value?.notes || '',
-  items: (currentRecord.value?.items || []).map(normalizeItem),
+  items: (currentRecord.value?.items || []).length > 0 ? (currentRecord.value.items || []).map(normalizeItem) : [blankRow()],
+  attachments: [],
 });
+
+const existingAttachments = ref(currentRecord.value?.attachments || []);
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id); },
+  });
+};
 
 const handleSelectChange = (field, value) => {
   form[field] = value;
@@ -151,7 +166,7 @@ const isEditMode = computed(() => !!currentRecord.value?.id);
 // (see the watch below).
 const categoryAllocations = ref((props.landedCostCategories || []).map((category) => ({
   id: category.id,
-  name: category.name,
+  name: category.localized_name || category.name,
   amount: '',
 })));
 
@@ -364,6 +379,7 @@ const setRecordFromResponse = (data) => {
   form.allocation_method = data.allocation_method_id || 'by_value';
   form.notes = data.notes || '';
   form.items = (data.items || []).map(normalizeItem);
+  existingAttachments.value = data.attachments || [];
   applyCategoryAllocations(data.category_allocations);
 };
 
@@ -397,6 +413,7 @@ const buildPayload = (createAndNew = false) => ({
   allocation_method: form.allocation_method,
   notes: form.notes,
   items: prepareItemsPayload(),
+  attachments: form.attachments,
   category_allocations: categoryAllocationsPayload(),
   ...(createAndNew ? { create_and_new: true } : {}),
 });
@@ -623,12 +640,14 @@ onUnmounted(() => {
     sidebar.setOpen(prevSidebarOpen.value);
   }
 });
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
   <AppLayout :title="pageTitle" :sidebar-collapsed="true">
     <FormPageToolbar back-route="landed-costs.index" module="landed_cost" />
-    <form @submit.prevent="handleSubmitAction(false)">
+    <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
       <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
           {{ pageTitle }}
@@ -664,6 +683,7 @@ onUnmounted(() => {
             value-key="id"
             :reduce="method => method.id"
             :floating-text="t('landed_cost.allocation_method')"
+            is-required
             :disabled="isPosted"
             :error="form.errors?.allocation_method"
           />
@@ -685,13 +705,13 @@ onUnmounted(() => {
             :options="currencies"
             v-model="form.selected_currency"
             @update:modelValue="(v) => handleSelectChange('currency_id', v.id)"
-            label-key="code"
+            label-key="display_name"
             value-key="id"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
             :searchable="true"
             resource-type="currencies"
-            :search-fields="['name', 'code', 'symbol']"
+            :search-fields="['name', 'local_name', 'code', 'symbol']"
             :disabled="isPosted"
             :error="form.errors?.currency_id"
           />
@@ -856,6 +876,18 @@ onUnmounted(() => {
         </div>
       </Alert>
 
+      <div class="rounded-xl border border-violet-500 bg-card p-4 shadow-sm">
+        <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          :disabled="form.processing || isPosted"
+        >
+          {{ isEditMode ? t('landed_cost.update_draft') : t('landed_cost.save_draft') }}
+        </button>
       <div class="mt-3 flex flex-wrap items-center gap-2">
         <SubmitButtons
           :create-label="isEditMode ? t('general.update') : t('general.create', { name: t('landed_cost.title') })"
@@ -878,6 +910,7 @@ onUnmounted(() => {
         >
           {{ t('landed_cost.post') }}
         </button>
+      </div>
       </div>
     </form>
   </AppLayout>

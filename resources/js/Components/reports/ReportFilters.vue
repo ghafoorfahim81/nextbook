@@ -21,10 +21,12 @@ const showLedger = computed(() => props.activeDefinition.filters.includes('ledge
 const showCustomer = computed(() => props.activeDefinition.filters.includes('customer_id'))
 const showSupplier = computed(() => props.activeDefinition.filters.includes('supplier_id'))
 const showItem = computed(() => props.activeDefinition.filters.includes('item_id'))
+const showVariant = computed(() => props.activeDefinition.filters.includes('variant_id'))
 const showAccount = computed(() => props.activeDefinition.filters.includes('account_id'))
 const showWarehouse = computed(() => props.activeDefinition.filters.includes('warehouse_id'))
 const showCurrency = computed(() => props.activeDefinition.filters.includes('currency_id'))
 const showType = computed(() => props.activeDefinition.filters.includes('type'))
+const showReason = computed(() => props.activeDefinition.filters.includes('reason'))
 const showBalanceType = computed(() => props.activeDefinition.filters.includes('balance_type'))
 const showExpenseCategory = computed(() => props.activeDefinition.filters.includes('category_id'))
 const showExpenseAccount = computed(() => props.activeDefinition.filters.includes('expense_account_id'))
@@ -61,10 +63,24 @@ const ledgerOptions = computed(() => withPlaceholder(props.options.ledgers, t('r
 const customerOptions = computed(() => withPlaceholder(props.options.customers, t('report.filters.customer')))
 const supplierOptions = computed(() => withPlaceholder(props.options.suppliers, t('report.filters.supplier')))
 const itemOptions = computed(() => withPlaceholder(props.options.items, t('report.filters.item')))
+
+// Only the chosen item's variants. Every variant in the branch is shipped with
+// the page and narrowed here, so picking an item costs no round trip. With no
+// item chosen there is nothing to narrow by, so the picker stays empty.
+const variantOptions = computed(() => {
+  const itemId = props.filters.item_id
+  if (!itemId) return withPlaceholder([], t('report.filters.variant'))
+
+  return withPlaceholder(
+    (props.options.variants || []).filter((variant) => variant.item_id === itemId),
+    t('report.filters.variant'),
+  )
+})
 const accountOptions = computed(() => withPlaceholder(props.options.cash_accounts, t('report.filters.account')))
 const warehouseOptions = computed(() => withPlaceholder(props.options.warehouses, t('report.filters.warehouse')))
 const currencyOptions = computed(() => withPlaceholder(props.options.currencies, t('report.filters.currency')))
 const typeOptions = computed(() => withPlaceholder(props.options.sale_types, t('report.filters.type')))
+const reasonOptions = computed(() => withPlaceholder(props.options.stock_adjustment_reasons, t('report.filters.reason')))
 const balanceTypeOptions = computed(() => props.options.balance_types || [
   { id: 'all', name: t('report.balance_types.all') },
   { id: 'debtor', name: t('report.balance_types.debtor') },
@@ -92,6 +108,20 @@ function setFilter(key, value) {
   })
 }
 
+/**
+ * Changing the item drops any variant chosen under the previous one — that
+ * variant belongs to a different item, so leaving it would filter the report
+ * down to nothing with no visible reason why.
+ */
+function setItemFilter(itemId) {
+  updateFilters({
+    ...props.filters,
+    item_id: itemId,
+    variant_id: '',
+    page: 1,
+  })
+}
+
 function setReport(report) {
   updateFilters({
     ...props.filters,
@@ -100,11 +130,14 @@ function setReport(report) {
     customer_id: '',
     supplier_id: '',
     item_id: '',
+    variant_id: '',
     account_id: '',
     currency_id: '',
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
+    warehouse_id: '',
+    reason: '',
     employee_id: '',
     department_id: '',
     designation_id: '',
@@ -127,8 +160,8 @@ function setReport(report) {
     </div>
 
     <div class="space-y-4 p-5">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"> 
-        <div v-if="showReportSelect">  
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div v-if="showReportSelect">
           <NextSelect
             :floating-text="t('report.filters.report')"
             :model-value="filters.report"
@@ -137,19 +170,20 @@ function setReport(report) {
             value-key="key"
             :clearable="false"
             @update:modelValue="setReport"
-          /> 
+          />
         </div>
         <div v-if="isSuperAdmin">
           <NextSelect
-          :floating-text="t('report.filters.branch')"
-          :model-value="filters.branch_id"
-          :options="branchOptions"
-          :clearable="false"
-          label-key="name"
-          value-key="id"
-          @update:modelValue="setFilter('branch_id', $event)"
-        />   
+            :floating-text="t('report.filters.branch')"
+            :model-value="filters.branch_id"
+            :options="branchOptions"
+            :clearable="false"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('branch_id', $event)"
+          />
         </div>
+        <div>
           <NextSelect
             :floating-text="t('report.filters.per_page')"
             :model-value="filters.per_page"
@@ -159,12 +193,14 @@ function setReport(report) {
             :clearable="false"
             :empty-value="15"
             @update:modelValue="setFilter('per_page', Number($event))"
-          /> 
-          <NextDate v-model="filters.date_from"  :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_from') })" />
-       
-          <NextDate v-model="filters.date_to"   :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_to') })" />
-       
-
+          />
+        </div>
+        <div>
+          <NextDate v-model="filters.date_from" :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_from') })" />
+        </div>
+        <div>
+          <NextDate v-model="filters.date_to" :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_to') })" />
+        </div>
         <div v-if="showLedger">
           <NextSelect
             :floating-text="t('report.filters.ledger')"
@@ -174,8 +210,8 @@ function setReport(report) {
             value-key="id"
             @update:modelValue="setFilter('ledger_id', $event)"
           />
-          </div>
-          <div v-if="showCustomer">
+        </div>
+        <div v-if="showCustomer">
           <NextSelect
             :floating-text="t('report.filters.customer')"
             :model-value="filters.customer_id"
@@ -184,8 +220,8 @@ function setReport(report) {
             value-key="id"
             @update:modelValue="setFilter('customer_id', $event)"
           />
-          </div>
-          <div v-if="showSupplier">
+        </div>
+        <div v-if="showSupplier">
           <NextSelect
             :floating-text="t('report.filters.supplier')"
             :model-value="filters.supplier_id"
@@ -194,15 +230,24 @@ function setReport(report) {
             value-key="id"
             @update:modelValue="setFilter('supplier_id', $event)"
           />
-          </div>
-          <div v-if="showItem">
+        </div>
+        <div v-if="showItem">
           <NextSelect
             :floating-text="t('report.filters.item')"
             :model-value="filters.item_id"
             :options="itemOptions"
-            @update:modelValue="setFilter('item_id', $event)"
-          /> 
-          </div>
+            @update:modelValue="setItemFilter($event)"
+          />
+        </div>
+        <div v-if="showVariant">
+          <NextSelect
+            :floating-text="t('report.filters.variant')"
+            :model-value="filters.variant_id"
+            :options="variantOptions"
+            :disabled="!filters.item_id"
+            @update:modelValue="setFilter('variant_id', $event)"
+          />
+        </div>
         <div v-if="showAccount">
           <NextSelect
             :floating-text="t('report.filters.account')"
@@ -221,6 +266,16 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('type', $event)"
+          />
+        </div>
+        <div v-if="showReason">
+          <NextSelect
+            :floating-text="t('report.filters.reason')"
+            :model-value="filters.reason"
+            :options="reasonOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('reason', $event)"
           />
         </div>
         <div v-if="showBalanceType">
@@ -347,8 +402,8 @@ function setReport(report) {
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
-        <Button @click="$emit('submit')">{{ t('report.filters.apply') }}</Button>
-        <Button variant="outline" @click="$emit('reset')">{{ t('report.filters.reset') }}</Button>
+        <Button variant="outline" class="h-9 border-primary text-primary hover:bg-primary hover:text-white" @click="$emit('submit')">{{ t('report.filters.apply') }}</Button>
+        <Button variant="outline" class="h-9 border-primary text-primary hover:bg-primary hover:text-white" @click="$emit('reset')">{{ t('report.filters.reset') }}</Button>
       </div>
     </div>
   </div>

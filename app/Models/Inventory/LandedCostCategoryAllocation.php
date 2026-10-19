@@ -4,7 +4,9 @@ namespace App\Models\Inventory;
 
 use App\Models\Administration\LandedCostCategory;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -15,13 +17,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LandedCostCategoryAllocation extends Model
 {
-    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $table = 'landed_cost_category_allocations';
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'landed_cost_id',
         'landed_cost_category_id',
         'amount',

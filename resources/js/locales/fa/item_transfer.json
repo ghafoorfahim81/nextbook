@@ -13,5 +13,10 @@
   "complete_transfer": "تکمیل انتقال",
   "completed_successfully": "انتقال با موفقیت تکمیل شد",
   "cancelled_successfully": "انتقال با موفقیت لغو شد",
-  "cannot_edit_completed_or_cancelled_transfer": "امکان ویرایش انتقال های تکمیل شده یا لغو شده وجود ندارد"
+  "cannot_edit_completed_or_cancelled_transfer": "امکان ویرایش انتقال های تکمیل شده یا لغو شده وجود ندارد",
+  "has_transfer_cost": "این انتقال هزینه انتقال دارد",
+  "bank_account": "حساب بانکی",
+  "expense_account": "حساب مصارف",
+  "expense_account_hint": "هزینه انتقال جنس بین گدام‌های خودتان در این حساب ثبت می‌شود. به صورت پیش‌فرض حساب «هزینه انتقال جنس» انتخاب می‌شود تا این هزینه در صورت سود و زیان جداگانه دیده شود.",
+  "cannot_delete_completed_transfer": "انتقال های تکمیل شده حذف شده نمی تواند"
 }

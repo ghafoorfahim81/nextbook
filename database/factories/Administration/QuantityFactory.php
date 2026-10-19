@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Administration;
 
+use App\Models\Administration\Company;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Quantity;
@@ -27,7 +28,7 @@ class QuantityFactory extends Factory
             'unit' => fake()->randomElement(['piece', 'kg', 'liter']),
             'symbol' => strtoupper(fake()->lexify('??')),
             'slug' => $slug,
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
             'is_main' => false,
             'is_active' => true,
         ];

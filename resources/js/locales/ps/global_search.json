@@ -8,6 +8,11 @@
   "no_results_for": "د \"{query}\" لپاره پایله ونه موندل شوه",
   "navigate": "حرکت",
   "open_new_tab": "په نوي ټب کې پرانیستل",
+  "recent": "وروستي",
+  "top_customers": "غوره پېرودونکي",
+  "top_suppliers": "غوره عرضه کوونکي",
+  "top_accounts": "لوړ پاتې حسابونه",
+  "top_items": "ډېر فعال توکي",
   "tabs": {
     "all": "ټول",
     "items": "توکي",

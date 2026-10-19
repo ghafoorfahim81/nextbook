@@ -54,7 +54,7 @@ class SearchController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => __('messages.errors.validation_failed'),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -105,7 +105,7 @@ class SearchController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Search failed',
+                'message' => __('messages.errors.search_failed'),
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -212,14 +212,19 @@ class SearchController extends Controller
                 'name',
                 'code',
                 'type',
+                'counterpart_ledger_id',
                 'email',
                 'phone_no',
                 'address',
                 'currency_id',
+                'discount',
+                'credit_limit',
+                'credit_limit_enabled',
+                'credit_terms',
                 'is_active',
-                'branch_id',
+                'company_id',
             ])
-            ->withStatementTotals() 
+            ->withStatementTotals()
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -258,14 +263,42 @@ class SearchController extends Controller
      */
     private function searchItems(string $searchTerm, array $fields, int $limit, array $additionalParams): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
+        // SKU, barcode and price live on the variant now, so a caller that needs
+        // them (barcode printing) asks for them explicitly. The rest of the
+        // pickers — sales, purchases — keep the lighter payload they had.
+        $withVariants = filter_var(
+            $additionalParams['with_variants'] ?? false,
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        // `stockOut` is deliberately absent: Item::stockOut() still points at
+        // App\Models\Inventory\StockOut, which no longer exists, so eager-loading
+        // it made every item search die with a "failed to open stream" 500.
+        // ItemResource derives stock_out_count from `stocks` anyway.
+        $relations = ['unitMeasure', 'brand', 'category', 'stocks', 'openings'];
+
+        if ($withVariants) {
+            $relations['variants'] = fn ($q) => $q->where('is_active', true)->orderBy('sort_order');
+        }
+
         // Use Eloquent so ItemResource receives models (not stdClass) and can access relations
         $query = Item::query()
-            ->with(['unitMeasure', 'brand', 'category', 'stocks', 'openings', 'stockOut'])
-            ->where(function ($q) use ($searchTerm, $fields) {
+            ->with($relations)
+            ->where(function ($q) use ($searchTerm, $fields, $withVariants) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'])) {
                         $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
+                }
+
+                // Scanning a variant's own barcode has to find its item, which
+                // the item-column search alone cannot do.
+                if ($withVariants) {
+                    $q->orWhereHas('variants', function ($variantQuery) use ($searchTerm) {
+                        $variantQuery->whereRaw('LOWER(sku) iLike ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(barcode) iLike ?', [$searchTerm])
+                            ->orWhereRaw('LOWER(name) iLike ?', [$searchTerm]);
+                    });
                 }
             });
 
@@ -309,7 +342,7 @@ class SearchController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => __('messages.errors.validation_failed'),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -322,7 +355,7 @@ class SearchController extends Controller
         if (!$warehouseId || !Warehouse::query()->where('id', $warehouseId)->first()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Warehouse not found',
+                'message' => __('messages.errors.warehouse_not_found'),
             ], 404);
         }
 
@@ -342,7 +375,7 @@ class SearchController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Search failed',
+                'message' => __('messages.errors.search_failed'),
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -355,11 +388,14 @@ class SearchController extends Controller
         $query = Item::query()
             ->select([
                 'id', 'name', 'code', 'generic_name', 'packing', 'barcode',
-                'unit_measure_id', 'brand_id', 'category_id', 'colors', 'size_id',
+                'unit_measure_id', 'brand_id', 'category_id',
                 'purchase_price', 'sale_price', 'margin_percentage', 'rate_a', 'rate_b', 'rate_c', 'rack_no', 'fast_search',
                 'avg_cost',
             ])
-            ->with(['unitMeasure', 'brand', 'category', 'size'])
+            ->with([
+                'unitMeasure', 'brand', 'category',
+                'variants' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order'),
+            ])
             ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
                 $term = '%' . strtolower($searchTerm) . '%';
                 $query->where(function ($builder) use ($searchableFields, $term) {
@@ -405,62 +441,108 @@ class SearchController extends Controller
         $itemIds = $items->pluck('id')->all();
 
         $stockBalances = StockBalance::query()
-            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity'])
+            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity', 'reserved_out', 'reserved_in', 'variant_id'])
             ->where('warehouse_id', $warehouseId)
             ->whereIn('item_id', $itemIds)
             ->get();
 
-        return $items->map(function (Item $item) use ($stockBalances, $warehouseId, $inStockOnly) {
+        // When enforcement is on, drafted (reserved_out) stock is treated as unavailable.
+        $enforceReservation = (bool) user_preference('sale.enforce_sale_stock_reservation', false);
+
+        return $items->map(function (Item $item) use ($stockBalances, $warehouseId, $inStockOnly, $enforceReservation) {
         $itemStockBalances = $stockBalances->where('item_id', $item->id)
         ->where('warehouse_id', $warehouseId);
 
         $batchSummaries = [];
         $expirySummaries = [];
+        $variantIdSummaries = [];
         $nonBatchOnHand = 0;
+        $nonBatchReservedOut = 0;
+        $nonBatchReservedIn = 0;
         $hasBatch = false;
         $hasExpiry = false;
 
         foreach ($itemStockBalances as $balance) {
-            $available = max(0, (float) $balance->quantity);
-            if ($available <= 0) {
+            $onHand = max(0, (float) $balance->quantity);
+            $reservedOut = max(0, (float) $balance->reserved_out);
+            $reservedIn = max(0, (float) $balance->reserved_in);
+
+            // Keep rows that carry a reservation even when physical quantity is zero.
+            if ($onHand <= 0 && $reservedOut <= 0 && $reservedIn <= 0) {
                 continue;
+            }
+
+            if ($balance->variant_id !== null) {
+                $variantIdSummary = $variantIdSummaries[$balance->variant_id] ?? [
+                    'on_hand' => 0,
+                    'reserved_out' => 0,
+                    'reserved_in' => 0,
+                ];
+                $variantIdSummary['on_hand'] += $onHand;
+                $variantIdSummary['reserved_out'] += $reservedOut;
+                $variantIdSummary['reserved_in'] += $reservedIn;
+                $variantIdSummaries[$balance->variant_id] = $variantIdSummary;
             }
 
             $batchKey = trim((string) ($balance->batch ?? ''));
             if ($batchKey !== '') {
                 $hasBatch = true;
-                $batchSummaries[$batchKey] = [
+                $summary = $batchSummaries[$batchKey] ?? [
                     'batch' => $batchKey,
                     'expire_date' => $balance->expire_date,
-                    'on_hand' => ($batchSummaries[$batchKey]['on_hand'] ?? 0) + $available,
+                    'on_hand' => 0,
+                    'reserved_out' => 0,
+                    'reserved_in' => 0,
                     'avg_cost' => $item->avg_cost,
                 ];
+                $summary['on_hand'] += $onHand;
+                $summary['reserved_out'] += $reservedOut;
+                $summary['reserved_in'] += $reservedIn;
+                $batchSummaries[$batchKey] = $summary;
             } elseif ($balance->expire_date) {
                 $hasExpiry = true;
                 $expiryKey = (string) $balance->expire_date;
-                $expirySummaries[$expiryKey] = [
+                $summary = $expirySummaries[$expiryKey] ?? [
                     'expire_date' => $balance->expire_date,
-                    'on_hand' => ($expirySummaries[$expiryKey]['on_hand'] ?? 0) + $available,
+                    'on_hand' => 0,
+                    'reserved_out' => 0,
+                    'reserved_in' => 0,
                     'avg_cost' => $item->avg_cost,
                 ];
+                $summary['on_hand'] += $onHand;
+                $summary['reserved_out'] += $reservedOut;
+                $summary['reserved_in'] += $reservedIn;
+                $expirySummaries[$expiryKey] = $summary;
             } else {
-                $nonBatchOnHand += $available;
+                $nonBatchOnHand += $onHand;
+                $nonBatchReservedOut += $reservedOut;
+                $nonBatchReservedIn += $reservedIn;
             }
         }
 
-        $batches = array_map(function ($batch) {
+        $availableFor = function (float $onHand, float $reservedOut) use ($enforceReservation) {
+            return $enforceReservation ? round(max(0, $onHand - $reservedOut), 2) : round($onHand, 2);
+        };
+
+        $batches = array_map(function ($batch) use ($availableFor) {
             return [
                 'batch' => $batch['batch'],
                 'expire_date' => $batch['expire_date'],
                 'on_hand' => round($batch['on_hand'] ?? 0, 2),
+                'reserved_out' => round($batch['reserved_out'] ?? 0, 2),
+                'reserved_in' => round($batch['reserved_in'] ?? 0, 2),
+                'available' => $availableFor((float) ($batch['on_hand'] ?? 0), (float) ($batch['reserved_out'] ?? 0)),
                 'avg_cost' => $batch['avg_cost'],
             ];
         }, $batchSummaries);
 
-        $expiryBatches = array_map(function ($expiry) {
+        $expiryBatches = array_map(function ($expiry) use ($availableFor) {
             return [
                 'expire_date' => $expiry['expire_date'],
                 'on_hand' => round($expiry['on_hand'] ?? 0, 2),
+                'reserved_out' => round($expiry['reserved_out'] ?? 0, 2),
+                'reserved_in' => round($expiry['reserved_in'] ?? 0, 2),
+                'available' => $availableFor((float) ($expiry['on_hand'] ?? 0), (float) ($expiry['reserved_out'] ?? 0)),
                 'avg_cost' => $expiry['avg_cost'],
             ];
         }, $expirySummaries);
@@ -471,6 +553,22 @@ class SearchController extends Controller
             + $nonBatchOnHand,
             2
         );
+
+        $totalReservedOut = round(
+            array_sum(array_column($batches, 'reserved_out'))
+            + array_sum(array_column($expiryBatches, 'reserved_out'))
+            + $nonBatchReservedOut,
+            2
+        );
+
+        $totalReservedIn = round(
+            array_sum(array_column($batches, 'reserved_in'))
+            + array_sum(array_column($expiryBatches, 'reserved_in'))
+            + $nonBatchReservedIn,
+            2
+        );
+
+        $totalAvailable = $availableFor($totalOnHand, $totalReservedOut);
 
         if ($inStockOnly && $totalOnHand <= 0) {
             return null;
@@ -488,8 +586,6 @@ class SearchController extends Controller
             'unitMeasure' => $item->unitMeasure,
             'brand' => $item->brand,
             'category' => $item->category,
-            'colors' => $item->colors,
-            'size' => $item->size,
             'purchase_price' => $item->purchase_price,
             'sale_price' => $item->sale_price,
             'margin_percentage' => $item->margin_percentage,
@@ -497,11 +593,52 @@ class SearchController extends Controller
             'selected_batch' => null,
             'rate_b' => $item->rate_b,
             'rate_c' => $item->rate_c,
-            'rack_no' => $item->rack_no, 
+            'rack_no' => $item->rack_no,
             'fast_search' => $item->fast_search,
             'batches' => array_values($batches ?? []),
             'expiry_batches' => array_values($expiryBatches ?? []),
+            'has_variants' => $item->variants->count() > 1,
+            // The real item_variants rows — every item has at least one.
+            // Built without ItemVariant::displayName() to avoid an N+1: that
+            // method falls back to $this->item->name, which is already this row.
+            'item_variants' => $item->variants->map(function (\App\Models\Inventory\ItemVariant $v) use ($item, $variantIdSummaries, $availableFor) {
+                $label = filled($v->name)
+                    ? $v->name
+                    : collect($v->attributes ?? [])->filter()->values()->implode(' / ');
+
+                $stock = $variantIdSummaries[$v->id] ?? null;
+
+                return [
+                    'id' => $v->id,
+                    'sku' => $v->sku,
+                    'barcode' => $v->barcode,
+                    'display_name' => $label !== '' ? $label : $item->name,
+                    'is_default' => (bool) $v->is_default,
+                    'attributes' => $v->attributes,
+                    // The variant's own prices, when it has been priced
+                    // separately from the item; null falls the form back to the
+                    // item's figure. A sale form must be handed sale_price and
+                    // a purchase form purchase_price — avg_cost is what the
+                    // stock is worth, and is never what either charges.
+                    'sale_price' => $v->sale_price !== null && (float) $v->sale_price > 0 ? (float) $v->sale_price : null,
+                    'purchase_price' => $v->purchase_price !== null && (float) $v->purchase_price > 0 ? (float) $v->purchase_price : null,
+                    'avg_cost' => $v->avg_cost !== null && (float) $v->avg_cost > 0 ? (float) $v->avg_cost : null,
+                    // Only set once stock has actually been recorded against this
+                    // variant specifically; null tells the picker to fall back to
+                    // the item's total on-hand rather than show a false zero.
+                    'on_hand' => $stock ? round($stock['on_hand'], 2) : null,
+                    'reserved_out' => $stock ? round($stock['reserved_out'], 2) : null,
+                    'available' => $stock ? $availableFor((float) $stock['on_hand'], (float) $stock['reserved_out']) : null,
+                    'has_stock' => (bool) $stock,
+                ];
+            })->values(),
+            'default_variant_id' => optional(
+                $item->variants->firstWhere('is_default', true) ?? $item->variants->first()
+            )->id,
             'on_hand' => $totalOnHand,
+            'reserved_out' => $totalReservedOut,
+            'reserved_in' => $totalReservedIn,
+            'available' => $totalAvailable,
             'avg_cost' => $item->avg_cost,
             'has_batch' => $hasBatch,
             'has_expiry' => $hasExpiry,
@@ -522,158 +659,28 @@ class SearchController extends Controller
         return "items_with_batches:warehouse:{$warehouseId}:search:{$hash}:limit:{$limit}";
     }
 
-
-    // private function gatherItemsForWarehouse(string $warehouseId, string $searchTerm, int $limit): array
-    // {
-    //     $searchableFields = ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'];
-
-    //     $query = Item::query()
-    //         ->select([
-    //             'id',
-    //             'name',
-    //             'code',
-    //             'generic_name',
-    //             'packing',
-    //             'barcode',
-    //             'unit_measure_id',
-    //             'brand_id',
-    //             'category_id',
-    //             'colors',
-    //             'size_id',
-    //             'purchase_price',
-    //             'sale_price',
-    //             'rate_a',
-    //             'rate_b',
-    //             'rate_c',
-    //             'rack_no',
-    //             'fast_search',
-    //         ])
-    //         ->with([
-    //             'unitMeasure:id,name,unit,quantity_id',
-    //             'brand:id,name',
-    //             'category:id,name',
-    //             'size:id,name',
-    //         ])
-    //         ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
-    //             $term = '%' . strtolower($searchTerm) . '%';
-    //             $query->where(function ($builder) use ($searchableFields, $term) {
-    //                 foreach ($searchableFields as $field) {
-    //                     $builder->orWhereRaw("LOWER({$field}) iLike ?", [$term]);
-    //                 }
-    //             });
-    //         })
-    //         ->orderBy('name')
-    //         ->limit($limit);
-
-    //     $items = $query->get();
-    //     if ($items->isEmpty()) {
-    //         return [];
-    //     }
-
-    //     $itemIds = $items->pluck('id')->all();
-
-    //     $stocks = Stock::query()
-    //         ->select(['id', 'item_id', 'batch', 'expire_date', 'quantity', 'unit_price'])
-    //         ->where('warehouse_id', $warehouseId)
-    //         ->whereIn('item_id', $itemIds)
-    //         ->get();
-
-    //     $stockOuts = StockOut::query()
-    //         ->select(['stock_id', 'item_id', 'quantity'])
-    //         ->where('warehouse_id', $warehouseId)
-    //         ->whereIn('item_id', $itemIds)
-    //         ->get()
-    //         ->groupBy('stock_id')
-    //         ->map(fn ($group) => (float) $group->sum('quantity'));
-
-    //     $stocksByItem = $stocks->groupBy('item_id');
-
-    //     return $items->map(function (Item $item) use ($stocksByItem, $stockOuts) {
-    //         $itemStocks = $stocksByItem->get($item->id, collect());
-    //         $batchSummaries = [];
-    //         $nonBatchOnHand = 0;
-
-    //         foreach ($itemStocks as $stock) {
-    //             $available = max(0, (float) $stock->quantity - ($stockOuts[$stock->id] ?? 0));
-    //             if ($available <= 0) {
-    //                 continue;
-    //             }
-
-    //             $batchKey = trim((string) ($stock->batch ?? ''));
-    //             if ($batchKey !== '') {
-    //                 if (!isset($batchSummaries[$batchKey])) {
-    //                     $batchSummaries[$batchKey] = [
-    //                         'batch' => $batchKey,
-    //                         'expire_date' => $stock->expire_date,
-    //                         'on_hand' => 0,
-    //                         'unit_price' => $stock->unit_price,
-    //                     ];
-    //                 }
-    //                 $batchSummaries[$batchKey]['expire_date'] = $batchSummaries[$batchKey]['expire_date'] ?? $stock->expire_date;
-    //                 $batchSummaries[$batchKey]['on_hand'] += $available;
-    //             } else {
-    //                 $nonBatchOnHand += $available;
-    //             }
-    //         }
-
-    //         $batches = array_values(array_map(function ($batch) {
-    //             return [
-    //                 'batch' => $batch['batch'],
-    //                 'expire_date' => $batch['expire_date'],
-    //                 'on_hand' => round($batch['on_hand'] ?? 0, 2),
-    //                 'unit_price' => $batch['unit_price'],
-    //             ];
-    //         }, $batchSummaries));
-
-    //         $batchOnHand = array_reduce($batches, fn ($carry, $batch) => $carry + ($batch['on_hand'] ?? 0), 0);
-    //         $totalOnHand = round($batchOnHand + $nonBatchOnHand, 2);
-    //         $hasBatches = count($batches) > 0;
-
-    //         return [
-    //             'id' => $item->id,
-    //             'name' => $item->name,
-    //             'code' => $item->code,
-    //             'generic_name' => $item->generic_name,
-    //             'packing' => $item->packing,
-    //             'barcode' => $item->barcode,
-    //             'unit_measure_id' => $item->unit_measure_id,
-    //             'unitMeasure' => $item->unitMeasure,
-    //             'brand' => $item->brand,
-    //             'category' => $item->category,
-    //             'colors' => $item->colors,
-    //             'size' => $item->size,
-    //             'purchase_price' => $item->purchase_price,
-    //             'sale_price' => $item->sale_price,
-    //             'rate_a' => $item->rate_a,
-    //             'rate_b' => $item->rate_b,
-    //             'rate_c' => $item->rate_c,
-    //             'rack_no' => $item->rack_no,
-    //             'fast_search' => $item->fast_search,
-    //             'batches' => $batches,
-    //             'has_batches' => $hasBatches,
-    //             'selected_batch' => null,
-    //             'on_hand' => $totalOnHand,
-    //             'avg_cost' => $item->avgCost(),
-    //         ];
-    //     })->values()->all();
-    // }
     /**
      * Search currencies
      */
     private function searchCurrencies(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
         $query = Currency::query()
-            ->select('id', 'name', 'code', 'symbol', 'exchange_rate')
+            ->select('id', 'name', 'local_name', 'code', 'symbol', 'exchange_rate', 'is_base_currency')
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
-                    if (in_array($field, ['name', 'code', 'symbol'])) {
+                    if (in_array($field, ['name', 'local_name', 'code', 'symbol'])) {
                         $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
 
-        return $query->limit($limit)->get()->toArray();
+        return $query->limit($limit)->get()->map(function (Currency $currency) {
+            return array_merge($currency->toArray(), [
+                'localized_name' => $currency->localized_name,
+                'display_name' => $currency->display_name,
+            ]);
+        })->all();
     }
 
     /**
@@ -779,16 +786,18 @@ class SearchController extends Controller
     private function searchCategories(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
         $query = Category::query()
-            ->select('id', 'name', 'remark')
+            ->select('id', 'name', 'local_name', 'remark')
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
-                    if (in_array($field, ['name', 'remark'])) {
+                    if (in_array($field, ['name', 'local_name', 'remark'])) {
                         $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
 
+        // `localized_name` rides along via the model's appends, so pickers label
+        // search hits the same way they label the options they were given.
         return $query->limit($limit)->get()->toArray();
     }
     /**
@@ -915,6 +924,81 @@ class SearchController extends Controller
         $data = Cache::remember($cacheKey, now()->addMinutes(5), fn () => $this->buildGlobalIndex());
 
         return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Lightweight "suggested" lists shown in the search modal before typing.
+     * Cached longer than the full index since these rankings barely change.
+     */
+    public function suggestions(): JsonResponse
+    {
+        $branchId = Auth::user()?->branch_id ?? 'default';
+        $cacheKey = 'global_search_suggestions_v1:' . $branchId;
+
+        $data = Cache::remember($cacheKey, now()->addMinutes(20), fn () => [
+            'top_customers' => $this->topLedgers('customer', '/customers/'),
+            'top_suppliers' => $this->topLedgers('supplier', '/suppliers/'),
+            'top_accounts'  => $this->topAccounts(),
+            'top_items'     => $this->topItems(),
+        ]);
+
+        return response()->json(['data' => $data]);
+    }
+
+    private function topLedgers(string $type, string $urlPrefix): array
+    {
+        $sub = Ledger::query()
+            ->select(['id', 'name'])
+            ->withStatementTotals()
+            ->where('type', $type)
+            ->where('is_active', true);
+
+        return DB::query()->fromSub($sub, 'x')
+            ->orderByRaw('ABS(statement_total_debit - statement_total_credit) DESC')
+            ->limit(5)
+            ->get()
+            ->map(fn ($l) => [
+                'id' => $l->id, 'name' => $l->name,
+                'amount' => round(abs($l->statement_total_debit - $l->statement_total_credit), 2),
+                'url' => $urlPrefix . $l->id,
+            ])->all();
+    }
+
+    private function topAccounts(): array
+    {
+        $locale = app()->getLocale();
+
+        $sub = Account::query()
+            ->select(['id', 'name', 'local_name'])
+            ->withStatementTotals()
+            ->where('is_active', true);
+
+        return DB::query()->fromSub($sub, 'x')
+            ->orderByRaw('ABS(statement_total_debit - statement_total_credit) DESC')
+            ->limit(5)
+            ->get()
+            ->map(fn ($a) => [
+                'id' => $a->id,
+                'name' => $locale === 'en' ? $a->name : ($a->local_name ?: $a->name),
+                'amount' => round(abs($a->statement_total_debit - $a->statement_total_credit), 2),
+                'url' => '/chart-of-accounts/' . $a->id,
+            ])->all();
+    }
+
+    private function topItems(): array
+    {
+        return StockMovement::query()
+            ->join('items', 'items.id', '=', 'stock_movements.item_id')
+            ->selectRaw('items.id, items.name, COUNT(*) as tx_count')
+            ->groupBy('items.id', 'items.name')
+            ->orderByDesc('tx_count')
+            ->limit(5)
+            ->get()
+            ->map(fn ($i) => [
+                'id' => $i->id, 'name' => $i->name,
+                'amount' => (int) $i->tx_count,
+                'url' => '/items/' . $i->id,
+            ])->all();
     }
 
     private function buildGlobalIndex(): array

@@ -1,0 +1,18 @@
+{
+  "view_any": "ټول کتل",
+  "view": "کتل",
+  "create": "جوړول",
+  "update": "سمول",
+  "edit": "سمول",
+  "delete": "ړنګول",
+  "import": "واردول",
+  "export": "صادرول",
+  "print": "چاپ",
+  "approve": "تصویب",
+  "reject": "ردول",
+  "email": "ایمیل لېږل",
+  "force_delete": "دایمي ړنګول",
+  "restore": "بیا راګرځول",
+  "allocate": "ځانګړې کول",
+  "post": "ثبتول"
+}

@@ -1,23 +1,32 @@
 <script setup>
-import AppLayout from '@/Layouts/Layout.vue';
-import { ref, computed, onMounted, nextTick } from 'vue';
+import AppLayout from '@/Layouts/Layout.vue'
+import AttachmentList from '@/Components/AttachmentList.vue';
+import TimeSeriesChart from '@/Components/charts/TimeSeriesChart.vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+import { toast } from 'vue-sonner';
 import { Button } from '@/Components/ui/button';
+import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue';
 import {
     Package, Hash, Pill, Box, Tag, Layers, TrendingUp, TrendingDown,
-    DollarSign, Palette, Ruler, MapPin, Barcode, Search,
-    Building, Target, User, Download, ArrowLeft, SquarePen, HandCoins
+    DollarSign, Ruler, MapPin, Search, ShieldCheck, PackageSearch,
+    SlidersHorizontal, Globe, Factory, CalendarClock, Scale, Boxes,
+    Building, Target, User, Download, ArrowLeft, SquarePen, HandCoins,
+    Power, PowerOff, Loader2, Activity
 } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
-import JsBarcode from 'jsbarcode';
+import { useBusinessProfile } from '@/composables/useBusinessProfile';
 
 const { t } = useI18n();
+const page = usePage();
+const { showsSection } = useBusinessProfile();
 const { can } = useAuth();
 
 const props = defineProps({
     item: { type: Object, required: true },
+    stockByWarehouse: { type: Array, default: () => [] },
 });
 
 const itemData = computed(() => props.item?.data ?? props.item ?? {});
@@ -30,17 +39,19 @@ const outPage = ref(1);
 const inHasMore = ref(true);
 const outHasMore = ref(true);
 const loading = ref(false);
-const itemBarcodeSvg = ref(null);
 
 const currentRecords = computed(() => activeTab.value === 'in' ? inRecords.value : outRecords.value);
+
+/** Whether the page renders the per-variant table further down. */
+const showsVariantTable = computed(() => showsSection('variants') && variantRows.value.length > 0);
 
 const itemDetails = computed(() => [
     { label: t('general.name'), value: itemData.value?.name, icon: Package },
     { label: t('item.code'), value: itemData.value?.code, icon: Hash },
+    { label: t('item.sku'), value: itemData.value?.sku, icon: Hash },
+    { label: t('item.barcode'), value: itemData.value?.barcode, icon: Hash },
     { label: t('item.generic_name'), value: itemData.value?.generic_name, icon: Pill },
     { label: t('item.packing'), value: itemData.value?.packing, icon: Box },
-    { label: t('item.barcode'), value: itemData.value?.barcode, icon: Barcode },
-    { label: t('item.sku'), value: itemData.value?.sku, icon: Barcode },
     { label: t('item.item_type'), value: itemData.value?.item_type, icon: Tag },
     { label: t('item.unit_measure'), value: itemData.value?.measure, icon: Ruler },
     { label: t('item.brand'), value: itemData.value?.brand_name, icon: Tag },
@@ -48,13 +59,14 @@ const itemDetails = computed(() => [
     { label: t('item.asset_account'), value: itemData.value?.asset_account?.name, icon: Building },
     { label: t('item.income_account'), value: itemData.value?.income_account?.name, icon: TrendingUp },
     { label: t('item.cost_account'), value: itemData.value?.cost_account?.name, icon: TrendingDown },
-    { label: t('item.maximum_stock'), value: itemData.value?.maximum_stock, icon: TrendingUp },
     { label: t('item.current_stock'), value: itemData.value?.on_hand || 0, icon: Target },
-    { label: t('item.colors'), value: itemData.value?.colors, icon: Palette },
-    { label: t('item.size'), value: itemData.value?.size?.name, icon: Ruler },
-    { label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign },
     { label: t('item.average_cost'), value: itemData.value?.avg_cost, icon: DollarSign },
-    { label: t('item.sale_price'), value: itemData.value?.sale_price, icon: DollarSign },
+    // Purchase price is a per-variant figure and is read off the variants
+    // table below. It only appears up here for trades that never show that
+    // table, where the item row is the only place it could be read at all.
+    ...(showsVariantTable.value
+        ? []
+        : [{ label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign }]), 
     { label: t('item.margin_percentage'), value: itemData.value?.margin_percentage, icon: DollarSign },
     { label: t('item.rate_a'), value: itemData.value?.rate_a, icon: DollarSign },
     { label: t('item.rate_b'), value: itemData.value?.rate_b, icon: DollarSign },
@@ -64,6 +76,198 @@ const itemDetails = computed(() => [
     { label: t('general.created_by'), value: itemData.value?.created_by?.name || '—', icon: User },
     { label: t('general.updated_by'), value: itemData.value?.updated_by?.name || '—', icon: User },
 ]);
+
+// Only render a row when the item actually carries the value.
+const filled = (value) => value !== null && value !== undefined && value !== '' && value !== 0;
+
+const dimensions = computed(() => {
+    const { length, width, height } = itemData.value || {};
+    return [length, width, height].some(filled) ? `${length ?? '—'} × ${width ?? '—'} × ${height ?? '—'}` : null;
+});
+
+const sourcingDetails = computed(() => [
+    { label: t('item.manufacturer'), value: itemData.value?.manufacturer, icon: Factory },
+    { label: t('item.model'), value: itemData.value?.model, icon: Tag },
+    { label: t('item.country_of_origin'), value: itemData.value?.country_of_origin, icon: Globe },
+    { label: t('item.hs_code'), value: itemData.value?.hs_code, icon: Hash },
+    { label: t('item.warranty_months'), value: itemData.value?.warranty_months, icon: ShieldCheck },
+    { label: t('item.shelf_life_days'), value: itemData.value?.shelf_life_days, icon: CalendarClock },
+    { label: t('item.min_shelf_life_percent'), value: itemData.value?.min_shelf_life_percent, icon: CalendarClock },
+    { label: t('item.storage_zone'), value: itemData.value?.storage_zone ? t(`item.storage_zones.${itemData.value.storage_zone}`) : null, icon: Boxes },
+    { label: t('item.weight'), value: itemData.value?.weight, icon: Scale },
+    { label: t('item.dimensions'), value: dimensions.value, icon: Ruler },
+].filter((row) => filled(row.value)));
+
+const planningDetails = computed(() => [
+    { label: t('item.minimum_stock'), value: itemData.value?.minimum_stock, icon: TrendingDown },
+    { label: t('item.maximum_stock'), value: itemData.value?.maximum_stock, icon: TrendingUp },
+    { label: t('item.default_warehouse'), value: itemData.value?.default_warehouse_name, icon: Building },
+    { label: t('item.reorder_quantity'), value: itemData.value?.reorder_quantity, icon: PackageSearch },
+    { label: t('item.lead_time_days'), value: itemData.value?.lead_time_days, icon: CalendarClock },
+    { label: t('item.costing_method'), value: itemData.value?.costing_method_label, icon: DollarSign },
+    { label: t('item.pricing_method'), value: itemData.value?.pricing_method_label, icon: DollarSign },
+].filter((row) => filled(row.value)));
+
+// Descriptive, non variant-forming specs the item carries as a JSON bag.
+// Keys are user-defined, so the label is the key itself, humanised.
+const customAttributes = computed(() => {
+    const bag = itemData.value?.attributes;
+    if (!bag || typeof bag !== 'object' || Array.isArray(bag)) return [];
+    return Object.entries(bag)
+        .filter(([, value]) => filled(value))
+        .map(([key, value]) => ({
+            label: key.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+            value: Array.isArray(value) ? value.join(', ') : String(value),
+        }));
+});
+
+const behaviourFlags = computed(() => [
+    { key: 'is_stockable', label: t('item.is_stockable') },
+    { key: 'is_sellable', label: t('item.is_sellable') },
+    { key: 'is_purchasable', label: t('item.is_purchasable') },
+    { key: 'is_weighted', label: t('item.is_weighted') },
+    { key: 'allow_negative_stock', label: t('item.allow_negative_stock') },
+    { key: 'show_in_pos', label: t('item.show_in_pos') },
+    { key: 'requires_prescription', label: t('item.requires_prescription') },
+    { key: 'is_controlled', label: t('item.is_controlled') },
+].filter((flag) => itemData.value?.[flag.key]));
+
+const photoUrl = computed(() => {
+    const path = itemData.value?.photo;
+    if (!path) return null;
+    return /^https?:\/\//.test(path) ? path : `/storage/${path}`;
+});
+
+// Records link back to the document that moved the stock. Openings have none.
+const RECORD_ROUTES = {
+    purchase: 'purchases.show',
+    sale: 'sales.show',
+    purchase_return: 'purchase-returns.show',
+    sale_return: 'sale-returns.show',
+    item_transfer: 'item-transfers.show',
+    stock_adjustment: 'stock-adjustments.show',
+    adjustment: 'stock-adjustments.show',
+};
+
+const recordLink = (row) => {
+    const name = RECORD_ROUTES[row?.source_type];
+    if (!name || !row?.reference_id) return null;
+    try {
+        return route(name, row.reference_id);
+    } catch {
+        return null;
+    }
+};
+
+const openRecord = (row) => {
+    const href = recordLink(row);
+    if (href) router.visit(href);
+};
+
+// Activate / deactivate — inactive items drop out of the pickers on new
+// documents but stay in reports and history.
+const isActive = computed(() => itemData.value?.is_active !== false);
+const confirmToggleOpen = ref(false);
+const togglingActive = ref(false);
+
+const performToggleActive = () => {
+    confirmToggleOpen.value = false;
+    if (!itemData.value?.id || togglingActive.value) return;
+
+    const activating = !isActive.value;
+    togglingActive.value = true;
+    router.patch(route('items.toggle-active', itemData.value.id), {}, {
+        preserveScroll: true,
+        headers: { 'X-DataTable-Refresh': '1' },
+        onSuccess: () => {
+            const flashError = page.props.flash?.error;
+            if (flashError) {
+                toast.error(t('general.status_change_blocked_title'), { description: flashError, class: 'bg-pink-600 text-white' });
+                return;
+            }
+            toast.success(t('general.success'), {
+                description: activating ? t('item.item_activated') : t('item.item_deactivated'),
+                class: 'bg-green-600',
+            });
+        },
+        onFinish: () => { togglingActive.value = false; },
+    });
+};
+
+// Reorder signal: compare on-hand against the item's configured minimum stock.
+// `on_hand` arrives pre-formatted (e.g. "1,234.00"), so strip separators first.
+const toNumber = (value) => {
+    const parsed = Number(String(value ?? '').replace(/,/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const stockStatus = computed(() => {
+    const onHand = toNumber(itemData.value?.on_hand);
+    const min = itemData.value?.minimum_stock;
+
+    if (onHand <= 0) {
+        return { label: t('item.out_of_stock'), class: 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400' };
+    }
+    if (min !== null && min !== undefined && min !== '' && onHand <= toNumber(min)) {
+        return { label: t('item.low_stock'), class: 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400' };
+    }
+    return { label: t('item.in_stock'), class: 'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400' };
+});
+
+// Only surface the tracking toggles that are actually enabled. Colour and
+// size are variant attributes now, not tracking flags.
+const trackingFlags = computed(() => [
+    { key: 'batch', label: t('item.is_batch_tracked'), on: !!itemData.value?.is_batch_tracked },
+    { key: 'expiry', label: t('item.is_expiry_tracked'), on: !!itemData.value?.is_expiry_tracked },
+    { key: 'serial', label: t('item.is_serial_tracked'), on: !!itemData.value?.is_serial_tracked },
+].filter(flag => flag.on));
+
+const stockRows = computed(() => props.stockByWarehouse ?? []);
+
+const variantRows = computed(() => itemData.value?.variants ?? []);
+
+const formatQty = (value) => Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 });
+// Thresholds and weight are optional: an unset one is blank, not 0 — "0" would
+// read as "reorder at zero", which is a different statement.
+const formatOptionalQty = (value) => (value === null || value === undefined || value === '' ? '—' : formatQty(value));
+const formatMoney = (value) => Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const inOutSeries = computed(() => [
+    { key: 'in', label: t('item.in_records') },
+    { key: 'out', label: t('item.out_records') },
+]);
+
+const inOutPoints = ref([]);
+const inOutSubtitle = computed(() => {
+    const points = inOutPoints.value;
+    if (!points.length) return '';
+    return points.length > 1
+        ? `${points[0].date} – ${points[points.length - 1].date}`
+        : points[0].date;
+});
+
+// Full history (not the paginated table's page-at-a-time slice), aggregated
+// per day, so the chart's totals always agree with stock_count/stock_out_count.
+const loadInOutChart = async () => {
+    if (!itemData.value.id) return;
+    const [inRes, outRes] = await Promise.all([
+        axios.get(route('items.in-records', itemData.value.id), { params: { per_page: 5000 } }),
+        axios.get(route('items.out-records', itemData.value.id), { params: { per_page: 5000 } }),
+    ]);
+
+    const byDate = new Map();
+    const addRows = (rows, key) => {
+        (rows || []).forEach((row) => {
+            const date = String(row.date || '').split(' ')[0];
+            if (!byDate.has(date)) byDate.set(date, { date, values: { in: 0, out: 0 } });
+            byDate.get(date).values[key] += Number(row.quantity || 0);
+        });
+    };
+    addRows(inRes.data.data, 'in');
+    addRows(outRes.data.data, 'out');
+
+    inOutPoints.value = Array.from(byDate.values()).sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+};
 
 const fetchRecords = async (type, page) => {
     const res = await axios.get(route(`items.${type}-records`, itemData.value.id), {
@@ -115,55 +319,107 @@ const exportCurrentRecords = () => {
     window.location.href = route(routeName, itemData.value.id);
 };
 
-const renderBarcode = async (retries = 4) => {
-    const barcode = itemData.value?.barcode;
-    if (!barcode) return;
-    await nextTick();
-    if (!itemBarcodeSvg.value) {
-        if (retries > 0) requestAnimationFrame(() => renderBarcode(retries - 1));
-        return;
-    }
-    JsBarcode(itemBarcodeSvg.value, barcode, {
-        format: 'CODE128', width: 2, height: 60, displayValue: true, margin: 0,
-    });
-};
-
 onMounted(() => {
     loadMore();
-    renderBarcode();
+    loadInOutChart();
 });
 </script>
 
 <template>
-    <AppLayout :title="`${t('item.item')} - ${itemData.name || ''}`">
-        <div class="space-y-6">
+    <AppLayout :title="`${t('item.item')} - ${itemData.name || ''}`" :sidebar-collapsed="true">
+        <!-- min-w-0 + overflow-x-clip keep the page itself from scrolling sideways:
+             every wide table below carries its own overflow-x-auto. -->
+        <div class="space-y-6 min-w-0 max-w-full overflow-x-clip">
             <!-- Page header -->
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="outline" size="sm" @click="router.visit(route('items.index'))">
-                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {{ t('general.back') }}
-                </Button>
                 <Button
-                    v-if="can('items.update') && itemData.id"
-                    variant="default"
-                    size="sm"
-                    class="gap-1.5 bg-primary text-primary-foreground"
-                    @click="router.visit(route('items.edit', itemData.id))"
-                >
-                    <SquarePen class="h-4 w-4" />
-                    {{ t('datatable.edit') }}
-                </Button>
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 bg-background border-primary/60 hover:bg-primary/40 hover:text-balck"
+                @click="router.visit(route('items.index'))"
+            >
+                <ArrowLeft class="h-4 w-4 rtl:rotate-180 text-primary" />
+                {{ t('general.back') }}
+            </Button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <Button
+                        v-if="can('items.update') && itemData.id"
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        :disabled="togglingActive"
+                        class="h-8 gap-1.5"
+                        :class="isActive
+                            ? 'border-amber-500/50 text-amber-600 hover:bg-amber-500/10 dark:text-amber-400'
+                            : 'border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400'"
+                        @click="confirmToggleOpen = true"
+                    >
+                        <Loader2 v-if="togglingActive" class="h-4 w-4 animate-spin" />
+                        <component :is="isActive ? PowerOff : Power" v-else class="h-4 w-4" />
+                        {{ isActive ? t('item.deactivate') : t('item.activate') }}
+                    </Button>
+                    <Button
+                        v-if="can('items.update') && itemData.id"
+                        variant="default"
+                        size="sm"
+                        class="gap-1.5 bg-primary text-primary-foreground"
+                        @click="router.visit(route('items.edit', itemData.id))"
+                    >
+                        <SquarePen class="h-4 w-4" />
+                        {{ t('datatable.edit') }}
+                    </Button>
+                </div>
             </div>
 
             <!-- Info section -->
-            <fieldset class="rounded-xl border border-border bg-muted/40 px-5 pb-5 pt-3">
+            <!-- min-w-0: a fieldset defaults to min-inline-size:min-content and would
+                 otherwise refuse to shrink below its widest child. -->
+            <fieldset class="rounded-xl border border-border bg-muted/40 px-5 pb-5 pt-3 min-w-0">
                 <legend class="px-2 text-sm font-semibold text-violet-500">{{ itemData.name }}</legend>
-                <div class="flex items-center gap-2 mb-4">
+                <div class="flex flex-wrap items-center gap-2 mb-4">
                     <div class="bg-violet-500 text-white p-1.5 rounded">
                         <Layers class="w-4 h-4" />
                     </div>
                     <h3 class="text-sm font-semibold text-foreground">{{ t('general.details') }}</h3>
+
+                    <span
+                        v-if="!isActive"
+                        class="ms-1 rounded-full border border-muted-foreground/30 bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                    >
+                        {{ t('general.inactive') }}
+                    </span>
+
+                    <!-- Reorder signal -->
+                    <span
+                        class="ms-1 rounded-full border px-2 py-0.5 text-xs font-medium"
+                        :class="stockStatus.class"
+                    >
+                        {{ stockStatus.label }}
+                    </span>
+
+                    <!-- Enabled tracking toggles -->
+                    <span
+                        v-for="flag in trackingFlags"
+                        :key="flag.key"
+                        class="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-300"
+                    >
+                        {{ flag.label }}
+                    </span>
                 </div>
+
+                <div v-if="photoUrl || itemData.description" class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start">
+                    <img
+                        v-if="photoUrl"
+                        :src="photoUrl"
+                        :alt="itemData.name"
+                        class="h-28 w-28 shrink-0 rounded-lg border border-border object-cover bg-muted"
+                    />
+                    <p v-if="itemData.description" class="text-sm text-muted-foreground leading-relaxed">
+                        {{ itemData.description }}
+                    </p>
+                </div>
+
                 <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                     <div v-for="detail in itemDetails" :key="detail.label" class="flex items-start gap-2">
                         <component :is="detail.icon" class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
@@ -172,13 +428,13 @@ onMounted(() => {
                             <p class="text-sm font-medium text-foreground truncate">{{ detail.value ?? '—' }}</p>
                         </div>
                     </div>
-                    <div v-if="itemData.barcode" class="col-span-2 rounded-lg border border-border p-3">
-                        <p class="text-xs text-muted-foreground mb-2">{{ t('item.barcode') }}</p>
-                        <svg ref="itemBarcodeSvg" class="w-full h-[80px]"></svg>
-                    </div>
                 </div>
 
                 <hr class="my-4 border-border" />
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="bg-violet-500 text-white p-1.5 rounded"><Activity class="w-4 h-4" /></div>
+                    <h3 class="text-sm font-semibold text-foreground">{{ t('item.section.transaction_status') }}</h3>
+                </div>
                 <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-4">
 
                     <div class="flex items-start gap-2">
@@ -198,12 +454,189 @@ onMounted(() => {
                         <div><p class="text-xs text-muted-foreground">{{ t('item.stock_value') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_value ?? '—' }}</p></div>
                     </div>
                 </div>
+
+                <!-- Sourcing, compliance & physical -->
+                <template v-if="sourcingDetails.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><ShieldCheck class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.section.compliance') }}</h3>
+                    </div>
+                    <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                        <div v-for="detail in sourcingDetails" :key="detail.label" class="flex items-start gap-2">
+                            <component :is="detail.icon" class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs text-muted-foreground">{{ detail.label }}</p>
+                                <p class="text-sm font-medium text-foreground truncate">{{ detail.value ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Planning -->
+                <template v-if="planningDetails.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><PackageSearch class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.section.stock_control') }}</h3>
+                    </div>
+                    <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                        <div v-for="detail in planningDetails" :key="detail.label" class="flex items-start gap-2">
+                            <component :is="detail.icon" class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs text-muted-foreground">{{ detail.label }}</p>
+                                <p class="text-sm font-medium text-foreground truncate">{{ detail.value ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Descriptive attributes (free-form JSON bag on the item) -->
+                <template v-if="customAttributes.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><Tag class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.variant_attributes') }}</h3>
+                    </div>
+                    <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                        <div v-for="attribute in customAttributes" :key="attribute.label" class="flex items-start gap-2">
+                            <Tag class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs text-muted-foreground">{{ attribute.label }}</p>
+                                <p class="text-sm font-medium text-foreground truncate">{{ attribute.value }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Behaviour flags -->
+                <template v-if="behaviourFlags.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><SlidersHorizontal class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.section.behaviour') }}</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span
+                            v-for="flag in behaviourFlags"
+                            :key="flag.key"
+                            class="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-300"
+                        >
+                            {{ flag.label }}
+                        </span>
+                    </div>
+                </template>
+
+                <!-- Variants: only meaningful when the trade uses them -->
+                <template v-if="showsVariantTable">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><Tag class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.variants') }}</h3>
+                    </div>
+                    <div class="rounded-lg border border-border overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-muted/60 text-muted-foreground">
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('general.name') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.sku') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.barcode') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.purchase_price') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.sale_price') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.average_cost') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.minimum_stock') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.maximum_stock') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.weight') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('general.on_hand') }}</th>
+                                    <th class="py-2 px-3 text-center font-medium whitespace-nowrap">{{ t('general.status') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="variant in variantRows"
+                                    :key="variant.id"
+                                    class="border-t border-border/60 hover:bg-muted/40 transition"
+                                >
+                                    <td class="py-2 px-3 whitespace-nowrap font-medium text-foreground">
+                                        {{ variant.display_name || '—' }}
+                                        <span v-if="variant.is_default" class="ms-1 text-xs text-amber-500">★</span>
+                                    </td>
+                                    <td class="py-2 px-3 whitespace-nowrap text-muted-foreground">{{ variant.sku || '—' }}</td>
+                                    <td class="py-2 px-3 whitespace-nowrap text-muted-foreground">{{ variant.barcode || '—' }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatMoney(variant.purchase_price) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-foreground">{{ formatMoney(variant.sale_price) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatMoney(variant.avg_cost) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.minimum_stock) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.maximum_stock) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.weight) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap font-semibold text-foreground">{{ formatQty(variant.on_hand) }}</td>
+                                    <td class="py-2 px-3 text-center whitespace-nowrap">
+                                        <span
+                                            class="rounded-full border px-2 py-0.5 text-xs"
+                                            :class="variant.is_active
+                                                ? 'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
+                                                : 'border-muted-foreground/30 bg-muted text-muted-foreground'"
+                                        >
+                                            {{ variant.is_active ? t('general.active') : t('general.inactive') }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+
+                <!-- Stock by warehouse -->
+                <template v-if="stockRows.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><Building class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.stock_by_warehouse') }}</h3>
+                    </div>
+                    <div class="rounded-lg border border-border overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-muted/60 text-muted-foreground">
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('general.on_hand') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.reserved') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.available') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.stock_value') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="row in stockRows"
+                                    :key="row.warehouse_id"
+                                    class="border-t border-border/60 hover:bg-muted/40 transition"
+                                >
+                                    <td class="py-2 px-3 whitespace-nowrap font-medium text-foreground">{{ row.warehouse_name || '—' }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-foreground">{{ formatQty(row.quantity) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatQty(row.reserved) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap font-semibold text-foreground">{{ formatQty(row.available) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatMoney(row.stock_value) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
             </fieldset>
+
+            <!-- In vs out chart -->
+            <div class="rounded-xl border border-border bg-card p-4">
+                <TimeSeriesChart
+                    :title="t('item.in_vs_out')"
+                    :subtitle="inOutSubtitle || t('general.posted_totals_over_time')"
+                    :series="inOutSeries"
+                    :points="inOutPoints"
+                    :format-value="formatQty"
+                />
+            </div>
 
             <!-- Records table -->
             <div class="rounded-xl border border-border bg-card overflow-hidden">
                 <!-- Tabs + export -->
-                <div class="px-4 pt-3 flex items-center justify-between gap-3 border-b border-border bg-background">
+                <div class="px-4 pt-3 pb-1 flex items-center justify-between gap-3 border-b border-border bg-background">
                     <div class="flex gap-2">
                         <button class="px-3 py-2 text-sm rounded-t-md border-b-2"
                             :class="activeTab === 'in' ? 'border-violet-500 text-violet-600 font-bold' : 'border-transparent text-muted-foreground hover:text-foreground'"
@@ -216,41 +649,51 @@ onMounted(() => {
                             {{ t('item.out_records') }}
                         </button>
                     </div>
-                    <button
-                        class="inline-flex items-center gap-2 rounded-md bg-violet-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-violet-600 disabled:opacity-60"
+                    <Button
+                    class="h-9 border-green-800 text-green-600 hover:bg-green-700 hover:text-white"
                         :disabled="loading || !itemData.id"
+                        variant="outline"
+                        size="sm"
                         @click="exportCurrentRecords">
                         <Download class="h-3.5 w-3.5" />
                         {{ activeTab === 'in' ? t('item.export_in_records') : t('item.export_out_records') }}
-                    </button>
+                    </Button>
                 </div>
 
                 <!-- Scrollable table -->
                 <div class="overflow-x-auto max-h-[500px] overflow-y-auto" @scroll="onScroll">
                     <table class="w-full text-xs text-foreground">
-                        <thead class="sticky top-0 border-b-2 border-border z-10 bg-violet-500 text-white">
-                            <tr class="text-xs uppercase tracking-wide font-semibold">
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">#</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.ledger') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.bill_number') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.date') }}</th>
-                                <th class="py-3 px-3 text-center whitespace-nowrap rtl:text-right">{{ t('general.quantity') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.unit_price') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.total') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.source') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.unit_measure.unit_measure') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.batch') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.expire_date') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.warehouse.warehouse') }}</th>
+                        <thead class="sticky top-0 border-b border-border z-10 bg-violet-500 text-white">
+                            <tr class="text-[11px] font-medium">
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">#</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.ledger') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.bill_number') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.date') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.variant') }}</th>
+                                <th class="py-2 px-3 text-center whitespace-nowrap rtl:text-right">{{ t('general.quantity') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.unit_price') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.total') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.source') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.unit_measure.unit_measure') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.batch') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.expire_date') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.status') }}</th>
+                                <th class="py-2 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.warehouse.warehouse') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(row, index) in currentRecords" :key="row.id || index"
-                                class="border-b border-border/60 hover:bg-muted/40 transition">
+                                class="border-b border-border/60 hover:bg-muted/40 transition"
+                                :class="recordLink(row) ? 'cursor-pointer hover:bg-violet-500/10' : ''"
+                                @click="openRecord(row)">
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ index + 1 }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap font-medium rtl:text-right">{{ row.ledger_name || '—' }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap font-semibold rtl:text-right">{{ row.bill_number || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap font-semibold rtl:text-right"
+                                    :class="recordLink(row) ? 'text-violet-600 dark:text-violet-400 underline-offset-2 hover:underline' : ''">
+                                    {{ row.bill_number || '—' }}
+                                </td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.date }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.variant?.display_name || '—' }}</td>
                                 <td class="py-3 px-3 text-center whitespace-nowrap font-semibold rtl:text-right">{{ row.quantity }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_price }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ (Number(row.quantity || 0) * Number(row.unit_price || 0)).toFixed(4) }}</td>
@@ -258,10 +701,11 @@ onMounted(() => {
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_measure_name }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.batch || '—' }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.expire_date || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap  rtl:text-right" :class="`text-${row.status_color ?? 'gray'}`">{{ row.status_label }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.warehouse_name }}</td>
                             </tr>
                             <tr v-if="!loading && currentRecords.length === 0">
-                                <td colspan="11" class="py-8 text-center text-muted-foreground">{{ t('general.no_record_available') }}</td>
+                                <td colspan="14" class="py-8 text-center text-muted-foreground">{{ t('general.no_record_available') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -271,6 +715,20 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+            <div class="mt-4">
+                <AttachmentList :items="itemData.attachments || []" :label="t('general.attachments')" />
+            </div>
         </div>
+
+        <ConfirmDeleteDialog
+            :open="confirmToggleOpen"
+            :title="isActive ? t('item.deactivate_confirm_title') : t('item.activate_confirm_title')"
+            :description="isActive ? t('item.deactivate_confirm_desc') : t('item.activate_confirm_desc')"
+            :cancel-text="t('general.cancel')"
+            :continue-text="isActive ? t('item.deactivate') : t('item.activate')"
+            @update:open="value => (confirmToggleOpen = value)"
+            @confirm="performToggleActive"
+        />
     </AppLayout>
 </template>
+

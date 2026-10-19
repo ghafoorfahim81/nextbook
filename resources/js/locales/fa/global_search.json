@@ -8,6 +8,11 @@
   "no_results_for": "نتیجه‌ای برای \"{query}\" یافت نشد",
   "navigate": "حرکت",
   "open_new_tab": "باز کردن در تب جدید",
+  "recent": "اخیر",
+  "top_customers": "برترین مشتریان",
+  "top_suppliers": "برترین تأمین‌کنندگان",
+  "top_accounts": "حساب‌های با مانده بالا",
+  "top_items": "پرتراکنش‌ترین اجناس",
   "tabs": {
     "all": "همه",
     "items": "اجناس",

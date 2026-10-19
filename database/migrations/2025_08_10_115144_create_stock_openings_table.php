@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('stock_openings', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('item_id')->index();
             $table->ulid('stock_movement_id')->index();
             $table->ulid('branch_id')->index(); 

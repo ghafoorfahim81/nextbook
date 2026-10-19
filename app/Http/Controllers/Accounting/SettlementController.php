@@ -141,9 +141,9 @@ class SettlementController extends Controller
      */
     private function anyCashAccountId(Ledger $ledger): string
     {
-        return (string) (\App\Support\BranchContext::glAccount('cash-in-hand', $ledger->branch_id)
+        return (string) (\App\Support\BranchContext::glAccount('cash-in-hand', $ledger->company_id)
             ?? \App\Models\Account\Account::withoutGlobalScopes()
-                ->where('branch_id', $ledger->branch_id)
+                ->where('company_id', $ledger->company_id)
                 ->value('id'));
     }
 }

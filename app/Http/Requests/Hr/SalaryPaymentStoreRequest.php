@@ -38,7 +38,7 @@ class SalaryPaymentStoreRequest extends FormRequest
             'rate' => ['required', 'numeric', 'gt:0'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'payment_mode' => ['nullable', Rule::in(PaymentMode::values())],
-            'bank_account_id' => ['required', 'string', $this->existsInBranch('accounts')],
+            'bank_account_id' => ['required', 'string', $this->existsInCompany('accounts')],
             'cheque_no' => ['nullable', 'string', 'max:100'],
             'narration' => ['nullable', 'string'],
 

@@ -1,44 +1,54 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { computed, watch, ref,onMounted, nextTick } from 'vue'
+import { useFormGuard } from '@/composables/useFormGuard'
+import { computed, watch, ref, reactive, onMounted, nextTick, toRef } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { useForm, router } from '@inertiajs/vue3'
+import axios from 'axios'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
+import VariantEditor from '@/Components/inventory/VariantEditor.vue'
+import ItemDetailFields from '@/Components/inventory/ItemDetailFields.vue'
+import { useBusinessProfile } from '@/composables/useBusinessProfile'
+import { useSoundPreferences } from '@/composables/useSoundPreferences'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
-import JsBarcode from 'jsbarcode'
-import { Info, RefreshCw, Trash2, AlertCircleIcon } from 'lucide-vue-next'
-import { Switch } from '@/Components/ui/switch'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/Components/ui/popover'
+import { Trash2, AlertCircleIcon, Plus, ListPlus } from 'lucide-vue-next'
+import { Button } from '@/Components/ui/button'
+import { Checkbox } from '@/Components/ui/checkbox'
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from '@/Components/ui/alert'
-const barcodeSvg = ref(null)
-const isBarcodePopoverOpen = ref(false)
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const nameInputRef = ref(null)
 const { t } = useI18n()
+const { play } = useSoundPreferences()
 // keep props reactive
 const props = defineProps({
     warehouses: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
-    sizes: { type: [Array, Object], required: true },
     maxCode: { type: Number, required: true },
     user_preferences: { type: Object, required: true },
     itemTypes: { type: Object, required: true },
     otherCurrentAssetsAccounts:{ type:Object, required: true},
     incomeAccounts:{ type:Object, required: true},
     costAccounts:{ type:Object, required: true},
+    costingMethods: { type: [Array, Object], default: () => [] },
+    pricingMethods: { type: [Array, Object], default: () => [] },
+    // Resolved fresh server-side from the company's business type, so a
+    // just-changed trade takes effect without waiting for the cached
+    // `business_profile` shared prop to expire.
+    businessProfile: { type: Object, default: null },
+    companyCostingMethod: { type: String, default: null },
 })
 
 // normalize lists whether they're paginated or not
@@ -46,11 +56,12 @@ const warehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? 
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
-const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccounts?.data ?? props.otherCurrentAssetsAccounts ?? [])
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
 const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
 const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
+const costingMethods = computed(() => props.costingMethods?.data ?? props.costingMethods ?? [])
+const pricingMethods = computed(() => props.pricingMethods?.data ?? props.pricingMethods ?? [])
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
     const num = Number(number);
@@ -64,8 +75,28 @@ const formatCode = (number) => {
 }
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
-const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
-const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
+// Inline hints follow the per-user appearance.show_field_hints preference.
+const showFieldHints = computed(() => user_preferences.value?.appearance?.show_field_hints !== false)
+// Single reactive copy of the item-management preferences so the panel and form stay in sync live.
+const itemPrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.item_management ?? {})))
+if (!itemPrefs.visible_fields || typeof itemPrefs.visible_fields !== 'object') itemPrefs.visible_fields = {}
+
+// Which fields this trade uses, resolved server-side from the company's
+// business type. User preferences layer on top, so an owner can still switch
+// an individual field on or off without leaving the profile.
+const { fields: profileFields, showsSection, specLabel, applyDefaults } = useBusinessProfile(toRef(props, 'businessProfile'))
+const visibleFields = computed(() => ({ ...profileFields.value, ...itemPrefs.visible_fields }))
+const specText = computed(() => itemPrefs.spec_text || t(`item.spec.${specLabel.value}`))
+const showPreferencesPanel = ref(false)
+
+// Open the instruction modal the first time a user reaches this form, then
+// remember it as seen (fire-and-forget, like the app-wide manual prompt).
+const showItemHelp = ref(false)
+onMounted(() => {
+    if (user_preferences.value?.onboarding?.item_form_help_dismissed_at) return
+    showItemHelp.value = true
+    axios.post(route('onboarding.hint.dismiss'), { key: 'item_form_help' }).catch(() => {})
+})
 
 const createOpeningRow = (warehouse = null) => ({
     batch: '',
@@ -74,6 +105,9 @@ const createOpeningRow = (warehouse = null) => ({
     quantity: 0,
     warehouse_id: warehouse?.id ?? null,
     selected_warehouse: warehouse,
+    // Which variant this opening quantity belongs to — the row's index in
+    // form.variants. Null for trades whose variants section is off.
+    variant_index: null,
 })
 
 const form = useForm({
@@ -81,22 +115,14 @@ const form = useForm({
     code: '',
     generic_name: '',
     packing: '',
-    remark: '',
     branch_id: null,
     warehouse_id: null,
-    colors: '',
-    size_id: null,
     item_type: null,
-    barcode: '',
     unit_measure_id: null,
     selected_unit_measure: '',
     selected_company: '',
     selected_category: '',
     selected_brand: '',
-    selected_size: '',
-    minimum_stock: '',
-    maximum_stock: '',
-    purchase_price: '',
     brand_id: null,
     category_id: null,
     asset_account_id: null,
@@ -105,18 +131,165 @@ const form = useForm({
     selected_income_account: null,
     cost_account_id: null,
     selected_cost_account: null,
-    cost: '',
-    sale_price: '',
-    margin_percentage: '',
     rate_a: '',
     rate_b: '',
     rate_c: '',
     rack_no: '',
+    fast_search: '',
     photo: null, // file
+    costing_method: null,
+    pricing_method: 'fixed',
+    default_warehouse_id: null,
+    allow_negative_stock: false,
+    show_in_pos: true,
     is_batch_tracked: false,
     is_expiry_tracked: false,
+    is_serial_tracked: false,
+    is_weighted: false,
+    has_variants: false,
+    is_active: true,
+    is_stockable: true,
+    is_sellable: true,
+    is_purchasable: true,
+    requires_prescription: false,
+    is_controlled: false,
+
+    description: '',
+    weight: '',
+    length: '',
+    width: '',
+    height: '',
+    manufacturer: '',
+    model: '',
+    country_of_origin: '',
+    hs_code: '',
+    warranty_months: '',
+    shelf_life_days: '',
+    min_shelf_life_percent: '',
+    storage_zone: '',
+    reorder_quantity: '',
+    lead_time_days: '',
+
+    // Every item carries at least one variant, so variant_id is never null
+    // downstream. Trades with no choices keep this single default row.
+    variants: [{
+        id: null,
+        attributes: {},
+        name: '',
+        sku: '',
+        barcode: '',
+        margin: '',
+        sale_price: '',
+        purchase_price: '',
+        minimum_stock: '',
+        maximum_stock: '',
+        is_default: true,
+        is_active: true,
+        sort_order: 0,
+    }],
+
+    attachments: [],
     openings: [createOpeningRow()],
 })
+
+// Pre-set the tracking flags this trade uses — a pharmacy gets batch and
+// expiry without the operator having to remember.
+applyDefaults(form)
+
+// Variant choices for the per-opening variant picker, labelled by their
+// attribute values ("16 GB / 1000 GB SSD"). The id is the row index as a
+// string — NextSelect treats a numeric 0 as "no selection".
+const variantOptions = computed(() => form.variants.map((v, i) => ({
+    id: String(i),
+    name: Object.values(v.attributes ?? {}).filter(Boolean).join(' / ')
+        || v.sku
+        || t('item.default_variant'),
+})))
+
+// Picking a variant fills the opening's unit price with that variant's
+// purchase price — a suggestion the user can still override. Opening unit
+// price is what StockService costs the layer at and what avg_cost is built
+// from, so it stays a real editable field.
+const onOpeningVariantChange = (index, value) => {
+    form.openings[index].variant_index = value
+
+    if (value === null || value === undefined || value === '') return
+
+    const price = Number(form.variants[Number(value)]?.purchase_price)
+    if (Number.isFinite(price) && price > 0) {
+        form.openings[index].unit_price = price
+    }
+
+    // Picking a variant on the last row opens the next one. Entering an opening
+    // per variant is the normal case once variants are on, and the old flow made
+    // it a click on "add opening" between every one of them.
+    addRow(index)
+}
+
+/** An opening the user has not put anything into — the starter row, usually. */
+const isUntouchedOpening = (opening) =>
+    !opening.batch
+    && !opening.expire_date
+    && !Number(opening.quantity)
+    && (opening.variant_index === null || opening.variant_index === undefined || opening.variant_index === '')
+
+/**
+ * The picker reduces to an id while createOpeningRow seeds the whole object, so
+ * a row can be holding either — resolve both back to the object.
+ */
+const warehouseObjectFor = (value) => {
+    if (!value) return null
+    if (typeof value === 'object') return value
+
+    return (warehouses.value || []).find(w => w.id === value) ?? null
+}
+
+/**
+ * The warehouse a generated row should carry: whatever the table is already
+ * using, else this branch's main one.
+ */
+const openingSeedWarehouse = () =>
+    warehouseObjectFor(form.openings.find(o => o.selected_warehouse)?.selected_warehouse)
+    ?? resolveDefaultWarehouse()
+
+/**
+ * One opening row per variant, in one click.
+ *
+ * An item with a dozen variants otherwise means a dozen trips through the
+ * variant picker before any quantity can be typed. Variants already sitting on
+ * a row are skipped, so this also completes a half-finished table rather than
+ * duplicating it, and the untouched starter row is dropped instead of being
+ * left empty above the generated ones.
+ */
+const loadAllVariants = () => {
+    const assigned = new Set(
+        form.openings
+            .map(o => o.variant_index)
+            .filter(v => v !== null && v !== undefined && v !== '')
+            .map(String)
+    )
+
+    const warehouse = openingSeedWarehouse()
+
+    const rows = []
+    form.variants.forEach((variant, index) => {
+        if (assigned.has(String(index))) return
+
+        const row = createOpeningRow(warehouse)
+        // String, to match variantOptions ids — NextSelect reads a numeric 0 as
+        // "no selection".
+        row.variant_index = String(index)
+
+        const price = Number(variant.purchase_price)
+        if (Number.isFinite(price) && price > 0) row.unit_price = price
+
+        rows.push(row)
+    })
+
+    if (!rows.length) return
+
+    form.openings = [...form.openings.filter(o => !isUntouchedOpening(o)), ...rows]
+}
 
 const findBySlugOrName = (list, want) => {
     const w = String(want || '').trim().toLowerCase()
@@ -240,22 +413,6 @@ watch(
     }
 )
 
-let salePriceTimeout = null
-
-watch(
-    () => form.sale_price,
-    () => {
-        if (salePriceTimeout) clearTimeout(salePriceTimeout)
-        salePriceTimeout = setTimeout(() => {
-            if (form.sale_price && form.purchase_price && form.sale_price < form.purchase_price) {
-                toast.error(t('item.low_price_warning'), {
-                    description: t('item.sale_price_less_than_purchase_price') || 'Sale price cannot be less than purchase price.',
-                    class: 'bg-red-600',
-                });
-            }
-        }, 2000)
-    }
-)
 const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
@@ -287,7 +444,6 @@ const applyItemDefaults = ({ code = formatCode(props.maxCode) } = {}) => {
     assetAccountUserSet.value = false
     setAssetAccountId(preferredAssetAccountIdForItemType.value)
     form.openings = [createOpeningRow(defaultWarehouse)]
-    generateBarcode()
 }
 
 const resetFormForCreate = ({ code = formatCode(props.maxCode) } = {}) => {
@@ -307,13 +463,20 @@ const onPhotoChange = (e) => {
 }
 
 // rows
+//
+// The follow-on row keeps the warehouse of the one it grew out of. Openings are
+// entered a warehouse at a time, warehouse_id is required on every row, and
+// since a variant pick now opens the next row on its own, re-picking the same
+// warehouse down the whole table would be the bulk of the typing saved.
 const addRow = (index) => {
-    if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null })
-    }
+    if (index !== form.openings.length - 1) return
+
+    form.openings.push(createOpeningRow(
+        warehouseObjectFor(form.openings[index]?.selected_warehouse) ?? resolveDefaultWarehouse()
+    ))
 }
 const addOpeningRow = () => {
-    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null })
+    form.openings.push(createOpeningRow())
 }
 const removeRow = (idx) => {
     if (form.openings.length > 1) form.openings.splice(idx, 1)
@@ -322,12 +485,6 @@ const removeRow = (idx) => {
 // coerce numbers just before submit (optional but tidy)
 const normalize = () => {
     const toNum = (v) => (v === '' || v === null ? null : Number(v))
-    form.minimum_stock = toNum(form.minimum_stock)
-    form.maximum_stock = toNum(form.maximum_stock)
-    form.purchase_price = toNum(form.purchase_price)
-    form.cost = toNum(form.cost)
-    form.sale_price = toNum(form.sale_price)
-    form.margin_percentage = toNum(form.margin_percentage)
     form.rate_a = toNum(form.rate_a)
     form.rate_b = toNum(form.rate_b)
     form.rate_c = toNum(form.rate_c)
@@ -338,8 +495,23 @@ const normalize = () => {
         expire_date: o.expire_date || null,
         batch: o.batch || null,
         warehouse_id: o.warehouse_id || null,
+        variant_index: (o.variant_index === null || o.variant_index === undefined || o.variant_index === '')
+            ? null
+            : Number(o.variant_index),
     }))
 }
+/**
+ * Return the page's scroll container to the top.
+ *
+ * The form scrolls inside the layout's `[data-scroll-region]`, not the window,
+ * so window.scrollTo alone does nothing here.
+ */
+const scrollFormToTop = () => {
+    const region = document.querySelector('[data-scroll-region]')
+    region?.scrollTo?.({ top: 0, behavior: 'smooth' })
+    window.scrollTo?.({ top: 0, behavior: 'smooth' })
+}
+
 const handleSubmitAction = (createAndNew = false) => {
     const isCreateAndNew = createAndNew === true;
     submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
@@ -347,16 +519,31 @@ const handleSubmitAction = (createAndNew = false) => {
     // Always show toast on success, regardless of which button is used
     const postOptions = {
         onSuccess: () => {
+            // Follows preferences â†’ notifications â†’ sound â†’ success, and stays
+            // silent when the operator has switched that slot off.
+            play('success')
             toast.success(t('general.success'), {
                 description: t('general.create_success', { name: t('item.item') }),
                 class: 'bg-green-600',
             });
             if (isCreateAndNew) {
                 resetFormForCreate({ code: formatCode(Number(props.maxCode || 0)) })
+                form.attachments = []
                 form.transform((d) => d); // Reset transform to identity
             }
         },
-        // Any shared callbacks like onError can go here
+        onError: () => {
+            play('error')
+            toast.error(t('general.error'), {
+                description: t('general.create_error', { name: t('item.item') }),
+                class: 'bg-pink-600 text-white',
+            })
+            // Inertia keeps the scroll where it was on a validation error, which
+            // leaves the operator parked at the submit buttons with the toolbar
+            // — Settings and Info — scrolled out of sight, and with the failing
+            // fields above them. Bring the top of the form back.
+            scrollFormToTop()
+        },
     };
 
     const transformFn = isCreateAndNew
@@ -381,17 +568,18 @@ const handleSelectChange = (field, value) => {
 };
 const disabled = ref(false);
 watch(
-    () => form.openings.map(o => [o.selected_warehouse, o.batch, o.expire_date].join('|')).join(';'),
+    () => form.openings.map(o => [o.selected_warehouse, o.batch, o.expire_date, o.variant_index].join('|')).join(';'),
     (newVal, oldVal) => {
         let foundDuplicate = false;
         form.openings.forEach((currentOpening, index) => {
-            const { selected_warehouse, batch, expire_date } = currentOpening;
+            const { selected_warehouse, batch, expire_date, variant_index } = currentOpening;
             if (selected_warehouse && batch && expire_date) {
                 const duplicate = form.openings.some((o, i) =>
                     i !== index &&
                     o.warehouse_id === selected_warehouse &&
                     o.batch === batch &&
                     o.expire_date === expire_date &&
+                    o.variant_index === variant_index &&
                     o.warehouse_id && o.batch && o.expire_date
                 );
                 if (duplicate && !foundDuplicate) {
@@ -415,61 +603,9 @@ const handleOpeningSelectChange = (index, value) => {
     form.openings[index].warehouse_id = value ? value : null;
 };
 
-// render barcode
-const renderBarcode = async (retries = 4) => {
-    if (!form.barcode) return
-
-    await nextTick()
-
-    // Popover content is mounted lazily, so SVG may not exist immediately.
-    if (!barcodeSvg.value) {
-        if (retries > 0) {
-            requestAnimationFrame(() => {
-                renderBarcode(retries - 1)
-            })
-        }
-        return
-    }
-
-    JsBarcode(barcodeSvg.value, form.barcode, {
-        format: "CODE128",
-        width: 2,
-        height: 60,
-        displayValue: true,
-        margin: 0,
-    })
-}
-
-// redraw when barcode value changes
-watch(
-    () => form.barcode,
-    () => {
-        renderBarcode()
-    },
-    { immediate: true }
-)
-
-// redraw when popover opens (first open + subsequent opens)
-watch(
-    () => isBarcodePopoverOpen.value,
-    (open) => {
-        if (open) renderBarcode()
-    }
-)
-
 onMounted(() => {
     applyItemDefaults()
-    if (!form.barcode) {
-        generateBarcode()
-    }
 })
-
-const generateBarcode = () => {
-    const random = Math.floor(100000000 + Math.random() * 900000000)
-    form.barcode = `ITM${random}`
-}
-
-const isMarginPercentagePopoverOpen = ref(false)
 
 const focusNameField = () => {
     nameInputRef.value?.focus?.()
@@ -483,37 +619,40 @@ onMounted(() => {
     })
 })
 
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
     <AppLayout :title="t('item.item')">
-        <FormPageToolbar back-route="items.index" module="inventory_item" />
-        <form @submit.prevent="handleSubmitAction">
+        <FormPageToolbar
+            back-route="items.index"
+            module="inventory_item"
+            :show-preferences="true"
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel module="item"
+            v-model:open="showPreferencesPanel"
+            pref-group="item_management"
+            :prefs="itemPrefs"
+            :title="t('preferences.tabs.item_management')"
+        />
+        <ModuleHelpButton module="inventory_item" triggerless v-model:open="showItemHelp" />
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('item.item') }) }}
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                <NextInput ref="nameInputRef" autofocus :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
-                <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-5 mt-3 items-start">
+                <NextInput ref="nameInputRef" autofocus is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
+                <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :hint="t('item.hint.code')" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                 <NextInput v-show="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                 <NextInput v-show="visibleFields.packing" :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
-                <NextInput v-show="visibleFields.colors" packing:label="t('item.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('item.colors') })" />
+                <NextInput v-show="visibleFields.description" :label="t('item.description')" v-model="form.description" :error="form.errors?.description" :placeholder="t('general.enter', { text: t('item.description') })" />
                 <NextSelect
-                    v-show="visibleFields.size"
-                    v-model="form.selected_size"
-                    :options="sizes"
-                    @update:modelValue="(value) => handleSelectChange('size_id', value)"
-                    label-key="name"
-                    value-key="id"
-                    id="size_id"
-                    :floating-text="t('item.size')"
-                    :searchable="true"
-                    resource-type="sizes"
-                    :search-fields="['name','code']"
-                    :error="form.errors.size_id"
-                />
-                <NextSelect
+                    v-show="visibleFields.unit_measure"
                     v-model="form.selected_unit_measure"
                     :options="unitMeasures"
                     @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
@@ -521,6 +660,7 @@ onMounted(() => {
                     value-key="id"
                     id="measure_id"
                     :floating-text="t('admin.unit_measure.unit_measure')"
+                    is-required
                     :searchable="true"
                     resource-type="unit_measures"
                     :search-fields="['name','unit','symbol']"
@@ -535,19 +675,20 @@ onMounted(() => {
                     @update:modelValue="(value) => handleSelectChange('item_type', value)"
                     id="item_type"
                     :floating-text="t('item.item_type')"
+                    :hint="t('item.hint.item_type')"
                 />
-                <NextInput v-show="visibleFields.sku" :label="t('item.sku')" v-model="form.sku" :error="form.errors?.sku" :placeholder="t('general.enter', { text: t('item.sku') })" />
                 <NextSelect
+                    v-show="visibleFields.category"
                     :options="categories"
                     v-model="form.selected_category"
                     @update:modelValue="(value) => handleSelectChange('category_id', value)"
-                    label-key="name"
+                    label-key="localized_name"
                     value-key="id"
                     id="category"
                     :floating-text="t('admin.category.category')"
                     :searchable="true"
                     resource-type="categories"
-                    :search-fields="['name']"
+                    :search-fields="['name', 'local_name']"
                     :error="form.errors.category_id"
                 />
                 <NextSelect
@@ -564,19 +705,27 @@ onMounted(() => {
                     :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
                     :error="form.errors.brand_id"
                 />
+                <NextInput v-show="visibleFields.photo" :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
+                <!-- The account trio is derived from the item type and filled in
+                     automatically; `accounts` is off by default in preferences so
+                     it stays out of the way until an accountant wants it. -->
                 <NextSelect
+                    v-show="visibleFields.accounts"
                     :options="otherCurrentAssetsAccounts"
                     v-model="form.asset_account_id"
                     label-key="name"
                     value-key="id"
                     id="assets_account"
                     :floating-text="t('item.asset_account')"
+                    is-required
                     :searchable="true"
                     resource-type="assets_accounts"
                     :search-fields="['name']"
                     :error="form.errors.asset_account_id"
+                    :hint="t('item.hint.asset_account')"
                 />
                 <NextSelect
+                    v-show="visibleFields.accounts"
                     :options="incomeAccounts"
                     v-model="form.income_account_id"
                     label-key="name"
@@ -584,118 +733,75 @@ onMounted(() => {
                     id="income_account"
                     :has-clear-button="false"
                     :floating-text="t('item.income_account')"
+                    is-required
                     :searchable="true"
                     resource-type="income_accounts"
                     :search-fields="['name']"
                     :error="form.errors.income_account_id"
+                    :hint="t('item.hint.income_account')"
                 />
                 <NextSelect
+                    v-show="visibleFields.accounts"
                     :options="costAccounts"
                     v-model="form.cost_account_id"
                     label-key="name"
                     value-key="id"
                     id="cost_account"
                     :floating-text="t('item.cost_account')"
+                    is-required
                     :searchable="true"
                     resource-type="cost_accounts"
                     :search-fields="['name']"
                     :error="form.errors.cost_account_id"
+                    :hint="t('item.hint.cost_account')"
                 />
-                <NextInput v-show="visibleFields.photo" :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
-                <NextInput v-show="visibleFields.minimum_stock" :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
-                <NextInput v-show="visibleFields.maximum_stock" :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
-                <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
-                <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
-                <div class="flex flex-row gap-4 w-full">
-                    <div class="flex-1">
-                        <NextInput
-                            :label="t('item.sale_price')"
-                            type="number"
-                            :placeholder="t('general.enter', { text: t('item.sale_price') })"
-                            v-model="form.sale_price"
-                            :error="form.errors?.sale_price"
-                        />
-                    </div>
-                    <div class="flex-1 flex items-center justify-between border rounded-md">
-                        <div>
-                            <NextInput
-                            :label="t('item.margin_percentage')"
-                            type="number"
-                            :placeholder="t('general.enter', { text: t('item.margin_percentage') })"
-                            v-model="form.margin_percentage"
-                            :error="form.errors?.margin_percentage"
-                        />
-                        </div>
-                    <div class="flex items-center justify-end px-2">
-                        <Popover v-model:open="isMarginPercentagePopoverOpen">
-                            <PopoverTrigger as-child>
-                              <Button variant="outline">
-                                <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent class="w-80">
-                              <div class="grid gap-4">
-                                <p>{{ t('item.margin_percentage_description') || 'Margin percentage is the percentage of the sale price that is profit.' }}</p>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                    </div>
-                    </div>
-                </div>
                 <NextInput v-show="visibleFields.rate_a" :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
                 <NextInput v-show="visibleFields.rate_b" :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
                 <NextInput v-show="visibleFields.rate_c" :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
-                <!-- <NextInput v-show="visibleFields.barcode" :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" /> -->
-
-                <div v-show="visibleFields.barcode" class="flex items-center justify-between border rounded-md">
-                    <div class="w-full">
-                        <NextInput
-                        :label="t('item.barcode')"
-                        v-model="form.barcode"
-                        :placeholder="t('general.enter', { text: t('item.barcode') })"
-                        :error="form.errors?.barcode"
-                    />
-                    </div>
-                    <div class="flex items-center justify-end px-2">
-                        <Popover v-model:open="isBarcodePopoverOpen">
-                            <PopoverTrigger as-child>
-                              <Button variant="outline">
-                                <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent class="w-80">
-                              <div class="grid gap-4">
-                                <svg ref="barcodeSvg" class="w-full h-[80px]"></svg>
-                                <button
-                                type="button"
-                                class="text-sm text-primary underline mt-2"
-                                @click="generateBarcode"
-                            >
-                                {{ t('item.generate_new_barcode') || 'Generate New Barcode' }}
-                            </button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                    </div>
-                </div>
                 <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
-                <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 rtl:text-right">
-                    <div v-show="visibleFields.is_batch_tracked" class="flex items-center gap-2">
-                        <Label class="text-base">{{ t('item.is_batch_tracked') }}</Label>
-                        <Switch
-                            :model-value="form.is_batch_tracked"
-                            @update:model-value="(v) => form.is_batch_tracked = v"
-                        />
-                    </div>
-                    <div v-show="visibleFields.is_expiry_tracked" class="flex items-center gap-2">
-                        <Label class="text-base">{{ t('item.is_expiry_tracked') }}</Label>
-                        <Switch
-                            :model-value="form.is_expiry_tracked"
-                            @update:model-value="(v) => form.is_expiry_tracked = v"
-                        />
-                    </div>
+                <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" :hint="t('item.hint.fast_search')" />
+                <div class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3 rtl:text-right">
+                    <label v-show="visibleFields.is_batch_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                        <Checkbox class="mt-0.5" :checked="form.is_batch_tracked" @update:checked="(v) => form.is_batch_tracked = v" />
+                        <div>
+                            <p class="font-semibold text-sm">{{ t('item.is_batch_tracked') }}</p>
+                            <p class="text-sm text-muted-foreground">{{ t('item.batch_warning') }}</p>
+                        </div>
+                    </label>
+                    <label v-show="visibleFields.is_expiry_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                        <Checkbox class="mt-0.5" :checked="form.is_expiry_tracked" @update:checked="(v) => form.is_expiry_tracked = v" />
+                        <div>
+                            <p class="font-semibold text-sm">{{ t('item.is_expiry_tracked') }}</p>
+                            <p class="text-sm text-muted-foreground">{{ t('item.expiry_warning') }}</p>
+                        </div>
+                    </label>
+                    <label v-show="visibleFields.is_serial_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                        <Checkbox class="mt-0.5" :checked="form.is_serial_tracked" @update:checked="(v) => form.is_serial_tracked = v" />
+                        <div>
+                            <p class="font-semibold text-sm">{{ t('item.is_serial_tracked') }}</p>
+                            <p class="text-sm text-muted-foreground">{{ t('item.serial_warning') }}</p>
+                        </div>
+                    </label>
                 </div>
+            </div>
+
+            <div class="mt-4">
+                <VariantEditor
+                    v-model="form.variants"
+                    :errors="form.errors"
+                    :enabled="showsSection('variants')"
+                />
+            </div>
+
+            <div class="mt-4">
+                <ItemDetailFields
+                    :form="form"
+                    :visible-fields="visibleFields"
+                    :warehouses="warehouses"
+                    :costing-methods="costingMethods"
+                    :pricing-methods="pricingMethods"
+                    :company-costing-method="companyCostingMethod"
+                />
             </div>
             <div class="mt-2">
                 <div class="w-full flex justify-center items-center  w-3/4">
@@ -711,8 +817,6 @@ onMounted(() => {
                                     <li>{{ t('item.opening_key_points.2') }}</li>
                                     <li>{{ t('item.opening_key_points.3') }}</li>
                                     <li>{{ t('item.opening_key_points.4') }}</li>
-                                    <li v-show="form.is_batch_tracked">{{ t('item.batch_warning') }}</li>
-                                    <li v-show="form.is_expiry_tracked">{{ t('item.expiry_warning') }}</li>
                                 </ul>
                             </AlertDescription>
                         </Alert>
@@ -721,53 +825,117 @@ onMounted(() => {
             </div>
             <div class="md:col-span-4 mt-4">
                 <div class="pt-2">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between mb-3">
                         <span class="font-bold">{{ t('item.opening') }}</span>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary px-3"
-                            @click="addOpeningRow"
-                        >
-                            + {{ t('general.add', { title: t('item.opening') }) }}
-                        </button>
-                    </div>
-                    <div
-                        v-for="(opening, index) in form.openings"
-                        :key="index"
-                        class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
-                    >
-                        <NextInput v-show="form.is_batch_tracked" :label="specText?? t('item.batch')" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                        <NextDate v-show="form.is_expiry_tracked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
-                        <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
-                        <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
-                        <NextSelect
-                            v-model="opening.selected_warehouse"
-                            :options="warehouses"
-                            label-key="name"
-                            @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
-                            value-key="id"
-                            id="warehouse_id"
-                            :floating-text="t('admin.warehouse.warehouse')"
-                            :error="form.errors[`openings.${index}.warehouse_id`]"
-                            :searchable="true"
-                            resource-type="warehouses"
-                            :search-fields="['name', 'address']"
-                        />
-                        <div  class="mt-2" v-if="form.openings.length > 1">
-                            <button
+                        <div class="flex items-center gap-2">
+                            <!-- Only worth offering once the variants grid is on:
+                                 with it off there is a single default variant and
+                                 the column beside it is hidden anyway. -->
+                            <Button
+                                v-if="showsSection('variants')"
                                 type="button"
-                                class="btn btn-sm btn-outline-danger px-3"
-                                @click="removeRow(index)"
+                                variant="outline"
+                                size="sm"
+                                class="gap-1.5"
+                                @click="loadAllVariants"
                             >
-                                <Trash2 class="w-4 h-4 text-fuchsia-800 hover:cursor-pointer" />
-                            </button>
+                                <ListPlus class="h-3.5 w-3.5" />
+                                {{ t('item.load_all_variants') }}
+                            </Button>
+                            <!-- `btn btn-outline-primary` is Bootstrap; this app has
+                                 no such classes, so this rendered as bare text. -->
+                            <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addOpeningRow">
+                                <Plus class="h-3.5 w-3.5" />
+                                {{ t('general.add', { title: t('item.opening') }) }}
+                            </Button>
                         </div>
                     </div>
+                    <div class="rounded-md border border-primary overflow-hidden overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-primary text-white h-9">
+                                    <th v-show="showsSection('variants')" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.variant') }}</th>
+                                    <th v-show="form.is_batch_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ specText || t('item.batch') }}</th>
+                                    <th v-show="form.is_expiry_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.expire_date') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.quantity') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('general.unit_price') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="(opening, index) in form.openings"
+                                    :key="index"
+                                    class="border-t border-border hover:bg-muted/50 align-top"
+                                >
+                                    <td v-show="showsSection('variants')" class="p-2 min-w-[170px]">
+                                        <NextSelect
+                                            :model-value="opening.variant_index"
+                                            @update:modelValue="(value) => onOpeningVariantChange(index, value)"
+                                            :options="variantOptions"
+                                            label-key="name"
+                                            value-key="id"
+                                            :reduce="o => o.id"
+                                            :id="`opening_variant_${index}`"
+                                            :error="form.errors?.[`openings.${index}.variant_index`]"
+                                            :append-to-body="true"
+                                        />
+                                    </td>
+                                    <td v-show="form.is_batch_tracked" class="p-2 min-w-[140px]">
+                                        <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                                    </td>
+                                    <td v-show="form.is_expiry_tracked" class="p-2 min-w-[160px]">
+                                        <!-- show-icon renders a filled calendar block in the cell; the
+                                             column header already says what the date is. -->
+                                        <NextDate v-model="opening.expire_date" :show-icon="false" :lock-future-dates="false" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                                    </td>
+                                    <td class="p-2 min-w-[110px]">
+                                        <NextInput label="" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                                    </td>
+                                    <td class="p-2 min-w-[110px]">
+                                        <NextInput label="" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
+                                    </td>
+                                    <td class="p-2 min-w-[180px]">
+                                        <NextSelect
+                                            v-model="opening.selected_warehouse"
+                                            :options="warehouses"
+                                            label-key="name"
+                                            @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
+                                            value-key="id"
+                                            :id="`warehouse_id_${index}`"
+                                            :error="form.errors[`openings.${index}.warehouse_id`]"
+                                            :searchable="true"
+                                            resource-type="warehouses"
+                                            :search-fields="['name', 'address']"
+                                            :append-to-body="true"
+                                        />
+                                    </td>
+
+                                    <td class="p-2 text-center">
+                                        <button
+                                            type="button"
+                                            v-if="form.openings.length > 1"
+                                            class="btn btn-sm btn-outline-danger px-2"
+                                            @click="removeRow(index)"
+                                        >
+                                            <Trash2 class="w-4 h-4 text-fuchsia-800 hover:cursor-pointer" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p v-if="showFieldHints" class="mt-1.5 text-xs text-muted-foreground">{{ t('item.hint.opening_unit_price') }}</p>
                 </div>
             </div>
         </div>
 
-            <SubmitButtons
+        <div class="mt-4">
+            <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
+        </div>
+
+            <SubmitButtons module="item"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :cancel-label="t('general.cancel')"
@@ -781,3 +949,4 @@ onMounted(() => {
         </form>
     </AppLayout>
 </template>
+

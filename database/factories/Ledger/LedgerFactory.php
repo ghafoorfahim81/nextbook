@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Ledger;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Branch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Currency;
@@ -29,7 +30,7 @@ class LedgerFactory extends Factory
             'phone_no' => fake()->optional()->phoneNumber(),
             'email' => fake()->optional()->safeEmail(),
             'currency_id' => Currency::factory(),
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
             // Commercial types only. Employee ledgers are created by
             // EmployeeObserver and are meaningless without the employee behind
             // them, so randomising across all values would mint orphans.

@@ -28,11 +28,11 @@ class AttendanceRosterRequest extends FormRequest
     {
         return [
             'date' => ['required', 'date'],
-            'shift_id' => ['nullable', $this->existsInBranch('shifts')],
+            'shift_id' => ['nullable', $this->existsInCompany('shifts')],
             'rows' => ['required', 'array', 'min:1'],
             'rows.*.employee_id' => ['required', $this->existsInBranch('employees')],
             'rows.*.status' => ['required', Rule::in(AttendanceStatus::values())],
-            'rows.*.shift_id' => ['nullable', $this->existsInBranch('shifts')],
+            'rows.*.shift_id' => ['nullable', $this->existsInCompany('shifts')],
             'rows.*.check_in' => ['nullable', 'date_format:H:i'],
             'rows.*.check_out' => ['nullable', 'date_format:H:i'],
             'rows.*.overtime_hours' => ['nullable', 'numeric', 'min:0', 'max:24'],

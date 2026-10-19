@@ -34,7 +34,7 @@ class SelfServiceFeatureTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
 
         $shift = Shift::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'break_minutes' => 0,
         ]);
 
@@ -101,7 +101,7 @@ class SelfServiceFeatureTest extends TestCase
 
     public function test_geofencing_rejects_a_punch_from_too_far_away(): void
     {
-        HrSetting::forBranch($this->ctx['branch']->id)->forceFill([
+        HrSetting::forCompany($this->ctx['company']->id)->forceFill([
             'enforce_geofence' => true,
             // Kabul city centre.
             'geofence_latitude' => 34.5553,
@@ -120,7 +120,7 @@ class SelfServiceFeatureTest extends TestCase
 
     public function test_geofencing_accepts_a_punch_from_inside_the_radius(): void
     {
-        HrSetting::forBranch($this->ctx['branch']->id)->forceFill([
+        HrSetting::forCompany($this->ctx['company']->id)->forceFill([
             'enforce_geofence' => true,
             'geofence_latitude' => 34.5553,
             'geofence_longitude' => 69.2075,
@@ -148,7 +148,7 @@ class SelfServiceFeatureTest extends TestCase
 
     public function test_geofencing_requires_a_location_when_enforced(): void
     {
-        HrSetting::forBranch($this->ctx['branch']->id)->forceFill([
+        HrSetting::forCompany($this->ctx['company']->id)->forceFill([
             'enforce_geofence' => true,
             'geofence_latitude' => 34.5553,
             'geofence_longitude' => 69.2075,

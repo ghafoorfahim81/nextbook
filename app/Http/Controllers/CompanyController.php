@@ -4,8 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Administration\CompanyUpdateRequest;
 use App\Http\Requests\Administration\CompanyStoreRequest;
+use App\Http\Resources\Administration\CurrencyResource;
+use App\Enums\BusinessType;
+use App\Enums\CalendarType;
+use App\Enums\CostingMethod;
+use App\Enums\Locale;
+use App\Enums\WorkingStyle;
 use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
+use App\Models\Sale\InvoiceFormat;
+use App\Support\Preferences\InvoiceThemeOptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -66,7 +74,35 @@ class CompanyController extends Controller
         }
 
         return inertia('Administration/Companies/Show', [
-            'company' => $company
+            'company' => $company,
+            'invoiceThemes' => InvoiceThemeOptions::all(),
+            'invoiceFormats' => InvoiceFormat::query()
+                ->where('company_id', $company->id)
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get(),
+            'invoiceFormatDefaults' => InvoiceFormat::defaultConfig(),
+            'currencies' => CurrencyResource::collection(Currency::query()->orderBy('name')->get()),
+            'businessTypes' => collect(BusinessType::cases())->map(fn (BusinessType $type) => [
+                'id' => $type->value,
+                'name' => $type->getLabel(),
+            ])->values(),
+            'calendarTypes' => collect(CalendarType::cases())->map(fn (CalendarType $type) => [
+                'id' => $type->value,
+                'name' => $type->getLabel(),
+            ])->values(),
+            'workingStyles' => collect(WorkingStyle::cases())->map(fn (WorkingStyle $style) => [
+                'id' => $style->value,
+                'name' => $style->getLabel(),
+            ])->values(),
+            'locales' => collect(Locale::cases())->map(fn (Locale $locale) => [
+                'id' => $locale->value,
+                'name' => $locale->getLabel(),
+            ])->values(),
+            'costingMethods' => collect(CostingMethod::selectable())->map(fn (CostingMethod $method) => [
+                'id' => $method->value,
+                'name' => $method->getLabel(),
+            ])->values(),
         ]);
     }
 
@@ -78,7 +114,7 @@ class CompanyController extends Controller
         // dd($request->all());
         // Ensure the user can only update their own company
         if (Auth::user()->company_id !== $company->id) {
-            abort(403, 'Unauthorized to update this company.');
+            abort(403, __('messages.errors.unauthorized_company_update'));
         }
 
         $validated = $request->validated();
@@ -115,7 +151,12 @@ class CompanyController extends Controller
 
         Cache::forget('user_'.Auth::id());
 
-        // $company->update($validated);
+        // The trade shapes which item fields, sections and tracking defaults
+        // every user in the company sees, and that is cached per user. Drop it
+        // for the whole company so the new profile takes effect on next load.
+        if ($company->wasChanged(['business_type', 'currency_id', 'calendar_type'])) {
+            \App\Jobs\RefreshCompanyProfileCache::dispatch($company->id);
+        }
 
         return redirect()->back()
             ->with('success', __('general.updated_successfully', ['resource' => __('general.resource.company')]));

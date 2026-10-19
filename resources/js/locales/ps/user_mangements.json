@@ -1,0 +1,13 @@
+{
+    "user_mangements": "د کارنانو اداره",
+    "users": "کارنان",
+    "user": "کارن",
+    "roles": "نقشونه",
+    "role": "نقش",
+    "permissions": "اجازې",
+    "permission": "اجازه",
+    "permissions_description": "د دې نقش لپاره اجازې وټاکئ، د سرچینې له مخې ډله‌بندي شوې.",
+    "confirm_password": "پټنوم تایید کړئ",
+    "additional_permissions": "اضافي اجازې",
+    "additional_permissions_description": "هغه اضافي اجازې چې دا کارن باید د خپلو ټاکل شویو نقشونو ترڅنګ ولري."
+}

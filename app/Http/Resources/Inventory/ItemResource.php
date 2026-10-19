@@ -13,7 +13,8 @@ use App\Enums\StockStatus;
 use App\Http\Resources\Inventory\StockMovementResource;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\BrandResource;
-use App\Http\Resources\Administration\SizeResource;
+use App\Http\Resources\AttachmentResource;
+use App\Support\BranchContext;
 class ItemResource extends JsonResource
 {
     /**
@@ -35,7 +36,7 @@ class ItemResource extends JsonResource
             'brand' => BrandResource::make($this->whenLoaded('brand')),
             'brand_name' => $this->brand?->name,
             'category_id' => $this->category_id,
-            'category' => $this->category?->name,
+            'category' => $this->category?->localized_name,
             'asset_account_id' => $this->asset_account_id,
             'income_account_id' => $this->income_account_id,
             'cost_account_id' => $this->cost_account_id,
@@ -44,13 +45,15 @@ class ItemResource extends JsonResource
             'cost_account' => AccountResource::make($this->whenLoaded('costAccount')),
             'minimum_stock' => $this->minimum_stock,
             'maximum_stock' => $this->maximum_stock,
-            'colors' => $this->colors,
-            'size' => SizeResource::make($this->whenLoaded('size')),
-            'size_id' => $this->size_id,
             'purchase_price' => $this->purchase_price,
-            'cost' => $this->cost,
             'sale_price' => $this->sale_price,
+            // Margin and the free-form attribute bag are stored on the item but
+            // were never serialised, so the detail page had no way to show them.
             'margin_percentage' => $this->margin_percentage,
+            // `attributes` is a jsonb bag of descriptive, non variant-forming
+            // specs. Read it off the model directly — `$this->attributes` on a
+            // resource would resolve to the model's raw attribute array.
+            'attributes' => $this->resource->attributes,
             'rate_a' => $this->rate_a,
             'rate_b' => $this->rate_b,
             'rate_c' => $this->rate_c,
@@ -61,11 +64,59 @@ class ItemResource extends JsonResource
             'sku' => $this->sku,
             'item_type' => $this->item_type ? $this->item_type?->getLabel() : null,
             'item_type_id' => $this->item_type,
+
+            // --- Behaviour flags -------------------------------------------
+            'is_active' => (bool) $this->is_active,
+            'is_stockable' => (bool) $this->is_stockable,
+            'is_sellable' => (bool) $this->is_sellable,
+            'is_purchasable' => (bool) $this->is_purchasable,
+            'is_serial_tracked' => (bool) $this->is_serial_tracked,
+            'is_weighted' => (bool) $this->is_weighted,
+            'has_variants' => (bool) $this->has_variants,
+            'allow_negative_stock' => (bool) $this->allow_negative_stock,
+            'show_in_pos' => (bool) $this->show_in_pos,
+            'requires_prescription' => (bool) $this->requires_prescription,
+            'is_controlled' => (bool) $this->is_controlled,
+
+            'costing_method' => $this->costing_method?->value,
+            'pricing_method' => $this->pricing_method?->value,
+            // Human labels for the show page (avoids duplicating the enum
+            // translations into the JS locale files). Costing falls back to the
+            // company default when the item leaves it blank.
+            'costing_method_label' => $this->effectiveCostingMethod()->getLabel(),
+            'pricing_method_label' => ($this->pricing_method ?? \App\Enums\PricingMethod::FIXED)->getLabel(),
+
+            // --- Physical ---------------------------------------------------
+            'description' => $this->description,
+            'photo' => $this->photo,
+            'weight' => $this->weight,
+            'length' => $this->length,
+            'width' => $this->width,
+            'height' => $this->height,
+
+            // --- Sourcing & compliance ---------------------------------------
+            'manufacturer' => $this->manufacturer,
+            'model' => $this->model,
+            'country_of_origin' => $this->country_of_origin,
+            'hs_code' => $this->hs_code,
+            'warranty_months' => $this->warranty_months,
+            'shelf_life_days' => $this->shelf_life_days,
+            'min_shelf_life_percent' => $this->min_shelf_life_percent,
+            'storage_zone' => $this->storage_zone,
+
+            // --- Planning ----------------------------------------------------
+            'reorder_quantity' => $this->reorder_quantity,
+            'lead_time_days' => $this->lead_time_days,
+            'default_warehouse_id' => $this->default_warehouse_id,
+            'default_warehouse_name' => $this->whenLoaded('defaultWarehouse', fn () => $this->defaultWarehouse?->name),
+
+            'variants' => ItemVariantResource::collection($this->whenLoaded('variants')),
             // Calculate total in quantity in item's base unit
             // Only provide stock_count and stock_out_count if 'stocks' relation is loaded
             'stock_count' => $this->whenLoaded('stocks', function () {
                 $sum = $this->stocks
                     ->where('movement_type', StockMovementType::IN->value)
+                    ->reject(fn ($stock) => $this->isReversedMovement($stock))
                     ->sum(function ($stock) {
                         // If unit_measure_id differs (e.g. sale in box, item in each), normalize to item unit
                         if ((string)$stock->unit_measure_id === (string)$this->unit_measure_id || !$stock->unit_measure_id) {
@@ -81,6 +132,7 @@ class ItemResource extends JsonResource
             'stock_out_count' => $this->whenLoaded('stocks', function () {
                 $sum = $this->stocks
                     ->where('movement_type', StockMovementType::OUT->value)
+                    ->reject(fn ($stock) => $this->isReversedMovement($stock))
                     ->sum(function ($stock) {
                         if ((string)$stock->unit_measure_id === (string)$this->unit_measure_id || !$stock->unit_measure_id) {
                             return $stock->quantity;
@@ -92,7 +144,6 @@ class ItemResource extends JsonResource
                     });
                 return number_format($sum, 2);
             }),
-            'branch_id' => $this->branch_id,
             'on_hand' => number_format($this->onHand(), 2),
             'avg_cost' => $this->avg_cost,
             // 'avg_cost' => number_format($this->avg_cost, 2),
@@ -102,7 +153,7 @@ class ItemResource extends JsonResource
                 $cancelled = StockStatus::CANCELLED->value;
                 $value = DB::table('stock_movements as sm')
                     ->where('sm.item_id', $this->id)
-                    ->where('sm.branch_id', $this->branch_id)
+                    ->where('sm.branch_id', BranchContext::branchId())
                     ->whereNull('sm.deleted_at')
                     ->whereNotIn('sm.status', [$voided, $cancelled])
                     ->selectRaw(
@@ -115,8 +166,23 @@ class ItemResource extends JsonResource
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'openings' => StockMovementResource::collection($this->whenLoaded('openings')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 
+    /**
+     * Was this movement undone?
+     *
+     * Reversing a document voids its original layer AND posts a compensating
+     * one that is voided too. Counting either would report goods that came in
+     * or went out when neither ever did, so Total In / Total Out skip both.
+     */
+    private function isReversedMovement($stock): bool
+    {
+        $status = $stock->status instanceof StockStatus
+            ? $stock->status->value
+            : (string) $stock->status;
 
+        return in_array($status, [StockStatus::VOIDED->value, StockStatus::CANCELLED->value], true);
+    }
 }

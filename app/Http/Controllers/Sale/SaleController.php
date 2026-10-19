@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Sale;
 
+use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sale\SaleStoreRequest;
 use App\Http\Requests\Sale\SaleUpdateRequest;
@@ -9,6 +10,8 @@ use App\Http\Resources\Sale\SaleListResource;
 use App\Http\Resources\Sale\SaleResource;
 use App\Models\Sale\Sale;
 use App\Models\Sale\SaleItem;
+use App\Models\Sale\SaleOrder;
+use App\Enums\SaleOrderStatus;
 use App\Services\Accounting\PaymentStatusService;
 use App\Services\Accounting\SettlementService;
 use App\Models\Ledger\Ledger;
@@ -22,8 +25,9 @@ use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Services\StockService;
+use App\Services\DiscountRuleResolver;
+use App\Services\AttachmentService;
 use App\Models\Transaction\Transaction;
-use Mpdf\Mpdf;
 use App\Enums\TransactionStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
@@ -31,20 +35,22 @@ use App\Enums\StockStatus;
 use App\Support\Preferences\InvoiceThemeOptions;
 use App\Models\Sale\InvoiceFormat;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use App\Enums\CostingMethod;
 use App\Models\Inventory\Item;
+use App\Models\Inventory\ItemVariant;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
 use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use App\Support\BranchContext;
 
 class SaleController extends Controller
 {
+    use ResolvesLineVariant;
+
     private $dateConversionService;
     public function __construct(DateConversionService $dateConversionService)
     {
@@ -105,12 +111,16 @@ class SaleController extends Controller
             'sales' => SaleListResource::collection($sales),
             'filterOptions' => [
                 'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'types' => [
                     ['id' => 'cash', 'name' => 'Cash'],
                     ['id' => 'credit', 'name' => 'Credit'],
                 ],
+                'paymentStatuses' => collect(\App\Enums\PaymentStatus::cases())->map(fn ($status) => [
+                    'id' => $status->value,
+                    'name' => $status->getLabel(),
+                ])->values(),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -132,40 +142,134 @@ class SaleController extends Controller
         return inertia('Sale/Sales/Create', [
             'saleNumber' => $saleNumber,
             'bankAccounts' => $bankAccounts,
+            'saleOrderId' => $request->query('sale_order_id'),
+            // When navigating here from a customer's page (?customer_id=...), preselect
+            // that customer even if it falls outside the capped ledger option list.
+            'preselectedLedger' => $this->resolvePreselectedLedger($request->query('customer_id')),
+            'ledgers' => \App\Http\Resources\Ledger\LedgerOptionResource::collection(
+                Ledger::query()
+                    ->select([
+                        'id',
+                        'name',
+                        'code',
+                        'type',
+                        'counterpart_ledger_id',
+                        'email',
+                        'phone_no',
+                        'address',
+                        'currency_id',
+                        'discount',
+                        'credit_limit',
+                        'credit_limit_enabled',
+                        'credit_terms',
+                        'is_active',
+                        'company_id',
+                    ])
+                    ->withStatementTotals()
+                    ->where('is_active', true)
+                    ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
+                    ->orderBy('created_at','desc')
+                    ->limit(200)
+                    ->get()
+            ),
         ]);
+    }
+
+    /**
+     * Load a single ledger by id (if given) as a select option, so a transaction
+     * form opened from a customer/supplier page can preselect it regardless of the
+     * capped option list. Returns null when no/invalid id is supplied.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolvePreselectedLedger(?string $ledgerId): ?array
+    {
+        if (! $ledgerId) {
+            return null;
+        }
+
+        $ledger = Ledger::query()
+            ->select([
+                'id',
+                'name',
+                'code',
+                'type',
+                'counterpart_ledger_id',
+                'email',
+                'phone_no',
+                'address',
+                'currency_id',
+                'discount',
+                'credit_limit',
+                'credit_limit_enabled',
+                'credit_terms',
+                'is_active',
+                'company_id',
+            ])
+            ->withStatementTotals()
+            ->find($ledgerId);
+
+        return $ledger
+            ? \App\Http\Resources\Ledger\LedgerOptionResource::make($ledger)->resolve()
+            : null;
     }
 
     public function store(
         SaleStoreRequest $request,
         TransactionService $transactionService,
         StockService $stockService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         $validated = $request->validated();
-        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated, $activityLogService) {
+        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $date = $validated['date'];
             $validated['type'] = $validated['sale_type'] ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $postImmediately = (bool) user_preference('transaction.sale_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
+            $validated['status'] = $documentStatus;
+
+            if (!empty($validated['sale_order_id'])) {
+                $saleOrder = SaleOrder::where('id', $validated['sale_order_id'])->lockForUpdate()->first();
+
+                abort_unless(
+                    $saleOrder
+                        && $saleOrder->status === SaleOrderStatus::POSTED->value
+                        && $saleOrder->customer_id === $validated['customer_id'],
+                    422,
+                    'The selected sale order is no longer available for conversion.'
+                );
+            }
 
             $sale = Sale::create($validated);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($sale, $request->file('attachments'));
+            }
             $totalDiscount = $request->input('discount_total', 0);
             // Build cost lookup before createMany so net_unit_cost captures the avg_cost
             // at the moment of this sale (before any stock deductions change state).
-            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId] = $this->buildSaleItemCostLookup($validated['item_list']);
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById) {
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId) {
                 // The form posts the line discount as item_discount; the column is
                 // `discount`. Without this the value is dropped on create, so the GL
                 // records the discount (it is folded into discount_total) while the
                 // sale_items row stores 0 and the sales report cannot subtract it.
-                $item['discount'] = $item['item_discount'] ?? 0;
+                $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->company_id);
                 $item['warehouse_id'] = $validated['warehouse_id'];
+                $item['variant_id'] = $this->resolveLineVariantId($item);
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
-                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
+                $avgCost = $this->resolveLineBaseCost(
+                    $item['variant_id'] ?? null,
+                    $item['item_id'],
+                    $averageCostsByVariantId,
+                    $averageCostsByItemId,
+                );
                 $item['net_unit_cost'] = $itemModel ? $this->resolveItemCostByMethod(
                     avgCost: $avgCost,
                     selectedUnitMeasureId: $item['unit_measure_id'],
@@ -175,6 +279,8 @@ class SaleController extends Controller
                     warehouseId: $validated['warehouse_id'],
                     branchId: $sale->branch_id,
                     quantity: (float) $item['quantity'],
+                    costingMethod: $itemModel->effectiveCostingMethod()->value,
+                    variantId: $item['variant_id'] ?? null,
                 ) : 0.0;
                 return $item;
             }, $validated['item_list']);
@@ -182,6 +288,7 @@ class SaleController extends Controller
             $sale->items()->createMany($validated['item_list']);
 
             $lines = [];
+            $stockPayloads = [];
             $glAccounts = BranchContext::glAccounts();
             // Every transaction_line is expressed in the transaction's currency; reports
             // multiply by transactions.rate to get home currency. Selling prices already
@@ -203,7 +310,7 @@ class SaleController extends Controller
                 $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
                 $totalCostInTransactionCurrency = $totalCost / $rate;
-                $stockService->post([
+                $stockPayloads[] = [
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
@@ -215,12 +322,19 @@ class SaleController extends Controller
                     'batch'                => $item['batch'] ?? null,
                     'date'                 => $validated['date'],
                     'expire_date'          => $item['expire_date'] ?? null,
-                    'size_id'              => $validated['size_id'] ?? null,
+                    'variant_id'           => $item['variant_id'] ?? null,
                     'warehouse_id'         => $validated['warehouse_id'],
                     'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
-                ]);
+                ];
+
+                if ($postImmediately) {
+                    $stockService->post($stockPayloads[array_key_last($stockPayloads)]);
+                } else {
+                    // Draft: hold the stock as reserved_out so it is visible to other users.
+                    $stockService->reserve($stockPayloads[array_key_last($stockPayloads)]);
+                }
 
                 // Revenue at gross amount
                 $lines[] = [
@@ -353,9 +467,12 @@ class SaleController extends Controller
                     'voucher_number' => 'Sale #' . $sale->number,
                     'date'           => $validated['date'],
                     'remark'         => 'Sale for sale number: ' . $sale->number,
-                    'status'         => TransactionStatus::POSTED->value,
+                    'status'         => $documentStatus,
                     'reference_type' => Sale::class,
                     'reference_id'   => $sale->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
                 ],
                 lines: $lines
             );
@@ -380,6 +497,10 @@ class SaleController extends Controller
                     'transaction_id' => $transaction->id,
                 ],
             );
+
+            if ($documentStatus === TransactionStatus::POSTED->value) {
+                $this->markSaleOrderCompleted($validated['sale_order_id'] ?? null);
+            }
 
             return $sale;
         });
@@ -408,7 +529,21 @@ class SaleController extends Controller
     {
         // transaction.lines is required: SaleResource derives receivable_amount / old_balance
         // from the customer ledger lines of this sale's transaction.
-        $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'transaction.lines', 'createdBy', 'updatedBy']);
+        $sale->load([
+            'items.item',
+            'items.variant',
+            'items.unitMeasure',
+            'customer',
+            'saleOrder:id,number',
+            'transaction.currency',
+            'transaction.originalTransaction',
+            'transaction.reversalTransaction',
+            'transaction.lines',
+            'createdBy',
+            'updatedBy',
+            'attachments',
+            'returns.items',
+        ]);
 
         $resource = new SaleResource($sale);
 
@@ -418,11 +553,17 @@ class SaleController extends Controller
 
         return inertia('Sale/Sales/Show', [
             'sale' => $resource,
+            'reversal' => $sale->transaction?->reversalTransaction,
+            'originalDoc' => $sale->transaction?->originalTransaction,
         ]);
     }
 
     public function edit(Request $request, Sale $sale)
     {
+        if ($sale->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
+        }
+
         $bankAccounts = (new Account())->getAccountsByAccountTypeSlug('cash-or-bank');
 
         // Load only what the edit form needs.
@@ -432,17 +573,46 @@ class SaleController extends Controller
         // triggered because we don't access it here.
         $sale->load([
             'items.item.unitMeasure',
+            'items.item.variants',
+            'items.variant',
             'items.unitMeasure',
             'items.warehouse',
             'customer:id,name,type',
             'transaction',
             'transaction.currency:id,code,symbol,is_base_currency,exchange_rate',
             'transaction.lines:id,transaction_id,account_id,ledger_id,debit,credit',
+            'attachments',
         ]);
 
         return inertia('Sale/Sales/Edit', [
             'sale' => new SaleResource($sale),
             'bankAccounts' => $bankAccounts,
+            'ledgers' => \App\Http\Resources\Ledger\LedgerOptionResource::collection(
+                Ledger::query()
+                    ->select([
+                        'id',
+                        'name',
+                        'code',
+                        'type',
+                        'counterpart_ledger_id',
+                        'email',
+                        'phone_no',
+                        'address',
+                        'currency_id',
+                        'discount',
+                        'credit_limit',
+                        'credit_limit_enabled',
+                        'credit_terms',
+                        'is_active',
+                        'company_id',
+                    ])
+                    ->withStatementTotals()
+                    ->where('is_active', true)
+                    ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
+                    ->orderBy('created_at','desc')
+                    ->limit(200)
+                    ->get()
+            ),
         ]);
     }
 
@@ -451,9 +621,14 @@ class SaleController extends Controller
         Sale $sale,
         TransactionService $transactionService,
         StockService $stockService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
+        if ($sale->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
+        }
+
         $beforeState = [
             'number' => $sale->number,
             'customer_id' => $sale->customer_id,
@@ -467,37 +642,44 @@ class SaleController extends Controller
             'transaction_total' => (float) ($sale->transaction_total ?? 0),
         ];
 
-        $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService, $activityLogService, $beforeState) {
+        $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService, $activityLogService, $attachmentService, $beforeState) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($sale, $request->file('attachments'));
+            }
+
             $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $validated['status'] = TransactionStatus::DRAFT->value;
 
             // Write the converted date back into $validated: the sale row is saved from
             // $validated further down, so converting into $date alone left sales.date
             // holding the raw Jalali value while the transaction got the Gregorian one.
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
             $date = $validated['date'];
-            $affectedCombos = $sale->items()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $sale->branch_id,
-                ])
-                ->all();
+            // Posted/reversed sales are immutable, so update no longer needs to
+            // rebuild posted stock state or recalculate avg cost.
+            // $affectedCombos = $sale->items()
+            //     ->get(['item_id', 'warehouse_id', 'branch_id'])
+            //     ->map(fn ($item) => [
+            //         'item_id' => $item->item_id,
+            //         'warehouse_id' => $item->warehouse_id,
+            //         'branch_id' => $item->branch_id ?? $sale->branch_id,
+            //     ])
+            //     ->all();
 
-            // Capture item IDs from the OLD sale before merging new items in.
-            $oldItemIds = collect($affectedCombos)->pluck('item_id')->unique()->values()->all();
+            // $oldItemIds = collect($affectedCombos)->pluck('item_id')->unique()->values()->all();
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, &$affectedCombos) {
-                $item['discount'] = $item['item_discount'] ?? 0;
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale) {
+                $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->company_id);
                 $item['warehouse_id'] = $validated['warehouse_id'];
+                $item['variant_id'] = $this->resolveLineVariantId($item);
 
-                $affectedCombos[] = [
-                    'item_id' => $item['item_id'],
-                    'warehouse_id' => $validated['warehouse_id'],
-                    'branch_id' => $sale->branch_id,
-                ];
+                // $affectedCombos[] = [
+                //     'item_id' => $item['item_id'],
+                //     'warehouse_id' => $validated['warehouse_id'],
+                //     'branch_id' => $sale->branch_id,
+                // ];
 
                 return $item;
             }, $validated['item_list']);
@@ -509,66 +691,71 @@ class SaleController extends Controller
             // Fallback: unit_cost from the stock movement (covers historical data where
             // net_unit_cost was NULL). This ensures a sale update NEVER re-costs at the
             // current avg_cost — the original COGS is always preserved.
+            // Keyed by variant too: two lines of the same item in different
+            // variants cost different amounts, and a variant-blind key handed
+            // the second line the first one's cost.
             $originalNetUnitCosts = $sale->items()
                 ->whereNotNull('net_unit_cost')
-                ->get(['item_id', 'unit_measure_id', 'net_unit_cost'])
+                ->get(['item_id', 'unit_measure_id', 'variant_id', 'net_unit_cost'])
                 ->mapWithKeys(fn ($i) => [
-                    $i->item_id . '_' . $i->unit_measure_id => (float) $i->net_unit_cost
+                    $i->item_id . '_' . $i->unit_measure_id . '_' . ($i->variant_id ?? '') => (float) $i->net_unit_cost
                 ])
                 ->all();
 
-            $originalMovementCosts = StockMovement::query()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->get(['item_id', 'unit_measure_id', 'unit_cost'])
-                ->mapWithKeys(fn ($m) => [
-                    $m->item_id . '_' . $m->unit_measure_id => (float) $m->unit_cost
-                ])
-                ->all();
+            // Draft sales have no stock movements. Movement-cost fallback was only needed
+            // for editing already-posted sales, which is no longer allowed after the
+            // post/reverse workflow was introduced.
+            $originalMovementCosts = [];
 
             // Snapshot avg_cost and stock qty per item BEFORE any changes.
             // Used by the direct-formula avg recalculation for quantity-reduced items.
-            $preUpdateAvgCosts = Item::whereIn('id', $oldItemIds)
-                ->pluck('avg_cost', 'id')
-                ->map(fn ($c) => (float) $c)
-                ->all();
+            // $preUpdateAvgCosts = Item::whereIn('id', $oldItemIds)
+            //     ->pluck('avg_cost', 'id')
+            //     ->map(fn ($c) => (float) $c)
+            //     ->all();
 
-            $preUpdateStockQty = StockBalance::query()
-                ->where('branch_id', $sale->branch_id)
-                ->whereIn('item_id', $oldItemIds)
-                ->groupBy('item_id')
-                ->selectRaw('item_id, SUM(quantity) as total_qty')
-                ->pluck('total_qty', 'item_id')
-                ->map(fn ($q) => (float) $q)
-                ->all();
+            // $preUpdateStockQty = StockBalance::query()
+            //     ->where('branch_id', $sale->branch_id)
+            //     ->whereIn('item_id', $oldItemIds)
+            //     ->groupBy('item_id')
+            //     ->selectRaw('item_id, SUM(quantity) as total_qty')
+            //     ->pluck('total_qty', 'item_id')
+            //     ->map(fn ($q) => (float) $q)
+            //     ->all();
 
-            $oldSaleItemsByKey = $sale->items()
-                ->get(['item_id', 'quantity', 'unit_measure_id'])
-                ->mapWithKeys(fn ($i) => [$i->item_id . '_' . $i->unit_measure_id => (float) $i->quantity])
-                ->all();
+            // Unneeded for draft-only edits. Posted/reversed sales are immutable.
+            // $oldSaleItemsByKey = $sale->items()
+            //     ->get(['item_id', 'quantity', 'unit_measure_id'])
+            //     ->mapWithKeys(fn ($i) => [$i->item_id . '_' . $i->unit_measure_id => (float) $i->quantity])
+            //     ->all();
 
             $sale->items()->forceDelete();
 
-            StockMovement::query()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->forceDelete();
+            // StockMovement::query()
+            //     ->where('reference_type', Sale::class)
+            //     ->where('reference_id', $sale->id)
+            //     ->forceDelete();
 
-            $this->rebuildStockStateForCombos($affectedCombos);
+            // $this->rebuildStockStateForCombos($affectedCombos);
 
             // Build cost lookup after rebuild so avg_cost reflects post-rebuild state.
-            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId] = $this->buildSaleItemCostLookup($validated['item_list']);
 
-            $validated['item_list'] = array_map(function ($item) use ($itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts, $originalMovementCosts, $sale) {
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId, $originalNetUnitCosts, $originalMovementCosts) {
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
-                $key = $item['item_id'] . '_' . $item['unit_measure_id'];
+                $key = $item['item_id'] . '_' . $item['unit_measure_id'] . '_' . ($item['variant_id'] ?? '');
                 // 1. net_unit_cost on the sale item — most authoritative (set at sale creation).
                 // 2. unit_cost from the stock movement — covers historical rows with NULL net_unit_cost.
                 // 3. Current avg_cost — only for items newly added in this edit.
                 $item['net_unit_cost'] = $originalNetUnitCosts[$key]
                     ?? $originalMovementCosts[$key]
                     ?? ($itemModel ? $this->resolveItemCostByMethod(
-                        avgCost: (float) ($averageCostsByItemId[$item['item_id']] ?? 0),
+                        avgCost: $this->resolveLineBaseCost(
+                            $item['variant_id'] ?? null,
+                            $item['item_id'],
+                            $averageCostsByVariantId,
+                            $averageCostsByItemId,
+                        ),
                         selectedUnitMeasureId: $item['unit_measure_id'],
                         itemUnitMeasureId: $itemModel->unit_measure_id,
                         unitValuesById: $unitValuesById,
@@ -576,6 +763,8 @@ class SaleController extends Controller
                         warehouseId: $item['warehouse_id'],
                         branchId: $sale->branch_id,
                         quantity: (float) $item['quantity'],
+                        costingMethod: $itemModel->effectiveCostingMethod()->value,
+                        variantId: $item['variant_id'] ?? null,
                     ) : 0.0);
                 return $item;
             }, $validated['item_list']);
@@ -588,11 +777,16 @@ class SaleController extends Controller
                 ->first();
 
             if ($transaction) {
+                // Release the reservations held by the previous draft payload before rebuilding.
+                foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $oldPayload) {
+                    $stockService->release($oldPayload);
+                }
                 $transaction->lines()->forceDelete();
                 $transaction->forceDelete();
             }
 
             $lines = [];
+            $stockPayloads = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
             $glAccounts = BranchContext::glAccounts();
             // See store(): cost is home currency, GL lines are transaction currency.
@@ -610,7 +804,10 @@ class SaleController extends Controller
                 $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
                 $totalCostInTransactionCurrency = $totalCost / $rate;
-                $stockService->post([
+                // update() only ever edits a draft (posted/reversed sales are
+                // immutable), so this reserves like a fresh draft rather than
+                // posting a real deduction — see the reserve loop below.
+                $stockPayloads[] = [
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
@@ -618,16 +815,16 @@ class SaleController extends Controller
                     'source'               => StockSourceType::SALE->value,
                     'unit_cost'            => $unitCost,
                     'unit_cost_override'   => $unitCost,
-                    'status'               => StockStatus::POSTED->value,
+                    'status'               => StockStatus::DRAFT->value,
                     'batch'                => $item['batch'] ?? null,
                     'date'                 => $date,
                     'expire_date'          => $item['expire_date'] ?? null,
-                    'size_id'              => $validated['size_id'] ?? null,
+                    'variant_id'           => $item['variant_id'] ?? null,
                     'warehouse_id'         => $validated['warehouse_id'],
                     'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
-                ]);
+                ];
 
                 $lines[] = [
                     'account_id' => $itemModel->income_account_id,
@@ -662,86 +859,10 @@ class SaleController extends Controller
                 ];
             }
 
-            // Recalculate avg_cost for items affected by qty changes:
-            // - REMOVED: no OUTs left → replay is safe.
-            // - REDUCED: units returned to stock → direct formula (avoids ULID date-tie issue).
-            // - UNCHANGED / INCREASED: avg_cost stays the same (OUTs never affect avg).
-            $newItemsByKey = collect($validated['item_list'])
-                ->mapWithKeys(fn ($i) => [$i['item_id'] . '_' . $i['unit_measure_id'] => (float) $i['quantity']])
-                ->all();
-            $newItemIdSet = collect($validated['item_list'])->pluck('item_id')->flip()->all();
-
-            // Ensure unit measure values for old sale UOMs are available for conversion.
-            $missingUomIds = collect($oldSaleItemsByKey)
-                ->keys()
-                ->map(fn ($key) => explode('_', $key, 2)[1] ?? '')
-                ->unique()
-                ->filter(fn ($id) => $id !== '' && !isset($unitValuesById[$id]))
-                ->values()
-                ->all();
-            if (!empty($missingUomIds)) {
-                $extra = UnitMeasure::whereIn('id', $missingUomIds)
-                    ->pluck('unit', 'id')
-                    ->map(fn ($v) => (float) $v)
-                    ->all();
-                $unitValuesById = array_merge($unitValuesById, $extra);
-            }
-
-            foreach ($oldItemIds as $itemId) {
-                if (!isset($newItemIdSet[$itemId])) {
-                    // Item completely removed — replay is safe (no OUTs remain).
-                    $this->recalculateAvgCostForItem($itemId);
-                    continue;
-                }
-
-                // Resolve item base unit value for qty/cost conversion.
-                $itemModel   = $itemModelsById[$itemId] ?? null;
-                $itemUomId   = $itemModel?->unit_measure_id ?? '';
-                $itemUomVal  = (float) ($unitValuesById[$itemUomId] ?? 1.0) ?: 1.0;
-
-                // Accumulate returned qty and value in item base units across all sale-line keys.
-                $returnQtyItemUnit   = 0.0;
-                $returnValueItemUnit = 0.0;
-
-                foreach ($oldSaleItemsByKey as $key => $oldQty) {
-                    if (!str_starts_with($key, $itemId . '_')) {
-                        continue;
-                    }
-                    $newQty = $newItemsByKey[$key] ?? 0.0;
-                    $diff   = $oldQty - $newQty;
-                    if ($diff <= 0) {
-                        continue;
-                    }
-
-                    // conversionFactor = saleUnit / itemUnit  (e.g. 1/24 for دانه vs بسته24دانه)
-                    $saleUomId    = explode('_', $key, 2)[1] ?? '';
-                    $saleUomVal   = (float) ($unitValuesById[$saleUomId] ?? 1.0) ?: 1.0;
-                    $convFactor   = $saleUomVal / $itemUomVal;
-
-                    $saleNetCost = $originalNetUnitCosts[$key] ?? $originalMovementCosts[$key] ?? 0.0;
-
-                    $diffInItemUnits    = $diff * $convFactor;
-                    $costPerItemUnit     = $convFactor > 0 ? $saleNetCost / $convFactor : $saleNetCost;
-
-                    $returnQtyItemUnit   += $diffInItemUnits;
-                    $returnValueItemUnit += $diffInItemUnits * $costPerItemUnit;
-                }
-
-                if ($returnQtyItemUnit <= 0) {
-                    continue; // qty unchanged or increased — no avg change
-                }
-
-                // Direct WAC formula: returned units come back at historical cost.
-                // All quantities are in the item's base unit (e.g. packages, not دانه).
-                $stockQtyBefore = $preUpdateStockQty[$itemId] ?? 0.0;
-                $currentAvg    = $preUpdateAvgCosts[$itemId] ?? 0.0;
-                $denominator   = $stockQtyBefore + $returnQtyItemUnit;
-
-                if ($denominator > 0 && $returnValueItemUnit > 0) {
-                    $newAvg = ($stockQtyBefore * $currentAvg + $returnValueItemUnit) / $denominator;
-                    Item::where('id', $itemId)->update(['avg_cost' => $newAvg]);
-                }
-            }
+            // Avg-cost recalculation is intentionally skipped for sale updates now.
+            // Only draft sales can be edited, and draft sales have no posted stock
+            // movements or stock-balance impact. Posting later will create the stock
+            // movement from the stored posting payload.
 
             // Sales discount line
             if ($totalDiscount > 0) {
@@ -819,7 +940,7 @@ class SaleController extends Controller
                         ];
                     }
                 } else {
-                    $sale->update([ 
+                    $sale->update([
                         'payment_status' => \App\Enums\PaymentStatus::Unpaid->value,
                     ]);
                     $lines[] = [
@@ -841,12 +962,21 @@ class SaleController extends Controller
                     'date'           => $date,
                     'voucher_number' => 'Sale #' . $sale->number,
                     'remark'         => 'Sale number: ' . $sale->number,
-                    'status'         => TransactionStatus::POSTED->value,
+                    'status'         => TransactionStatus::DRAFT->value,
                     'reference_type' => Sale::class,
                     'reference_id'   => $sale->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
                 ],
                 lines: $lines
-            ); 
+            );
+
+            // The edited sale stays a draft, so re-hold the outgoing stock as reserved_out.
+            foreach ($stockPayloads as $payload) {
+                $stockService->reserve($payload);
+            }
+
             $afterState = [
                 'number' => $sale->number,
                 'customer_id' => $sale->customer_id,
@@ -919,32 +1049,14 @@ class SaleController extends Controller
             return;
         }
 
-        $movements = StockMovement::query()
-            ->where('item_id', $itemId)
-            ->orderBy('date')
-            ->orderBy('id')
-            ->get(['movement_type', 'quantity', 'unit_cost']);
-
-        $avgCost = 0.0;
-        $runningQty = 0.0;
-
-        foreach ($movements as $movement) {
-            $qty = (float) $movement->quantity;
-            if ($movement->movement_type === StockMovementType::IN) {
-                $cost = (float) $movement->unit_cost;
-                if ($runningQty + $qty > 0) {
-                    $avgCost = (($runningQty * $avgCost) + ($qty * $cost)) / ($runningQty + $qty);
-                }
-                $runningQty += $qty;
-            } else {
-                $runningQty = max(0.0, $runningQty - $qty);
-            }
-        }
-
-        if ($runningQty > 0) {
-            $item->avg_cost = $avgCost;
-            $item->save();
-        }
+        // Both figures are replayed by the one implementation, so they cannot
+        // disagree. This loop used to live here in a hand-rolled copy that
+        // blended voided layers back in and ignored the unit a movement was
+        // recorded in — an item stocked in pieces but received in boxes came
+        // out priced per box.
+        $stockService = app(StockService::class);
+        $stockService->recalculateItemAverage($itemId);
+        $stockService->recalculateVariantAverageCosts($itemId);
     }
 
     private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
@@ -1106,6 +1218,41 @@ class SaleController extends Controller
         return $rate > 0 ? $rate : 1.0;
     }
 
+    /**
+     * The discount stored on a sale line.
+     *
+     * The figure that arrives with the line always wins — the salesperson
+     * standing in front of the customer overrules any rule, and the sale form
+     * has already shown them what the rules offered. The resolver is only a
+     * backstop for callers that send no discount at all. The bill-level
+     * discount is a separate concept and is not consulted here.
+     */
+    private function resolveLineDiscount(array $item, array $validated, ?string $companyId): float
+    {
+        // The sale form resolves the rule itself and shows the figure in the
+        // line's discount box, so the presence of the field — whatever it holds
+        // — is a decision someone made while looking at it. An emptied box is
+        // "no discount", not "choose one for me": it reaches here as null,
+        // because ConvertEmptyStringsToNull rewrites '' on the way in and the
+        // validation rule is nullable. Treating that as zero is what stops a
+        // deleted discount from quietly coming back.
+        //
+        // Only a caller that omits the field entirely (an import, an API
+        // client) still has the rule applied on its behalf.
+        if (array_key_exists('item_discount', $item)) {
+            return (float) $item['item_discount'];
+        }
+
+        return app(DiscountRuleResolver::class)->discountFor(
+            itemId: $item['item_id'],
+            quantity: (float) ($item['quantity'] ?? 0),
+            unitPrice: (float) ($item['unit_price'] ?? 0),
+            ledgerId: $validated['customer_id'] ?? null,
+            companyId: $companyId,
+            onDate: $validated['date'] ?? null,
+        );
+    }
+
     private function buildSaleItemCostLookup(array $items): array
     {
         $itemIds = collect($items)
@@ -1115,16 +1262,30 @@ class SaleController extends Controller
             ->values();
 
         if ($itemIds->isEmpty()) {
-            return [[], [], []];
+            return [[], [], [], []];
         }
 
         $itemModelsById = Item::query()
             ->whereIn('id', $itemIds)
-            ->get(['id', 'name', 'unit_measure_id', 'income_account_id', 'cost_account_id', 'asset_account_id'])
+            // costing_method must be in the select: without it the attribute is
+            // null and effectiveCostingMethod() silently falls back to the
+            // company default, costing the line by the wrong method.
+            ->get(['id', 'name', 'unit_measure_id', 'costing_method', 'income_account_id', 'cost_account_id', 'asset_account_id'])
             ->keyBy('id')
             ->all();
         $averageCostsByItemId = Item::query()
             ->whereIn('id', $itemIds)
+            ->pluck('avg_cost', 'id')
+            ->map(fn ($value) => (float) $value)
+            ->all();
+
+        // A variant carries its own average, blended only from the receipts of
+        // that variant. Selling "Red / XL" has to relieve inventory at what the
+        // Red / XL stock cost, not at an average smeared across every colour —
+        // otherwise COGS and the inventory credit are both wrong, and by
+        // opposite amounts on the cheap and the expensive variants.
+        $averageCostsByVariantId = ItemVariant::query()
+            ->whereIn('item_id', $itemIds)
             ->pluck('avg_cost', 'id')
             ->map(fn ($value) => (float) $value)
             ->all();
@@ -1145,7 +1306,31 @@ class SaleController extends Controller
             ->map(fn ($value) => (float) $value)
             ->all();
 
-        return [$itemModelsById, $averageCostsByItemId, $unitValuesById];
+        return [$itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId];
+    }
+
+    /**
+     * The per-base-unit cost a sale line should relieve inventory at.
+     *
+     * The variant's own average wins whenever it carries one. It can legitimately
+     * be zero — a variant whose stock arrived before the column was maintained,
+     * or one that has never been received — and pricing goods at nothing would
+     * report the whole sale as profit, so a zero falls back to the item figure
+     * rather than being trusted.
+     */
+    private function resolveLineBaseCost(
+        ?string $variantId,
+        string $itemId,
+        array $averageCostsByVariantId,
+        array $averageCostsByItemId,
+    ): float {
+        $variantCost = $variantId ? (float) ($averageCostsByVariantId[$variantId] ?? 0.0) : 0.0;
+
+        if ($variantCost > 0) {
+            return $variantCost;
+        }
+
+        return (float) ($averageCostsByItemId[$itemId] ?? 0.0);
     }
 
     private function resolveItemCostByMethod(
@@ -1157,8 +1342,14 @@ class SaleController extends Controller
         string $warehouseId,
         string $branchId,
         float $quantity,
+        ?string $costingMethod = null,
+        ?string $variantId = null,
     ): float {
-        $method = BranchContext::costingMethod();
+        // The ITEM's method, not the company's. An item may override the
+        // company default (Item::effectiveCostingMethod), and StockService
+        // deducts the stock on that override — so reading the company default
+        // here issued the goods at one cost and booked them at another.
+        $method = $costingMethod ?? BranchContext::costingMethod();
 
         if ($method !== CostingMethod::FIFO->value && $method !== CostingMethod::LIFO->value) {
             return $this->resolveUnitCost($avgCost, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);
@@ -1182,6 +1373,20 @@ class SaleController extends Controller
             ->where('branch_id', $branchId)
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0)
+            // Voided layers are not consumable (StockService::consumeLayers
+            // skips them), so peeking at them costs the line off stock the
+            // business never ended up owning — the ledger then disagrees with
+            // the movement the document actually posted.
+            ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            // Peek at the SAME layers StockService::deductFIFO() will consume —
+            // it filters by variant, so leaving this unfiltered costed the line
+            // from another variant's receipts and left the GL disagreeing with
+            // the movement the sale actually posted.
+            ->when(
+                $variantId !== null && $variantId !== '',
+                fn ($q) => $q->where('variant_id', $variantId),
+                fn ($q) => $q->whereNull('variant_id'),
+            )
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('expire_date', 'asc')
             ->orderBy('date', $order)
@@ -1252,9 +1457,156 @@ class SaleController extends Controller
         return ($selectedUnit * $avgCost) / $itemUnit;
     }
 
-    public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService)
+    public function post(Sale $sale, TransactionService $transactionService, StockService $stockService)
     {
-        DB::transaction(function () use ($sale, $activityLogService) {
+        $this->authorize('update', $sale);
+
+        if ($sale->status !== TransactionStatus::DRAFT->value) {
+            abort(422, __('messages.document.only_draft_can_be_posted'));
+        }
+
+        $enforceReservation = (bool) user_preference('sale.enforce_sale_stock_reservation', false);
+
+        try {
+            DB::transaction(function () use ($sale, $transactionService, $stockService, $enforceReservation) {
+                $transaction = $sale->transaction()->firstOrFail();
+
+                foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                    try {
+                        // When enforcement is on, block posting if another draft already
+                        // holds the stock. Checked before releasing this draft's own
+                        // reservation so a document is never blocked by itself.
+                        if ($enforceReservation) {
+                            $stockService->ensureReservedAvailability($payload);
+                        }
+
+                        // This draft's reservation becomes a real deduction. The
+                        // payload was frozen when the draft was written, so it still
+                        // says "draft" — this movement belongs to a posted document.
+                        $payload['status'] = StockStatus::POSTED->value;
+                        $stockService->release($payload);
+                        $stockService->post($payload);
+                    } catch (ValidationException $e) {
+                        // Stock was sufficient when this draft was created, but another
+                        // posted invoice has since consumed it. Surface a clear, item-named
+                        // message instead of the raw "Insufficient stock." validation error.
+                        $itemName = Item::find($payload['item_id'] ?? null)?->name ?? ($payload['item_id'] ?? '');
+                        throw ValidationException::withMessages([
+                            'stock' => __('general.cannot_post_insufficient_stock', ['item' => $itemName]),
+                        ]);
+                    }
+                }
+
+                $transactionService->postDraft($transaction);
+                $sale->update([
+                    'status' => TransactionStatus::POSTED->value,
+                    'updated_by' => Auth::id(),
+                ]);
+
+                $this->markSaleOrderCompleted($sale->sale_order_id);
+            });
+        } catch (ValidationException $e) {
+            // Transaction rolled back, so the sale stays a draft and stock is untouched.
+            return redirect()->back()->with('error', $e->validator->errors()->first('stock') ?: $e->getMessage());
+        }
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
+    }
+
+    /**
+     * When a Sale created from a Sales Order gets posted, the order is fully consumed
+     * (whole-order conversion only) so it flips to Completed to prevent reuse.
+     */
+    private function markSaleOrderCompleted(?string $saleOrderId): void
+    {
+        if (!$saleOrderId) {
+            return;
+        }
+
+        SaleOrder::where('id', $saleOrderId)->update([
+            'status' => SaleOrderStatus::COMPLETED->value,
+            'updated_by' => Auth::id(),
+        ]);
+    }
+
+    public function reverse(Request $request, Sale $sale, TransactionService $transactionService)
+    {
+        $this->authorize('update', $sale);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($sale->status !== TransactionStatus::POSTED->value) {
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
+        }
+
+        // A return is raised against this document and takes its quantities and
+        // costs from it. Reversing the document underneath would leave the
+        // return standing on something that no longer happened — the goods it
+        // sent back were never received, and its ledger entries reference a
+        // voucher that has been undone. The return has to go first.
+        $standingReturns = $sale->returns()
+            ->where('status', '!=', TransactionStatus::REVERSED->value)
+            ->pluck('number');
+
+        if ($standingReturns->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'status' => __('general.cannot_reverse_document_with_returns', [
+                    'numbers' => $standingReturns->implode(', '),
+                ]),
+            ]);
+        }
+
+        // Money taken against this document on a SEPARATE voucher. A receipt
+        // allocated here was taken against this debt specifically; undoing the
+        // debt would leave the receipt allocated to nothing and the party's
+        // balance would stop adding up. (A cash sale settles itself inside
+        // its own voucher and writes no settlement row, so it is untouched by
+        // this.)
+        $paidBy = DB::table('settlements as s')
+            ->join('transaction_lines as tl', 'tl.id', '=', 's.target_line_id')
+            ->join('transactions as target', 'target.id', '=', 'tl.transaction_id')
+            ->join('transactions as settling', 'settling.id', '=', 's.transaction_id')
+            ->where('target.reference_type', Sale::class)
+            ->where('target.reference_id', $sale->id)
+            ->whereNull('s.deleted_at')
+            ->distinct()
+            ->pluck('settling.voucher_number');
+
+        if ($paidBy->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'status' => __('general.cannot_reverse_document_with_payments', [
+                    'numbers' => $paidBy->filter()->implode(', '),
+                ]),
+            ]);
+        }
+
+        DB::transaction(function () use ($sale, $transactionService, $validated) {
+            $transaction = $sale->transaction()->firstOrFail();
+            $transactionService->reverse($transaction, $validated['reason'], $sale->number, Sale::class);
+
+            $sale->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'updated_by' => Auth::id(),
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
+    }
+
+    public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService, StockService $stockService)
+    {
+        if ($sale->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
+        }
+
+        DB::transaction(function () use ($sale, $activityLogService, $stockService) {
+            // Release the stock this draft was holding as reserved_out.
+            foreach ((array) data_get($sale->transaction?->posting_payload, 'stock_movements', []) as $payload) {
+                $stockService->release($payload);
+            }
+
               $oldValues = [
             'number' => $sale->number,
             'customer' => $sale->customer?->name,
@@ -1268,58 +1620,58 @@ class SaleController extends Controller
             'transaction_total' => (float) ($sale->transaction_total ?? 0),
         ];
 
-            $affectedCombos = $sale->items()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $sale->branch_id,
-                ])
-                ->all();
+            // $affectedCombos = $sale->items()
+            //     ->get(['item_id', 'warehouse_id', 'branch_id'])
+            //     ->map(fn ($item) => [
+            //         'item_id' => $item->item_id,
+            //         'warehouse_id' => $item->warehouse_id,
+            //         'branch_id' => $item->branch_id ?? $sale->branch_id,
+            //     ])
+            //     ->all();
 
-            $stockMovementCombos = StockMovement::query()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($movement) => [
-                    'item_id' => $movement->item_id,
-                    'warehouse_id' => $movement->warehouse_id,
-                    'branch_id' => $movement->branch_id,
-                ])
-                ->all();
+            // $stockMovementCombos = StockMovement::query()
+            //     ->where('reference_type', Sale::class)
+            //     ->where('reference_id', $sale->id)
+            //     ->get(['item_id', 'warehouse_id', 'branch_id'])
+            //     ->map(fn ($movement) => [
+            //         'item_id' => $movement->item_id,
+            //         'warehouse_id' => $movement->warehouse_id,
+            //         'branch_id' => $movement->branch_id,
+            //     ])
+            //     ->all();
 
-            $transaction = Transaction::query()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->first();
+            // $transaction = Transaction::query()
+            //     ->where('reference_type', Sale::class)
+            //     ->where('reference_id', $sale->id)
+            //     ->first();
 
-            if ($transaction) {
-                $transaction->lines()->delete();
-                $transaction->delete();
-            }
+            // if ($transaction) {
+            //     $transaction->lines()->delete();
+            //     $transaction->delete();
+            // }
 
-            StockMovement::query()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->delete();
+            // StockMovement::query()
+            //     ->where('reference_type', Sale::class)
+            //     ->where('reference_id', $sale->id)
+            //     ->delete();
 
             $sale->items()->delete();
             $sale->delete();
 
-            $this->rebuildStockStateForCombos([
-                ...$affectedCombos,
-                ...$stockMovementCombos,
-            ]);
+            // $this->rebuildStockStateForCombos([
+            //     ...$affectedCombos,
+            //     ...$stockMovementCombos,
+            // ]);
 
             // Recalculate avg_cost for all items in the deleted sale.
             // rebuildStockStateForCombos no longer handles this; and since the OUTs are
             // soft-deleted, the replay correctly excludes them, giving the right avg_cost.
-            $deletedItemIds = collect([...$affectedCombos, ...$stockMovementCombos])
-                ->pluck('item_id')
-                ->unique();
-            foreach ($deletedItemIds as $deletedItemId) {
-                $this->recalculateAvgCostForItem($deletedItemId);
-            }
+            // $deletedItemIds = collect([...$affectedCombos, ...$stockMovementCombos])
+            //     ->pluck('item_id')
+            //     ->unique();
+            // foreach ($deletedItemIds as $deletedItemId) {
+            //     $this->recalculateAvgCostForItem($deletedItemId);
+            // }
 
              $activityLogService->logDelete(
             reference: $sale,
@@ -1342,20 +1694,20 @@ class SaleController extends Controller
             $sale->restore();
             $sale->items()->withTrashed()->restore();
 
-            StockMovement::withTrashed()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->restore();
+            // StockMovement::withTrashed()
+            //     ->where('reference_type', Sale::class)
+            //     ->where('reference_id', $sale->id)
+            //     ->restore();
 
-            $transaction = Transaction::withTrashed()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->first();
+            // $transaction = Transaction::withTrashed()
+            //     ->where('reference_type', Sale::class)
+            //     ->where('reference_id', $sale->id)
+            //     ->first();
 
-            if ($transaction) {
-                $transaction->restore();
-                $transaction->lines()->withTrashed()->restore();
-            }
+            // if ($transaction) {
+            //     $transaction->restore();
+            //     $transaction->lines()->withTrashed()->restore();
+            // }
 
             $affectedCombos = $sale->items()
                 ->withTrashed()
@@ -1458,7 +1810,7 @@ class SaleController extends Controller
             ],
         );
 
-        $invoiceTheme = user_preference('sale.invoice_theme', InvoiceThemeOptions::DEFAULT);
+        $invoiceTheme = $company?->invoice_theme ?: InvoiceThemeOptions::DEFAULT;
         $customFormat = null;
 
         // If the selected theme is not a built-in format, treat it as a custom InvoiceFormat ULID

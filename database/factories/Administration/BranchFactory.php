@@ -5,6 +5,7 @@ namespace Database\Factories\Administration;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Branch;
+use App\Models\Administration\Company;
 
 class BranchFactory extends Factory
 {
@@ -21,9 +22,9 @@ class BranchFactory extends Factory
     public function definition(): array
     {
         return [
+            'company_id' => Company::factory(),
             'name' => fake()->unique()->company(),
             'is_main' => false,
-            'sub_domain' => fake()->optional()->domainWord(),
             'remark' => fake()->optional()->sentence(),
             'location' => fake()->optional()->city(),
             'parent_id' => null,

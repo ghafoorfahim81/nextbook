@@ -2,19 +2,32 @@
 
 namespace App\Services;
 
+use App\Models\Administration\Branch;
 use App\Enums\TransactionStatus;
 use App\Enums\UserStatus;
 use App\Http\Resources\NotificationResource;
+use App\Jobs\SendNotificationEmailJob;
 use App\Models\Notification;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Lang;
 
 class NotificationService
 {
+    /** branch id => company id, memoised per instance. */
+    private array $companyIds = [];
+
+    /** Read notifications are dropped after this many days. */
+    public const READ_RETENTION_DAYS = 90;
+
+    /** Every notification is dropped after this many days, read or not. */
+    public const RETENTION_DAYS = 365;
+
+    private ?Collection $activeBranchUsers = null;
+
     private const TYPE_PREFERENCE_MAP = [
         'low_balance' => 'notifications.low_balance_alert',
         'low_stock' => 'notifications.low_item_balance_alert',
@@ -33,12 +46,18 @@ class NotificationService
         'contract_expiring' => 'notifications.contract_expiry_alert',
         'document_expiring' => 'notifications.document_expiry_alert',
         'probation_ending' => 'notifications.probation_ending_alert',
+        // Leave workflow. These were previously unmapped, which meant they
+        // ignored user preferences entirely and could not be switched off.
+        'leave_request_pending' => 'notifications.leave_request_alert',
+        'leave_approved' => 'notifications.leave_status_alert',
+        'leave_rejected' => 'notifications.leave_status_alert',
     ];
 
     public function getNotificationCenter(User $user, int $limit = 8): array
     {
         $items = Notification::query()
             ->where('user_id', $user->id)
+            ->whereNull('archived_at')
             ->latest()
             ->limit($limit)
             ->get();
@@ -46,35 +65,69 @@ class NotificationService
         return [
             'unread_count' => Notification::query()
                 ->where('user_id', $user->id)
+                ->whereNull('archived_at')
                 ->where('is_read', false)
                 ->count(),
             'items' => NotificationResource::collection($items)->resolve(),
         ];
     }
 
+    /**
+     * Drop notifications nobody will look at again.
+     *
+     * Nothing pruned this table before, so it grew without bound — and the
+     * 'forever' dedupe window scans it on every check. Read items go after
+     * three months, anything at all after a year.
+     */
+    public function pruneOldNotifications(): int
+    {
+        // `forceDelete`: the table now soft-deletes so a user can undo a
+        // mis-click, but retention pruning is meant to reclaim the rows for good.
+        $deleted = Notification::query()
+            ->withTrashed()
+            ->where('is_read', true)
+            ->where('created_at', '<', Carbon::today()->subDays(self::READ_RETENTION_DAYS))
+            ->forceDelete();
+
+        $deleted += Notification::query()
+            ->withTrashed()
+            ->where('created_at', '<', Carbon::today()->subDays(self::RETENTION_DAYS))
+            ->forceDelete();
+
+        return $deleted;
+    }
+
     public function notifySuperAdminsOfNewTransaction(Transaction $transaction): void
     {
-        $users = User::query()
-            ->role('super-admin')
-            ->whereNull('deleted_at')
-            ->where('status', UserStatus::ACTIVE->value)
-            ->get();
+        // Scope to the transaction's own branch. Without this every super-admin
+        // in every tenant received another tenant's voucher numbers and dates.
+        if (! $transaction->branch_id) {
+            return;
+        }
+
+        $users = $this->superAdmins()
+            ->where('branch_id', $transaction->branch_id)
+            ->values();
 
         foreach ($users as $user) {
             $this->notifyUser(
                 user: $user,
                 type: 'new_transaction',
-                title: 'New Posted Transaction',
-                message: sprintf(
-                    'A posted transaction%s was created on %s.',
-                    $transaction->voucher_number ? ' '.$transaction->voucher_number : '',
-                    Carbon::parse($transaction->date)->toDateString()
-                ),
+                title: 'messages.notifications.new_transaction_title',
+                message: $transaction->voucher_number
+                    ? 'messages.notifications.new_transaction_body'
+                    : 'messages.notifications.new_transaction_body_no_voucher',
+                params: [
+                    'voucher' => $transaction->voucher_number,
+                    'date' => Carbon::parse($transaction->date)->toDateString(),
+                ],
                 data: [
                     'transaction_id' => $transaction->id,
                     'reference_type' => $transaction->reference_type,
                     'reference_id' => $transaction->reference_id,
                     'branch_id' => $transaction->branch_id,
+                            'voucher_number' => $transaction->voucher_number,
+                            'date' => Carbon::parse($transaction->date)->toDateString(),
                 ],
                 dedupeKey: 'transaction:'.$transaction->id,
                 dedupeWindow: 'forever',
@@ -92,14 +145,15 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'low_balance',
-                        title: 'Low Balance Alert',
-                        message: sprintf(
-                            'Account %s has a negative balance of %s.',
-                            $account->name,
-                            $this->formatMoney($account->balance)
-                        ),
+                        title: 'messages.notifications.low_balance_title',
+                        message: 'messages.notifications.low_balance_body',
+                        params: [
+                            'account' => $account->name,
+                            'balance' => $this->formatMoney($account->balance),
+                        ],
                         data: [
                             'account_id' => $account->id,
+                            'account_name' => $account->name,
                             'branch_id' => $branchId,
                             'balance' => $this->moneyValue($account->balance),
                         ],
@@ -120,15 +174,16 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'low_stock',
-                        title: 'Low Stock Alert',
-                        message: sprintf(
-                            'Item %s is below minimum stock. Available: %s, minimum: %s.',
-                            $item->name,
-                            $this->formatQuantity($item->current_quantity),
-                            $this->formatQuantity($item->minimum_stock)
-                        ),
+                        title: 'messages.notifications.low_stock_title',
+                        message: 'messages.notifications.low_stock_body',
+                        params: [
+                            'item' => $item->name,
+                            'available' => $this->formatQuantity($item->current_quantity),
+                            'minimum' => $this->formatQuantity($item->minimum_stock),
+                        ],
                         data: [
                             'item_id' => $item->id,
+                            'item_name' => $item->name,
                             'branch_id' => $branchId,
                             'quantity' => $this->quantityValue($item->current_quantity),
                             'minimum_stock' => $this->quantityValue($item->minimum_stock),
@@ -150,16 +205,19 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'nearest_expiry',
-                        title: 'Nearest Expiry Alert',
-                        message: sprintf(
-                            'Item %s expires on %s%s.',
-                            $batch->item_name,
-                            $batch->expire_date,
-                            $batch->batch ? ' (batch '.$batch->batch.')' : ''
-                        ),
+                        title: 'messages.notifications.expiry_title',
+                        message: $batch->batch
+                            ? 'messages.notifications.expiry_body_batch'
+                            : 'messages.notifications.expiry_body',
+                        params: [
+                            'item' => $batch->item_name,
+                            'date' => $batch->expire_date,
+                            'batch' => $batch->batch,
+                        ],
                         data: [
                             'stock_balance_id' => $batch->id,
                             'item_id' => $batch->item_id,
+                            'item_name' => $batch->item_name,
                             'warehouse_id' => $batch->warehouse_id,
                             'batch' => $batch->batch,
                             'expire_date' => $batch->expire_date,
@@ -175,72 +233,83 @@ class NotificationService
     public function runOverdueChecks(): void
     {
         $today = Carbon::today();
+        $isOverdue = fn (array $document) => $document['outstanding_amount'] > 0
+            && $document['due_date']
+            && Carbon::parse($document['due_date'])->lt($today);
 
-        foreach ($this->usersByBranch('notifications.overdue_purchase_alert') as $branchId => $users) {
-            $purchases = $this->purchaseSettlementStatus((string) $branchId)
-                ->filter(fn (array $purchase) => $purchase['outstanding_amount'] > 0
-                    && $purchase['due_date']
-                    && Carbon::parse($purchase['due_date'])->lt($today));
+        foreach ($this->activeBranchUsers()->groupBy('branch_id') as $branchId => $users) {
+            $branchId = (string) $branchId;
 
-            foreach ($purchases as $purchase) {
-                foreach ($users as $user) {
-                    $this->notifyUser(
-                        user: $user,
-                        type: 'overdue_purchase',
-                        title: 'Overdue Purchase Alert',
-                        message: sprintf(
-                            'Purchase #%s is overdue with %s still payable.',
-                            $purchase['number'],
-                            $this->formatMoney($purchase['outstanding_amount'])
-                        ),
-                        data: $purchase,
-                        dedupeKey: 'overdue-purchase:'.$purchase['id'],
-                    );
+            $purchaseSubscribers = $users->filter(
+                fn (User $user) => (bool) $user->getPreference('notifications.overdue_purchase_alert', false)
+            );
+
+            // `overdue_sale` and `overdue_invoice` describe the same event, so a
+            // user with both preferences on used to receive two near-identical
+            // notifications per sale every day. Send one, preferring the sale
+            // wording, and fall back to the invoice wording for users who only
+            // subscribed to that one.
+            $saleSubscribers = $users->filter(
+                fn (User $user) => (bool) $user->getPreference('notifications.overdue_sale_alert', false)
+            );
+            $invoiceSubscribers = $users
+                ->filter(fn (User $user) => (bool) $user->getPreference('notifications.overdue_invoice_alert', false))
+                ->reject(fn (User $user) => $saleSubscribers->contains(fn (User $subscriber) => $subscriber->id === $user->id));
+
+            if ($purchaseSubscribers->isNotEmpty()) {
+                $purchases = $this->purchaseSettlementStatus($branchId)->filter($isOverdue);
+
+                foreach ($purchases as $purchase) {
+                    foreach ($purchaseSubscribers as $user) {
+                        $this->notifyUser(
+                            user: $user,
+                            type: 'overdue_purchase',
+                            title: 'messages.notifications.overdue_purchase_title',
+                            message: 'messages.notifications.overdue_purchase_body',
+                            params: [
+                                'number' => $purchase['number'],
+                                'amount' => $this->formatMoney($purchase['outstanding_amount']),
+                            ],
+                            data: $purchase,
+                            dedupeKey: 'overdue-purchase:'.$purchase['id'],
+                        );
+                    }
                 }
             }
-        }
 
-        foreach ($this->usersByBranch('notifications.overdue_sale_alert') as $branchId => $users) {
-            $sales = $this->saleSettlementStatus((string) $branchId)
-                ->filter(fn (array $sale) => $sale['outstanding_amount'] > 0
-                    && $sale['due_date']
-                    && Carbon::parse($sale['due_date'])->lt($today));
+            if ($saleSubscribers->isEmpty() && $invoiceSubscribers->isEmpty()) {
+                continue;
+            }
+
+            // Computed once per branch instead of once per notification type.
+            $sales = $this->saleSettlementStatus($branchId)->filter($isOverdue);
 
             foreach ($sales as $sale) {
-                foreach ($users as $user) {
+                foreach ($saleSubscribers as $user) {
                     $this->notifyUser(
                         user: $user,
                         type: 'overdue_sale',
-                        title: 'Overdue Sale Alert',
-                        message: sprintf(
-                            'Sale #%s is overdue with %s still receivable.',
-                            $sale['number'],
-                            $this->formatMoney($sale['outstanding_amount'])
-                        ),
+                        title: 'messages.notifications.overdue_sale_title',
+                        message: 'messages.notifications.overdue_sale_body',
+                        params: [
+                            'number' => $sale['number'],
+                            'amount' => $this->formatMoney($sale['outstanding_amount']),
+                        ],
                         data: $sale,
                         dedupeKey: 'overdue-sale:'.$sale['id'],
                     );
                 }
-            }
-        }
 
-        foreach ($this->usersByBranch('notifications.overdue_invoice_alert') as $branchId => $users) {
-            $sales = $this->saleSettlementStatus((string) $branchId)
-                ->filter(fn (array $sale) => $sale['outstanding_amount'] > 0
-                    && $sale['due_date']
-                    && Carbon::parse($sale['due_date'])->lt($today));
-
-            foreach ($sales as $sale) {
-                foreach ($users as $user) {
+                foreach ($invoiceSubscribers as $user) {
                     $this->notifyUser(
                         user: $user,
                         type: 'overdue_invoice',
-                        title: 'Overdue Invoice Alert',
-                        message: sprintf(
-                            'Invoice #%s is overdue with %s unpaid.',
-                            $sale['number'],
-                            $this->formatMoney($sale['outstanding_amount'])
-                        ),
+                        title: 'messages.notifications.overdue_invoice_title',
+                        message: 'messages.notifications.overdue_invoice_body',
+                        params: [
+                            'number' => $sale['number'],
+                            'amount' => $this->formatMoney($sale['outstanding_amount']),
+                        ],
                         data: $sale,
                         dedupeKey: 'overdue-invoice:'.$sale['id'],
                     );
@@ -262,8 +331,9 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'sale_paid',
-                        title: 'Sale Paid',
-                        message: sprintf('Sale #%s has been fully paid.', $sale['number']),
+                        title: 'messages.notifications.sale_paid_title',
+                        message: 'messages.notifications.sale_paid_body',
+                        params: ['number' => $sale['number']],
                         data: $sale,
                         dedupeKey: 'sale-paid:'.$sale['id'],
                         dedupeWindow: 'forever',
@@ -286,8 +356,9 @@ class NotificationService
                     $this->notifyUser(
                         user: $user,
                         type: 'purchase_paid',
-                        title: 'Purchase Paid',
-                        message: sprintf('Purchase #%s has been fully paid.', $purchase['number']),
+                        title: 'messages.notifications.purchase_paid_title',
+                        message: 'messages.notifications.purchase_paid_body',
+                        params: ['number' => $purchase['number']],
                         data: $purchase,
                         dedupeKey: 'purchase-paid:'.$purchase['id'],
                         dedupeWindow: 'forever',
@@ -309,15 +380,15 @@ class NotificationService
                 $this->notifyUser(
                     user: $user,
                     type: 'daily_summary',
-                    title: 'Daily Transaction Summary',
-                    message: sprintf(
-                        'Posted transactions: %d. Sales: %s. Purchases: %s. Receipts: %s. Payments: %s.',
-                        $summary['transactions_count'],
-                        $this->formatMoney($summary['sales_total']),
-                        $this->formatMoney($summary['purchases_total']),
-                        $this->formatMoney($summary['receipts_total']),
-                        $this->formatMoney($summary['payments_total'])
-                    ),
+                    title: 'messages.notifications.daily_summary_title',
+                    message: 'messages.notifications.daily_summary_body',
+                    params: [
+                        'count' => $summary['transactions_count'],
+                        'sales' => $this->formatMoney($summary['sales_total']),
+                        'purchases' => $this->formatMoney($summary['purchases_total']),
+                        'receipts' => $this->formatMoney($summary['receipts_total']),
+                        'payments' => $this->formatMoney($summary['payments_total']),
+                    ],
                     data: [
                         ...$summary,
                         'branch_id' => $branchId,
@@ -343,13 +414,13 @@ class NotificationService
                 $this->notifyUser(
                     user: $user,
                     type: 'weekly_summary',
-                    title: 'Weekly Financial Summary',
-                    message: sprintf(
-                        'Sales: %s. Purchases: %s. Profit: %s.',
-                        $this->formatMoney($summary['sales_total']),
-                        $this->formatMoney($summary['purchases_total']),
-                        $this->formatMoney($summary['profit'])
-                    ),
+                    title: 'messages.notifications.weekly_summary_title',
+                    message: 'messages.notifications.weekly_summary_body',
+                    params: [
+                        'sales' => $this->formatMoney($summary['sales_total']),
+                        'purchases' => $this->formatMoney($summary['purchases_total']),
+                        'profit' => $this->formatMoney($summary['profit']),
+                    ],
                     data: [
                         ...$summary,
                         'branch_id' => $branchId,
@@ -363,6 +434,12 @@ class NotificationService
         }
     }
 
+    /**
+     * `$title` and `$message` may be translation keys; they are rendered with
+     * `$params` in the recipient's own language. Most notifications are raised
+     * from scheduled jobs, where the app locale is the server default rather
+     * than the language the recipient reads, and the text is stored as-is.
+     */
     public function notifyUser(
         User $user,
         string $type,
@@ -371,6 +448,7 @@ class NotificationService
         array $data = [],
         ?string $dedupeKey = null,
         string $dedupeWindow = 'day',
+        array $params = [],
     ): ?Notification {
         if (! $this->userAllows($user, $type)) {
             return null;
@@ -380,9 +458,14 @@ class NotificationService
             return null;
         }
 
+        $locale = $this->localeFor($user);
+        $title = $this->translateFor($title, $params, $locale);
+        $message = $this->translateFor($message, $params, $locale);
+
         $notification = Notification::create([
             'user_id' => $user->id,
             'type' => $type,
+            'dedupe_key' => $dedupeKey,
             'title' => $title,
             'message' => $message,
             'is_read' => false,
@@ -395,6 +478,23 @@ class NotificationService
         $this->maybeSendEmail($user, $title, $message);
 
         return $notification;
+    }
+
+    protected function localeFor(User $user): string
+    {
+        $locale = strtolower(trim((string) $user->locale));
+
+        // 'pa' is the historical code for Pashto; see SetLocale.
+        if ($locale === 'pa') {
+            $locale = 'ps';
+        }
+
+        return in_array($locale, ['en', 'fa', 'ps'], true) ? $locale : config('app.locale');
+    }
+
+    protected function translateFor(string $text, array $params, string $locale): string
+    {
+        return Lang::has($text, $locale) ? __($text, $params, $locale) : $text;
     }
 
     protected function userAllows(User $user, string $type): bool
@@ -413,7 +513,7 @@ class NotificationService
         $query = Notification::query()
             ->where('user_id', $user->id)
             ->where('type', $type)
-            ->where('data->dedupe_key', $dedupeKey);
+            ->where('dedupe_key', $dedupeKey);
 
         if ($dedupeWindow === 'day') {
             $query->whereDate('created_at', Carbon::today()->toDateString());
@@ -429,9 +529,12 @@ class NotificationService
         }
 
         try {
-            Mail::raw($message, function ($mail) use ($user, $title) {
-                $mail->to($user->email)->subject($title);
-            });
+            // Queued, and only after the surrounding database transaction
+            // commits: this is reached from the Transaction observer, so sending
+            // inline held row locks open for the length of the SMTP handshake
+            // and delivered mail for vouchers that were later rolled back.
+            SendNotificationEmailJob::dispatch($user->email, $title, $message)
+                ->afterCommit();
         } catch (\Throwable $exception) {
             report($exception);
         }
@@ -439,13 +542,52 @@ class NotificationService
 
     protected function usersByBranch(string $preferenceKey): Collection
     {
-        return User::query()
+        return $this->activeBranchUsers()
+            ->filter(fn (User $user) => (bool) $user->getPreference($preferenceKey, false))
+            ->groupBy('branch_id');
+    }
+
+    /**
+     * Every active, branch-assigned user, loaded once per service instance.
+     *
+     * The batch checks each used to run their own full `users` query; the
+     * overdue check alone ran three. The jobs are short-lived, so caching for
+     * the lifetime of the instance is enough.
+     */
+    protected function activeBranchUsers(): Collection
+    {
+        return $this->activeBranchUsers ??= User::query()
             ->whereNull('deleted_at')
             ->where('status', UserStatus::ACTIVE->value)
             ->whereNotNull('branch_id')
-            ->get()
-            ->filter(fn (User $user) => (bool) $user->getPreference($preferenceKey, false))
-            ->groupBy('branch_id');
+            ->get();
+    }
+
+    /**
+     * Active super-admins, resolved by role *slug*.
+     *
+     * Spatie's `role()` scope matches on the role *name* and throws
+     * RoleDoesNotExist when it finds nothing. Since this path runs from the
+     * Transaction observer, a renamed or missing role turned every posted
+     * voucher into a hard failure. The rest of the codebase already identifies
+     * this role by slug (SetActiveBranch, AuthServiceProvider), so match that.
+     */
+    protected function superAdmins(): Collection
+    {
+        $roleIds = DB::table('roles')
+            ->where('slug', 'super-admin')
+            ->whereNull('deleted_at')
+            ->pluck('id');
+
+        if ($roleIds->isEmpty()) {
+            return collect();
+        }
+
+        return User::query()
+            ->whereNull('deleted_at')
+            ->where('status', UserStatus::ACTIVE->value)
+            ->whereHas('roles', fn ($query) => $query->whereIn('roles.id', $roleIds))
+            ->get();
     }
 
     protected function lowBalanceAccounts(string $branchId): Collection
@@ -464,7 +606,7 @@ class NotificationService
         return DB::table('accounts as a')
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
             ->leftJoinSub($balances, 'balances', fn ($join) => $join->on('balances.account_id', '=', 'a.id'))
-            ->where('a.branch_id', $branchId)
+            ->where('a.company_id', $this->companyOf($branchId))
             ->whereNull('a.deleted_at')
             ->where('a.is_active', true)
             ->where('at.slug', 'cash-or-bank')
@@ -487,7 +629,7 @@ class NotificationService
 
         return DB::table('items as i')
             ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $branchId)
+            ->where('i.company_id', $this->companyOf($branchId))
             ->whereNull('i.deleted_at')
             ->whereNotNull('i.minimum_stock')
             ->whereRaw('COALESCE(stock_totals.current_quantity, 0) <= i.minimum_stock')
@@ -890,5 +1032,17 @@ class NotificationService
     protected function formatQuantity(mixed $value): string
     {
         return number_format($this->quantityValue($value), 2, '.', ',');
+    }
+
+    /**
+     * The company a branch belongs to, for joins against company master data
+     * (accounts, items, ledgers). The documents stay filtered by branch; what
+     * they point at is shared by every branch of the company.
+     */
+    protected function companyOf(string $branchId): ?string
+    {
+        return $this->companyIds[$branchId] ??= Branch::withoutGlobalScopes()
+            ->whereKey($branchId)
+            ->value('company_id');
     }
 }

@@ -14,10 +14,10 @@ class ItemSeeder extends Seeder
 {
     public function run(): void
     {
-        $branchId = Branch::where('is_main', true)->value('id') ?? Branch::query()->value('id');
+        $companyId = Branch::where('is_main', true)->value('id') ?? Branch::query()->value('id');
         $createdBy = User::where('name', 'admin')->value('id') ?? User::query()->value('id');
         $now = now();
-        if (!$branchId || !$createdBy) {
+        if (!$companyId || !$createdBy) {
             throw new \RuntimeException('ItemSeeder requires an existing main branch and admin user (seed BranchSeeder and UserSeeder first).');
         }
 
@@ -3932,8 +3932,6 @@ class ItemSeeder extends Seeder
             'category_id' => null,
             'minimum_stock' => null,
             'maximum_stock' => null,
-            'colors' => null,
-            'size_id' => null,
             'purchase_price' => null,
             'cost' => null,
             'sale_price' => null,
@@ -3942,7 +3940,7 @@ class ItemSeeder extends Seeder
             'rate_c' => null,
             'rack_no' => null,
             'fast_search' => null,
-            'branch_id' => $branchId,
+            'company_id' => $companyId,
             'created_by' => $createdBy,
             'updated_by' => null,
             'deleted_by' => null,
@@ -3954,9 +3952,9 @@ class ItemSeeder extends Seeder
             'deleted_at' => null,
         ];
 
-        $items = array_map(function (array $item) use ($defaults, $branchId, $createdBy, $now, $costAccountId, $incomeAccountId, $assetAccountId) {
+        $items = array_map(function (array $item) use ($defaults, $companyId, $createdBy, $now, $costAccountId, $incomeAccountId, $assetAccountId) {
             $merged = array_replace($defaults, $item);
-            $merged['branch_id'] = $branchId;
+            $merged['company_id'] = $companyId;
             $merged['created_by'] = $createdBy;
             $merged['cost_account_id'] = $merged['cost_account_id'] ?: $costAccountId;
             $merged['income_account_id'] = $merged['income_account_id'] ?: $incomeAccountId;

@@ -27,7 +27,7 @@ class CashPositionByCurrencyReportTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
 
         $this->usd = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'US Dollar',
             'code' => 'USD',
             'symbol' => '$',
@@ -38,7 +38,7 @@ class CashPositionByCurrencyReportTest extends TestCase
         ]);
 
         $this->usdCash = Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Cash In Hand USD',
             'local_name' => 'صندوق دالری',
             'number' => '1002',
@@ -92,7 +92,7 @@ class CashPositionByCurrencyReportTest extends TestCase
         // Two separate USD drawers plus an AFN one: the report must fold the
         // dollar accounts into a single USD line.
         $secondUsdCash = Account::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Bank USD',
             'number' => '1003',
             'slug' => 'bank-usd',

@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('sale_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('sale_id');
             $table->ulid('item_id');
             $table->string('batch')->nullable();
@@ -22,7 +23,6 @@ return new class extends Migration
             $table->decimal('quantity', 10, 2);
             $table->ulid('unit_measure_id')->nullable()->index();
             $table->ulid('warehouse_id')->index();
-            $table->ulid('size_id')->nullable()->index();
             $table->decimal('unit_price', 18, 4);
             $table->decimal('net_unit_cost', 18, 4)->nullable();
             $table->decimal('discount', 18, 4)->default(0)->nullable();

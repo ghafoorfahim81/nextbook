@@ -1,5 +1,7 @@
 ﻿{
     "sale": "فروش",
     "sales": "فروشات",
-    "sale_details": "جزئیات فروش"
+    "sale_details": "جزئیات فروش",
+    "no_item_warning": "بدون جنس",
+    "no_item_warning_description": "برای ایجاد یک فروش، لطفا حداقل یک آیتم را اضافه کنید"
 }

@@ -12,6 +12,7 @@ use App\Models\Administration\LandedCostCategory;
 use App\Models\Inventory\LandedCost;
 use App\Models\Purchase\Purchase;
 use App\Services\LandedCostService;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -87,9 +88,9 @@ class LandedCostController extends Controller
         ]);
     }
 
-    public function store(LandedCostRequest $request, LandedCostService $service)
+    public function store(LandedCostRequest $request, LandedCostService $service, AttachmentService $attachmentService)
     {
-        $landedCost = DB::transaction(function () use ($request, $service) {
+        $landedCost = DB::transaction(function () use ($request, $service, $attachmentService) {
             $landedCost = LandedCost::create([
                 'date' => $request->validated('date'),
                 'purchase_id' => $request->validated('purchase_id'),
@@ -100,6 +101,10 @@ class LandedCostController extends Controller
                 'status' => LandedCostStatus::Draft->value,
                 'notes' => $request->validated('notes'),
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($landedCost, $request->file('attachments'));
+            }
 
             $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
             $this->persistAllocation($landedCost, $request, $service);
@@ -159,7 +164,7 @@ class LandedCostController extends Controller
         ]);
     }
 
-    public function update(LandedCostRequest $request, LandedCost $landedCost, LandedCostService $service)
+    public function update(LandedCostRequest $request, LandedCost $landedCost, LandedCostService $service, AttachmentService $attachmentService)
     {
         if (($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status) === LandedCostStatus::Posted->value) {
             throw ValidationException::withMessages([
@@ -167,7 +172,11 @@ class LandedCostController extends Controller
             ]);
         }
 
-        $landedCost = DB::transaction(function () use ($request, $landedCost, $service) {
+        $landedCost = DB::transaction(function () use ($request, $landedCost, $service, $attachmentService) {
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($landedCost, $request->file('attachments'));
+            }
+
             $landedCost->update([
                 'date' => $request->validated('date'),
                 'purchase_id' => $request->validated('purchase_id'),
@@ -261,14 +270,14 @@ class LandedCostController extends Controller
     {
         return LandedCostCategory::query()
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'local_name']);
     }
 
     private function currencyOptions()
     {
         return Currency::query()
             ->orderBy('code')
-            ->get(['id', 'code', 'name', 'exchange_rate', 'is_base_currency']);
+            ->get(['id', 'code', 'name', 'local_name', 'exchange_rate', 'is_base_currency']);
     }
 
     /**

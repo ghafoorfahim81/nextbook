@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -18,12 +20,13 @@ use App\Traits\HasUserAuditable;
 use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasUserTracking;
 class Purchase extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -31,8 +34,10 @@ class Purchase extends Model
      * @var array
      */
     protected $fillable = [
+        'company_id',
         'number',
         'supplier_id',
+        'purchase_order_id',
         'date',
         'discount',
         'discount_type',
@@ -55,6 +60,7 @@ class Purchase extends Model
     {
         return [
             'supplier_id' => 'string',
+            'purchase_order_id' => 'string',
             'date' => 'date',
             'discount' => 'float',
             'bank_account_id' => 'string',
@@ -88,6 +94,7 @@ class Purchase extends Model
         'transaction.currency_id',
         'type',
         'warehouse_id',
+        'payment_status',
         'date',
         'due_date',
         'created_by',
@@ -96,6 +103,11 @@ class Purchase extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Ledger\Ledger::class);
+    }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
     }
 
     public function transaction(): HasOne
@@ -150,9 +162,26 @@ class Purchase extends Model
             });
     }
 
+    public function returns(): HasMany
+    {
+        return $this->hasMany(PurchaseReturn::class);
+    }
+
+    public function purchaseReturnItems(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            PurchaseReturnItem::class,
+            PurchaseItem::class,
+            'purchase_id',
+            'purchase_item_id',
+            'id',
+            'id'
+        );
+    }
+
     public function getDependencyMessage(): string
     {
-        return 'You cannot delete this purchase because it has dependencies.';
+        return __('messages.dependency.cannot_delete_document', ['document' => __('messages.dependency.documents.purchase')]);
     }
 
     public function stocks()

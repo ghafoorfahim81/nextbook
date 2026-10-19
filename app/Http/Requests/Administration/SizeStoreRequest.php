@@ -20,8 +20,8 @@ class SizeStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', $this->uniqueInBranch('sizes')],
-            'code' => ['required', 'string', $this->uniqueInBranch('sizes')],
+            'name' => ['required', 'string', $this->uniqueInCompany('sizes')],
+            'code' => ['required', 'string', $this->uniqueInCompany('sizes')],
         ];
     }
 }

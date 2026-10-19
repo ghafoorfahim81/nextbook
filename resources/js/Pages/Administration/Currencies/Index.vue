@@ -19,6 +19,7 @@ const { t } = useI18n()
 
 const columns = computed(() => ([ 
     { key: 'name', label: t('general.name'), sortable: true },
+    { key: 'local_name', label: t('admin.currency.local_name'), sortable: true, render: (row) => row.local_name || '-' },
     { key: 'code', label: t('admin.currency.code'), sortable: true },
     { key: 'exchange_rate', label: t('admin.currency.exchange_rate'), sortable: true },
     {
@@ -50,7 +51,7 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('currencies.destroy', id, {
         title: t('general.delete', { name: t('admin.currency.currency') }),
-        description: t('general.delete_description', { name: t('admin.currency.currency') }),
+        name: t('admin.currency.currency'),
         successMessage: t('general.delete_success', { name: t('admin.currency.currency') }),
     })
 

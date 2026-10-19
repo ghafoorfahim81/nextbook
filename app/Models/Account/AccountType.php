@@ -10,11 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
-use App\Traits\HasBranch;
-use App\Traits\BranchSpecific;
+use App\Traits\HasCompany;
+use App\Traits\CompanySpecific;
 class AccountType extends Model
 {
-    use HasFactory, HasSearch, HasSorting,HasUlids, BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasSearch, HasSorting,HasUlids, CompanySpecific, HasCompany, HasUserAuditable, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'account_types';
     protected $keyType = 'string';
@@ -27,7 +27,7 @@ class AccountType extends Model
     protected $fillable = [ 
         'name',
         'nature',
-        'branch_id',
+        'company_id',
         'remark',
         'slug',
         'is_main',
@@ -42,7 +42,7 @@ class AccountType extends Model
      * @var array
      */
     protected $casts = [ 
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'slug' => 'string',
         'nature' => 'string',
         'is_main' => 'boolean',
@@ -163,6 +163,18 @@ class AccountType extends Model
         ];
     }
 
+
+    /**
+     * Natures whose accounts start every period at zero (income, expense and
+     * cost of goods sold) or never take a posting at all (non-posting), so an
+     * opening balance makes no sense for them.
+     */
+    public const NATURES_WITHOUT_OPENING = ['income', 'expense', 'non-posting'];
+
+    public function allowsOpening(): bool
+    {
+        return ! in_array($this->nature, self::NATURES_WITHOUT_OPENING, true);
+    }
 
     /**
      * Relationship to accounts that use this account type

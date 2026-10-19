@@ -1,5 +1,6 @@
 {
   "no_tips_available": "No tips available yet for this screen.",
+  "open_full_guide": "Open full guide",
   "modules": {
     "employees": {
       "title": "Employees — Tips",
@@ -43,33 +44,138 @@
     },
     "inventory_item": {
       "title": "Inventory Item — Tips",
-      "description": "Define items with the right type, codes, accounts, and opening stock.",
-      "items": [
-        "Item Type controls behavior: inventory/stock items affect on-hand quantity; non-inventory items are used for services/charges.",
-        "SKU: use a unique Stock Keeping Unit for fast search, barcode integration, and avoiding duplicates.",
-        "Account assignments matter: Asset account is used for stock value, Income account for sales, Cost account for cost of goods sold.",
-        "Min/Max stock levels help you detect under-stock and over-stock; set them for reorder alerts and planning.",
-        "Opening stock: use it only for your starting balance. Prefer entering it per store with correct batch/expiry when applicable.",
-        "Batch/Expiry Tracking: enable it for items that need batch/expiry tracking. This will allow you to track stock by batch/expiry.Once it is enabled, you will be able to track stock by batch/expiry and you can not deselect it.",
-        "Costing Method: if you are using batch/expiry tracking, by default the costing method is FIFO. This will affect the cost of the item when you sell it."
+      "description": "An item is the catalogue entry. What a customer actually picks, scans and pays for is a variant of it — every item has at least one.",
+      "sections": [
+        {
+          "heading": "Identity",
+          "items": [
+            "The code is generated automatically and identifies the item internally — it never changes.",
+            "Item type decides behaviour: a stocked item moves on-hand quantity; a service or charge does not. It cannot be changed once a transaction is posted.",
+            "Name, category, brand and unit describe the catalogue entry. Unit is the base unit everything is counted in."
+          ]
+        },
+        {
+          "heading": "Variants — the thing that is sold",
+          "items": [
+            "SKU, barcode and price live on the variant, not the item. A simple product (a bottle of water) still has one variant — a single row holding its SKU, barcode and price.",
+            "For a product with choices (RAM, storage, colour, size), add an attribute column and one row per combination. Each row gets its own SKU, barcode and price.",
+            "Star one variant as the default — barcode scans and price lookups fall back to it when no specific variant is chosen.",
+            "The Margin % field is a helper: it fills the sale price from purchase price + margin. It is not saved."
+          ]
+        },
+        {
+          "heading": "Stock tracking",
+          "items": [
+            "Batch / expiry tracking groups stock into delivery lots, each with its own batch number, expiry and landed cost. Permanent once a transaction is posted.",
+            "Serial tracking records every unit individually with its own serial number, cost and warranty.",
+            "Colour and size are ordinary variant attributes now — not separate tracking switches.",
+            "Which of these you see depends on the company's business type."
+          ]
+        },
+        {
+          "heading": "Opening stock",
+          "items": [
+            "Use opening stock only for the starting balance at go-live. After that, every change goes through purchase, sale, transfer or adjustment.",
+            "Enter it per warehouse, and per variant when the item has more than one.",
+            "The opening unit price is the cost per unit — it drives the item's average cost and is written onto the stock movement.",
+            "Selecting a variant pre-fills the unit price with that variant's purchase price; adjust it if the real cost differs."
+          ]
+        },
+        {
+          "heading": "Accounts",
+          "items": [
+            "Asset account holds the item's stock value on the balance sheet.",
+            "Income account is where its sales revenue is booked.",
+            "Cost of goods sold account is where the cost is booked when it is sold.",
+            "Costing method: batch/expiry-tracked items use FIFO; the rest use weighted average."
+          ]
+        }
       ]
     },
     "fast_entry": {
       "title": "Fast Entry (Items) — Tips",
-      "description": "Quickly create many items in one screen.",
-      "items": [
-        "Codes are auto-generated; fill the Name and Measure first for fastest workflow.",
-        "Leave completely empty rows blank—only filled rows are saved.",
-        "Use Store + Quantity + Batch/Expiry when you want to create items and set initial stock in one go."
+      "description": "Create many items on one screen. It asks only for the fields you need to start trading — everything else can be filled in later from the item edit form.",
+      "sections": [
+        {
+          "heading": "What this screen is for",
+          "items": [
+            "Use it to load a catalogue quickly: name, unit, prices and — if you want — the opening stock you already hold.",
+            "It does not replace the full item form. Accounts, photo, variants, reorder levels, tracking flags and attachments are all edited there afterwards.",
+            "Rows left completely empty are skipped, so you never have to clear the spare ones before saving."
+          ]
+        },
+        {
+          "heading": "Typing fast",
+          "items": [
+            "Arrow keys move between cells, Enter jumps to the next row, Tab to the next column.",
+            "A new row is added automatically as soon as you type in the last one.",
+            "The code and the barcode are generated for you — you never type them.",
+            "Typing a name selects the default unit; typing an opening amount selects the main warehouse. Change either whenever the row needs something else."
+          ]
+        },
+        {
+          "heading": "Prices and cost",
+          "items": [
+            "Purchase price is what you pay the supplier; sale price is what you charge.",
+            "Final cost is what one unit really costs you once it reaches your shelf — the purchase price plus freight, duty and clearing. The opening stock and its accounting entry are valued at it.",
+            "Leave Final cost blank and the purchase price is used instead."
+          ]
+        },
+        {
+          "heading": "Opening stock",
+          "items": [
+            "An opening amount needs a warehouse, and creates a stock movement plus a balanced opening-balance voucher.",
+            "Use it only for what you hold on the day you go live. After that, stock moves through purchase, sale, transfer and adjustment.",
+            "Batch and expiry columns appear when your business type tracks them. You can also switch them on from Column settings."
+          ]
+        },
+        {
+          "heading": "Column settings",
+          "items": [
+            "Hide the columns you do not use — opening amount, batch, expiry, category, warehouse, prices and cost can all be turned off.",
+            "The choice is remembered in this browser only; it is never saved to the company."
+          ]
+        }
       ]
     },
     "fast_opening": {
       "title": "Fast Opening (Items) — Tips",
-      "description": "Enter opening quantities for many items quickly.",
-      "items": [
-        "Use Fast Opening only for the first-time opening/migration; after go-live, use purchases, transfers, and adjustments.",
-        "Always select the correct Store; openings are store-specific.",
-        "For batch/expiry managed items, fill Batch + Expiry consistently to avoid duplicate/merged stock lines."
+      "description": "Record the stock you already hold, for every item that has no opening balance yet. An item leaves this list the moment its opening is posted.",
+      "sections": [
+        {
+          "heading": "What this screen is for",
+          "items": [
+            "Opening stock is a one-time, go-live figure: what is physically on your shelves on the day you start using the system.",
+            "After this, stock only moves through purchase, sale, transfer and adjustment — never come back here to correct a quantity.",
+            "Only items with no opening yet are listed, so an item cannot be opened twice.",
+            "Leave the opening amount empty on anything you are not counting. Those rows are skipped, so you never have to delete them."
+          ]
+        },
+        {
+          "heading": "Filling it in",
+          "items": [
+            "Arrow keys move between cells, Enter jumps to the next row, and Tab to the next column. On the expiry cell, Enter opens the calendar.",
+            "Typing an opening amount selects the main warehouse for that row; change it when the stock sits somewhere else.",
+            "Batch and expiry only accept typing on items that are tracked that way. On the rest they stay closed.",
+            "Use the search box to find one item in a long list — it filters the rows without losing anything you have already typed."
+          ]
+        },
+        {
+          "heading": "Cost",
+          "items": [
+            "Final cost is what one unit really costs you — the purchase price plus freight, duty and clearing.",
+            "It is what the stock is valued at, and what the accounting entry is worth, so it drives the item average cost from day one.",
+            "A counted row needs a cost. Stock booked at zero shows a profit on the first sale that never existed."
+          ]
+        },
+        {
+          "heading": "What posting does",
+          "items": [
+            "Each counted row creates a stock movement into the warehouse you chose, and a balanced opening-balance voucher: inventory is debited, opening-balance equity is credited.",
+            "Only the rows on the page you are looking at are saved. Finish a page, save it, then move to the next.",
+            "Batch and expiry are part of what identifies a stock lot, so enter them consistently — the same lot typed two ways becomes two separate stock lines."
+          ]
+        }
       ]
     },
     "transfer": {
@@ -235,6 +341,90 @@
         "The indicative gross covers fixed amounts and percentages of basic only. Anything on a percentage of gross is not known until the payslip is resolved.",
         "Effective dates decide which structure a payroll run uses, so raise a new structure rather than editing history.",
         "A structure with no components is valid — it simply pays the basic salary."
+      ]
+    },
+    "barcode_print": {
+      "title": "Print Barcode — Tips",
+      "description": "Lay out a sheet of barcode labels and print it. The barcode and the price come from the variant, so a product with choices prints one label per variant.",
+      "sections": [
+        {
+          "heading": "Choosing the paper",
+          "items": [
+            "A4 and A5 tile as many labels as fit across the page; the count per row is shown under the options.",
+            "The Label kinds are for a sticker roll and are defined by their column count instead — the stock itself is that wide.",
+            "Label width and height are the sticker, not the gap. Horizontal and vertical spacing are the gaps between them.",
+            "Margins are the blank edge of the sheet. Reset puts them back to 10 mm on every side."
+          ]
+        },
+        {
+          "heading": "Symbology — what each one accepts",
+          "items": [
+            "CODE128 is the safe default: letters, digits and symbols, any length. It encodes the codes this system generates as-is.",
+            "CODE128A drops lowercase; CODE128B takes both cases; CODE128C takes digits only, in pairs (an even count).",
+            "CODE39 takes uppercase letters, digits and - . $ / + % and space.",
+            "MSI takes digits only, any length. Codabar must start and end with A, B, C or D with only digits and - $ : . + / between.",
+            "EAN-13 (13 digits), EAN-8 (8), UPC-A (12) and ITF-14 (14) are GS1 retail standards. The last digit must be a computed check digit, and the number itself is assigned to a company by GS1 — it is not one you invent.",
+            "That is why an auto-generated code like ITM681421515 prints under CODE128 but is refused by EAN-13: it has letters, the wrong length, and no check digit. Use CODE128 for your own shelf labels, and the GS1 types only for codes printed on the manufacturer packaging."
+          ]
+        },
+        {
+          "heading": "Choosing products",
+          "items": [
+            "The ten newest items are listed to start with. Use the search box above the table to add anything else.",
+            "Tick the rows you want, set a quantity per row, or use Number of Barcodes to set the same quantity on everything ticked.",
+            "A product with no barcode cannot be ticked — give it one on the item form first.",
+            "The filter box narrows the table without losing your ticks or quantities."
+          ]
+        },
+        {
+          "heading": "What prints",
+          "items": [
+            "Draw Code, Name, Variant, Barcode, Price and Border each control one line of the sticker; the heading prints once at the top of the sheet.",
+            "The preview is the sheet: what you see laid out is what comes out of the printer.",
+            "Check the preview before printing a full roll — label stock is expensive to waste."
+          ]
+        }
+      ]
+    },
+    "item_pricing": {
+      "title": "Item Pricing — Tips",
+      "description": "Set sale prices across many products at once. Price lives on the variant, so a product with choices has one price per variant.",
+      "sections": [
+        {
+          "heading": "What is listed",
+          "items": [
+            "The ten newest variants are shown to start with — the things most likely to still need a price. Change the page size or search to reach anything else.",
+            "A product with real choices shows one row per variant, each with its own sale price. A plain product shows a single row with no variant label.",
+            "On hand, cost and purchase price are shown for context; only the sale price and margin can be typed."
+          ]
+        },
+        {
+          "heading": "Setting a price",
+          "items": [
+            "Type in the Sale Price box, or type a Margin % and the price is worked out from the cost.",
+            "Margin is measured against the average cost once stock has moved, and against the purchase price before that. A product with neither cannot take a margin.",
+            "A price below cost is flagged on the row. It is allowed — clearance happens — but it is never silent.",
+            "Arrow keys move between the price and margin boxes and up and down the rows."
+          ]
+        },
+        {
+          "heading": "Repricing a shelf at once",
+          "items": [
+            "Tick the rows you want, pick a bulk action and press Apply.",
+            "Pick Increase or Decrease, then Change by % to move the current price by a percentage, or Change by amount to shift it by a fixed sum. Enter the figure as a positive number — the direction decides which way it goes.",
+            "Set margin % recalculates each price from that row own cost, so a mixed shelf ends up at one consistent margin.",
+            "Round to nearest snaps prices to a step — 5 or 10 — which is how shelf prices are usually set."
+          ]
+        },
+        {
+          "heading": "Saving",
+          "items": [
+            "Nothing reaches the database until you press Save. Changed rows are highlighted and show old → new.",
+            "Save sends every change in one request and asks you to confirm the list first.",
+            "Revert throws away everything typed and puts the saved prices back.",
+            "Documents already posted keep the price they were saved with — repricing only affects what is sold from now on."
+          ]
+        }
       ]
     }
   }

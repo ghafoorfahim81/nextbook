@@ -39,8 +39,11 @@
         "item": "توکی",
         "account": "نغدي / بانک حساب",
         "warehouse": "ګودام",
+        "color": "ټول رنګونه",
+        "size": "ټولې اندازې",
         "currency": "اسعار",
         "type": "د راکړې ورکړې ډول",
+        "reason": "دلیل",
         "balance_type": "د بیلانس ډول",
         "expense_category": "د لګښت کټګوري",
         "expense_account": "د لګښت حساب",
@@ -53,7 +56,8 @@
         "payroll": "د معاش دوره",
         "leave_type": "د رخصتۍ ډول",
         "employment_type": "د دندې ډول",
-        "employment_status": "د دندې حالت"
+        "employment_status": "د دندې حالت",
+        "variant": "ډول"
     },
     "balance_types": {
         "all": "ټول",
@@ -80,7 +84,9 @@
         "balance_label": "بیلانس",
         "total_amount": "ټول مبلغ",
         "total_quantity": "ټول مقدار",
+        "total_movement": "ټول حرکت",
         "total_value": "ټول ارزښت",
+        "total_cost": "ټول لګښت",
         "total_items": "توکي",
         "total_in": "ټول داخل",
         "total_out": "ټول خارج",
@@ -110,6 +116,11 @@
         "total_expenses": "ټول لګښتونه",
         "net_profit": "خالصه ګټه",
         "expense_count": "لګښتونه",
+        "current": "روان (۰-۳۰)",
+        "days_31_60": "۳۱-۶۰ ورځې",
+        "days_61_90": "۶۱-۹۰ ورځې",
+        "days_90_plus": "۹۰+ ورځې",
+        "total_outstanding": "ټول پاتې",
         "party_count": "د طرفونو شمېر",
         "total_debtor": "ټول ترلاسه کېدونکي",
         "total_creditor": "ټول ورکړونکي",
@@ -177,6 +188,9 @@
         "total_value": "ټول ارزښت",
         "item_code": "د توکي کوډ",
         "item_name": "د توکي نوم",
+        "color": "رنګ",
+        "size": "اندازه",
+        "stock_value": "د موجودۍ ارزښت",
         "batch_number": "د بچ شمېره",
         "expiry_date": "د ختمېدو نېټه",
         "in_quantity": "داخل",
@@ -216,12 +230,21 @@
         "expense_account": "د لګښت حساب",
         "bank_account": "د بانک / نغدي حساب",
         "remark": "یادښت",
+        "reason": "دلیل",
+        "unit_cost": "د واحد بیه",
+        "total_cost": "ټوله بیه",
+        "notes": "یادښت",
+        "current": "روان (۰-۳۰)",
+        "days_31_60": "۳۱-۶۰ ورځې",
+        "days_61_90": "۶۱-۹۰ ورځې",
+        "days_90_plus": "۹۰+ ورځې",
+        "total_outstanding": "ټول پاتې",
         "party_name": "طرف",
         "balance_type": "د بیلانس ډول",
         "currency": "اسعار",
-        "rate": "نرخ",
         "home_equivalent": "د بنسټیزو اسعارو معادل",
         "currency_name": "د اسعارو نوم",
+        "rate": "نرخ",
         "period": "دوره",
         "employee": "کارکوونکی",
         "employee_code": "کوډ",
@@ -265,7 +288,6 @@
         "to_date": "تر نېټې",
         "days": "ورځې",
         "approved_by": "تصویبوونکی",
-        "reason": "دلیل",
         "headcount": "د کارکوونکو شمېر",
         "joiners": "نوي ګمارل شوي",
         "leavers": "پرېښودونکي",
@@ -276,7 +298,9 @@
         "phone": "تیلفون",
         "start_date": "د پیل نېټه",
         "end_date": "د پای نېټه",
-        "days_remaining": "پاتې ورځې"
+        "days_remaining": "پاتې ورځې",
+        "variant": "ډول",
+        "unit_measure": "د اندازه کولو واحد"
     },
     "view_types": {
         "general": "عمومي لید",
@@ -285,7 +309,7 @@
     "reports": {
         "trial_balance": {
             "label": "آزمایښتي بیلانس",
-            "description": "ثبت شوي ډیبیټ، کریډیټ او خالص بیلانس د لېجر له مخې."
+            "description": "د راپور تر نېټې پورې د هر حساب ډیبیټ یا کریډیټ بیلانس؛ دواړه ستونونه باید برابر وي."
         },
         "balance_sheet": {
             "label": "بیلانس شیټ",
@@ -306,6 +330,14 @@
         "supplier_statement": {
             "label": "د عرضه کوونکي صورت",
             "description": "په ډیفالټ توګه د ټولو عرضه کوونکو بیلانسونه، یا د ټاکل شوي عرضه کوونکي بشپړ صورت."
+        },
+        "aged_receivables": {
+            "label": "د سن له مخې مطالبات",
+            "description": "د پیرودونکو پاتې بیلانسونه د ټاکل شوې نیټې پورې د سن له مخې."
+        },
+        "aged_payables": {
+            "label": "د سن له مخې پورونه",
+            "description": "د عرضه‌کوونکو پاتې بیلانسونه د ټاکل شوې نیټې پورې د سن له مخې."
         },
         "receipt_report": {
             "label": "د رسید راپور",
@@ -339,6 +371,10 @@
             "label": "د سټاک حرکت",
             "description": "د توکي او ګودام له مخې د سټاک تفصیلي تاریخچه."
         },
+        "stock_adjustment_report": {
+            "label": "د موجودۍ تعدیل راپور",
+            "description": "د ګدام، توکي او دلیل له مخې د موجودۍ تعدیل کرښې، له جهت، بیې او حالت سره."
+        },
         "low_stock": {
             "label": "کم سټاک",
             "description": "هغه توکي چې د بیا فرمایش له کچې سره برابر یا تر هغې کم وي."
@@ -354,6 +390,10 @@
         "expiry_wise_report": {
             "label": "د ختمېدو له مخې راپور",
             "description": "د هر بچ د ختمېدو نېټې له مخې د موجودۍ حرکت."
+        },
+        "variant_wise_report": {
+            "label": "د ډول له مخې راپور",
+            "description": "د رنګ او اندازې له مخې موجودي د ورودي، وتلو، موجودۍ او ارزښت سره."
         },
         "zero_on_hand_report": {
             "label": "صفر موجودي لرونکي توکي",
@@ -511,5 +551,13 @@
         "days_90": "۶۱ تر ۹۰ ورځې",
         "days_90_plus": "له ۹۰ ورځو ډېر",
         "unapplied_credit": "نه ځانګړی شوی کریډیټ"
+    },
+    "chart": {
+        "income_statement_title": "د عاید، لګښت او ګټې پرتله",
+        "revenue": "عاید",
+        "cost_of_goods_sold": "د پلور لګښت",
+        "gross_profit": "ناخالصه ګټه",
+        "expenses": "لګښتونه",
+        "net_profit": "خالصه ګټه"
     }
 }

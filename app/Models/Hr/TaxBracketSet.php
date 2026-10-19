@@ -4,8 +4,8 @@ namespace App\Models\Hr;
 
 use App\Enums\TaxPeriod;
 use App\Models\Administration\Currency;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TaxBracketSet extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -37,7 +37,7 @@ class TaxBracketSet extends Model
         return [
             'id' => 'string',
             'currency_id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'period' => TaxPeriod::class,
@@ -66,7 +66,7 @@ class TaxBracketSet extends Model
      */
     public function brackets(): HasMany
     {
-        // By NAME, not by class: BranchSpecific registers its scope as the
+        // By NAME, not by class: CompanySpecific registers its scope as the
         // string 'branchSpecific', so passing the class here silently removes
         // nothing (the same convention Branch::items() follows).
         return $this->hasMany(TaxBracket::class)

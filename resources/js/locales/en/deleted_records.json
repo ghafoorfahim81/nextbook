@@ -52,6 +52,9 @@
     "no": "No"
   },
   "days": "days",
+  "retention_label": "Retention window",
+  "blocked_by_parents": "Cannot be restored yet: {parents} is still in the trash. Restore that first.",
+  "retention_value": "{days} days, then permanent",
   "empty": "No deleted records were found for the selected filters.",
   "system": "System"
 }

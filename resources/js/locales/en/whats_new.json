@@ -1,0 +1,44 @@
+{
+    "page_title": "What's New",
+    "eyebrow": "Release Highlights",
+    "hero_title": "Draft, Post & Reverse — your ledger just got safer",
+    "hero_subtitle": "Every sale, purchase, payment, receipt and journal entry can now be held as a draft, posted deliberately, and reversed cleanly with a full audit trail — no more editing history or deleting mistakes.",
+    "cta_back": "Back to Dashboard",
+    "cta_explore": "Try it on a Sale",
+
+    "flow_title": "The new lifecycle of every transaction",
+    "flow_subtitle": "One consistent flow now applies across Sales, Purchases, Receipts, Payments, Journal Entries, Account Transfers, Expenses, Drawings and Item Transfers.",
+    "flow_step1_title": "Draft",
+    "flow_step1_desc": "Save a document without touching the ledger or stock. Stock is reserved, not deducted, so nothing is committed yet.",
+    "flow_step2_title": "Post",
+    "flow_step2_desc": "Review, then post with one click. The ledger is updated, stock moves for real, and the document becomes locked.",
+    "flow_step3_title": "Reverse",
+    "flow_step3_desc": "Made a mistake on a posted document? Reverse it with a required reason. A mirrored entry is created — nothing is edited or deleted.",
+
+    "before_title": "Before vs. After",
+    "before_label": "Before",
+    "after_label": "After",
+    "before_1": "Posted documents could be edited or deleted directly, leaving no trace of what changed.",
+    "after_1": "Only Draft documents are editable. Posted and Reversed documents are permanently locked.",
+    "before_2": "Correcting a mistake meant editing the original record or manually creating an offsetting entry.",
+    "after_2": "One \"Reverse\" button creates an exact mirrored entry (debit ⇄ credit) linked back to the original.",
+    "before_3": "No visibility into who approved or reversed a transaction, or why.",
+    "after_3": "Every document tracks posted_at / posted_by and reversed_at / reversal reason automatically.",
+    "before_4": "Stock adjustments during edits could drift from the accounting entries.",
+    "after_4": "Reversing a document automatically reverses its stock movements too, keeping inventory and books in sync.",
+
+    "features_title": "What's inside",
+    "feature1_title": "Mandatory reversal reason",
+    "feature1_desc": "A reversal can't be submitted without typing why — every correction is self-documenting.",
+    "feature2_title": "Color-coded status",
+    "feature2_desc": "Draft, Posted, Reversed, Cancelled and Voided are now distinct, at-a-glance badges across every list and detail page.",
+    "feature3_title": "Stock-aware reversal",
+    "feature3_desc": "Reversing a sale or purchase automatically voids and re-posts the linked stock movements — no manual stock fixes needed.",
+    "feature4_title": "Linked audit trail",
+    "feature4_desc": "Every Show page now links a document to its reversal (or the original it reversed), so history is always one click away.",
+
+    "modules_title": "Available across every transaction module",
+    "modules_subtitle": "Look for the Post and Reverse buttons on the detail page of:",
+
+    "footer_note": "Questions about the new flow? Reach out to your NextBook administrator or check the in-app help on any of these pages."
+}

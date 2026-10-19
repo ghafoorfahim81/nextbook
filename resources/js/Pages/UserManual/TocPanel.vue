@@ -1,0 +1,102 @@
+<script setup>
+import { BookOpen, Search, X } from 'lucide-vue-next'
+import { Input } from '@/Components/ui/input'
+import { MANUAL_LOCALES } from './content'
+import ManualHighlight from './ManualHighlight.vue'
+
+defineProps({
+    t: { type: Function, required: true },
+    guide: { type: Object, required: true },
+    manualLocale: { type: String, required: true },
+    query: { type: String, required: true },
+    activeId: { type: String, default: 'guide-top' },
+    filteredChapters: { type: Array, required: true },
+})
+
+const emit = defineEmits(['update:query', 'set-locale', 'go', 'submit'])
+</script>
+
+<template>
+    <div class="space-y-4">
+        <div>
+            <p class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {{ t('user_manual.language') }}
+            </p>
+            <div class="flex flex-wrap gap-1.5">
+                <button
+                    v-for="item in MANUAL_LOCALES"
+                    :key="item.id"
+                    type="button"
+                    class="rounded-full border px-2.5 py-1 text-xs font-medium transition"
+                    :class="manualLocale === item.id
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border bg-muted text-foreground hover:bg-accent'"
+                    @click="emit('set-locale', item.id)"
+                >
+                    {{ item.label }}
+                </button>
+            </div>
+        </div>
+
+        <div class="space-y-1.5">
+            <div class="relative">
+                <Search class="pointer-events-none absolute top-2.5 size-3.5 text-muted-foreground ltr:left-2.5 rtl:right-2.5" />
+                <Input
+                    :model-value="query"
+                    :placeholder="t('user_manual.search_placeholder')"
+                    class="h-9 bg-background ltr:pl-8 ltr:pr-8 rtl:pl-8 rtl:pr-8"
+                    @update:model-value="emit('update:query', $event)"
+                    @keydown.enter.prevent="emit('submit')"
+                    @keydown.esc.prevent="emit('update:query', '')"
+                />
+                <span
+                    v-if="query"
+                    role="button"
+                    tabindex="0"
+                    class="absolute inset-y-0 flex cursor-pointer items-center px-2.5 text-muted-foreground hover:text-foreground ltr:right-0 rtl:left-0"
+                    :aria-label="t('user_manual.clear_search')"
+                    @click="emit('update:query', '')"
+                    @keydown.enter.prevent="emit('update:query', '')"
+                >
+                    <X class="size-3.5" />
+                </span>
+            </div>
+            <!-- dir="auto": this sentence is in the interface language, which can
+                 differ in direction from the manual's (English UI, Pashto guide). -->
+            <p v-if="query.trim()" dir="auto" class="px-1 text-start text-[11px] text-muted-foreground">
+                {{ t('user_manual.chapters_matching', { count: filteredChapters.length, total: guide.chapters.length }) }}
+            </p>
+        </div>
+
+        <nav class="space-y-0.5 text-sm">
+            <button
+                type="button"
+                class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start transition"
+                :class="activeId === 'guide-top'
+                    ? 'bg-primary font-semibold text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
+                @click="emit('go', 'guide-top')"
+            >
+                <BookOpen class="size-3.5 shrink-0" />
+                <span class="truncate">{{ guide.title }}</span>
+            </button>
+            <button
+                v-for="chapter in filteredChapters"
+                :key="chapter.id"
+                type="button"
+                :data-toc-id="`ch-${chapter.id}`"
+                class="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start transition"
+                :class="activeId === `ch-${chapter.id}`
+                    ? 'bg-primary font-semibold text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
+                @click="emit('go', `ch-${chapter.id}`)"
+            >
+                <span
+                    class="mt-0.5 w-5 shrink-0 text-xs font-bold"
+                    :class="activeId === `ch-${chapter.id}` ? 'text-primary-foreground' : 'text-primary'"
+                >{{ chapter.number }}</span>
+                <span><ManualHighlight :text="chapter.title" :query="query" /></span>
+            </button>
+        </nav>
+    </div>
+</template>

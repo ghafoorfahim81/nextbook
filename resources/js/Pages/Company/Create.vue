@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 const { toast } = useToast();
 import { useToast } from '@/Components/ui/toast/use-toast';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 const props = defineProps({
     calendarTypes: {
         type: Array,
@@ -80,8 +81,8 @@ const submit = () => {
         },
         onError: () => {
             toast({
-                title: 'Error',
-                description: 'Something went wrong',
+                title: t('general.error'),
+                description: t('general.something_went_wrong'),
                 variant: 'destructive',
                 class:'bg-red-600 text-white',
                 duration: Infinity,
@@ -124,6 +125,8 @@ const handleSelectChange = (field, value) => {
     }
     form[field] = value;
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
@@ -132,13 +135,13 @@ const handleSelectChange = (field, value) => {
             <div class="sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 bg-white border-b border-gray-200">
-                        <form @submit.prevent="submit" class="space-y-6">
+                        <form ref="saveFormRef" @submit.prevent="submit" class="space-y-6">
                             <div class="mb-5 grid grid-cols-2 gap-x-2 gap-y-5">
                                 <!-- Basic Information -->
                                 <div class="space-y-4">
                                     <h3 class="text-lg font-medium">{{ t('company.basic_information') }}</h3>
 
-                                    <NextInput :error="form.errors?.name_en" type="text" v-model="form.name_en" :label="t('company.name_en') + '*'" />
+                                    <NextInput is-required :error="form.errors?.name_en" type="text" v-model="form.name_en" :label="t('company.name_en')" />
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.name_fa" :label="t('company.name_fa')" />
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.name_pa" :label="t('company.name_pa')" />
 
@@ -174,6 +177,7 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('business_type', value)"
                                         :floating-text="t('company.business_type')"
+                                        is-required
                                         :error="form.errors?.business_type"
                                     />
                                     <NextSelect
@@ -183,6 +187,7 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('calendar_type', value)"
                                         :floating-text="t('company.calendar_type')"
+                                        is-required
                                         :error="form.errors?.calendar_type"
                                     />
                                     <NextSelect
@@ -192,6 +197,7 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('working_style', value)"
                                         :floating-text="t('company.working_style')"
+                                        is-required
                                         :error="form.errors?.working_style"
                                     />
                                 </div>
@@ -204,16 +210,18 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('locale', value)"
                                         :floating-text="t('company.locale')"
+                                        is-required
                                         :error="form.errors?.locale"
                                     />
                                     <NextSelect
                                         :options="currencies.data"
                                         v-model="form.selected_currency"
-                                        label-key="name"
+                                        label-key="display_name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                         :reduce="currency => currency.id"
                                         :floating-text="t('company.currency')"
+                                        is-required
                                         :error="form.errors?.currency_id"
                                         :searchable="true"
                                         resource-type="currencies"

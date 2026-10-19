@@ -29,17 +29,20 @@ watch(() => localDialogOpen.value, (val) => {
 
 const isEditing = computed(() => !!props.editingItem?.id);
 
+// The inputs bind code and description. They were missing here (the form
+// declared remarks/is_active, which journal classes do not have), so useForm
+// never submitted them and both were silently dropped on create and edit.
 const form = useForm({
     name: '',
-    remarks: '',
-    is_active: true,
+    code: '',
+    description: '',
 });
 
 watch(() => props.editingItem, (item) => {
     if (item) {
         form.name = item.name || '';
-        form.remarks = item.remarks || '';
-        form.is_active = item.is_active ?? true;
+        form.code = item.code || '';
+        form.description = item.description || '';
     } else {
         form.reset();
     }
@@ -92,11 +95,12 @@ const handleSubmit = async () => {
     >
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
-                <NextInput 
-                    :label="t('general.name')" 
-                    :placeholder="t('general.enter', { text: t('general.name') })" 
-                    v-model="form.name" 
-                    :error="form.errors.name" 
+                <NextInput
+                    is-required
+                    :label="t('general.name')"
+                    :placeholder="t('general.enter', { text: t('general.name') })"
+                    v-model="form.name"
+                    :error="form.errors.name"
                 />
                 <NextInput 
                     :label="t('general.code')" 

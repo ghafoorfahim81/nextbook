@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Administration;
 
+use App\Models\Administration\Company;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Quantity;
 use App\Models\Administration\UnitMeasure;
@@ -14,7 +15,7 @@ class UnitMeasureSeeder extends Seeder
     {
 //        UnitMeasure::factory()->count(5)->create();
 
-        $branch_id = Branch::where('is_main', true)->first()->id;
+        $companyId = Company::withoutGlobalScopes()->value('id');
         $quantities = Quantity::defaultQuantity();
         foreach ($quantities as $quantity) {
             $exists = Quantity::withoutGlobalScopes()
@@ -29,7 +30,7 @@ class UnitMeasureSeeder extends Seeder
                 'unit' => $quantity['unit'],
                 'symbol' => $quantity['symbol'],
                 'slug' => $quantity['slug'],
-                'branch_id' => $branch_id,
+                'company_id' => $companyId,
                 'is_main' => $quantity['is_main'],
                 'is_active' => false,
                 'created_by' => User::first()->id,
@@ -50,7 +51,7 @@ class UnitMeasureSeeder extends Seeder
                 'unit' => $unitMeasure['unit'],
                 'symbol' => $unitMeasure['symbol'],
                 'quantity_id' => $unitMeasure['quantity_id'],
-                'branch_id' => $branch_id,
+                'company_id' => $companyId,
                 'is_main' => $unitMeasure['is_main'],
                 'is_active' => false,
                 'created_by' => User::where('name', 'admin')->first()->id,

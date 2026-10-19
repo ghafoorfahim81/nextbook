@@ -4,7 +4,8 @@ namespace App\Models\Owner;
 
 use App\Models\Account\Account;
 use App\Models\Transaction\Transaction;
-use App\Traits\HasBranch;
+use App\Traits\HasAttachments;
+use App\Traits\HasCompany;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -12,14 +13,15 @@ use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use App\Traits\BranchSpecific; 
+use App\Traits\CompanySpecific; 
 use Illuminate\Database\Eloquent\Relations\HasOne;
 class Owner extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, CompanySpecific, HasCompany, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -84,6 +86,11 @@ class Owner extends Model
     public function drawingAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'drawing_account_id');
+    }
+
+    public function drawings(): HasMany
+    {
+        return $this->hasMany(Drawing::class, 'owner_id');
     }
 }
 

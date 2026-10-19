@@ -26,6 +26,8 @@ class AdditionalPermissionsSeeder extends Seeder
         'deleted_records.view' => ['super-admin', 'admin'],
         'deleted_records.restore' => ['super-admin', 'admin'],
         'deleted_records.force_delete' => ['super-admin', 'admin'],
+        'activity_logs.view_any' => ['super-admin', 'admin'],
+        'activity_logs.view' => ['super-admin', 'admin'],
     ];
 
     public function run(): void

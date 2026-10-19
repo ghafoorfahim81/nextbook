@@ -83,9 +83,8 @@ class LandedCostFeatureTest extends TestCase
     public function test_it_stores_manual_allocation_amounts_and_posts_them(): void
     {
         $secondItem = Item::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'unit_measure_id' => $this->ctx['unit_measure']->id,
-            'size_id' => $this->ctx['size']->id,
             'cost_account_id' => $this->ctx['accounts']['cost-of-goods-sold']->id,
             'income_account_id' => $this->ctx['accounts']['product-income']->id,
             'asset_account_id' => $this->ctx['accounts']['inventory-stock']->id,
@@ -183,7 +182,14 @@ class LandedCostFeatureTest extends TestCase
         $this->assertEquals(44.0, (float) $secondItem->fresh()->avg_cost);
     }
 
-    public function test_it_rejects_posting_when_manual_allocation_does_not_match_additional_cost(): void
+    /**
+     * A manual allocation that does not add up is now refused at the door,
+     * rather than being saved and only failing later at post time. The service
+     * still re-checks before posting (assertAllocationMatchesTotalCost), so the
+     * guarantee is unchanged — it just fails earlier, where the user can see
+     * which figure is wrong while they are still editing it.
+     */
+    public function test_it_rejects_a_manual_allocation_that_does_not_match_the_additional_cost(): void
     {
         $purchase = $this->createPostedPurchase([
             [
@@ -210,17 +216,49 @@ class LandedCostFeatureTest extends TestCase
                 'warehouse_id' => $this->ctx['warehouse']->id,
                 'batch' => 'BT-100',
                 'expire_date' => '2027-03-01',
+                // 10 allocated against a 50 total cost.
                 'allocated_amount' => 10,
+            ]],
+        ))->assertSessionHasErrors('items');
+
+        $this->assertDatabaseCount('landed_costs', 0);
+    }
+
+    /** The proportional methods let the server do the split, and it adds up. */
+    public function test_a_proportional_method_does_not_need_the_client_to_send_an_allocation(): void
+    {
+        $purchase = $this->createPostedPurchase([
+            [
+                'item_id' => $this->ctx['item']->id,
+                'batch' => 'BT-100',
+                'expire_date' => '2027-03-01',
+                'quantity' => 10,
+                'unit_price' => 30,
+            ],
+        ]);
+
+        $purchaseItem = $purchase->items()->firstOrFail();
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 50,
+            method: LandedCostAllocationMethod::ByQuantity->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $purchaseItem->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => 'BT-100',
+                'expire_date' => '2027-03-01',
+                // No allocated_amount: by_quantity is the server's to compute.
             ]],
         ))->assertRedirect(route('landed-costs.index'));
 
         $landedCost = LandedCost::query()->latest()->firstOrFail();
 
-        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['allocated_total']);
-
-        $this->assertNotEquals(LandedCostStatus::Posted, $landedCost->fresh()->status);
+        $this->assertEquals(50, (float) $landedCost->allocated_total);
     }
 
     private function createPostedPurchase(array $lines): Purchase

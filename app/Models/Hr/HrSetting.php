@@ -2,8 +2,8 @@
 
 namespace App\Models\Hr;
 
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
 use App\Support\BranchContext;
@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class HrSetting extends Model
 {
-    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $table = 'hr_settings';
 
@@ -45,7 +45,7 @@ class HrSetting extends Model
     {
         return [
             'id' => 'string',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'leave_year_start_month' => 'integer',
@@ -63,18 +63,22 @@ class HrSetting extends Model
     }
 
     /**
-     * The acting branch's settings, created with defaults on first read.
+     * The acting company's HR settings, created with defaults on first read.
+     *
+     * Shift rules, leave policy and salary components are company-level, so
+     * these settings are too — branches of one company share one payroll
+     * policy.
      *
      * Callers can rely on getting a row back rather than null-checking, which
      * is what keeps `$settings->overtime_multiplier` safe everywhere.
      */
-    public static function forBranch(?string $branchId = null): self
+    public static function forCompany(?string $companyId = null): self
     {
-        $branchId = $branchId ?? BranchContext::branchId();
+        $companyId = $companyId ?? static::activeCompanyId();
 
         return static::withoutGlobalScopes()
             ->firstOrCreate(
-                ['branch_id' => $branchId, 'deleted_at' => null],
+                ['company_id' => $companyId, 'deleted_at' => null],
                 ['created_by' => auth()->id()]
             );
     }

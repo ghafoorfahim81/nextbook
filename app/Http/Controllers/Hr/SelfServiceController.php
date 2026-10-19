@@ -92,7 +92,7 @@ class SelfServiceController extends Controller
     private function punch(Request $request, PunchPairingService $pairing, PunchDirection $direction)
     {
         $employee = $this->employee();
-        $settings = HrSetting::forBranch($employee->branch_id);
+        $settings = HrSetting::forCompany($employee->company_id);
 
         $validated = $request->validate([
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -122,6 +122,9 @@ class SelfServiceController extends Controller
             'ip_address' => $request->ip(),
             'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
             'is_ignored' => false,
+            // insertOrIgnore writes straight to the table, so the model hooks
+            // that would fill the scope columns never run.
+            'company_id' => $employee->company_id,
             'branch_id' => $employee->branch_id,
             'created_by' => $request->user()->id,
             'created_at' => $now->toDateTimeString(),

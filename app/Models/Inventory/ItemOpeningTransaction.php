@@ -9,16 +9,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 class ItemOpeningTransaction extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, SoftDeletes, BranchSpecific, HasBranch;
+    use HasFactory, HasUserAuditable, HasUlids, SoftDeletes, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
 
     protected $table = 'item_opening_transactions';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
     protected $fillable = [
+        'company_id',
         'item_id',
         'transaction_id',
         'branch_id',

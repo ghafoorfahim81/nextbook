@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use App\Services\DateConversionService;
 use Carbon\Carbon;
 
 trait HasDynamicFilters
@@ -104,8 +105,9 @@ trait HasDynamicFilters
             return;
         }
 
-        // Default: string LIKE (gmail-style contains)
-        $query->where($field, 'like', "%{$value}%");
+        // Default: string LIKE (gmail-style contains). Use iLike so matching is
+        // case-insensitive on PostgreSQL (e.g. "shams" matches "Shams").
+        $query->where($field, 'iLike', "%{$value}%");
     }
 
     protected function isDateColumn(string $field): bool

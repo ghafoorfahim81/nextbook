@@ -1,21 +1,30 @@
 <script setup>
-import AppLayout from '@/Layouts/Layout.vue';
-import { computed } from 'vue';
+import AppLayout from '@/Layouts/Layout.vue'
+import AttachmentList from '@/Components/AttachmentList.vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, Coins, Printer, SquarePen, Download } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, RotateCcw, Coins, Printer, SquarePen, Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import { useToast } from '@/Components/ui/toast/use-toast';
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
+import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
+const { submit, processing } = useDocumentAction()
 const { can } = useAuth();
+const { toast } = useToast();
+const page = usePage();
 
 const props = defineProps({
     sale: { type: Object, required: true },
+    reversal: { type: Object, default: null },
+    originalDoc: { type: Object, default: null },
 });
 
-const page = usePage();
 const saleData = computed(() => props.sale?.data ?? props.sale ?? {});
 
 const totalAmount = computed(() =>
@@ -39,6 +48,12 @@ const totalTax = computed(() =>
 const grandTotal = computed(() => Number(totalAmount.value - totalDiscount.value + totalTax.value));
 const totalProfit = computed(() => Number((saleData.value.total_profit ?? saleData.value.items?.reduce((sum, item) => sum + Number(item.line_profit || 0), 0)) || 0));
 const isProfitable = computed(() => totalProfit.value >= 0);
+const hasDeferredBalance = computed(() => ['credit', 'on_loan'].includes(String(saleData.value.raw_type || '').toLowerCase()));
+const remainingAmount = computed(() => Number(saleData.value.remaining_amount ?? saleData.value.receivable_amount ?? 0));
+const paidAmount = computed(() => Math.max(0, grandTotal.value - remainingAmount.value));
+const documentVoucherNumber = computed(() => saleData.value.transaction?.voucher_number || `Sale #${saleData.value.number}`);
+const originalVoucherNumber = computed(() => props.originalDoc?.voucher_number || documentVoucherNumber.value);
+const reversalVoucherNumber = computed(() => props.reversal?.voucher_number || documentVoucherNumber.value);
 
 const formattedTotalAmount = computed(() => totalAmount.value.toFixed(2));
 const formattedTotalDiscount = computed(() => totalDiscount.value.toFixed(2));
@@ -46,10 +61,15 @@ const formattedTotalTax = computed(() => totalTax.value.toFixed(2));
 const formattedGrandTotal = computed(() => grandTotal.value.toFixed(2));
 const formattedTotalProfit = computed(() => totalProfit.value.toFixed(2));
 const formattedTotalCost = computed(() => saleData.value.items?.reduce((s, i) => s + (parseFloat(i.unit_cost || 0) * parseFloat(i.quantity || 0)), 0).toFixed(2));
+const formattedPaidAmount = computed(() => paidAmount.value.toFixed(2));
+const formattedRemainingAmount = computed(() => remainingAmount.value.toFixed(2));
 const formatLineValue = (value) => Number(value || 0).toFixed(2);
 
 const statusBadgeClasses = computed(() => {
     switch (saleData.value.status) {
+        case 'draft': return 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-300';
+        case 'posted': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
+        case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
         case 'approved': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
         case 'rejected': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
         case 'pending': return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300';
@@ -59,15 +79,62 @@ const statusBadgeClasses = computed(() => {
 
 const getStatusLabel = (status) => {
     switch (status) {
+        case 'draft': return t('general.status_draft');
+        case 'posted': return t('general.status_posted');
+        case 'reversed': return t('general.status_reversed');
         case 'approved': return t('general.approve');
         case 'rejected': return t('general.reject');
-        case 'pending': return 'Pending';
+        case 'pending': return t('general.status_pending');
         default: return status;
     }
 };
 
+const currencySymbol = computed(() => saleData.value.transaction?.currency?.symbol || '');
+// The customer's page is behind customers.view, so without it the name stays
+// plain text rather than becoming a link into a 403.
+const canOpenCustomer = computed(() =>
+    Boolean(saleData.value.customer_id && saleData.value.customer_name) && can(['customers.view', 'ledgers.view'])
+);
+const saleReturns = computed(() => saleData.value.returns || []);
+const returnStatusBadgeClasses = (status) => {
+    switch (status) {
+        case 'draft': return 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-300';
+        case 'posted': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
+        case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
+        default: return 'border-border bg-muted text-foreground';
+    }
+};
+const postDialogOpen = ref(false);
+const reverseDialogOpen = ref(false);
+
+const postSale = () => {
+    submit(route('sales.post', saleData.value.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            // A failed post redirects back with a flash error (e.g. stock sold out on
+            // another invoice). Keep the dialog open and surface it instead of closing.
+            const flashError = page.props.flash?.error;
+            if (flashError) {
+                toast({
+                    title: t('general.error') ?? 'Error',
+                    description: flashError,
+                    variant: 'destructive',
+                });
+                return;
+            }
+            postDialogOpen.value = false;
+        },
+    });
+};
+
+const reverseSale = (reason) => {
+    submit(route('sales.reverse', saleData.value.id), { reason }, {
+        preserveScroll: true,
+        onSuccess: () => { reverseDialogOpen.value = false },
+    });
+};
 const currency = computed(() => saleData.value.transaction?.currency ?? null);
-const currencySymbol = computed(() => currency.value?.symbol || '');
+// const currencySymbol = computed(() => currency.value?.symbol || '');
 const currencyCode = computed(() => currency.value?.code || '');
 const currencyLabel = computed(() =>
     [currencyCode.value, currency.value?.name].filter(Boolean).join(' — ') || '-'
@@ -86,35 +153,39 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
     <AppLayout :title="`${t('sale.sale')} #${saleData.number}`">
         <div class="space-y-6">
             <!-- Page header -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="outline" size="sm" @click="router.visit(route('sales.index'))">
-                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {{ t('general.back') }}
-                </Button>
-                <div class="flex items-center gap-2">
-                    <a :href="route('sales.export', saleData.id)" target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" size="sm">
-                            <Download class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                            {{ t('report.export_excel') }}
-                        </Button>
-                    </a>
-                    <a :href="route('sales.print', saleData.id)" target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" size="sm">
-                            <Printer class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                            {{ t('general.print') }}
-                        </Button>
-                    </a>
-                    <Button
-                        v-if="can('sales.update') && saleData.id"
-                        variant="default"
-                        size="sm"
-                        class="gap-1.5 bg-primary text-primary-foreground"
-                        @click="router.visit(route('sales.edit', saleData.id))"
-                    >
-                        <SquarePen class="h-4 w-4" />
-                        {{ t('datatable.edit') }}
-                    </Button>
-                </div>
+            <ShowPageToolbar
+                back-route="sales.index"
+                :status="saleData.status"
+                :edit-route="saleData.id ? route('sales.edit', saleData.id) : null"
+                edit-permission="sales.update"
+                :export-url="route('sales.export', saleData.id)"
+                :print-url="route('sales.print', saleData.id)"
+                @post="postDialogOpen = true"
+                @reverse="reverseDialogOpen = true"
+            />
+
+            <TransactionActionDialog
+            :processing="processing"
+                v-model:open="postDialogOpen"
+                type="post"
+                :title="t('sale.post_sale')"
+                :description="t('sale.post_sale_description')"
+                @confirm="postSale"
+            />
+            <TransactionActionDialog
+            :processing="processing"
+                v-model:open="reverseDialogOpen"
+                type="reverse"
+                :title="t('sale.reverse_sale')"
+                :description="t('sale.reverse_sale_description')"
+                @confirm="reverseSale"
+            />
+
+            <div v-if="originalDoc" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                {{ t('general.reversal_of_transaction', { number: originalVoucherNumber }) }}.
+            </div>
+            <div v-if="saleData.status === 'reversed' && reversal" class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                {{ t('general.reversed_by') }} {{ reversalVoucherNumber }}.
             </div>
 
             <!-- Info card -->
@@ -122,6 +193,11 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                 <legend class="px-2 flex items-center gap-1.5">
                     <span class="text-sm font-semibold text-violet-500">{{ t('sale.sale') }} #{{ saleData.number }}</span>
                     <Badge :class="statusBadgeClasses">{{ getStatusLabel(saleData.status) }}</Badge>
+                    <a v-if="saleData.sale_order_id" :href="route('sale-orders.show', saleData.sale_order_id)">
+                        <Badge class="border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:underline">
+                            {{ t('sale_order.sale_order') }} #{{ saleData.sale_order_number }}
+                        </Badge>
+                    </a>
                 </legend>
                 <div class="mb-4 flex items-center gap-2">
                     <FileText class="h-5 w-5 text-violet-500" />
@@ -138,7 +214,16 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
                             <User class="h-3 w-3" />{{ t('ledger.customer.customer') }}
                         </div>
-                        <div class="text-sm font-medium text-foreground">{{ saleData.customer_name || '-' }}</div>
+                        <div class="text-sm font-medium text-foreground">
+                            <!-- The name is the way through to the ledger, where the
+                                 rest of this customer's balance and history is. -->
+                            <a
+                                v-if="canOpenCustomer"
+                                :href="route('customers.show', saleData.customer_id)"
+                                class="text-violet-600 hover:underline dark:text-violet-400"
+                            >{{ saleData.customer_name }}</a>
+                            <template v-else>{{ saleData.customer_name || '-' }}</template>
+                        </div>
                     </div>
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
@@ -168,6 +253,16 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                         <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ formattedGrandTotal }}</div>
                         <div v-if="isForeignCurrency" class="text-xs text-muted-foreground">
                             ≈ {{ formattedBaseTotal }} {{ baseCurrencyCode }}
+                        </div>
+                    </div>
+                    <div v-if="saleData.sale_order_id" class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                            <FileCheck class="h-3 w-3" />{{ t('sale_order.sale_order') }}
+                        </div>
+                        <div class="text-sm font-medium text-foreground">
+                            <a :href="route('sale-orders.show', saleData.sale_order_id)" class="text-violet-600 underline dark:text-violet-400">
+                                #{{ saleData.sale_order_number }}
+                            </a>
                         </div>
                     </div>
                     <!-- Profit highlight -->
@@ -200,22 +295,28 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                         </div>
                         <div class="text-sm font-medium text-foreground">{{ saleData.updated_at || '-' }}</div>
                     </div>
-                    <div v-if="saleData.raw_type === 'credit'" class="space-y-1.5">
+                    <div v-if="hasDeferredBalance" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                            <DollarSign class="h-3 w-3" />{{ t('general.paid_total') }}
+                            <DollarSign class="h-3 w-3" />{{ t('general.paid_amount') }}
                         </div>
                         <div class="text-sm font-medium text-foreground">
-                            {{ currencySymbol }} {{ (grandTotal - saleData.receivable_amount).toFixed(2) }}
+                            {{ currencySymbol }} {{ formattedPaidAmount }}
                         </div>
                     </div>
-                    <div v-if="saleData.raw_type === 'credit'" class="space-y-1.5">
+                    <div v-if="hasDeferredBalance" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                            <DollarSign class="h-3 w-3" />{{ t('general.receivable_amount') }}
+                            <DollarSign class="h-3 w-3" />{{ t('general.remaining_amount') }}
                         </div>
                         <div class="text-sm font-medium text-foreground">
-                            {{ currencySymbol }} {{ saleData.receivable_amount }}
+                            {{ currencySymbol }} {{ formattedRemainingAmount }}
                         </div>
                     </div>
+                </div>
+
+                <div v-if="saleData.status === 'posted' && can('sale_returns.create')" class="flex justify-end mt-4">
+                    <Button variant="outline" size="sm" @click="router.visit(route('sale-returns.create', { sale_id: saleData.id }))">
+                        {{ t('sale_return.create_return') }}
+                    </Button>
                 </div>
             </fieldset>
 
@@ -246,6 +347,7 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
                             <div><div class="text-xs text-muted-foreground">{{ t('general.batch') }}</div><div class="font-medium text-foreground">{{ item.batch || '-' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.expire_date') }}</div><div class="font-medium text-foreground">{{ item.expire_date || '-' }}</div></div>
+                            <div><div class="text-xs text-muted-foreground">{{ t('item.variant') }}</div><div class="font-medium text-foreground">{{ item.variant?.display_name || '-' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.qty') }}</div><div class="font-medium text-foreground">{{ item.quantity }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.unit') }}</div><div class="font-medium text-foreground">{{ item.unit_measure_name || '-' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.price') }}</div><div class="font-medium text-foreground">{{ formatLineValue(item.unit_price) }}</div></div>
@@ -291,6 +393,7 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.item') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.batch') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.expire_date') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.variant') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.qty') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.unit') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.price') }}</th>
@@ -312,6 +415,7 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                                 </td>
                                 <td class="px-3 py-3 text-foreground">{{ item.batch || '-' }}</td>
                                 <td class="px-3 py-3 text-foreground">{{ item.expire_date || '-' }}</td>
+                                <td class="px-3 py-3 text-foreground">{{ item.variant?.display_name || '-' }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.quantity }}</td>
                                 <td class="px-3 py-3 text-foreground">{{ item.unit_measure_name }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.unit_price }}</td>
@@ -346,6 +450,40 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                                 </td>
                             </tr>
                         </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sale returns -->
+            <div v-if="saleReturns.length" class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <div class="border-b border-border bg-muted/30 px-4 py-3 flex items-center gap-2">
+                    <RotateCcw class="h-5 w-5 text-violet-500" />
+                    <h3 class="text-base font-semibold text-foreground">{{ t('sale_return.sale_returns') }}</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="border-b border-border bg-muted/40">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.number') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.date') }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.qty') }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.total') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            <tr v-for="ret in saleReturns" :key="ret.id"
+                                class="cursor-pointer bg-background/40 transition-colors hover:bg-muted/40"
+                                @click="router.visit(route('sale-returns.show', ret.id))">
+                                <td class="px-3 py-3 text-violet-600 underline dark:text-violet-400">#{{ ret.number }}</td>
+                                <td class="px-3 py-3 text-foreground">{{ ret.date }}</td>
+                                <td class="px-3 py-3 text-right text-foreground">{{ ret.quantity }}</td>
+                                <td class="px-3 py-3 text-right font-semibold text-foreground">{{ currencySymbol }} {{ formatLineValue(ret.amount) }}</td>
+                                <td class="px-3 py-3">
+                                    <Badge :class="returnStatusBadgeClasses(ret.status)">{{ getStatusLabel(ret.status) }}</Badge>
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>

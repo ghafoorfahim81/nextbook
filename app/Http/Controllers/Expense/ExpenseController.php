@@ -11,6 +11,7 @@ use App\Models\Account\Account;
 use App\Models\Administration\Currency;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
+use App\Services\AttachmentService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ use App\Models\User;
 use App\Services\DateConversionService;
 use App\Http\Resources\Account\AccountResource;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
 
 class ExpenseController extends Controller
 {
@@ -46,13 +48,13 @@ class ExpenseController extends Controller
         return inertia('Expenses/Expenses/Index', [
             'expenses' => ExpenseResource::collection($expenses),
             'filterOptions' => [
-                'categories' => ExpenseCategory::orderBy('name')->get(['id', 'name']),
-                'expenseAccounts' => Account::whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
+                'categories' => ExpenseCategoryResource::collection(ExpenseCategory::orderBy('name')->get(['id', 'name'])),
+                'expenseAccounts' => AccountResource::collection(Account::whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
                     ->orderBy('name')
-                    ->get(['id', 'name']),
-                'bankAccounts' => Account::whereHas('accountType', fn ($q) => $q->whereIn('slug', ['cash-or-bank']))
-                    ->orderBy('name')
-                    ->get(['id', 'name']),
+                    ->get()),
+                'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+                    $q->whereIn('slug', ['cash-or-bank'])
+                )->get()),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -67,7 +69,9 @@ class ExpenseController extends Controller
 
     public function create(Request $request)
     {
+        $latestNumber = (string) ((int) Expense::max('number') + 1);
         return inertia('Expenses/Expenses/Create', [
+            'latestNumber' => $latestNumber,
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
@@ -83,28 +87,33 @@ class ExpenseController extends Controller
     public function store(
         ExpenseStoreRequest $request,
         TransactionService $transactionService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
-        $expense = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
+        $expense = DB::transaction(function () use ($request, $transactionService, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
-            // Handle file upload
-            // if ($request->hasFile('attachment')) {
-            //     $validated['attachment'] = $request->file('attachment')
-            //         ->store('expenses', 'public');
-            // }
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $postImmediately = (bool) user_preference('transaction.expense_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
 
             // Create expense record
             $expense = Expense::create([
+                'number' => $validated['number'] ?? (string) ((int) Expense::max('number') + 1),
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
+                'status' => $documentStatus,
             ]);
 
             // Create expense details
             $expense->details()->createMany($validated['details']);
+
+            // Persist any uploaded attachments
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($expense, $request->file('attachments'));
+            }
             // Calculate total
             $total = collect($validated['details'])->sum('amount');
 
@@ -117,6 +126,7 @@ class ExpenseController extends Controller
                     'reference_type' => Expense::class,
                     'reference_id' => $expense->id,
                     'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,
+                    'status' => $documentStatus,
                 ],
                 lines: [
                     [
@@ -175,16 +185,60 @@ class ExpenseController extends Controller
             'details',
             'transaction.currency',
             'transaction.lines.account',
+            'transaction.originalTransaction',
+            'transaction.reversalTransaction',
+            'attachments',
         ]);
 
-        return response()->json([
-            'data' => new ExpenseResource($expense),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new ExpenseResource($expense),
+            ]);
+        }
+        return inertia('Expenses/Expenses/Show', [
+            'expense' => new ExpenseResource($expense),
         ]);
+    }
+
+    public function post(Expense $expense, TransactionService $transactionService)
+    {
+        $this->authorize('update', $expense);
+
+        if ($expense->status !== TransactionStatus::DRAFT->value) {
+            abort(422, __('messages.document.only_draft_can_be_posted'));
+        }
+
+        DB::transaction(function () use ($expense, $transactionService) {
+            $transactionService->postDraft($expense->transaction()->firstOrFail());
+            $expense->update(['status' => TransactionStatus::POSTED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.expense')]));
+    }
+
+    public function reverse(Request $request, Expense $expense, TransactionService $transactionService)
+    {
+        $this->authorize('update', $expense);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($expense->status !== TransactionStatus::POSTED->value) {
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
+        }
+
+        DB::transaction(function () use ($expense, $transactionService, $validated) {
+            $transactionService->reverse($expense->transaction()->firstOrFail(), $validated['reason'], $expense?->number, Expense::class);
+            $expense->update(['status' => TransactionStatus::REVERSED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.expense')]));
     }
 
     public function edit(Request $request, Expense $expense)
     {
-        $expense->load(['category', 'details', 'transaction.currency', 'transaction.lines.account']);
+        $expense->load(['category', 'details', 'transaction.currency', 'transaction.lines.account', 'attachments']);
 
         // dd($expense);
         return inertia('Expenses/Expenses/Edit', [
@@ -205,9 +259,14 @@ class ExpenseController extends Controller
         ExpenseUpdateRequest $request,
         Expense $expense,
         TransactionService $transactionService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
+        if ($expense->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
+        }
+
         $beforeState = [
             'date' => $expense->date?->toDateString(),
             'category_id' => $expense->category_id,
@@ -218,24 +277,22 @@ class ExpenseController extends Controller
             'rate' => $expense->transaction?->rate,
         ];
 
-        DB::transaction(function () use ($request, $expense, $transactionService, $activityLogService, $beforeState) {
+        DB::transaction(function () use ($request, $expense, $transactionService, $activityLogService, $attachmentService, $beforeState) {
             $validated = $request->validated();
-            // Handle file upload
-            // if ($request->hasFile('attachment')) {
-            //     // Delete old attachment
-            //     if ($expense->attachment) {
-            //         Storage::disk('public')->delete($expense->attachment);
-            //     }
-            //     $validated['attachment'] = $request->file('attachment')
-            //         ->store('expenses', 'public');
-            // }
+
+            // Persist any newly uploaded attachments (removals are handled via attachments.destroy)
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($expense, $request->file('attachments'));
+            }
 
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $expense->date;
             // Update expense record
             $expense->update([
+                'number' => $validated['number'] ?? $expense->number,
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
+                'status' => TransactionStatus::DRAFT->value,
             ]);
 
             // Update details
@@ -259,6 +316,7 @@ class ExpenseController extends Controller
                     'reference_type' => Expense::class,
                     'reference_id' => $expense->id,
                     'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                    'status' => TransactionStatus::DRAFT->value,
                 ],
                 lines: [
                     [
@@ -306,6 +364,10 @@ class ExpenseController extends Controller
     }
     public function destroy(Request $request, Expense $expense, ActivityLogService $activityLogService)
     {
+        if ($expense->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
+        }
+
         $oldValues = [
             'date' => $expense->date?->toDateString(),
             'category_id' => $expense->category_id,

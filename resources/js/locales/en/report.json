@@ -39,8 +39,11 @@
         "item": "Item",
         "account": "Cash / Bank account",
         "warehouse": "Warehouse",
+        "color": "All colors",
+        "size": "All sizes",
         "currency": "Currency",
         "type": "Transaction type",
+        "reason": "Reason",
         "balance_type": "Balance type",
         "expense_category": "Expense category",
         "expense_account": "Expense account",
@@ -53,7 +56,8 @@
         "payroll": "Payroll run",
         "leave_type": "Leave type",
         "employment_type": "Employment type",
-        "employment_status": "Employment status"
+        "employment_status": "Employment status",
+        "variant": "Variant"
     },
     "balance_types": {
         "all": "All",
@@ -80,7 +84,9 @@
         "balance_label": "Balance",
         "total_amount": "Total amount",
         "total_quantity": "Total quantity",
+        "total_movement": "Total movement",
         "total_value": "Total value",
+        "total_cost": "Total cost",
         "total_items": "Items",
         "total_in": "Total in",
         "total_out": "Total out",
@@ -110,6 +116,11 @@
         "total_expenses": "Total expenses",
         "net_profit": "Net profit",
         "expense_count": "Expenses",
+        "current": "Current (0-30)",
+        "days_31_60": "31-60 days",
+        "days_61_90": "61-90 days",
+        "days_90_plus": "90+ days",
+        "total_outstanding": "Total outstanding",
         "party_count": "Parties",
         "total_debtor": "Total receivable",
         "total_creditor": "Total payable",
@@ -179,6 +190,9 @@
         "total_sold": "Total sold",
         "item_code": "Item Code",
         "item_name": "Item Name",
+        "color": "Color",
+        "size": "Size",
+        "stock_value": "Stock Value",
         "batch_number": "Batch Number",
         "expiry_date": "Expiry Date",
         "in_quantity": "In",
@@ -217,12 +231,21 @@
         "expense_account": "Expense account",
         "bank_account": "Bank / Cash account",
         "remark": "Remark",
+        "reason": "Reason",
+        "unit_cost": "Unit cost",
+        "total_cost": "Total cost",
+        "notes": "Notes",
+        "current": "Current (0-30)",
+        "days_31_60": "31-60 days",
+        "days_61_90": "61-90 days",
+        "days_90_plus": "90+ days",
+        "total_outstanding": "Total outstanding",
         "party_name": "Party",
         "balance_type": "Balance type",
         "currency": "Currency",
-        "rate": "Rate",
         "home_equivalent": "Home equivalent",
         "currency_name": "Currency name",
+        "rate": "Rate",
         "period": "Period",
         "employee": "Employee",
         "employee_code": "Code",
@@ -266,7 +289,6 @@
         "to_date": "To",
         "days": "Days",
         "approved_by": "Approved by",
-        "reason": "Reason",
         "headcount": "Headcount",
         "joiners": "Joiners",
         "leavers": "Leavers",
@@ -277,7 +299,8 @@
         "phone": "Phone",
         "start_date": "Start date",
         "end_date": "End date",
-        "days_remaining": "Days left"
+        "days_remaining": "Days left",
+        "variant": "Variant"
     },
     "view_types": {
         "general": "General view",
@@ -286,7 +309,7 @@
     "reports": {
         "trial_balance": {
             "label": "Trial balance",
-            "description": "Posted debit, credit, and net balance by ledger."
+            "description": "Debit or credit balance of every account as of the report date; the two columns must be equal."
         },
         "balance_sheet": {
             "label": "Balance sheet",
@@ -307,6 +330,14 @@
         "supplier_statement": {
             "label": "Supplier statement",
             "description": "All supplier balances by default, or a full ledger statement for a selected supplier."
+        },
+        "aged_receivables": {
+            "label": "Aged receivables",
+            "description": "Outstanding customer balances bucketed by age as of the selected date."
+        },
+        "aged_payables": {
+            "label": "Aged payables",
+            "description": "Outstanding supplier balances bucketed by age as of the selected date."
         },
         "receipt_report": {
             "label": "Receipt report",
@@ -340,6 +371,10 @@
             "label": "Stock movement",
             "description": "Detailed stock movement history by item and warehouse."
         },
+        "stock_adjustment_report": {
+            "label": "Stock adjustment report",
+            "description": "Stock adjustment lines by warehouse, item, and reason, with direction, cost, and status."
+        },
         "low_stock": {
             "label": "Low stock",
             "description": "Items at or below their reorder level."
@@ -355,6 +390,10 @@
         "expiry_wise_report": {
             "label": "Expiry wise report",
             "description": "Current expiry-based quantities with in, out, and on hand totals."
+        },
+        "variant_wise_report": {
+            "label": "Variant Wise Report",
+            "description": "Stock by color and size variant with in, out, on hand, and value."
         },
         "zero_on_hand_report": {
             "label": "Items with zero on hand",
@@ -512,5 +551,13 @@
         "days_90": "61-90 days",
         "days_90_plus": "90+ days",
         "unapplied_credit": "Unapplied credit"
+    },
+    "chart": {
+        "income_statement_title": "Revenue, costs and profit",
+        "revenue": "Revenue",
+        "cost_of_goods_sold": "Cost of sales",
+        "gross_profit": "Gross profit",
+        "expenses": "Expenses",
+        "net_profit": "Net profit"
     }
 }

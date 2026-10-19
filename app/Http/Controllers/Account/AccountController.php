@@ -25,10 +25,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Models\Transaction\TransactionLine;
 use App\Models\Transaction\Transaction;
-use App\Models\User;
+use App\Services\PdfExportService;
 use App\Services\SpreadsheetExportService;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use App\Support\BranchContext;
+use App\Support\Inertia\CacheForget;
+use App\Enums\TransactionType;
 class AccountController extends Controller
 {
     public function __construct()
@@ -38,91 +41,154 @@ class AccountController extends Controller
 
     public function index(Request $request)
     {
-
-        $perPage = $request->input('perPage',  recordsPerPage());
-        $sortField = $request->input('sortField', 'created_at');
-        $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $accounts = Account::with(['accountType', 'parent'])
+        // The list is rendered grouped by account-type nature (asset, liability,
+        // equity, income, expense, non-posting), so the whole chart is returned
+        // in one go and the grouping/collapsing happens on the client. Charts run
+        // to a few dozen accounts, so there is nothing to paginate.
+        $postedLines = DB::table('transaction_lines')
+            ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+            ->whereColumn('transaction_lines.account_id', 'accounts.id')
+            ->whereIn('transactions.status', ['posted', 'reversed'])
+            ->whereNull('transaction_lines.deleted_at');
+
+        $accounts = Account::query()
+            ->with(['accountType'])
+            ->withStatementTotals()
+            ->selectSub(
+                (clone $postedLines)->selectRaw('COUNT(DISTINCT transaction_lines.transaction_id)'),
+                'activity_count'
+            )
+            ->selectSub(
+                (clone $postedLines)->selectRaw('MAX(transactions.date)'),
+                'last_activity_at'
+            )
             ->search($request->query('search'))
             ->filter($filters)
-            ->orderBy($sortField, $sortDirection)
-            ->paginate($perPage)
-            ->withQueryString();
+            ->orderBy('number')
+            ->get();
+
+        $isFiltered = filled($request->query('search'))
+            || collect($filters)->contains(fn ($value) => $value !== null && $value !== '');
+
         return inertia('Accounts/Accounts/Index', [
             'accounts' => AccountListResource::collection($accounts),
-            'filterOptions' => [
-                'accountTypes' => AccountType::orderBy('name')->get(['id', 'name']),
-                'users' => User::query()
-                    ->whereNull('deleted_at')
-                    ->orderBy('name')
-                    ->get(['id', 'name']),
-            ],
+            'summary' => $this->chartSummary($accounts, $isFiltered),
             'filters' => [
                 'search' => $request->query('search'),
-                'perPage' => $perPage,
-                'sortField' => $sortField,
-                'sortDirection' => $sortDirection,
                 'filters' => $filters,
             ],
         ]);
     }
 
-    public function create()
+    /**
+     * Per-category balance subtotals and the trial-balance identity for the
+     * chart-of-accounts list.
+     *
+     * Everything is in home currency (the statement accessor already folds
+     * foreign lines back to base). `signed` is debit-positive; a normal payable,
+     * equity or income account therefore reads negative and is flipped to its
+     * natural credit amount for the equation. Non-posting accounts are left out
+     * of the equation entirely.
+     *
+     * @param  \Illuminate\Support\Collection<int, Account>  $accounts
+     * @return array<string, mixed>
+     */
+    private function chartSummary($accounts, bool $isFiltered): array
     {
+        $byNature = [];
+
+        foreach ($accounts as $account) {
+            $nature = $account->accountType?->nature ?? 'other';
+            $statement = $account->statement;
+
+            $byNature[$nature] ??= ['debit' => 0.0, 'credit' => 0.0, 'count' => 0];
+            $byNature[$nature]['debit'] += (float) $statement['total_debit'];
+            $byNature[$nature]['credit'] += (float) $statement['total_credit'];
+            $byNature[$nature]['count']++;
+        }
+
+        $groups = [];
+        foreach ($byNature as $nature => $row) {
+            $net = round($row['debit'] - $row['credit'], 2);
+            $groups[$nature] = [
+                'count' => $row['count'],
+                'signed' => $net,
+                'net' => abs($net),
+                'nature' => $net > 0 ? 'dr' : ($net < 0 ? 'cr' : null),
+            ];
+        }
+
+        $signed = fn (string $nature) => (float) ($groups[$nature]['signed'] ?? 0);
+
+        $assets = round($signed('asset'), 2);
+        $liabilities = round(-$signed('liability'), 2);
+        $equity = round(-$signed('equity'), 2);
+        $income = round(-$signed('income'), 2);
+        $expense = round($signed('expense'), 2);
+
+        $left = $assets;
+        $right = round($liabilities + $equity + $income - $expense, 2);
+        $difference = round($left - $right, 2);
+
+        return [
+            'groups' => $groups,
+            'is_filtered' => $isFiltered,
+            'equation' => [
+                'assets' => $assets,
+                'liabilities' => $liabilities,
+                'equity' => $equity,
+                'income' => $income,
+                'expense' => $expense,
+                'left' => $left,
+                'right' => $right,
+                'difference' => $difference,
+                'balanced' => abs($difference) < 0.01,
+            ],
+        ];
+    }
+
+    public function create(Request $request)
+    {
+        $accountTypes = AccountType::orderBy('created_at', 'asc')->get();
+
+        // Opened from a category header on the chart: narrow the type picker to
+        // that nature, and preselect the type outright when the nature has only
+        // one. An explicit account_type_id (future callers) wins over nature.
+        $nature = $request->query('nature');
+        $preselectType = null;
+
+        if ($request->filled('account_type_id')) {
+            $preselectType = $accountTypes->firstWhere('id', $request->query('account_type_id'));
+        } elseif ($nature) {
+            $ofNature = $accountTypes->where('nature', $nature);
+            $preselectType = $ofNature->count() === 1 ? $ofNature->first() : null;
+        }
+
         return inertia('Accounts/Accounts/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
-            'accountTypes' => AccountTypeResource::collection(AccountType::orderBy('name')->get()),
+            'accountTypes' => AccountTypeResource::collection($accountTypes),
+            'preselect' => [
+                'nature' => $nature,
+                'account_type' => $preselectType ? new AccountTypeResource($preselectType) : null,
+            ],
         ]);
     }
 
     public function store(AccountStoreRequest $request)
     {
-
         $validated = $request->validated();
         $validated['slug'] = Str::slug($validated['name']);
-        $account = Account::create($validated);
 
-            $glAccounts = BranchContext::glAccounts();
-            $transactionService = app(TransactionService::class);
-        if ($validated['amount'] && $validated['amount'] > 0) {
-            // $nature = $account->accountType->nature ?? 'asset';
-            // // Map debit/credit per account nature (see image)
-            // $mappings = [
-            //     'asset'    => ['debit' => $account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            //     'liability'=> ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
-            //     'equity'   => ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
-            //     'income'   => ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
-            //     'expense'  => ['debit' => $account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            // ];
-            // $map = $mappings[$nature] ?? $mappings['asset'];
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $validated['currency_id'],
-                    'rate' => (float) ($validated['rate'] ?? 1),
-                    'voucher_number' => 'Account Opening Balance ' . $account->name . ' ' . $account->number,
-                    'date' => now(),
-                    'reference_type' => Account::class,
-                    'reference_id' => $account->id,
-                    'remark' => 'Opening balance for account ' . $account->name,
-                ],
-                lines: [
-                    ['account_id' => $account->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
-                    'remark' => 'Opening balance',
-                    'remark_fa' => 'موجودی اولیه',
-                    'remark_ps' => 'د پرانیستلو بیلانس',
-                    ],
-                    ['account_id' => $glAccounts['opening-balance-equity'], 'debit' => 0, 'credit' => (float) $validated['amount'],
-                    'remark' => 'Opening balance for account ' . $account->name,
-                    'remark_fa' => 'موجودی اولیه برای حساب ' . $account->local_name,
-                    'remark_ps' =>'د'. ' '. $account->local_name.' '.'د پرانیستلو بیلانس ',
-                    ],
-                ],
-            );
-            $account->opening()->create(['transaction_id' => $transaction->id]);
-        }
+        DB::transaction(function () use ($validated) {
+            $account = Account::create($validated);
+            $this->postOpening($account, $validated);
+        });
+
+        CacheForget::lookupEverywhere($request, 'accounts');
+
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
             return redirect()->route('chart-of-accounts.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account')]));
         }
@@ -130,12 +196,63 @@ class AccountController extends Controller
         return to_route('chart-of-accounts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account')]));
     }
 
+    /**
+     * Post the account's opening balance against opening-balance equity.
+     *
+     * The user picks which side the account sits on; equity takes the other.
+     * Skipped when there is no amount or the account type does not carry an
+     * opening (income, expense, cost of goods sold, non-posting).
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function postOpening(Account $account, array $validated): void
+    {
+        $amount = (float) ($validated['amount'] ?? 0);
+        $account->loadMissing('accountType');
+
+        if ($amount <= 0 || ! $account->accountType?->allowsOpening()) {
+            return;
+        }
+
+        $isDebit = ($validated['transaction_type'] ?? TransactionType::DEBIT->value) === TransactionType::DEBIT->value;
+        $glAccounts = BranchContext::glAccounts();
+
+        $transaction = app(TransactionService::class)->post(
+            header: [
+                'currency_id' => $validated['currency_id'],
+                'rate' => (float) ($validated['rate'] ?? 1),
+                'voucher_number' => 'Account Opening Balance ' . $account->name . ' ' . $account->number,
+                'date' => now(),
+                'reference_type' => Account::class,
+                'reference_id' => $account->id,
+                'remark' => 'Opening balance for account ' . $account->name,
+            ],
+            lines: [
+                ['account_id' => $account->id,
+                'debit' => $isDebit ? $amount : 0,
+                'credit' => $isDebit ? 0 : $amount,
+                'remark' => 'Opening balance',
+                'remark_fa' => 'موجودی اولیه',
+                'remark_ps' => 'د پرانیستلو بیلانس',
+                ],
+                ['account_id' => $glAccounts['opening-balance-equity'],
+                'debit' => $isDebit ? 0 : $amount,
+                'credit' => $isDebit ? $amount : 0,
+                'remark' => 'Opening balance for account ' . $account->name,
+                'remark_fa' => 'موجودی اولیه برای حساب ' . $account->local_name,
+                'remark_ps' =>'د'. ' '. $account->local_name.' '.'د پرانیستلو بیلانس ',
+                ],
+            ],
+        );
+
+        $account->opening()->create(['transaction_id' => $transaction->id]);
+    }
+
 
     public function show(Request $request, Account $chart_of_account)
     {
         $chart_of_account->load([
             'accountType',
-            'branch',
             'opening',
             'opening.transaction.currency',
             'opening.transaction.lines',
@@ -314,7 +431,7 @@ class AccountController extends Controller
     ): BinaryFileResponse {
         $this->authorize('view', $chart_of_account);
 
-        $chart_of_account->loadMissing(['accountType', 'branch']);
+        $chart_of_account->loadMissing(['accountType']);
 
         $dateConversionService = app(\App\Services\DateConversionService::class);
 
@@ -430,6 +547,9 @@ class AccountController extends Controller
         $chart_of_account->load(['accountType','opening', 'opening.transaction.currency','opening.transaction.lines', 'parent']);
         return inertia('Accounts/Accounts/Edit', [
             'account' => new AccountResource($chart_of_account),
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'accountTypes' => AccountTypeResource::collection(AccountType::orderBy('created_at','asc')->get()),
         ]);
     }
 
@@ -437,53 +557,25 @@ class AccountController extends Controller
     {
         $validated = $request->validated();
         $validated['slug'] = Str::slug($validated['name']);
-        $chart_of_account->update($validated);
-        // Remove existing opening balances for this account
-        if($chart_of_account->opening) {
-            $chart_of_account->opening()->forceDelete();
-            TransactionLine::where('transaction_id', $chart_of_account->opening->transaction_id)->forceDelete();
-            Transaction::where('id', $chart_of_account->opening->transaction_id)->forceDelete();
 
-        }
+        DB::transaction(function () use ($chart_of_account, $validated) {
+            $chart_of_account->update($validated);
+            $chart_of_account->unsetRelation('accountType');
 
-        if ($validated['amount'] && $validated['amount'] > 0) {
-            $glAccounts = BranchContext::glAccounts();
-            $transactionService = app(TransactionService::class);
-            // $nature = $chart_of_account->accountType->nature ?? 'asset';
-            // Map debit/credit per account nature (see image)
-            // $mappings = [
-            //     'asset'    => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            //     'liability'=> ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            //     'equity'   => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            //     'income'   => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            //     'expense'  => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            // ];
-            // $map = $mappings[$nature] ?? $mappings['asset'];
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $validated['currency_id'],
-                    'rate' => (float) ($validated['rate'] ?? 1),
-                    'voucher_number' => 'Account Opening Balance ' . $chart_of_account->name . ' ' . $chart_of_account->number,
-                    'date' => now(),
-                    'reference_type' => Account::class,
-                    'reference_id' => $chart_of_account->id,
-                    'remark' => 'Opening balance for account ' . $chart_of_account->name,
-                ],
-                lines: [
-                    ['account_id' => $chart_of_account->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
-                    'remark' => 'Opening balance',
-                    'remark_fa' => 'موجودی اولیه',
-                    'remark_ps' => 'د پرانیستلو بیلانس',
-                    ],
-                    ['account_id' => $glAccounts['opening-balance-equity'], 'debit' => 0, 'credit' => (float) $validated['amount'],
-                    'remark' => 'Opening balance for account ' . $chart_of_account->name,
-                    'remark_fa' => 'موجودی اولیه برای حساب ' . $chart_of_account->local_name,
-                    'remark_ps' =>'د'. ' '. $chart_of_account->local_name.' '.'د پرانیستلو بیلانس ',
-                    ],
-                ],
-            );
-            $chart_of_account->opening()->create(['transaction_id' => $transaction->id]);
-         }
+            // The opening is re-posted from the form, so drop the old one first.
+            if ($chart_of_account->opening) {
+                $openingTransactionId = $chart_of_account->opening->transaction_id;
+                $chart_of_account->opening()->forceDelete();
+                TransactionLine::where('transaction_id', $openingTransactionId)->forceDelete();
+                Transaction::where('id', $openingTransactionId)->forceDelete();
+                $chart_of_account->unsetRelation('opening');
+            }
+
+            $this->postOpening($chart_of_account, $validated);
+        });
+
+        CacheForget::lookupEverywhere($request, 'accounts');
+
         return to_route('chart-of-accounts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account')]));
     }
 
@@ -494,7 +586,7 @@ class AccountController extends Controller
         }
 
         if (!$chart_of_account->canBeDeleted()) {
-            $message = $chart_of_account->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $chart_of_account->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return redirect()->route('chart-of-accounts.index')->with('error', $message);
         }
 
@@ -509,6 +601,8 @@ class AccountController extends Controller
 
             $chart_of_account->delete();
         });
+
+        CacheForget::lookupEverywhere($request, 'accounts');
 
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account')]));
     }
@@ -531,6 +625,25 @@ class AccountController extends Controller
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account')]));
     }
 
+    /**
+     * Flip the account between active and inactive.
+     *
+     * Deactivating keeps every posted balance and transaction intact; it only
+     * takes the account out of the pickers on new documents. Main accounts stay
+     * eligible — the delete guard explicitly points users here as the safe
+     * alternative to deleting one.
+     */
+    public function toggleActive(Request $request, Account $chart_of_account)
+    {
+        $this->authorize('update', $chart_of_account);
+
+        $chart_of_account->update(['is_active' => ! $chart_of_account->is_active]);
+
+        return back()->with('success', __('general.status_updated_successfully', [
+            'resource' => __('general.resource.account'),
+        ]));
+    }
+
     public function forceDelete(Request $request, Account $chart_of_account)
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('accounts', (string) $chart_of_account->id);
@@ -538,35 +651,66 @@ class AccountController extends Controller
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.account')]));
     }
 
-    public function exportList(Request $request, SpreadsheetExportService $exporter)
-    {
+    public function exportList(
+        Request $request,
+        SpreadsheetExportService $exporter,
+        PdfExportService $pdfExporter,
+    ) {
         $this->authorize('viewAny', Account::class);
 
-        $sortField = $request->input('sortField', 'created_at');
-        $sortDirection = $request->input('sortDirection', 'desc');
+        $format = $request->validate([
+            'format' => ['nullable', 'string', Rule::in(['xlsx', 'pdf'])],
+        ])['format'] ?? 'xlsx';
+
         $filters = (array) $request->input('filters', []);
 
+        // Rank by the accounting equation so the export reads top to bottom the
+        // same way the on-screen list groups.
+        $natureRank = ['asset' => 0, 'liability' => 1, 'equity' => 2, 'income' => 3, 'expense' => 4, 'non-posting' => 5];
+
         $accounts = Account::with(['accountType', 'parent'])
-            ->withSum('transactionLines as total_debit', 'debit')
-            ->withSum('transactionLines as total_credit', 'credit')
+            ->withStatementTotals()
             ->search($request->query('search'))
             ->filter($filters)
-            ->orderBy($sortField, $sortDirection)
-            ->get();
+            ->orderBy('number')
+            ->get()
+            ->sortBy(fn ($a) => [
+                $natureRank[$a->accountType?->nature] ?? 9,
+                $a->number,
+            ])
+            ->values();
 
         $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
         $label = $t('account', 'chart_of_accounts', 'Chart of Accounts');
 
+        $natureLabel = fn (?string $nature) => $nature
+            ? $this->exportNatureLabel($nature)
+            : '-';
+
         $rows = $accounts->map(fn ($a) => [
+            'category'     => $natureLabel($a->accountType?->nature),
             'number'       => $a->number,
             'name'         => $a->name,
             'local_name'   => $a->local_name ?? '-',
             'account_type' => $a->accountType?->name ?? '-',
             'parent'       => $a->parent?->name ?? '-',
-            'balance'      => round((float) ($a->total_debit ?? 0) - (float) ($a->total_credit ?? 0), 2),
+            'balance'      => $a->statement['balance'],
         ])->all();
 
-        return $exporter->download([
+        $summary = $this->chartSummary($accounts, false);
+        $summaryFields = [];
+        foreach (['asset', 'liability', 'equity', 'income', 'expense'] as $nature) {
+            $group = $summary['groups'][$nature] ?? null;
+            if (! $group || ! $group['net']) {
+                continue;
+            }
+            $summaryFields[] = [
+                'label' => $natureLabel($nature),
+                'value' => number_format($group['net'], 2) . ' ' . strtoupper((string) $group['nature']),
+            ];
+        }
+
+        $payload = [
             'filename'           => 'chart-of-accounts-' . now()->format('Ymd-His') . '.xlsx',
             'sheet_name'         => $label,
             'sheet_title'        => $label,
@@ -577,14 +721,50 @@ class AccountController extends Controller
             'include_row_number' => true,
             'row_number_label'   => $t('report', 'columns.no', 'No.'),
             'columns' => [
-                ['key' => 'number',       'label' => $t('general', 'number', 'Number'), 'width' => 10],
-                ['key' => 'name',         'label' => $t('general', 'name', 'Name'), 'width' => 22],
-                ['key' => 'local_name',   'label' => $t('account', 'local_name', 'Local Name'), 'width' => 22],
-                ['key' => 'account_type', 'label' => $t('account', 'account_type', 'Account Type'), 'width' => 18],
-                ['key' => 'parent',       'label' => $t('account', 'parent', 'Parent'), 'width' => 22],
-                ['key' => 'balance',      'label' => $t('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right', 'width' => 16],
+                ['key' => 'category',     'label' => $t('account', 'account_type', 'Account Type'), 'width' => 16],
+                ['key' => 'number',       'label' => $t('general', 'number', 'Number'), 'width' => 9],
+                ['key' => 'name',         'label' => $t('general', 'name', 'Name'), 'width' => 20],
+                ['key' => 'local_name',   'label' => $t('account', 'local_name', 'Local Name'), 'width' => 20],
+                ['key' => 'account_type', 'label' => $t('account', 'account_type', 'Account Type'), 'width' => 16],
+                ['key' => 'parent',       'label' => $t('account', 'parent', 'Parent'), 'width' => 18],
+                ['key' => 'balance',      'label' => $t('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right', 'width' => 14],
             ],
             'rows' => $rows,
-        ]);
+            'summary_fields' => $summaryFields,
+        ];
+
+        return $format === 'pdf'
+            ? $pdfExporter->download($payload)
+            : $exporter->download($payload);
+    }
+
+    /**
+     * Localised label for an account-type nature, read straight from the
+     * frontend JSON locale so the export chrome matches the screen.
+     */
+    protected function exportNatureLabel(string $nature): string
+    {
+        $fallbacks = [
+            'asset' => 'Asset',
+            'liability' => 'Liability',
+            'equity' => 'Equity',
+            'income' => 'Income',
+            'expense' => 'Expense',
+            'non-posting' => 'Non-Posting',
+        ];
+
+        foreach ([app()->getLocale(), 'en'] as $locale) {
+            $path = resource_path("js/locales/{$locale}/account.json");
+            if (! is_file($path)) {
+                continue;
+            }
+            $content = str_replace("\xEF\xBB\xBF", '', (string) file_get_contents($path));
+            $value = data_get(json_decode($content, true) ?: [], "natures.{$nature}");
+            if (filled($value)) {
+                return (string) $value;
+            }
+        }
+
+        return $fallbacks[$nature] ?? ucfirst($nature);
     }
 }

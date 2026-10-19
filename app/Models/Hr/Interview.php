@@ -6,7 +6,9 @@ use App\Enums\InterviewRecommendation;
 use App\Enums\InterviewStatus;
 use App\Enums\InterviewType;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -25,13 +27,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Interview extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'job_application_id', 'round', 'interview_type', 'scheduled_at',
         'duration_minutes', 'location', 'meeting_link', 'status',
         'score', 'recommendation', 'feedback', 'remark',
