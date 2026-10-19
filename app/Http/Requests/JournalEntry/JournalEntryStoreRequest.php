@@ -3,9 +3,12 @@
 namespace App\Http\Requests\JournalEntry;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class JournalEntryStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +17,7 @@ class JournalEntryStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['nullable', 'integer'],
+            'number' => ['nullable', 'integer', $this->uniqueInCompany('journal_entries', column: 'number')],
             'date' => ['required', 'date'],
             'currency_id' => ['required', 'exists:currencies,id'],
             'rate' => ['required', 'numeric', 'min:1'],

@@ -7,6 +7,7 @@ use App\Enums\MaritalStatus;
 use App\Enums\PaymentMode;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -112,17 +113,20 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(['branch_id', 'code', 'deleted_at']);
-            $table->unique(['branch_id', 'national_id', 'deleted_at']);
             // One employee record per login. Without this, two employees could
             // point at the same user and self-service check-in would be
             // ambiguous.
-            $table->unique(['branch_id', 'user_id', 'deleted_at']);
 
             $table->index(['branch_id', 'employment_status']);
             $table->index(['branch_id', 'department_id']);
             $table->index(['branch_id', 'joining_date']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX employees_branch_id_code_live_unique ON employees (branch_id, code) WHERE deleted_at IS NULL');
+        DB::statement('CREATE UNIQUE INDEX employees_company_id_national_id_live_unique ON employees (company_id, national_id) WHERE deleted_at IS NULL AND national_id IS NOT NULL');
+        DB::statement('CREATE UNIQUE INDEX employees_branch_id_user_id_live_unique ON employees (branch_id, user_id) WHERE deleted_at IS NULL AND user_id IS NOT NULL');
 
         Schema::enableForeignKeyConstraints();
 

@@ -41,5 +41,7 @@
   },
   "invalid_phone_for_country": "طول شماره تلفن برای {country} معتبر نیست",
   "balance_by_currency": "بیلانس بر اساس اسعار",
-  "no_currency_balance": "در هیچ اسعاری بیلانس وجود ندارد"
+  "no_currency_balance": "در هیچ اسعاری بیلانس وجود ندارد",
+  "available_in_branches": "قابل استفاده در شعبه‌ها",
+  "available_in_branches_hint": "شعبه‌هایی که این طرف حساب در فورم‌هایشان دیده می‌شود. بیلانس بین همهٔ آن‌ها مشترک است."
 }

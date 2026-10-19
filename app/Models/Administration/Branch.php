@@ -2,6 +2,7 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\CompanySpecific;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -17,7 +18,10 @@ use Symfony\Component\Uid\Ulid;
 
 class Branch extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
+    // CompanySpecific: a branch is visible only inside its own company. Without
+    // it the branch list, the "main branch" lookup and every Branch::query()
+    // fallback read across companies.
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, CompanySpecific, SoftDeletes;
 
     protected $table = 'branches';
     protected $keyType = 'string'; // Set key type to string

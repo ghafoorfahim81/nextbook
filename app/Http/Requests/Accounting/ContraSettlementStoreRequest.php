@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Accounting;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 /**
  * A set-off names two ledgers and one amount.
@@ -13,6 +14,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class ContraSettlementStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -21,7 +24,7 @@ class ContraSettlementStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1'],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('contra_settlements', column: 'number')],
             'date' => ['required', 'date'],
             'customer_ledger_id' => ['required', 'exists:ledgers,id', 'different:supplier_ledger_id'],
             'supplier_ledger_id' => ['required', 'exists:ledgers,id'],

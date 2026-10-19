@@ -34,7 +34,13 @@ trait HasCompanyFromParent
             }
 
             $relation = $model->companyParentRelation();
-            $parent = $model->{$relation};
+
+            // Read past the global scopes: the parent's company is a fact of
+            // the parent, not of who is acting. A transfer moves stock into
+            // another branch's warehouse, which the branch scope would hide.
+            $parent = $model->relationLoaded($relation)
+                ? $model->getRelation($relation)
+                : $model->{$relation}()->withoutGlobalScopes()->first();
 
             if ($parent && ! empty($parent->company_id)) {
                 $model->company_id = $parent->company_id;

@@ -4,10 +4,8 @@ namespace App\Models\Hr;
 
 use App\Enums\InterviewRecommendation;
 use App\Models\User;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,7 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class InterviewPanelist extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, HasCompanyFromParent, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -44,7 +42,6 @@ class InterviewPanelist extends Model
             'interview_id' => 'string',
             'employee_id' => 'string',
             'user_id' => 'string',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'recommendation' => InterviewRecommendation::class,
@@ -83,5 +80,11 @@ class InterviewPanelist extends Model
     public function hasSubmitted(): bool
     {
         return $this->submitted_at !== null;
+    }
+
+    /** No branch of its own: the interview holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'interview';
     }
 }

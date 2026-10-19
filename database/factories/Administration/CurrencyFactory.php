@@ -30,7 +30,9 @@ class CurrencyFactory extends Factory
             'exchange_rate' => fake()->randomFloat(4, 0.1, 500),
             'is_active' => true,
             'is_base_currency' => false,
-            'flag' => fake()->optional()->lexify('??').'.png',
+            // Either a real file name or none. optional() on the stem alone
+            // gave a bare '.png' half the time, which flags are unique on.
+            'flag' => fake()->boolean() ? fake()->unique()->lexify('??').'.png' : null,
             'company_id' => Company::factory(),
             'is_main' => false,
         ];

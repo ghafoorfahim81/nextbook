@@ -7,9 +7,12 @@ use App\Http\Requests\Concerns\SettlesOpenItems;
 use App\Services\Accounting\SettlementService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class ReceiptStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     use SettlesOpenItems;
 
     public function authorize(): bool
@@ -20,7 +23,7 @@ class ReceiptStoreRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'number' => ['required', 'integer', 'min:1'],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('receipts', column: 'number')],
             'date' => ['required', 'date'],
             'ledger_id' => ['required', 'exists:ledgers,id'],
             'payment_mode' => ['nullable', Rule::in(PaymentMode::values())],

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -25,6 +26,11 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
         });
+
+        // One numbering series per company and document type. Partial, because
+        // a soft-deleted document must not hold its number against a new one
+        // and unique([..., 'deleted_at']) never fires in PostgreSQL.
+        DB::statement('CREATE UNIQUE INDEX journal_entries_company_id_number_live_unique ON journal_entries (company_id, number) WHERE deleted_at IS NULL AND number IS NOT NULL');
         Schema::table('journal_entries', function (Blueprint $table) {
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');

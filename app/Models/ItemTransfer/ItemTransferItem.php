@@ -2,10 +2,8 @@
 
 namespace App\Models\ItemTransfer;
 
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -17,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransferItem extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, BranchSpecific, HasDependencyCheck, SoftDeletes, HasCompany, HasBranch;
+    use HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, HasDependencyCheck, SoftDeletes, HasCompanyFromParent;
 
     protected $table = 'item_transfer_items';
 
@@ -34,7 +32,6 @@ class ItemTransferItem extends Model
         'quantity',
         'measure_id',
         'unit_price',
-        'branch_id',
     ];
 
     protected function casts(): array
@@ -48,7 +45,6 @@ class ItemTransferItem extends Model
             'quantity' => 'decimal:4',
             'measure_id' => 'string',
             'unit_price' => 'decimal:4',
-            'branch_id' => 'string',
         ];
     }
 
@@ -85,13 +81,15 @@ class ItemTransferItem extends Model
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class, 'measure_id');
     }
 
-    public function branch(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Administration\Branch::class);
-    }
 
     public function deletedBy(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'deleted_by');
+    }
+
+    /** No branch of its own: the itemTransfer holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'itemTransfer';
     }
 }

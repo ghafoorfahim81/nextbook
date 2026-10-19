@@ -6,6 +6,7 @@ use App\Enums\LoanType;
 use App\Enums\PaymentMode;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -55,9 +56,12 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(['branch_id', 'number', 'deleted_at']);
             $table->index(['branch_id', 'employee_id', 'status']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX employee_loans_company_id_number_live_unique ON employee_loans (company_id, number) WHERE deleted_at IS NULL');
 
         Schema::create('employee_loan_repayments', function (Blueprint $table) {
             $table->ulid('id')->primary();
@@ -118,8 +122,11 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(['branch_id', 'number', 'deleted_at']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX salary_payments_company_id_number_live_unique ON salary_payments (company_id, number) WHERE deleted_at IS NULL');
 
         Schema::create('salary_payment_lines', function (Blueprint $table) {
             $table->ulid('id')->primary();
@@ -132,18 +139,17 @@ return new class extends Migration
             $table->ulid('currency_id')->nullable()->index();
             $table->decimal('rate', 19, 8)->default(1);
 
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(
-                ['salary_payment_id', 'payroll_line_id', 'deleted_at'],
-                'salary_payment_line_unique'
-            );
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX salary_payment_line_unique ON salary_payment_lines (salary_payment_id, payroll_line_id) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 
@@ -189,7 +195,6 @@ return new class extends Migration
             $table->foreign('payroll_line_id')->references('id')->on('payroll_lines');
             $table->foreign('employee_id')->references('id')->on('employees');
             $table->foreign('currency_id')->references('id')->on('currencies')->onDelete('set null');
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

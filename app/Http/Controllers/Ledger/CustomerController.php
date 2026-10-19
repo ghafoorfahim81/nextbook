@@ -16,6 +16,7 @@ use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
+use App\Support\BranchContext;
 use App\Models\Administration\Country;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
@@ -37,6 +38,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
+use App\Support\Inertia\CacheForget;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -102,7 +104,6 @@ class CustomerController extends Controller
     {
         return inertia('Ledgers/Customers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
-            'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
             ...$this->referenceData(),
             'nextCode' => $this->nextCode($request->user()?->company_id),
             'accountTypes' => [],
@@ -139,7 +140,11 @@ class CustomerController extends Controller
         // other, and setting one alone leaves a pairing that is only half true.
         app(LedgerLinkService::class)->sync($ledger, $validated);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        if (isset($validated['branch_ids'])) {
+            $ledger->openToBranches($validated['branch_ids']);
+        }
+
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
 
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
@@ -320,6 +325,10 @@ class CustomerController extends Controller
             'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
             'countries' => Country::query()->orderBy('name_en')->get(),
             'provinces' => Province::query()->orderBy('name_en')->get(),
+            // The company's branches, for the "open in branches" field.
+            'branches' => BranchResource::collection(
+                Branch::query()->where('company_id', BranchContext::companyId())->orderBy('name')->get()
+            ),
         ];
     }
 
@@ -411,7 +420,7 @@ class CustomerController extends Controller
         $customer->load([
             'currency', 'group', 'paymentTerm', 'country', 'province',
             'openings', 'openings.transaction.currency', 'openings.transaction.lines',
-            'attachments', 'counterpart',
+            'attachments', 'counterpart', 'branches:id',
         ]);
 
         return inertia('Ledgers/Customers/Edit', [
@@ -549,7 +558,11 @@ class CustomerController extends Controller
 
         app(LedgerLinkService::class)->sync($customer, $validated);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        if (isset($validated['branch_ids'])) {
+            $customer->openToBranches($validated['branch_ids']);
+        }
+
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return to_route('customers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.customer')]));
     }
@@ -588,7 +601,7 @@ class CustomerController extends Controller
             $customer->delete();
         });
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()
             ->route('customers.index')
@@ -609,7 +622,7 @@ class CustomerController extends Controller
             $customer->restore();
         });
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('customers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.customer')]));
     }
@@ -618,7 +631,7 @@ class CustomerController extends Controller
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('customers', (string) $customer->id);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('customers.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.customer')]));
     }

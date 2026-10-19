@@ -18,9 +18,9 @@ class EmployeeUpdateRequest extends EmployeeStoreRequest
         $id = $employee instanceof Employee ? $employee->id : $employee;
 
         return array_merge(parent::rules(), [
-            'code' => ['required', 'string', 'max:50', $this->uniqueInBranch('employees', $id)],
-            'national_id' => ['nullable', 'string', 'max:50', $this->uniqueInBranch('employees', $id)],
-            'user_id' => ['nullable', 'exists:users,id', $this->uniqueInBranch('employees', $id)],
+            'code' => ['required', 'string', 'max:50', $this->uniqueInCompany('employees', $id)],
+            'national_id' => ['nullable', 'string', 'max:50', $this->uniqueInCompany('employees', $id)],
+            'user_id' => ['nullable', 'exists:users,id', $this->uniqueInCompany('employees', $id)],
         ]);
     }
 

@@ -3,10 +3,8 @@
 namespace App\Models\Inventory;
 
 use App\Models\Administration\LandedCostCategory;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -17,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LandedCostCategoryAllocation extends Model
 {
-    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserTracking, HasUserAuditable, CompanySpecific, HasCompanyFromParent, SoftDeletes;
 
     protected $table = 'landed_cost_category_allocations';
     protected $keyType = 'string';
@@ -28,7 +26,6 @@ class LandedCostCategoryAllocation extends Model
         'landed_cost_id',
         'landed_cost_category_id',
         'amount',
-        'branch_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -40,7 +37,6 @@ class LandedCostCategoryAllocation extends Model
             'landed_cost_id' => 'string',
             'landed_cost_category_id' => 'string',
             'amount' => 'decimal:2',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'deleted_by' => 'string',
@@ -55,5 +51,11 @@ class LandedCostCategoryAllocation extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(LandedCostCategory::class, 'landed_cost_category_id');
+    }
+
+    /** No branch of its own: the landedCost holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'landedCost';
     }
 }

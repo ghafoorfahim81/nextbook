@@ -368,7 +368,6 @@ class ItemOpeningService
             'date'            => Carbon::now()->toDateString(),
             'expire_date'     => $row['expire_date'] ?? null,
             'warehouse_id'    => $row['warehouse_id'],
-            'branch_id'       => $item->branch_id ?? auth()->user()?->branch_id ?? app('active_branch_id'),
         ]);
     }
 
@@ -403,7 +402,6 @@ class ItemOpeningService
     private function bucketQuery($query, StockMovement $opening)
     {
         return $query
-            ->where('branch_id', $opening->branch_id)
             ->where('item_id', $opening->item_id)
             ->where('warehouse_id', $opening->warehouse_id)
             ->when(

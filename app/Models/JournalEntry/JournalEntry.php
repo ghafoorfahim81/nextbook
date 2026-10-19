@@ -23,9 +23,10 @@ use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use App\Models\Concerns\HasSequentialNumber;
 class JournalEntry extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes, HasSequentialNumber;
 
     protected $table = 'journal_entries';
     protected $primaryKey = 'id';

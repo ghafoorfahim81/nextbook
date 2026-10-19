@@ -3,9 +3,12 @@
 namespace App\Http\Requests\Expense;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class ExpenseUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +17,7 @@ class ExpenseUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['nullable', 'string', 'max:50'],
+            'number' => ['nullable', 'string', 'max:50', $this->uniqueInCompany('expenses', $this->route('expense'), 'number')],
             'date' => ['sometimes', 'required', 'date'],
             'remarks' => ['nullable', 'string'],
             'category_id' => ['sometimes', 'required', 'string', 'exists:expense_categories,id'],

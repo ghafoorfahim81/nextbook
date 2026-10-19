@@ -104,7 +104,7 @@ class PurchaseReturnController extends Controller
 
     public function create(Request $request)
     {
-        $purchaseReturnNumber = PurchaseReturn::max('number') ? PurchaseReturn::max('number') + 1 : 1;
+        $purchaseReturnNumber = PurchaseReturn::nextNumber();
 
         $purchases = Purchase::query()
             ->with('supplier:id,name')

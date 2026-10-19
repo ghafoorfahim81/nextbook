@@ -27,16 +27,15 @@ return new class extends Migration
             $table->decimal('allocated_amount', 12, 2)->default(0);
             $table->decimal('item_cost_before', 12, 2)->default(0);
             $table->decimal('item_cost_after', 12, 2)->default(0);
-            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['branch_id', 'landed_cost_id']);
-            $table->index(['branch_id', 'item_id']);
-            $table->index(['branch_id', 'purchase_item_id']);
+            $table->index(['company_id', 'landed_cost_id']);
+            $table->index(['company_id', 'item_id']);
+            $table->index(['company_id', 'purchase_item_id']);
         });
 
         Schema::table('landed_cost_items', function (Blueprint $table): void {
@@ -44,7 +43,6 @@ return new class extends Migration
             $table->foreign('purchase_item_id')->references('id')->on('purchase_items')->nullOnDelete();
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('warehouse_id')->references('id')->on('warehouses')->nullOnDelete();
-            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
             $table->foreign('deleted_by')->references('id')->on('users')->nullOnDelete();

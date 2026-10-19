@@ -5,7 +5,10 @@ namespace App\Models\Concerns;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Next voucher number for models whose `number` column is a STRING.
+ * Next document number, one series per company and document type.
+ *
+ * Written for the STRING `number` columns first, where the trap below lives,
+ * and used for the integer ones too.
  *
  * `MAX(number)` on a text column sorts lexicographically, not numerically:
  *
@@ -23,20 +26,26 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * and can be restored, and issuing that number again would put two receipts
  * with the same number in front of the user.
  *
+ * The series is the company's, not the branch's: one sequence per company and
+ * document type, so Kabul takes 001 and Herat 002. The branch scope is lifted
+ * for the count, the company scope stays.
+ *
  * Postgres-specific (`~`, `::bigint`), which this project already is.
  */
 trait HasSequentialNumber
 {
     public static function nextNumber(): int
     {
-        $query = static::query();
+        $query = static::query()->withoutGlobalScope('branchSpecific');
 
         if (in_array(SoftDeletes::class, class_uses_recursive(static::class), true)) {
             $query->withTrashed();
         }
 
         $highest = $query
-            ->selectRaw("MAX(CASE WHEN number ~ '^[0-9]+$' THEN number::bigint END) as highest_number")
+            // Through text, so the same expression serves the integer number
+            // columns of sales and purchases and the string ones of vouchers.
+            ->selectRaw("MAX(CASE WHEN number::text ~ '^[0-9]+$' THEN number::text::bigint END) as highest_number")
             ->value('highest_number');
 
         return ((int) $highest) + 1;

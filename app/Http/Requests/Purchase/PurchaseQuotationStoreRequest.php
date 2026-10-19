@@ -5,9 +5,12 @@ namespace App\Http\Requests\Purchase;
 use App\Enums\DiscountType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class PurchaseQuotationStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,7 +25,7 @@ class PurchaseQuotationStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1', 'unique:purchase_quotations,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInCompany('purchase_quotations', column: 'number')],
             'date' => ['nullable', 'date'],
             'valid_until' => ['nullable', 'date'],
             'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],

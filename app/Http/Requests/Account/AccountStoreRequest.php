@@ -5,9 +5,12 @@ namespace App\Http\Requests\Account;
 use App\Enums\TransactionType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 
 class AccountStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -24,7 +27,9 @@ class AccountStoreRequest extends FormRequest
         return [
             'name' => ['required', 'string', \Illuminate\Validation\Rule::unique('accounts')->ignore($this->route('account'))->whereNull('deleted_at')],
             'local_name' => ['nullable', 'string', \Illuminate\Validation\Rule::unique('accounts')->ignore($this->route('account'))->whereNull('deleted_at')],
-            'number' => ['required', 'string', \Illuminate\Validation\Rule::unique('accounts')->ignore($this->route('account'))->whereNull('deleted_at')],
+            // Per company: another company's chart of accounts may use the same
+            // number, and must not block this one.
+            'number' => ['required', 'string', $this->uniqueInCompany('accounts', $this->route('account'), 'number')],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
             'parent_id' => ['nullable', 'string', 'exists:accounts,id'],
             'is_active' => ['nullable', 'boolean'],

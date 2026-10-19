@@ -19,6 +19,7 @@ use App\Services\AttachmentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
+use App\Support\Inertia\CacheForget;
 use App\Models\User;
 use App\Models\JournalEntry\JournalClass;
 use App\Http\Resources\JournalEntry\JournalClassResource;
@@ -74,7 +75,7 @@ class JournalEntryController extends Controller
      */
     public function create()
     {
-        $latestNumber = (string) ((int) JournalEntry::max('number') + 1);
+        $latestNumber = (string) JournalEntry::nextNumber();
         return inertia('JournalEntry/JournalEntries/Create', [
             'accounts' => AccountResource::collection(Account::query()->orderBy('created_at', 'desc')->get()),
             'ledgers' => LedgerResource::collection(Ledger::query()->orderBy('created_at', 'desc')->get()),
@@ -340,7 +341,7 @@ class JournalEntryController extends Controller
                 ],
             );
         });
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
         return redirect()->route('journal-entries.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.journal_entry')]));
     }
 
@@ -420,7 +421,7 @@ class JournalEntryController extends Controller
             ],
         );
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
         return redirect()->route('journal-entries.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.journal_entry')]));
     }
 
@@ -428,7 +429,7 @@ class JournalEntryController extends Controller
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('journal_entries', (string) $journalEntry->id);
 
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        CacheForget::lookupEverywhere($request, 'ledgers');
 
         return redirect()->route('journal-entries.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.journal_entry')]));
     }

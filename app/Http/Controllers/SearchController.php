@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use App\Support\BranchContext;
 
 class SearchController extends Controller
 {
@@ -249,9 +250,10 @@ class SearchController extends Controller
             fn ($type) => LedgerType::tryFrom((string) $type) !== null
         )) ?: LedgerType::commercialValues());
 
-        if (isset($additionalParams['branch_id'])) {
-            $query->where('branch_id', $additionalParams['branch_id']);
-        }
+        // Ledgers have no branch of their own; a customer or supplier is
+        // offered to the branches it is open to. The branch is the acting one,
+        // never a request parameter.
+        $query->availableInBranch(BranchContext::branchId());
 
         return LedgerOptionResource::collection(
             $query->orderBy('created_at','desc')->limit($limit)->get()
@@ -311,9 +313,8 @@ class SearchController extends Controller
             $query->where('brand_id', $additionalParams['brand_id']);
         }
 
-        if (isset($additionalParams['branch_id'])) {
-            $query->where('branch_id', $additionalParams['branch_id']);
-        }
+        // Items are company master data with no branch of their own, so a
+        // branch_id parameter has nothing to filter on.
 
         // For sales, filter items that have available stock in the specified warehouse
         if (isset($additionalParams['warehouse_id'])) {

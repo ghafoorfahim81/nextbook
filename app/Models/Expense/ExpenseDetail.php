@@ -8,13 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserAuditable;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 class ExpenseDetail extends Model
 {
-    use HasFactory, HasUlids, SoftDeletes, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
+    use HasFactory, HasUlids, SoftDeletes, HasUserAuditable, CompanySpecific, HasCompanyFromParent;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -26,7 +24,6 @@ class ExpenseDetail extends Model
         'title',
         'created_by',
         'updated_by',
-        'branch_id',
     ];
 
     protected $casts = [
@@ -41,5 +38,10 @@ class ExpenseDetail extends Model
     {
         return $this->belongsTo(Expense::class);
     }
-}
 
+    /** No branch of its own: the expense holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'expense';
+    }
+}

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\UserStatus;
 return new class extends Migration
@@ -24,12 +25,15 @@ return new class extends Migration
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable(); 
             $table->ulid('branch_id')->index()->nullable();
-            $table->unique(['branch_id', 'username', 'deleted_at']);
-            $table->unique(['branch_id', 'email', 'deleted_at']);
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX users_username_live_unique ON users (username) WHERE deleted_at IS NULL AND username IS NOT NULL');
+        DB::statement('CREATE UNIQUE INDEX users_email_live_unique ON users (email) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 

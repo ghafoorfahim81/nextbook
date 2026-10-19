@@ -26,6 +26,8 @@ const props = defineProps({
     paymentTerms: { type: Array, default: () => [] },
     countries: { type: Array, default: () => [] },
     provinces: { type: Array, default: () => [] },
+    // The company's branches, for the \"available in branches\" field.
+    branches: { type: [Array, Object], default: () => [] },
 });
 
 const { t } = useI18n();
@@ -61,6 +63,8 @@ const removeExistingAttachment = (id) => {
         },
     })
 }
+
+const branchOptions = computed(() => props.branches?.data ?? props.branches ?? []);
 
 const creditTermOptions = computed(() => [
     { id: 'strict', name: t('ledger.credit_terms_strict') },
@@ -150,6 +154,17 @@ const saveFormRef = useSaveShortcut({ form });
                         role="supplier"
                         :preselected="props.supplier.data?.counterpart"
                         :error="form.errors?.counterpart_ledger_id"
+                    />
+                    <NextSelect
+                        :options="branchOptions"
+                        v-model="form.branch_ids"
+                        label-key="name"
+                        value-key="id"
+                        :reduce="branch => branch.id"
+                        :multiple="true"
+                        :floating-text="t('ledger.available_in_branches')"
+                        :hint="t('ledger.available_in_branches_hint')"
+                        :error="form.errors?.branch_ids || form.errors?.['branch_ids.0']"
                     />
                 </div>
 

@@ -18,6 +18,7 @@ use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Support\BranchContext;
 
 class SaleOrderController extends Controller
 {
@@ -87,7 +88,7 @@ class SaleOrderController extends Controller
 
     public function create()
     {
-        $saleOrderNumber = SaleOrder::max('number') ? SaleOrder::max('number') + 1 : 1;
+        $saleOrderNumber = SaleOrder::nextNumber();
 
         return inertia('Sale/SaleOrders/Create', [
             'saleOrderNumber' => $saleOrderNumber,
@@ -96,6 +97,7 @@ class SaleOrderController extends Controller
                     ->select(['id', 'name', 'code', 'type', 'currency_id', 'is_active', 'company_id'])
                     ->where('type', 'customer')
                     ->where('is_active', true)
+                    ->availableInBranch(BranchContext::branchId())
                     ->orderBy('created_at', 'desc')
                     ->limit(200)
                     ->get()

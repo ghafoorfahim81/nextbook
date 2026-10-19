@@ -18,6 +18,7 @@ use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Support\BranchContext;
 
 class SaleQuotationController extends Controller
 {
@@ -87,7 +88,7 @@ class SaleQuotationController extends Controller
 
     public function create()
     {
-        $saleQuotationNumber = SaleQuotation::max('number') ? SaleQuotation::max('number') + 1 : 1;
+        $saleQuotationNumber = SaleQuotation::nextNumber();
 
         return inertia('Sale/SaleQuotations/Create', [
             'saleQuotationNumber' => $saleQuotationNumber,
@@ -96,6 +97,7 @@ class SaleQuotationController extends Controller
                     ->select(['id', 'name', 'code', 'type', 'currency_id', 'is_active', 'company_id'])
                     ->where('type', 'customer')
                     ->where('is_active', true)
+                    ->availableInBranch(BranchContext::branchId())
                     ->orderBy('created_at', 'desc')
                     ->limit(200)
                     ->get()

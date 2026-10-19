@@ -4,11 +4,9 @@ namespace App\Models\Hr;
 
 use App\Enums\EmployeeDocumentType;
 use App\Models\User;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -23,8 +21,7 @@ use Illuminate\Support\Carbon;
 
 class EmployeeDocument extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, HasDynamicFilters, CompanySpecific, HasCompanyFromParent, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -53,7 +50,6 @@ class EmployeeDocument extends Model
             'id' => 'string',
             'employee_id' => 'string',
             'verified_by' => 'string',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'document_type' => EmployeeDocumentType::class,
@@ -127,5 +123,11 @@ class EmployeeDocument extends Model
                 $q->whereNull('last_reminded_at')
                     ->orWhere('last_reminded_at', '<', $asOf->startOfDay());
             });
+    }
+
+    /** No branch of its own: the employee holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'employee';
     }
 }

@@ -5,10 +5,9 @@ namespace App\Models\Inventory;
 use App\Enums\ItemCondition;
 use App\Enums\PieceStatus;
 use App\Models\Administration\Warehouse;
-use App\Traits\BranchSpecific;
+use App\Traits\BranchSpecificThroughWarehouse;
 use App\Traits\CompanySpecific;
-use App\Traits\HasBranch;
-use App\Traits\HasCompany;
+use App\Traits\HasCompanyFromParent;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -29,8 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class StockPiece extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasSearch,
-        HasSorting, HasCompany, HasBranch, CompanySpecific, BranchSpecific, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasSearch, HasSorting, HasCompanyFromParent, CompanySpecific, BranchSpecificThroughWarehouse, SoftDeletes;
 
     protected $keyType = 'string';
 
@@ -51,7 +49,6 @@ class StockPiece extends Model
         'status',
         'purchase_item_id',
         'warranty_end_date',
-        'branch_id',
         'created_by',
         'updated_by',
     ];
@@ -63,7 +60,6 @@ class StockPiece extends Model
             'variant_id' => 'string',
             'lot_id' => 'string',
             'warehouse_id' => 'string',
-            'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'identifiers' => 'array',
@@ -136,5 +132,11 @@ class StockPiece extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    /** No branch of its own: the warehouse holds it, and the company comes from there too. */
+    protected function companyParentRelation(): string
+    {
+        return 'warehouse';
     }
 }

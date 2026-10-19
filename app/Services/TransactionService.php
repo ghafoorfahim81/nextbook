@@ -638,7 +638,6 @@ class TransactionService
 
             try {
                 $this->stockService->post([
-                    'branch_id' => $movement->branch_id,
                     'item_id' => $movement->item_id,
                     // The compensating movement has to land in the exact bucket the
                     // original touched, or the restore silently misses it and opens
