@@ -26,8 +26,8 @@ class DepartmentUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', $this->uniqueInBranch('departments', $this->route('department'))],
-            'code' => ['required', 'string', $this->uniqueInBranch('departments', $this->route('department'), 'code')],
+            'name' => ['required', 'string', $this->uniqueInCompany('departments', $this->route('department'))],
+            'code' => ['required', 'string', $this->uniqueInCompany('departments', $this->route('department'), 'code')],
             'remark' => ['nullable', 'string'],
             'parent_id' => [
                 'nullable',

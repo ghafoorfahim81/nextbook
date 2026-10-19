@@ -90,7 +90,9 @@ class ItemFastEntryController extends Controller
                     'date'            => Carbon::now()->toDateString(),
                     'expire_date'     => $r['expire_date'] ?? null,
                     'warehouse_id'    => $r['warehouse_id'],
-                    'branch_id'       => $item->branch_id,
+                    // Items are shared by the company; the stock lands in the
+                    // branch doing the entry.
+                    'branch_id'       => BranchContext::branchId(),
                 ]);
 
                 $openingValue = round($unitCost * $quantity, 4);

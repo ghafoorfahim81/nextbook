@@ -27,11 +27,11 @@ class AccountUpdateRequest extends FormRequest
         $chartOfAccount = $this->route('chart_of_account');
 
         return [
-            'name' => ['required', 'string', 'max:256', $this->uniqueInBranch('accounts', $chartOfAccount->id)],
-            'local_name' => ['nullable', 'string', 'max:256', $this->uniqueInBranch('accounts', $chartOfAccount->id)],
-            'number' => ['required', 'string', 'max:256', $this->uniqueInBranch('accounts', $chartOfAccount->id)],
+            'name' => ['required', 'string', 'max:256', $this->uniqueInCompany('accounts', $chartOfAccount->id)],
+            'local_name' => ['nullable', 'string', 'max:256', $this->uniqueInCompany('accounts', $chartOfAccount->id)],
+            'number' => ['required', 'string', 'max:256', $this->uniqueInCompany('accounts', $chartOfAccount->id)],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
-            'slug' => ['nullable', 'string', 'max:256', $this->uniqueInBranch('accounts', $chartOfAccount->id)],
+            'slug' => ['nullable', 'string', 'max:256', $this->uniqueInCompany('accounts', $chartOfAccount->id)],
             'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
             'is_main' => ['nullable', 'boolean'],

@@ -17,7 +17,7 @@ class ExpenseCategoryStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', $this->uniqueInBranch('expense_categories')],
+            'name' => ['required', 'string', 'max:255', $this->uniqueInCompany('expense_categories')],
             'remarks' => ['nullable', 'string'],
             'is_active' => ['boolean'],
         ];

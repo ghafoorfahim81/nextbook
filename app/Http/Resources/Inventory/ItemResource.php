@@ -14,6 +14,7 @@ use App\Http\Resources\Inventory\StockMovementResource;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\AttachmentResource;
+use App\Support\BranchContext;
 class ItemResource extends JsonResource
 {
     /**
@@ -143,7 +144,6 @@ class ItemResource extends JsonResource
                     });
                 return number_format($sum, 2);
             }),
-            'branch_id' => $this->branch_id,
             'on_hand' => number_format($this->onHand(), 2),
             'avg_cost' => $this->avg_cost,
             // 'avg_cost' => number_format($this->avg_cost, 2),
@@ -153,7 +153,7 @@ class ItemResource extends JsonResource
                 $cancelled = StockStatus::CANCELLED->value;
                 $value = DB::table('stock_movements as sm')
                     ->where('sm.item_id', $this->id)
-                    ->where('sm.branch_id', $this->branch_id)
+                    ->where('sm.branch_id', BranchContext::branchId())
                     ->whereNull('sm.deleted_at')
                     ->whereNotIn('sm.status', [$voided, $cancelled])
                     ->selectRaw(

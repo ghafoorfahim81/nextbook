@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use App\Support\Inertia\CacheForget;
 use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\Cache;
+use App\Support\BranchContext;
 class CategoryController extends Controller
 {
     use TogglesRecordStatus;
@@ -56,7 +57,7 @@ class CategoryController extends Controller
                 'is_active' => $category->is_active,
                 'company_id' => $category->company_id,
             ],
-            branchId: $category->branch_id,
+            branchId: BranchContext::branchId(),
         );
 
         return redirect()->route('categories.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.category')]));
@@ -95,7 +96,7 @@ class CategoryController extends Controller
             ],
             module: 'category',
             description: "Category {$category->name} updated.",
-            branchId: $category->branch_id,
+            branchId: BranchContext::branchId(),
         );
 
         return redirect()->back();
@@ -127,7 +128,7 @@ class CategoryController extends Controller
             module: 'category',
             description: "Category {$category->name} deleted.",
             oldValues: $oldValues,
-            branchId: $category->branch_id,
+            branchId: BranchContext::branchId(),
         );
 
         return redirect()->route('categories.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.category')]));
@@ -147,7 +148,7 @@ class CategoryController extends Controller
                 'local_name' => $category->local_name,
                 'is_active' => $category->is_active,
             ],
-            branchId: $category->branch_id,
+            branchId: BranchContext::branchId(),
         );
 
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.category')]));

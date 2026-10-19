@@ -17,12 +17,12 @@ class OwnerStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255' , $this->uniqueInBranch('owners')],
+            'name' => ['required', 'string', 'max:255' , $this->uniqueInCompany('owners')],
             'father_name' => ['required', 'string', 'max:255'],
-            'nic' => ['nullable', 'string', 'max:255' , $this->uniqueInBranch('owners')],
-            'email' => ['nullable', 'email', 'max:255' , $this->uniqueInBranch('owners')],
+            'nic' => ['nullable', 'string', 'max:255' , $this->uniqueInCompany('owners')],
+            'email' => ['nullable', 'email', 'max:255' , $this->uniqueInCompany('owners')],
             'address' => ['nullable', 'string'],
-            'phone_number' => ['nullable', 'string', 'max:255' , $this->uniqueInBranch('owners')],
+            'phone_number' => ['nullable', 'string', 'max:255' , $this->uniqueInCompany('owners')],
             'ownership_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'profit_share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],

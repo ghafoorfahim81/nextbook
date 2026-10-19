@@ -17,7 +17,7 @@ class BrandUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', $this->uniqueInBranch('brands', $this->route('brand'))],
+            'name' => ['required', 'string', $this->uniqueInCompany('brands', $this->route('brand'))],
             'legal_name' => ['nullable', 'string'],
             'registration_number' => ['nullable', 'string'],
             'logo' => ['nullable', 'string'],

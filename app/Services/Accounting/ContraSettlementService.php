@@ -67,7 +67,7 @@ class ContraSettlementService
             ]);
         }
 
-        if ($customer->branch_id !== $supplier->branch_id) {
+        if ((string) $customer->company_id !== (string) $supplier->company_id) {
             throw ValidationException::withMessages([
                 'supplier_ledger_id' => [__('general.contra_parties_must_share_a_branch')],
             ]);
