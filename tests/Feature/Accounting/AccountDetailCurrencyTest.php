@@ -80,7 +80,7 @@ class AccountDetailCurrencyTest extends TestCase
 
     public function test_account_detail_reports_the_balance_in_the_account_own_currency(): void
     {
-        $account = $this->cashAccount('Cash In Hand USD', '1002');
+        $account = $this->cashAccount('Cash In Hand USD', '1102');
         $this->postOpening($account, $this->usd, 65.5, 1000);
 
         $response = $this->getJson(route('chart-of-accounts.show', ['chart_of_account' => $account->id]));

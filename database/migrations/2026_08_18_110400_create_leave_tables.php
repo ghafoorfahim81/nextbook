@@ -7,6 +7,7 @@ use App\Enums\LeaveAllocationSource;
 use App\Enums\LeaveRequestStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -64,8 +65,11 @@ return new class extends Migration
             $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->unique(['company_id', 'code', 'deleted_at']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX leave_types_company_id_code_live_unique ON leave_types (company_id, code) WHERE deleted_at IS NULL');
 
         Schema::create('leave_allocations', function (Blueprint $table) {
             $table->ulid('id')->primary();
@@ -95,11 +99,11 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(
-                ['branch_id', 'employee_id', 'leave_type_id', 'period_start', 'deleted_at'],
-                'leave_allocations_period_unique'
-            );
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX leave_allocations_period_unique ON leave_allocations (branch_id, employee_id, leave_type_id, period_start) WHERE deleted_at IS NULL');
 
         Schema::create('leave_requests', function (Blueprint $table) {
             $table->ulid('id')->primary();
@@ -139,10 +143,13 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(['branch_id', 'number', 'deleted_at']);
             $table->index(['branch_id', 'employee_id', 'from_date', 'to_date']);
             $table->index(['branch_id', 'status', 'from_date']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX leave_requests_company_id_number_live_unique ON leave_requests (company_id, number) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 

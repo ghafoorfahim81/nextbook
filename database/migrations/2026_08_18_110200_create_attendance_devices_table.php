@@ -3,6 +3,7 @@
 use App\Enums\AttendanceDeviceType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -32,8 +33,11 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(['branch_id', 'code', 'deleted_at']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX attendance_devices_branch_id_code_live_unique ON attendance_devices (branch_id, code) WHERE deleted_at IS NULL');
 
         // Maps the identifier a terminal reports (usually a small integer set
         // by whoever enrolled the fingerprint) to an actual employee.
@@ -51,8 +55,11 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(['branch_id', 'attendance_device_id', 'device_user_id', 'deleted_at'], 'adu_device_user_unique');
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX adu_device_user_unique ON attendance_device_users (branch_id, attendance_device_id, device_user_id) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 

@@ -68,9 +68,12 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->unique(['branch_id', 'number', 'deleted_at']);
             $table->index(['branch_id', 'status', 'period_start']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX payrolls_company_id_number_live_unique ON payrolls (company_id, number) WHERE deleted_at IS NULL');
 
         // One payslip.
         Schema::create('payroll_lines', function (Blueprint $table) {

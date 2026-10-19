@@ -23,13 +23,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * and can be restored, and issuing that number again would put two receipts
  * with the same number in front of the user.
  *
+ * The series is the company's, not the branch's: one sequence per company and
+ * document type, so Kabul takes 001 and Herat 002. The branch scope is lifted
+ * for the count, the company scope stays.
+ *
  * Postgres-specific (`~`, `::bigint`), which this project already is.
  */
 trait HasSequentialNumber
 {
     public static function nextNumber(): int
     {
-        $query = static::query();
+        $query = static::query()->withoutGlobalScope('branchSpecific');
 
         if (in_array(SoftDeletes::class, class_uses_recursive(static::class), true)) {
             $query->withTrashed();

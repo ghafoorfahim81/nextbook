@@ -5,6 +5,7 @@ use App\Enums\PayFrequency;
 use App\Enums\SalaryComponentType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -52,8 +53,11 @@ return new class extends Migration
             $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->unique(['company_id', 'code', 'deleted_at']);
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX salary_components_company_id_code_live_unique ON salary_components (company_id, code) WHERE deleted_at IS NULL');
 
         Schema::create('salary_structures', function (Blueprint $table) {
             $table->ulid('id')->primary();
@@ -110,11 +114,11 @@ return new class extends Migration
             $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->unique(
-                ['salary_structure_id', 'salary_component_id', 'deleted_at'],
-                'salary_structure_line_unique'
-            );
         });
+
+        // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
+        // because deleted_at is NULL on every live row and NULL != NULL.
+        DB::statement('CREATE UNIQUE INDEX salary_structure_line_unique ON salary_structure_lines (salary_structure_id, salary_component_id) WHERE deleted_at IS NULL');
 
         Schema::enableForeignKeyConstraints();
 
