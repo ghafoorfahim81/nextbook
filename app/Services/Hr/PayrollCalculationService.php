@@ -83,7 +83,7 @@ class PayrollCalculationService
                 $payroll->company_id
             );
 
-            $systemComponents = $this->systemComponents($payroll->branch_id);
+            $systemComponents = $this->systemComponents($payroll->company_id);
 
             // Force-delete rather than soft-delete: a recalculated run should
             // leave one set of lines behind, not a growing pile of trashed ones

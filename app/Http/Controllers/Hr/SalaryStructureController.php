@@ -81,7 +81,7 @@ class SalaryStructureController extends Controller
         $salaryStructure->load([
             'employee:id,full_name,code,branch_id',
             'currency:id,code',
-            'lines.component:id,name,code,component_type,branch_id',
+            'lines.component:id,name,code,component_type,company_id',
         ]);
 
         return inertia('Hr/SalaryStructures/Edit', [
@@ -100,7 +100,7 @@ class SalaryStructureController extends Controller
             'designation:id,name,company_id',
             'department:id,name,company_id',
             'currency:id,code',
-            'lines.component:id,name,code,component_type,branch_id',
+            'lines.component:id,name,code,component_type,company_id',
             'createdBy:id,name',
         ]);
 
