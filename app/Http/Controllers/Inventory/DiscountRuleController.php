@@ -93,7 +93,7 @@ class DiscountRuleController extends Controller
                 $itemId => $resolver->candidatesFor(
                     itemId: $itemId,
                     ledgerId: $validated['customer_id'] ?? null,
-                    branchId: BranchContext::branchId(),
+                    companyId: BranchContext::companyId(),
                     onDate: $date,
                 )->map(fn (DiscountRule $rule) => [
                     'id' => $rule->id,

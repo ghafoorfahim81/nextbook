@@ -21,7 +21,7 @@ use Illuminate\Support\Collection;
  */
 class DiscountRuleResolver
 {
-    /** Rules for the branch, loaded once per request. */
+    /** Rules for the company, loaded once per request. */
     private ?Collection $cache = null;
 
     /** ledger id => customer group id, memoised per request. */
@@ -34,10 +34,10 @@ class DiscountRuleResolver
         string $itemId,
         float $quantity,
         ?string $ledgerId = null,
-        ?string $branchId = null,
+        ?string $companyId = null,
         Carbon|string|null $onDate = null,
     ): ?DiscountRule {
-        return $this->candidatesFor($itemId, $ledgerId, $branchId, $onDate)
+        return $this->candidatesFor($itemId, $ledgerId, $companyId, $onDate)
             ->first(fn (DiscountRule $rule) => $this->quantityReaches($rule, $quantity));
     }
 
@@ -56,7 +56,7 @@ class DiscountRuleResolver
     public function candidatesFor(
         string $itemId,
         ?string $ledgerId = null,
-        ?string $branchId = null,
+        ?string $companyId = null,
         Carbon|string|null $onDate = null,
     ): Collection {
         $item = Item::query()->select(['id', 'category_id', 'brand_id'])->find($itemId);
@@ -67,7 +67,7 @@ class DiscountRuleResolver
 
         $date = $onDate ? Carbon::parse($onDate)->startOfDay() : Carbon::now()->startOfDay();
 
-        return $this->rulesFor($branchId)
+        return $this->rulesFor($companyId)
             ->filter(fn (DiscountRule $rule) => $this->applies($rule, $item, $ledgerId, $date))
             ->sortByDesc(fn (DiscountRule $rule) => [
                 $rule->specificity(),
@@ -91,10 +91,10 @@ class DiscountRuleResolver
         float $quantity,
         float $unitPrice,
         ?string $ledgerId = null,
-        ?string $branchId = null,
+        ?string $companyId = null,
         Carbon|string|null $onDate = null,
     ): float {
-        return $this->resolve($itemId, $quantity, $ledgerId, $branchId, $onDate)
+        return $this->resolve($itemId, $quantity, $ledgerId, $companyId, $onDate)
             ?->discountFor($quantity, $unitPrice) ?? 0.0;
     }
 

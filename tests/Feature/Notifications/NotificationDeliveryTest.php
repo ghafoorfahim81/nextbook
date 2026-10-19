@@ -283,6 +283,11 @@ class NotificationDeliveryTest extends TestCase
             'voucher_number' => 'TEST-001',
             'status' => TransactionStatus::POSTED->value,
             'branch_id' => $branchId,
+            // withoutEvents skips HasCompany, so the company is read off the
+            // branch here instead.
+            'company_id' => \App\Models\Administration\Branch::withoutGlobalScopes()
+                ->whereKey($branchId)
+                ->value('company_id'),
             'created_by' => $this->ctx['user']->id,
             ...$overrides,
         ]));
@@ -293,8 +298,8 @@ class NotificationDeliveryTest extends TestCase
      */
     private function makeOverdueSale(): Sale
     {
-        // branch_id is set by a model event that withoutEvents() suppresses, so
-        // force it on explicitly.
+        // branch_id and company_id are set by model events that withoutEvents()
+        // suppresses, so force them on explicitly.
         $sale = Sale::withoutEvents(function () {
             $sale = new Sale;
             $sale->forceFill([
@@ -305,6 +310,7 @@ class NotificationDeliveryTest extends TestCase
                 'type' => SalePurchaseType::Credit->value,
                 'status' => TransactionStatus::POSTED->value,
                 'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ])->save();
 

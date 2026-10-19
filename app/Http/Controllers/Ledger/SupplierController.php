@@ -72,7 +72,7 @@ class SupplierController extends Controller
         $suppliers = Ledger::search($request->query('search'))
             ->where('type', $type) // Filter by type
             ->filter($filters)
-            ->with(['currency', 'branch', 'group', 'country', 'province'])
+            ->with(['currency', 'group', 'country', 'province'])
             // Feeds the `statement` accessor so the list doesn't run one aggregate
             // query per row.
             ->withStatementTotals()

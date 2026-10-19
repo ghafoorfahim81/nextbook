@@ -38,8 +38,6 @@ class AccountResource extends JsonResource
             'is_main' => $this->is_main,
             'parent'    => $this->whenLoaded('parent', fn() => new AccountResource($this->parent)),
             'children' => $this->whenLoaded('children', fn() => AccountResource::collection($this->children)),
-            'branch_id' => $this->branch_id,
-            'branch'    => $this->branch,
             'remark' => $this->remark,
             'transactions' => $this->whenLoaded('transactionLines', function () {
                 return TransactionLineResource::collection($this->transactionLines);

@@ -44,7 +44,15 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
         $user->assignRole($role);
         $this->actingAs($user);
 
+        // Company first: a branch needs its owning company, and the currency
+        // is company master data. The company's currency is filled in once the
+        // currency exists, as bootstrapErpContext does.
+        $company = Company::factory()->create([
+            'name_en' => 'Account Delete Test Company',
+        ]);
+
         $branch = Branch::factory()->create([
+            'company_id' => $company->id,
             'name' => 'Main Branch '.fake()->unique()->numberBetween(100, 999),
             'is_main' => true,
         ]);
@@ -59,10 +67,7 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
             'is_base_currency' => true,
         ]);
 
-        $company = Company::factory()->create([
-            'name_en' => 'Account Delete Test Company',
-            'currency_id' => $currency->id,
-        ]);
+        $company->update(['currency_id' => $currency->id]);
 
         $user->update([
             'branch_id' => $branch->id,
@@ -73,8 +78,8 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
         $this->actingAs($user);
         app()->instance('active_branch_id', $branch->id);
 
-        $accountTypes = $this->createDefaultAccountTypes($branch->id);
-        $accounts = $this->createDefaultGlAccounts($branch->id, $accountTypes);
+        $accountTypes = $this->createDefaultAccountTypes($company->id);
+        $accounts = $this->createDefaultGlAccounts($company->id, $accountTypes);
 
         $this->ctx = [
             'user' => $user,
