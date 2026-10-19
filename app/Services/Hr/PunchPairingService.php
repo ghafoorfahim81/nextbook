@@ -43,7 +43,7 @@ class PunchPairingService
      */
     public function pairForDate(Employee $employee, Carbon $date, ?Shift $shift = null): ?Attendance
     {
-        $shift = $shift ?? $employee->shift ?? $this->defaultShift($employee->branch_id);
+        $shift = $shift ?? $employee->shift ?? $this->defaultShift($employee->company_id);
 
         $existing = Attendance::withoutGlobalScopes()
             ->where('branch_id', $employee->branch_id)
@@ -327,7 +327,7 @@ class PunchPairingService
             return AttendanceStatus::OnLeave->value;
         }
 
-        if ($this->isHoliday($employee->branch_id, $date)) {
+        if ($this->isHoliday($employee->company_id, $date)) {
             return AttendanceStatus::Holiday->value;
         }
 

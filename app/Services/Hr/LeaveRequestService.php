@@ -45,7 +45,7 @@ class LeaveRequestService
         }
 
         $shift = $employee->shift;
-        $holidays = $this->holidayDates($employee->branch_id, $from, $to);
+        $holidays = $this->holidayDates($employee->company_id, $from, $to);
 
         $days = 0.0;
 
@@ -226,7 +226,7 @@ class LeaveRequestService
         $employee = $request->employee;
         $type = $request->leaveType;
         $shift = $employee->shift;
-        $holidays = $this->holidayDates($employee->branch_id, $request->from_date, $request->to_date);
+        $holidays = $this->holidayDates($employee->company_id, $request->from_date, $request->to_date);
 
         $written = 0;
 

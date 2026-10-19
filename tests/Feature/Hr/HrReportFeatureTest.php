@@ -82,6 +82,7 @@ class HrReportFeatureTest extends TestCase
         return array_merge([
             'report' => $key,
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => self::PERIOD_START,
             'date_to' => self::PERIOD_END,
             'ledger_id' => null, 'customer_id' => null, 'supplier_id' => null,
@@ -492,7 +493,10 @@ class HrReportFeatureTest extends TestCase
         $otherBranch = $this->bootstrapErpContext();
 
         $result = app(ReportService::class)->getReportData(
-            $this->filters('payroll_register', ['branch_id' => $otherBranch['branch']->id])
+            $this->filters('payroll_register', [
+                'branch_id' => $otherBranch['branch']->id,
+                'company_id' => $otherBranch['company']->id,
+            ])
         );
 
         $this->assertCount(0, $result['rows']);

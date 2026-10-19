@@ -59,11 +59,11 @@ class EmployeeLedgerFeatureTest extends TestCase
     }
 
     /**
-     * The ledger must land in the EMPLOYEE's branch, not whichever branch the
-     * acting user happens to be switched to — otherwise the employee cannot be
-     * settled from their own branch.
+     * The ledger must land in the EMPLOYEE's company, not whichever company the
+     * acting user happens to be in. Ledgers are company master data, so the
+     * employee's branch only matters for which company it leads to.
      */
-    public function test_the_ledger_takes_the_employees_branch_not_the_acting_branch(): void
+    public function test_the_ledger_takes_the_employees_company_not_the_acting_company(): void
     {
         $otherBranch = \App\Models\Administration\Branch::factory()->create(['is_main' => false]);
 
@@ -74,7 +74,7 @@ class EmployeeLedgerFeatureTest extends TestCase
 
         $ledger = Ledger::withoutGlobalScopes()->find($employee->ledger_id);
 
-        $this->assertSame($otherBranch->id, $ledger->branch_id);
+        $this->assertSame($otherBranch->company_id, $ledger->company_id);
         $this->assertNotSame($this->ctx['company']->id, $ledger->company_id);
     }
 

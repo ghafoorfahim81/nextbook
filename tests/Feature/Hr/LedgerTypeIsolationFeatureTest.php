@@ -178,8 +178,8 @@ class LedgerTypeIsolationFeatureTest extends TestCase
 
         foreach (['payroll-liabilities', 'salary-tax-payable', 'employee-advances', 'employee-loans-receivable'] as $slug) {
             $this->assertNotNull(
-                BranchContext::glAccount($slug, $this->ctx['branch']->id),
-                "Expected branch to resolve the [{$slug}] account by slug."
+                BranchContext::glAccount($slug, $this->ctx['company']->id),
+                "Expected the company to resolve the [{$slug}] account by slug."
             );
         }
     }

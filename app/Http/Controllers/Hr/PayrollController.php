@@ -40,7 +40,7 @@ class PayrollController extends Controller
         $sortDirection = strtolower($request->input('sortDirection', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $payrolls = Payroll::query()
-            ->with(['currency:id,code', 'department:id,name,branch_id', 'createdBy:id,name'])
+            ->with(['currency:id,code', 'department:id,name,company_id', 'createdBy:id,name'])
             ->search($request->query('search'))
             ->filter((array) $request->input('filters', []))
             ->orderBy('period_end', $sortDirection)
@@ -71,7 +71,7 @@ class PayrollController extends Controller
     {
         $payroll->load([
             'currency:id,code',
-            'department:id,name,branch_id',
+            'department:id,name,company_id',
             'approver:id,name',
             'poster:id,name',
             'createdBy:id,name',
@@ -79,7 +79,7 @@ class PayrollController extends Controller
             'lines.employee:id,full_name,code,branch_id',
             'lines.currency:id,code',
             'lines.components',
-            'lines.taxBracketSet:id,name,branch_id',
+            'lines.taxBracketSet:id,name,company_id',
         ]);
 
         return inertia('Hr/Payrolls/Show', [
@@ -216,10 +216,10 @@ class PayrollController extends Controller
         $this->authorize('view', $payroll);
 
         $payslip = $payroll->lines()
-            ->with(['employee', 'currency:id,code', 'components', 'taxBracketSet:id,name,branch_id'])
+            ->with(['employee', 'currency:id,code', 'components', 'taxBracketSet:id,name,company_id'])
             ->findOrFail($line);
 
-        $payroll->load(['currency:id,code', 'department:id,name,branch_id']);
+        $payroll->load(['currency:id,code', 'department:id,name,company_id']);
 
         return inertia('Hr/Payrolls/Payslip', [
             'payroll' => new PayrollResource($payroll),
