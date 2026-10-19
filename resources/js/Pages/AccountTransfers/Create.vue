@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage, router } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
@@ -8,19 +9,20 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import { useAccountTransferBalances } from '@/composables/useAccountTransferBalances'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 
 const { t } = useI18n()
 
 const page = usePage()
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-console.log('this is currencies', page.props);
-
-useLazyProps(page.props, ['accounts'])
-
+const bankAccounts = computed(() => page.props.bankAccounts?.data ?? page.props.bankAccounts ?? [])
+ 
 const form = useForm({
   number: page.props.latestNumber ?? '',
   date: '',
@@ -33,6 +35,7 @@ const form = useForm({
   selected_currency: null,
   rate: '',
   remark: '',
+  attachments: [],
 })
 
 const submitAction = ref(null)
@@ -42,6 +45,8 @@ const createAndNewLoading = computed(() => form.processing && submitAction.value
 const sameAccountError = computed(() => {
   return form.from_account_id && form.to_account_id && form.from_account_id === form.to_account_id
 })
+
+const { fromAccountBalanceText, toAccountBalanceText } = useAccountTransferBalances(form, bankAccounts)
 
 const handleCancel = () => {
   router.visit(route('account-transfers.index'))
@@ -93,12 +98,16 @@ const handleSubmitAction = (createAndNew = false) => {
         .post(route('account-transfers.store'), postOptions);
 };
 
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
   <AppLayout :title="t('general.create', { name: t('general.account_transfer') })">
-    <FormPageToolbar back-route="account-transfers.index" module="account_transfer" />
-    <form @submit.prevent="handleSubmitAction">
+    <FormPageToolbar confirm-module="account_transfer" back-route="account-transfers.index" module="account_transfer" />
+    <form ref="saveFormRef" @submit.prevent="handleSubmitAction">
       <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('general.account_transfer') }) }}
@@ -106,60 +115,89 @@ const handleSubmitAction = (createAndNew = false) => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextInput autofocus :placeholder="t('general.enter', { text: t('general.number') })" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-          <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+          <NextInput is-required :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
 
           <NextSelect
             :options="currencies"
             v-model="form.selected_currency"
-            label-key="code"
+            label-key="display_name"
             value-key="id"
             @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
+            is-required
             :error="form.errors?.currency_id"
             :searchable="true"
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form?.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput is-required :placeholder="t('general.rate')" :error="form.errors?.rate" :disabled="form?.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
-          <NextSelect
-            :options="accounts"
-            v-model="form.selected_from_account"
-            @update:modelValue="(v) => handleSelectChange('from_account_id', v.id)"
-            label-key="name"
-            value-key="id"
-            :reduce="acc => acc"
-            :floating-text="t('general.from_account')"
-            :error="form.errors?.from_account_id"
-            :searchable="true"
-            resource-type="accounts"
-            :search-fields="['name', 'number', 'slug']"
-          />
-          <NextSelect
-            :options="accounts"
-            v-model="form.selected_to_account"
-            @update:modelValue="(v) => handleSelectChange('to_account_id', v.id)"
-            label-key="name"
-            value-key="id"
-            :reduce="acc => acc"
-            :floating-text="t('general.to_account')"
-            :error="form.errors?.to_account_id"
-            :searchable="true"
-            resource-type="accounts"
-            :search-fields="['name', 'number', 'slug']"
-          />
+          <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <NextSelect
+                :options="bankAccounts"
+                v-model="form.selected_from_account"
+                @update:modelValue="(v) => handleSelectChange('from_account_id', v.id)"
+                label-key="name"
+                value-key="id"
+                :reduce="acc => acc"
+                :floating-text="t('general.from_account')"
+                is-required
+                :error="form.errors?.from_account_id"
+                :searchable="true"
+                resource-type="accounts"
+                :search-fields="['name', 'number', 'slug']"
+              />
+              <div
+                v-if="fromAccountBalanceText"
+                class="rounded-lg border border-violet-500/20 bg-rose-500/20 px-3 py-2"
+              >
+                <div class="text-xs text-muted-foreground">{{ t('general.balance') }}</div>
+                <div class="text-sm font-semibold text-foreground">{{ fromAccountBalanceText }}</div>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <NextSelect
+                :options="bankAccounts"
+                v-model="form.selected_to_account"
+                @update:modelValue="(v) => handleSelectChange('to_account_id', v.id)"
+                label-key="name"
+                value-key="id"
+                :reduce="acc => acc"
+                :floating-text="t('general.to_account')"
+                is-required
+                :error="form.errors?.to_account_id"
+                :searchable="true"
+                resource-type="accounts"
+                :search-fields="['name', 'number', 'slug']"
+              />
+              <div
+                v-if="toAccountBalanceText"
+                class="rounded-lg border border-emerald-500/20 bg-emerald-300/20 px-3 py-2"
+              >
+                <div class="text-xs text-muted-foreground">{{ t('general.balance') }}</div>
+                <div class="text-sm font-semibold text-foreground">{{ toAccountBalanceText }}</div>
+              </div>
+            </div>
+          </div>
+
           <div v-if="sameAccountError" class="md:col-span-3 text-sm text-red-600">
             {{ t('general.accounts_cannot_be_same') }}
           </div>
 
           <div class="md:col-span-3">
-            <NextTextarea placeholder="Remark" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
+            <NextTextarea :placeholder="t('general.remark')" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
+          </div>
+
+          <div class="md:col-span-3">
+            <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
           </div>
         </div>
       </div>
 
-      <SubmitButtons
+      <SubmitButtons module="account_transfer"
       :create-label="t('general.create')"
       :create-and-new-label="t('general.create_and_new')"
       :cancel-label="t('general.cancel')"

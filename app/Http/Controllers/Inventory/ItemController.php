@@ -20,7 +20,7 @@ use App\Enums\ItemType;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Category;
 use App\Models\Administration\Brand;
-use App\Models\Administration\Size;
+use App\Models\Administration\Warehouse;
 use App\Models\User;
 use App\Enums\StockSourceType;
 use App\Enums\StockMovementType;
@@ -32,10 +32,27 @@ use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 use App\Services\ItemOpeningService;
 use App\Services\SpreadsheetExportService;
+use App\Services\AttachmentService;
+use App\Services\ItemVariantService;
+use App\Support\BusinessProfile;
+use App\Enums\CostingMethod;
+use App\Enums\PricingMethod;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use App\Support\BranchContext;
 class ItemController extends Controller
 {
+    /**
+     * Statuses that mean "this movement was undone".
+     *
+     * A reversal marks the original layer voided AND posts a compensating one
+     * that is voided too, so anything counting stock history has to skip both
+     * or a reversed document inflates Total In / Total Out by its own quantity.
+     */
+    private const REVERSED_STOCK_STATUSES = [
+        StockStatus::VOIDED->value,
+        StockStatus::CANCELLED->value,
+    ];
+
     public function __construct()
     {
         $this->authorizeResource(Item::class, 'item');
@@ -43,110 +60,35 @@ class ItemController extends Controller
 
     public function index(Request $request)
     {
-        // Update each item's avg_cost based on all IN-type stock movements, considering multi-unit
-
-        // Get all items with at least one stock movement (IN type)
-        // Item::chunk(500, function ($items) {
-        //     foreach ($items as $item) {
-        //         // Get all IN-type stock movements for this item
-        //         $movements = StockMovement::where('item_id', $item->id)
-        //             ->where('movement_type', StockMovementType::IN->value)
-        //             ->get();
-
-        //         $totalBaseQty = 0.0;
-        //         $totalCost = 0.0;
-        //         foreach ($movements as $movement) {
-        //             // Get item's base unit (unit_measure_id)
-        //             $itemUnitId = $item->unit_measure_id;
-        //             $movementUnitId = $movement->unit_measure_id;
-
-        //             // Calculate conversion factor between movement's unit and item's base unit
-        //             if ($itemUnitId == $movementUnitId || !$movementUnitId) {
-        //                 $factor = 1;
-        //             } else {
-        //                 // fetch UnitMeasure for conversion
-        //                 $itemUnit = \App\Models\Administration\UnitMeasure::find($itemUnitId);
-        //                 $movementUnit = \App\Models\Administration\UnitMeasure::find($movementUnitId);
-
-        //                 $itemBase = $itemUnit?->unit ?: 1;
-        //                 $movementBase = $movementUnit?->unit ?: 1;
-
-        //                 // Avoid division by zero
-        //                 $factor = ($itemBase != 0) ? ($movementBase / $itemBase) : 1;
-        //             }
-
-        //             // Convert movement quantity to item's base unit
-        //             $qtyInBaseUnit = $movement->quantity * $factor;
-        //             $lineCost = $movement->unit_cost * $movement->quantity;
-
-        //             $totalBaseQty += $qtyInBaseUnit;
-        //             $totalCost += $lineCost;
-        //         }
-
-        //         $avgCost = $totalBaseQty > 0 ? $totalCost / $totalBaseQty : 0;
-
-        //         // Only update if there's a difference, to avoid unnecessary writes
-        //         if ((float) $item->avg_cost !== (float) $avgCost) {
-        //             $item->avg_cost = $avgCost;
-        //             $item->save();
-        //         }
-        //     }
-        // });
-
-            // dd($mappedMovements->toArray());
-
-        //     $avgCosts = StockMovement::query()
-        //     ->selectRaw('item_id, SUM(quantity) as total_quantity, SUM(unit_cost * quantity) as total_cost')
-        //     ->where('movement_type', StockMovementType::IN->value)
-        //     ->groupBy('item_id')
-        //     ->get()
-        //     ->mapWithKeys(function ($itemMovement) {
-        //         // Avoid division by zero just in case
-        //         $avgCost = ($itemMovement->total_quantity != 0)
-        //             ? $itemMovement->total_cost / $itemMovement->total_quantity
-        //             : 0;
-        //         return [$itemMovement->item_id => $avgCost];
-        //     })
-        //     ->toArray();
-
-        // // Handle in batches to avoid memory/timeout issues on large data sets
-        // foreach (array_chunk($avgCosts, 1000, true) as $batch) {
-        //     // Build a single CASE WHEN SQL expression for batch update
-        //     $ids = array_keys($batch);
-        //     $caseSql = "CASE id ";
-        //     foreach ($batch as $itemId => $avgCost) {
-        //         $caseSql .= "WHEN '" . addslashes($itemId) . "' THEN " . (float)$avgCost . " ";
-        //     }
-        //     $caseSql .= "END";
-        //     // Run a single update query for this batch
-        //     Item::whereIn('id', $ids)->update([
-        //         'avg_cost' => DB::raw($caseSql),
-        //     ]);
-        // }
-
         $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $items = Item::search($request->query('search'))
+        // Eager load and aggregate up front: the list resource previously ran
+        // a SUM per row for on-hand, plus lazy loads for unit/category/brand.
+        $items = Item::query()
+            ->with(['unitMeasure:id,name', 'category:id,name,local_name', 'brand:id,name'])
+            ->withSum('stockBalances as on_hand', 'quantity')
+            ->withCount('variants')
+            ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
-
         return inertia('Inventories/Items/Index', [
             'items' => ItemListResource::collection($items),
+            'businessProfile' => BusinessProfile::current()->toArray(),
             'filterOptions' => [
                 'itemTypes' => collect(ItemType::cases())->map(fn ($c) => [
                     'id' => $c->value,
                     'name' => $c->getLabel(),
                 ])->values(),
                 'unitMeasures' => UnitMeasure::orderBy('name')->get(['id', 'name']),
-                'categories' => Category::orderBy('name')->get(['id', 'name']),
-                'sizes' => Size::orderBy('name')->get(['id', 'name']),
+                'categories' => Category::orderBy('name')->get(['id', 'name', 'local_name']),
                 'brands' => Brand::orderBy('name')->get(['id', 'name']),
+                'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -161,10 +103,7 @@ class ItemController extends Controller
 
     public function create()
     {
-        // Get the maximum code as integer (cast to handle mixed formats like "3" and "004")
-        $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')->whereNull('deleted_at')
-        ->value('max_code');
-        $maxCode = $maxCode ? intval($maxCode) + 1 : 1;
+        $maxCode = Item::nextCodeNumber();
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
@@ -175,15 +114,55 @@ class ItemController extends Controller
             'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
             'incomeAccounts' => $incomeAccounts,
             'costAccounts' => $costAccounts,
+            'businessProfile' => BusinessProfile::current()->toArray(),
+            ...$this->methodOptions(),
         ]);
     }
-    public function store(ItemStoreRequest $request)
+
+    /**
+     * Costing and pricing method choices for the item form. Only rendered for
+     * trades whose profile switches those fields on.
+     */
+    protected function methodOptions(): array
+    {
+        return [
+            'costingMethods' => collect(CostingMethod::selectable())
+                ->map(fn ($c) => ['id' => $c->value, 'name' => $c->getLabel()])
+                ->values(),
+            'pricingMethods' => collect(PricingMethod::cases())
+                ->map(fn ($c) => ['id' => $c->value, 'name' => $c->getLabel()])
+                ->values(),
+            // Shown as the fallback on the item form: a blank costing method
+            // means "use the company default".
+            'companyCostingMethod' => BranchContext::costingMethod(),
+        ];
+    }
+    public function store(ItemStoreRequest $request, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
-        $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
-        DB::transaction(function () use ($validated, $request) {
+        $validated['item_type'] = $validated['item_type'] ?? ItemType::INVENTORY_MATERIALS->value;
+        // pricing_method is a non-null column with a 'fixed' default; an explicit
+        // null from the form would bypass that default and hit the constraint.
+        $validated['pricing_method'] = ($validated['pricing_method'] ?? null) ?: PricingMethod::FIXED->value;
+
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('items', 'public');
+        }
+
+        $variants = $validated['variants'] ?? [];
+
+        DB::transaction(function () use ($validated, $variants, $request, $attachmentService) {
             // 1) Create item
             $item = Item::create($validated);
+
+            // 2) Variants — always at least one, so variant_id is never null
+            // on anything downstream. The synced collection is ordered by
+            // sort_order, so an opening row's variant_index lines up with it.
+            $syncedVariants = app(ItemVariantService::class)->sync($item, $variants)->values();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($item, $request->file('attachments'));
+            }
             // 2) Create opening stocks (if any)
             $openings = collect($validated['openings'] ?? []);
             $transactionService = app(\App\Services\TransactionService::class);
@@ -191,12 +170,13 @@ class ItemController extends Controller
                 ->filter(function ($o) {
                     return !empty($o['warehouse_id']) && $o['quantity'] > 0;
                 })
-                ->each(function ($o) use ($item, $validated, $transactionService) {
+                ->each(function ($o) use ($item, $validated, $transactionService, $syncedVariants) {
                     // create stock
                     $stockService = app(\App\Services\StockService::class);
                     $branchId = auth()->user()->branch_id ?? app('active_branch_id');
                     $stock = $stockService->post([
                         'item_id'         => $item->id,
+                        'variant_id'      => $this->openingVariantId($syncedVariants, $o['variant_index'] ?? null),
                         'movement_type'   => StockMovementType::IN->value,
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
@@ -206,7 +186,6 @@ class ItemController extends Controller
                         'batch'           => $o['batch'] ?? null,
                         'date'            => Carbon::now()->toDateString(),
                         'expire_date'     => $o['expire_date'] ?? null,
-                        'size_id'         => $validated['size_id'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
                         'branch_id'       => $branchId,
                     ]);
@@ -243,14 +222,14 @@ class ItemController extends Controller
                         ],
                         lines: [
                           ['account_id' => $inventoryAccount,   'debit' => $openings->sum(function ($o) {
-                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                            return round((float)($o['quantity'] ?? 0), 4) * (float)($o['unit_price'] ?? 0);
                         }), 'credit' => 0,
                         'remark' => 'Opening balance for item ' . ' ' . $item->name,
                         'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . $item->name,
                          'remark_ps' =>'د'. ' '. $item->name.' '.'د پرانیستلو بیلانس ',
                         ],
                           ['account_id' => $openingBalanceAccount, 'debit' => 0,'credit' => $openings->sum(function ($o) {
-                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                            return round((float)($o['quantity'] ?? 0), 4) * (float)($o['unit_price'] ?? 0);
                         }), 'remark' => 'Opening balance for item ' . ' ' . $item->name,
                         'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . $item->name,
                         'remark_ps' =>'د'. ' '. $item->name.' '.'د پرانیستلو بیلانس ',
@@ -267,7 +246,11 @@ class ItemController extends Controller
 
     public function show(Request $request, Item $item)
     {
-        $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy', 'brand', 'size', 'stocks');
+        $item->load(
+            'assetAccount', 'incomeAccount', 'costAccount',
+            'createdBy', 'updatedBy', 'brand', 'stocks', 'attachments',
+            'variants.stockBalances', 'unitMeasure', 'category', 'defaultWarehouse',
+        );
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -277,7 +260,70 @@ class ItemController extends Controller
 
         return inertia('Inventories/Items/Show', [
             'item' => ItemResource::make($item),
+            'stockByWarehouse' => $this->stockByWarehouse($item),
         ]);
+    }
+
+    /**
+     * Per-warehouse stock breakdown for the item detail page.
+     *
+     * stock_balances rows are keyed by (item, warehouse, batch, expire_date),
+     * so they are aggregated up to one row per warehouse. `reserved_out` is
+     * stock already committed to unposted outgoing lines, so the quantity a
+     * user can actually sell is quantity - reserved_out.
+     *
+     * Value comes from the movements, not from quantity x avg_cost.
+     *
+     * avg_cost is a running weighted average, and under FIFO it is not what
+     * the stock on the shelf is worth: sell the cheap layer and the remaining
+     * goods are worth more than the average says. Priced that way, the
+     * warehouse rows contradicted the item's own stock value directly above
+     * them on the same page — 5,142.86 against 6,000 — and only the second
+     * figure agreed with the inventory account.
+     *
+     * Derived exactly as ItemResource::stock_value derives the total, so the
+     * rows always add up to it. Value survives a change of unit (5 cartons at
+     * 600 is 60 pieces at 50), so no conversion is needed here.
+     */
+    protected function stockByWarehouse(Item $item): array
+    {
+        $valueByWarehouse = DB::table('stock_movements')
+            ->where('item_id', $item->id)
+            ->where('branch_id', BranchContext::branchId())
+            ->whereNull('deleted_at')
+            ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->groupBy('warehouse_id')
+            ->selectRaw('warehouse_id')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN movement_type = ? THEN quantity * unit_cost ELSE -(quantity * unit_cost) END), 0) as total_value',
+                [StockMovementType::IN->value]
+            )
+            ->pluck('total_value', 'warehouse_id');
+
+        return StockBalance::query()
+            ->where('item_id', $item->id)
+            ->selectRaw('warehouse_id')
+            ->selectRaw('SUM(quantity) as quantity')
+            ->selectRaw('SUM(reserved_out) as reserved_out')
+            ->groupBy('warehouse_id')
+            ->with('warehouse:id,name')
+            ->get()
+            ->map(function (StockBalance $balance) use ($valueByWarehouse) {
+                $quantity = (float) $balance->quantity;
+                $reserved = (float) $balance->reserved_out;
+
+                return [
+                    'warehouse_id' => $balance->warehouse_id,
+                    'warehouse_name' => $balance->warehouse?->name,
+                    'quantity' => $quantity,
+                    'reserved' => $reserved,
+                    'available' => $quantity - $reserved,
+                    'stock_value' => max(0.0, (float) ($valueByWarehouse[$balance->warehouse_id] ?? 0)),
+                ];
+            })
+            ->sortByDesc('quantity')
+            ->values()
+            ->all();
     }
     public function inRecords(Request $request, Item $item)
     {
@@ -345,8 +391,12 @@ class ItemController extends Controller
         $filters = (array) $request->input('filters', []);
 
         $items = Item::with(['unitMeasure'])
-            ->withSum(['stocks as total_in' => fn ($q) => $q->where('movement_type', StockMovementType::IN->value)], 'quantity')
-            ->withSum(['stocks as total_out' => fn ($q) => $q->where('movement_type', StockMovementType::OUT->value)], 'quantity')
+            ->withSum(['stocks as total_in' => fn ($q) => $q
+                ->where('movement_type', StockMovementType::IN->value)
+                ->whereNotIn('status', self::REVERSED_STOCK_STATUSES)], 'quantity')
+            ->withSum(['stocks as total_out' => fn ($q) => $q
+                ->where('movement_type', StockMovementType::OUT->value)
+                ->whereNotIn('status', self::REVERSED_STOCK_STATUSES)], 'quantity')
             ->withSum('stockBalances as on_hand', 'quantity')
             ->withSum([
                 'stocks as opening_balance' => function ($q) {
@@ -402,7 +452,12 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse')->find($item->id);
+        $item = Item::with(
+            'unitMeasure', 'brand', 'category',
+            'assetAccount', 'incomeAccount', 'costAccount',
+            'openings.warehouse', 'openings.variant', 'attachments',
+            'variants',
+        )->find($item->id);
 
         // Flag the openings the update path will refuse, so the form disables
         // exactly those rows instead of guessing from the layer's status.
@@ -412,28 +467,43 @@ class ItemController extends Controller
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
         $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold');
+
         return inertia('Inventories/Items/Edit', [
             'item' => new ItemResource($item),
             'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
             'incomeAccounts' => $incomeAccounts,
             'costAccounts' => $costAccounts,
+            'businessProfile' => BusinessProfile::current()->toArray(),
+            ...$this->methodOptions(),
         ]);
     }
 
-    public function update(ItemUpdateRequest $request, Item $item)
+    public function update(ItemUpdateRequest $request, Item $item, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
-        // Handle photo update
-        // dd($request->all());
+        $validated['pricing_method'] = ($validated['pricing_method'] ?? null) ?: PricingMethod::FIXED->value;
+
+        // The `photo` column did not exist until this refactor, so this
+        // assignment used to throw as soon as anyone uploaded one.
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('items', 'public');
-            $validated['photo'] = $path;
+            $validated['photo'] = $request->file('photo')->store('items', 'public');
         }
-        DB::transaction(function () use ($validated, $item) {
+
+        $variants = $validated['variants'] ?? [];
+
+        DB::transaction(function () use ($validated, $variants, $item, $request, $attachmentService) {
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($item, $request->file('attachments'));
+            }
+
             // 1) Update item
             $item->update($validated);
 
-            // 2) Replace the openings that are still free to change. Any opening
+            // 2) Variants — SKU, barcode and price live here; the service
+            //    mirrors the default variant back onto the item columns.
+            app(ItemVariantService::class)->sync($item, $variants);
+
+            // 3) Replace the openings that are still free to change. Any opening
             //    already issued against is refused inside the service rather
             //    than here, so the API enforces the same rule the edit screen
             //    shows — see ItemOpeningService::lockReason().
@@ -449,42 +519,40 @@ class ItemController extends Controller
         try {
             // Check for dependencies before deletion
             if (!$item->canBeDeleted()) {
-                $message = $item->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+                $message = $item->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
                 return inertia('Inventories/Items/Index', [
                     'error' => $message
                 ]);
             }
 
-            DB::transaction(function () use ($item) {
-                // Delete openings with their stocks (with existence checks)
-
-                $stockMovement = StockMovement::where('item_id', $item->id)
+            // Posted stock cannot be unwound by deleting the item. This check
+            // used to sit inside the transaction closure and `return` a
+            // redirect, whose value was discarded — so the closure exited
+            // before $item->delete(), and the user was told the item had been
+            // deleted when it had not.
+            $hasPostedMovements = StockMovement::where('item_id', $item->id)
                 ->where('status', StockStatus::POSTED->value)
-                ->get();
-                if($stockMovement->count() > 0) {
-                    return redirect()->back()->with([
-                        'error' => __('general.cannot_delete_item_with_posted_stock_movements'),
-                        'title' => __('general.posted_stock_movements_found'),
-                    ]);
-                }
-                else{
-                    $stockMovement = StockMovement::where('item_id', $item->id)
+                ->exists();
+
+            if ($hasPostedMovements) {
+                return redirect()->back()->with([
+                    'error' => __('general.cannot_delete_item_with_posted_stock_movements'),
+                    'title' => __('general.posted_stock_movements_found'),
+                ]);
+            }
+
+            DB::transaction(function () use ($item) {
+                StockMovement::where('item_id', $item->id)
                     ->where('status', StockStatus::DRAFT->value)
-                    ->get();
-                    if($stockMovement->count() > 0) {
-                        $stockMovement->each(function ($movement) {
-                            $movement->delete();
-                        });
-                    }
-                    $stockBalance = StockBalance::where('item_id', $item->id)
+                    ->get()
+                    ->each(fn ($movement) => $movement->delete());
+
+                StockBalance::where('item_id', $item->id)
                     ->where('status', StockStatus::DRAFT->value)
-                    ->get();
-                    if($stockBalance->count() > 0) {
-                        $stockBalance->each(function ($balance) {
-                            $balance->delete();
-                        });
-                    }
-                }
+                    ->get()
+                    ->each(fn ($balance) => $balance->delete());
+
+                $item->variants()->get()->each(fn ($variant) => $variant->delete());
 
                 // Delete opening transactions with their related models
                 $openingTransaction = $item->openingTransaction()->first();
@@ -512,12 +580,34 @@ class ItemController extends Controller
             return redirect()->back()->with('error', __('general.failed_to_delete_try_again', ['resource' => __('general.resource.item')]));
         }
     }
+
+    /**
+     * Flip the item's active flag. Inactive items stay in reports and history
+     * but drop out of the item pickers on new documents.
+     */
+    public function toggleActive(Request $request, Item $item)
+    {
+        $this->authorize('update', $item);
+
+        $item->update(['is_active' => ! $item->is_active]);
+
+        return back()->with('success', __('general.status_updated_successfully', [
+            'resource' => __('general.resource.item'),
+        ]));
+    }
+
     public function restore(Request $request, Item $item)
     {
+        $this->authorize('restore', $item);
+
         try {
             DB::transaction(function () use ($item) {
                 // Restore the main item first
                 $item->restore();
+                // destroy() soft-deletes the variants with the item, so they
+                // have to come back with it — an item restored without its
+                // variants has nothing sellable and no bucket for its stock.
+                $item->variants()->withTrashed()->restore();
                 $item->stocks()->withTrashed()->restore();
                 $item->stockBalances()->withTrashed()->restore();
 
@@ -548,6 +638,8 @@ class ItemController extends Controller
     // force delete item
     public function forceDelete(Request $request, Item $item)
     {
+        $this->authorize('forceDelete', $item);
+
         try {
             DB::transaction(function () use ($item) {
                 // Force delete openings with their stocks
@@ -560,16 +652,22 @@ class ItemController extends Controller
 
                 // Force delete opening transactions with their related models
                 $openingTransaction = $item->openingTransaction()->first();
-                    if ($openingTransaction) {
-                        // Then safely delete the related transactions
-                        if ($openingTransaction->id) {
-                            TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
-                            Transaction::where('id', $openingTransaction->id)->forceDelete();
-                        }
-
-                // Finally force delete the main item
-                $item->forceDelete();
+                if ($openingTransaction && $openingTransaction->id) {
+                    TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
+                    Transaction::where('id', $openingTransaction->id)->forceDelete();
                 }
+
+                // Everything that points at the item has to go before the item
+                // itself, or its foreign keys block the delete.
+                $item->variants()->withTrashed()->forceDelete();
+                $item->stocks()->withTrashed()->forceDelete();
+                $item->stockBalances()->withTrashed()->forceDelete();
+
+                // Finally force delete the main item. This used to sit inside
+                // the opening-transaction branch above, so an item without an
+                // opening was never deleted at all while the screen still
+                // reported success.
+                $item->forceDelete();
             });
 
             return redirect()->route('items.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.item')]));
@@ -583,6 +681,21 @@ class ItemController extends Controller
 
             return redirect()->back()->with('error', __('general.failed_to_permanently_delete_try_again', ['resource' => __('general.resource.item')]));
         }
+    }
+
+    /**
+     * Resolve an opening row's variant_index (its position in the item's
+     * variant grid) to a concrete variant id. Null when the form sent no
+     * variant — the opening then lands in the item's single NULL bucket,
+     * exactly as before variants existed.
+     */
+    private function openingVariantId(\Illuminate\Support\Collection $variants, $index): ?string
+    {
+        if ($index === null || $index === '') {
+            return null;
+        }
+
+        return $variants->get((int) $index)?->id;
     }
 
     protected function exportStockMovements(
@@ -604,6 +717,7 @@ class ItemController extends Controller
                     'unit_measure_name' => $row['unit_measure_name'] ?? '-',
                     'date' => $row['date'] ?? '-',
                     'batch' => $row['batch'] ?? '-',
+                    'variant' => $row['variant']['display_name'] ?? '-',
                     'expire_date' => $row['expire_date'] ?? '-',
                     'unit_cost' => $row['unit_cost'] ?? 0,
                     'warehouse_name' => $row['warehouse_name'] ?? '-',
@@ -631,6 +745,7 @@ class ItemController extends Controller
                 ['key' => 'unit_measure_name', 'label' => $spreadsheetExportService->localeTranslation('admin', 'unit_measure.unit_measure', 'Unit Measure'), 'width' => 14],
                 ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date'), 'width' => 14],
                 ['key' => 'batch', 'label' => $spreadsheetExportService->localeTranslation('item', 'batch', 'Batch'), 'width' => 12],
+                ['key' => 'variant', 'label' => $spreadsheetExportService->localeTranslation('item', 'variant', 'Variant'), 'width' => 14],
                 ['key' => 'expire_date', 'label' => $spreadsheetExportService->localeTranslation('item', 'expire_date', 'Expire Date'), 'width' => 16],
                 ['key' => 'unit_cost', 'label' => $spreadsheetExportService->localeTranslation('general', 'unit_price', 'Unit Price'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'warehouse_name', 'label' => $spreadsheetExportService->localeTranslation('admin', 'warehouse.warehouse', 'Warehouse'), 'width' => 18],
@@ -644,6 +759,7 @@ class ItemController extends Controller
         return StockMovement::with([
                 'warehouse',
                 'unitMeasure',
+                'variant',
                 'reference' => function (MorphTo $morphTo) {
                     $morphTo->morphWith([
                         Purchase::class => ['supplier'],
@@ -653,6 +769,10 @@ class ItemController extends Controller
             ])
             ->where('item_id', $item->id)
             ->where('movement_type', $movementType)
+            // A reversal voids both the original layer and the compensating one
+            // it posts back, so a reversed document would otherwise show up
+            // twice in the item's history and cancel itself out on screen.
+            ->whereNotIn('status', self::REVERSED_STOCK_STATUSES)
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc');
     }

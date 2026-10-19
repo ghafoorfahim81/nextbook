@@ -40,7 +40,7 @@ class LedgerTypeIsolationFeatureTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
 
         $this->employeeLedger = Ledger::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'currency_id' => $this->ctx['currency']->id,
             'name' => 'Ahmad Karimi (EMP-001)',
             'code' => 'EMP-001',
@@ -174,12 +174,12 @@ class LedgerTypeIsolationFeatureTest extends TestCase
 
     public function test_payroll_control_accounts_resolve_by_slug(): void
     {
-        BranchContext::flush($this->ctx['branch']->id);
+        BranchContext::flush($this->ctx['company']->id);
 
         foreach (['payroll-liabilities', 'salary-tax-payable', 'employee-advances', 'employee-loans-receivable'] as $slug) {
             $this->assertNotNull(
-                BranchContext::glAccount($slug, $this->ctx['branch']->id),
-                "Expected branch to resolve the [{$slug}] account by slug."
+                BranchContext::glAccount($slug, $this->ctx['company']->id),
+                "Expected the company to resolve the [{$slug}] account by slug."
             );
         }
     }

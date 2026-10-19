@@ -17,7 +17,7 @@ class BrandStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', $this->uniqueInBranch('brands')],
+            'name' => ['required', 'string', $this->uniqueInCompany('brands')],
             'legal_name' => ['nullable', 'string'],
             'registration_number' => ['nullable', 'string'],
             'logo' => ['nullable', 'string'],

@@ -1,5 +1,5 @@
 {
-    "category":{
+    "category": {
         "category": "Category",
         "parent": "Parent",
         "categories": "Categories"
@@ -21,6 +21,7 @@
         "rate_updates_history_description": "Review previous exchange rate changes and the date each rate was recorded.",
         "exchange_rate": "Exchange Rate",
         "code": "Code",
+        "local_name": "Local Name",
         "format": "Format",
         "flag": "Flag",
         "is_active": "Is Active",
@@ -108,11 +109,17 @@
         "branch": "Branch",
         "branches": "Branches",
         "city": "City",
-        "location": "Location",
-        "sub_domain": "Sub Domain"
+        "location": "Location"
+    },
+    "customer_group": {
+        "customer_group": "Customer Group",
+        "customer_groups": "Customer Groups",
+        "name_en": "Name (English)",
+        "local_name": "Local Name"
     },
     "shared": {
         "remark": "Remark",
+        "local_name": "Local Name",
         "parent": "Parent",
         "address": "Address",
         "symbol": "Symbol",
@@ -121,5 +128,12 @@
         "phone": "Phone",
         "country": "Country",
         "province": "Province"
+    },
+    "payment_term": {
+        "payment_term": "Payment Term",
+        "payment_terms": "Payment Terms",
+        "name": "Name",
+        "days": "Days",
+        "type": "Type"
     }
 }

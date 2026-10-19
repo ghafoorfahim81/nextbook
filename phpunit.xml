@@ -19,10 +19,13 @@
         <testsuite name="Feature">
             <directory>tests/Feature/Accounting</directory>
             <directory>tests/Feature/Administration</directory>
+            <directory>tests/Feature/Attachment</directory>
             <directory>tests/Feature/Hr</directory>
             <directory>tests/Feature/Inventory</directory>
             <directory>tests/Feature/Ledger</directory>
+            <directory>tests/Feature/Preferences</directory>
             <directory>tests/Feature/Purchase</directory>
+            <directory>tests/Feature/Sale</directory>
             <directory>tests/Feature/Sales</directory>
             <directory>tests/Feature/Reports</directory>
             <directory>tests/Feature/Notifications</directory>
@@ -51,8 +54,9 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
-        <!-- <env name="DB_CONNECTION" value="sqlite"/> -->
-        <!-- <env name="DB_DATABASE" value=":memory:"/> -->
+        <!-- Force tests onto an isolated database so RefreshDatabase can never wipe the dev DB. -->
+        <env name="DB_CONNECTION" value="pgsql"/>
+        <env name="DB_DATABASE" value="nextbook_test"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

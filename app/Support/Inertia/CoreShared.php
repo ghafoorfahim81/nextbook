@@ -4,6 +4,7 @@ namespace App\Support\Inertia;
 
 use App\Models\Administration\Branch;
 use App\Services\NotificationService;
+use App\Support\BusinessProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -58,7 +59,10 @@ final class CoreShared
             ? Cache::remember(
                 CacheKey::forUser($request, 'preferences'),
                 $cacheDuration,
-                fn() => $user->preferences
+                // Merge with defaults so newly introduced preference keys are
+                // always present for the frontend, even for users whose stored
+                // preferences predate them.
+                fn() => $user->getAllPreferences()
             )
             : null;
         // $recordsPerPage = $userPreferences['appearance']['records_per_page'] ?? 10;
@@ -66,6 +70,15 @@ final class CoreShared
         return [
             'locale' => $locale,
             'direction' => $direction,
+            // Shown in the guest footer so users can quote their build.
+            'app' => [
+                'name' => config('app.name'),
+                'version' => config('app.version'),
+                // How long a soft-deleted record stays recoverable. The delete
+                // confirmation quotes it, and it must not drift from the window
+                // the cleanup job actually enforces.
+                'deleted_records_retention_days' => \App\Services\DeletedRecordService::RETENTION_DAYS,
+            ],
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,
@@ -81,6 +94,11 @@ final class CoreShared
                     'roles' => $roles,
                     'role_slugs' => $roleSlugs,
                     'calendar_type' => $user->company?->calendar_type,
+                    // Drives the one-time "check the user manual" dialog. True
+                    // only for a user who belongs to a company and has never
+                    // opened the manual or dismissed the prompt.
+                    'show_manual_prompt' => (bool) $user->company_id
+                        && blank(data_get($userPreferences, 'onboarding.manual_prompt_dismissed_at')),
                 ] : null,
             ],
             'flash' => [
@@ -89,6 +107,15 @@ final class CoreShared
                 'print_url' => fn() => $request->session()->get('print_url'),
             ],
             'user_preferences' => $userPreferences,
+            // Which item fields, sections and tracking defaults this trade
+            // uses. Cached per user because it derives from the company.
+            'business_profile' => $user
+                ? Cache::remember(
+                    CacheKey::forUser($request, 'business_profile'),
+                    $cacheDuration,
+                    fn() => BusinessProfile::for($user->company)->toArray()
+                )
+                : null,
             'notification_center' => $user
                 ? app(NotificationService::class)->getNotificationCenter($user)
                 : ['unread_count' => 0, 'items' => []],

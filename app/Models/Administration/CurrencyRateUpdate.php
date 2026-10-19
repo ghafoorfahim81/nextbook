@@ -3,7 +3,9 @@
 namespace App\Models\Administration;
 
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasSearch;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
@@ -15,13 +17,14 @@ use Symfony\Component\Uid\Ulid;
 
 class CurrencyRateUpdate extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasSearch, BranchSpecific, HasBranch;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasSearch, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'currency_id',
         'exchange_rate',
         'date',

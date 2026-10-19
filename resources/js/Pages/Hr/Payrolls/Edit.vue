@@ -7,6 +7,7 @@ import { useForm, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 
@@ -57,13 +58,15 @@ const submit = () => {
         onFinish: () => { updating.value = false; },
     });
 };
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('hr.payroll') })">
         <FormPageToolbar back-route="payrolls.show" :back-route-params="record.id" module="payrolls" />
 
-        <form @submit.prevent="submit">
+        <form ref="saveFormRef" @submit.prevent="submit">
             <PayrollFormFields :form="form" :filter-options="filterOptions" :number="record.number" />
 
             <SubmitButtons

@@ -6,18 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AccountTransfer\AccountTransferStoreRequest;
 use App\Http\Requests\AccountTransfer\AccountTransferUpdateRequest;
 use App\Http\Resources\AccountTransfer\AccountTransferResource;
+use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\Administration\CurrencyResource;
 use App\Models\Account\Account;
 use App\Models\AccountTransfer\AccountTransfer;
 use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
-use App\Models\Transaction\Transaction;
-use App\Models\Transaction\TransactionLine;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
+
 class AccountTransferController extends Controller
 {
     private $dateConversionService;
@@ -35,8 +38,10 @@ class AccountTransferController extends Controller
         $filters = (array) $request->input('filters', []);
 
         $transfers = AccountTransfer::with([
-                'transaction.lines.account',
+                'transaction.lines.account.accountType',
                 'transaction.currency',
+                'fromAccount',
+                'toAccount',
                 'createdBy',
                 'updatedBy',
             ])
@@ -44,12 +49,14 @@ class AccountTransferController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
-
+            // dd(AccountTransferResource::collection($transfers)->toArray(request()));
         return inertia('AccountTransfers/Index', [
             'transfers' => AccountTransferResource::collection($transfers),
             'filterOptions' => [
-                'accounts' => Account::orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'accounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+                $q->whereIn('slug', ['cash-or-bank'])
+            )->get()),
+                'currencies' => CurrencyResource::collection(Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name'])),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -64,14 +71,20 @@ class AccountTransferController extends Controller
 
     public function create(Request $request)
     {
-        return inertia('AccountTransfers/Create');
+        $latestNumber = (string) ((int) AccountTransfer::max('number') + 1);
+        return inertia('AccountTransfers/Create', [
+            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+                $q->whereIn('slug', ['cash-or-bank'])
+            )->orderBy('created_at','desc')->get()),
+            'latestNumber' => $latestNumber,
+        ]);
     }
 
 
-    public function store(AccountTransferStoreRequest $request, TransactionService $transactionService, ActivityLogService $activityLogService)
+    public function store(AccountTransferStoreRequest $request, TransactionService $transactionService, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
         // dd((string) \Symfony\Component\Uid\Ulid::generate());
-        DB::transaction(function () use ($request, $transactionService, $activityLogService) {
+        DB::transaction(function () use ($request, $transactionService, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
             $fromAccountId = $validated['from_account_id'];
@@ -79,60 +92,74 @@ class AccountTransferController extends Controller
             $amount = (float) $validated['amount'];
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
+            $postImmediately = (bool) user_preference('transaction.account_transfer_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
 
             // Use any existing ledger to fulfill the non-null FK constraint on transactions table.
             // Since this is an internal transfer, we associate both transactions with the same placeholder ledger.
             $ledger = Ledger::query()->latest()->first();
             if (!$ledger) {
-                abort(422, 'No ledger found to associate the transfer transactions.');
+                abort(422, __('messages.document.no_ledger_for_transfer'));
             }
 
             $fromAccount = Account::findOrFail($fromAccountId);
             $toAccount = Account::findOrFail($toAccountId);
-            $nature = $fromAccount->accountType->nature ?? 'asset';
+            // $nature = $fromAccount->accountType->nature ?? 'asset';
 
-            $mappings = [
-                'asset'    => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
-                'liability'=> ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
-                'equity'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
-                'income'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
-                'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
-            ];
-            $map = $mappings[$nature] ?? $mappings['asset'];
+            // $mappings = [
+            //     'asset'    => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
+            //     'liability'=> ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+            //     'equity'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+            //     'income'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+            //     'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
+            // ];
+            // $map = $mappings[$nature] ?? $mappings['asset'];
 
             $transfer = AccountTransfer::create([
                 'number' => $validated['number'] ?? null,
                 'date' => $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null,
+                'from_account_id' => $fromAccountId,
+                'to_account_id' => $toAccountId,
                 'remark' => $validated['remark'] ?? null,
+                'status' => $documentStatus,
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($transfer, $request->file('attachments'));
+            }
+
             $transaction = $transactionService->post([
                 'currency_id' => $currencyId,
                 'rate' => $rate,
                 'date' => $transfer->date,
+                'voucher_number' => 'Transfer #' . $transfer->number,
                 'reference_type' => AccountTransfer::class,
                 'reference_id' => $transfer->id,
                 'remark' => "Transfer #{$transfer->number}.from {$fromAccount->name} to {$toAccount->name}",
+                'status' => $documentStatus,
+                'posting_payload' => [
+                    'amount' => $amount,
+                    'from_account_id' => $fromAccountId,
+                    'to_account_id' => $toAccountId,
+                ],
             ], [
                 [
-                    'account_id' => $map['debit'],
-                    'debit' => $amount,
-                    'credit' => 0,
-                    'remark' => "Transfer from ". ' ' .$fromAccount->name,
-                    'remark_fa' => "انتقال از حساب ". ' ' . $fromAccount->local_name,
-                    'remark_ps' => "لېږد له حساب ". ' ' . $fromAccount->local_name,
-                ],
-                [
-                    'account_id' => $map['credit'],
+                    'account_id' => $fromAccount->id,
                     'debit' => 0,
                     'credit' => $amount,
-                    'remark' => "Transfer to ". ' ' . $toAccount->name,
-                    'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
-                    'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
+                    'remark' => "Transfer to {$toAccount->name} #" . $transfer->number,
+                    'remark_fa' => "انتقال به حساب {$toAccount->local_name} #" . $transfer->number,
+                    'remark_ps' => "لېږد ته حساب {$toAccount->local_name} #" . $transfer->number,
                 ],
-            ]);
-
-            $transfer->update([
-                'transaction_id' => $transaction->id,
+                [
+                    'account_id' => $toAccount->id,
+                    'debit' => $amount,
+                    'credit' => 0,
+                    'remark' => "Transfer from {$fromAccount->name} #" . $transfer->number,
+                    'remark_fa' => "انتقال از حساب {$fromAccount->local_name} #" . $transfer->number,
+                    'remark_ps' => "لېږد له حساب {$fromAccount->local_name} #" . $transfer->number,
+                ],
+           
             ]);
 
             $this->logTransferActivity(
@@ -164,31 +191,84 @@ class AccountTransferController extends Controller
 
     public function show(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'createdBy', 'updatedBy']);
-        return response()->json([
-            'data' => new AccountTransferResource($accountTransfer),
+        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy', 'attachments']);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new AccountTransferResource($accountTransfer),
+            ]);
+        }
+        return inertia('AccountTransfers/Show', [
+            'transfer' => new AccountTransferResource($accountTransfer),
         ]);
+    }
+
+    public function post(AccountTransfer $accountTransfer, TransactionService $transactionService)
+    {
+        $this->authorize('update', $accountTransfer);
+
+        if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
+            abort(422, __('messages.document.only_draft_can_be_posted'));
+        }
+
+        DB::transaction(function () use ($accountTransfer, $transactionService) {
+            $transactionService->postDraft($accountTransfer->transaction()->firstOrFail());
+            $accountTransfer->update(['status' => TransactionStatus::POSTED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account_transfer')]));
+    }
+
+    public function reverse(Request $request, AccountTransfer $accountTransfer, TransactionService $transactionService)
+    {
+        $this->authorize('update', $accountTransfer);
+
+        $validated = $request->validate(['reason' => ['required', 'string', 'max:255']]);
+
+        if ($accountTransfer->status !== TransactionStatus::POSTED->value) {
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
+        }
+
+        DB::transaction(function () use ($accountTransfer, $transactionService, $validated) {
+            $transactionService->reverse($accountTransfer->transaction()->firstOrFail(), $validated['reason'], $accountTransfer->number, AccountTransfer::class);
+            $accountTransfer->update(['status' => TransactionStatus::REVERSED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
     public function edit(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'createdBy', 'updatedBy']);
+        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy', 'attachments']);
         return inertia('AccountTransfers/Edit', [
             'data' => new AccountTransferResource($accountTransfer),
+            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+                $q->whereIn('slug', ['cash-or-bank'])
+            )->get()),
         ]);
     }
 
-    public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
-    { 
+    public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService, AttachmentService $attachmentService)
+    {
+        if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
+        }
+
         $before = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
 
-        DB::transaction(function () use ($request, $accountTransfer, $activityLogService, $before) {
+        DB::transaction(function () use ($request, $accountTransfer, $activityLogService, $attachmentService, $before) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($accountTransfer, $request->file('attachments'));
+            }
 
             $accountTransfer->update([
                 'number' => $validated['number'] ?? $accountTransfer->number,
                 'date' => $validated['date'] ?? $accountTransfer->date,
+                'from_account_id' => $validated['from_account_id'] ?? $accountTransfer->from_account_id,
+                'to_account_id' => $validated['to_account_id'] ?? $accountTransfer->to_account_id,
                 'remark' => $validated['remark'] ?? $accountTransfer->remark,
+                'status' => TransactionStatus::DRAFT->value,
             ]);
 
             $amount = isset($validated['amount']) ? (float) $validated['amount'] : ($accountTransfer->transaction?->lines?->first()?->debit ?? $accountTransfer->transaction?->lines?->first()?->credit);
@@ -198,8 +278,11 @@ class AccountTransferController extends Controller
             $fromAccountId = $validated['from_account_id'];
             $toAccountId = $validated['to_account_id'];
             $transactionService = app(TransactionService::class);
-            TransactionLine::where('transaction_id', $accountTransfer->transaction_id)->forceDelete();
-            Transaction::where('id', $accountTransfer->transaction_id)->forceDelete();
+            $oldTransaction = $accountTransfer->transaction()->first();
+            if ($oldTransaction) {
+                $oldTransaction->lines()->forceDelete();
+                $oldTransaction->forceDelete();
+            }
             $fromAccount = Account::findOrFail($fromAccountId);
             $toAccount = Account::findOrFail($toAccountId);
             $nature = $fromAccount->accountType->nature ?? 'asset';
@@ -217,9 +300,16 @@ class AccountTransferController extends Controller
                 'currency_id' => $currencyId,
                 'rate' => $rate,
                 'date' => $date,
+                'voucher_number' => 'Transfer #' . $accountTransfer->number,
                 'remark' => "Transfer #{$accountTransfer->number} from {$fromAccount->local_name} to {$toAccount->local_name}",
                 'reference_type' => AccountTransfer::class,
                 'reference_id' => $accountTransfer->id,
+                'status' => TransactionStatus::DRAFT->value,
+                'posting_payload' => [
+                    'amount' => $amount,
+                    'from_account_id' => $fromAccountId,
+                    'to_account_id' => $toAccountId,
+                ],
             ],
             lines: [
                 [
@@ -238,9 +328,6 @@ class AccountTransferController extends Controller
                     'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
                     'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
                 ],
-            ]);
-            $accountTransfer->update([
-                'transaction_id' => $transaction->id,
             ]);
 
             $after = [
@@ -271,6 +358,10 @@ class AccountTransferController extends Controller
 
     public function destroy(AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
     {
+        if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
+        }
+
         $oldValues = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
 
         DB::transaction(function () use ($accountTransfer) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Purchase;
 
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\TransactionStatus;
 class PurchaseStoreRequest extends FormRequest
@@ -21,7 +22,8 @@ class PurchaseStoreRequest extends FormRequest
     {
         return [
             'number' => ['required', 'integer', 'min:1'],
-            'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
+            'supplier_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'supplier')],
+            'purchase_order_id' => ['nullable', 'string', 'exists:purchase_orders,id'],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
@@ -41,6 +43,7 @@ class PurchaseStoreRequest extends FormRequest
             'status' => ['nullable', 'string'],
             'item_list' => ['required', 'array'],
             'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],
+            'item_list.*.variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
             'item_list.*.batch' => ['nullable', 'string'],
             'item_list.*.expire_date' => ['nullable', 'string'],
             'item_list.*.quantity' => ['required', 'numeric'],
@@ -49,6 +52,8 @@ class PurchaseStoreRequest extends FormRequest
             'item_list.*.item_discount' => ['nullable', 'numeric'],
             'item_list.*.free' => ['nullable', 'numeric'],
             'item_list.*.tax' => ['nullable', 'numeric'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

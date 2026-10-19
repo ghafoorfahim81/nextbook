@@ -1,7 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, onMounted, watch, computed } from 'vue'
+import { useFormGuard } from '@/composables/useFormGuard'
+import { useForm, usePage, router } from '@inertiajs/vue3'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
+import { ref, onMounted, watch, computed, reactive } from 'vue'
 import axios from 'axios'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -10,10 +12,13 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SettlementDialog from '@/Components/next/SettlementDialog.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { Spinner } from '@/Components/ui/spinner'
 import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Components/ui/toast/use-toast'
+import { printDocument } from '@/composables/usePrintDocument'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n()
 const { toast } = useToast()
 const page = usePage()
@@ -29,6 +34,13 @@ const accounts = computed(() => (page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const homeCurrency = computed(() => page.props.homeCurrency?.data || null)
 const paymentModes = computed(() => page.props.paymentModes || [])
+// Single reactive copy of the receipt/payment preferences so the panel and form stay in sync live.
+const rpPrefs = reactive(JSON.parse(JSON.stringify(page.props.user_preferences?.receipt_payment ?? {})))
+if (!rpPrefs.visible_fields || typeof rpPrefs.visible_fields !== 'object') rpPrefs.visible_fields = {}
+const rpFields = computed(() => rpPrefs.visible_fields)
+const showPreferencesPanel = ref(false)
+const { loading: lazyLoading } = useLazyProps(page.props, ['ledgers', 'accounts'])
+const billLoading = ref(false)
 useLazyProps(page.props, ['ledgers', 'accounts'])
 const showBillDialog = ref(false)
 const initialized = ref(false)
@@ -48,13 +60,20 @@ const form = useForm({
   cheque_no: '',
   narration: '',
   allocations: [],
+  attachments: [],
   applied_cash: [],
   // The voucher this receipt posted. The settle dialog excludes its own
   // applications so the documents it paid show as open again.
   transaction_id: '',
 })
+const existingAttachments = ref([])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 const submitAction = ref('update')
-const pendingPrintWindow = ref(null)
 
 function parseIdFromUrl() {
   const path = page.url.split('?')[0]
@@ -91,6 +110,7 @@ onMounted(async () => {
   form.bank_account_id = bankId
   form.selected_bank_account = r.bank_account
   form.bank_account_id = r.bank_account_id
+  existingAttachments.value = r.attachments || []
   oldBalanceText();
   initialized.value = true
 })
@@ -146,40 +166,14 @@ function oldBalanceText() {
 }
 
 function finalizePrint(page) {
-  const printUrl = page?.props?.flash?.print_url
-
-  if (!printUrl) {
-    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-      pendingPrintWindow.value.close()
-    }
-    pendingPrintWindow.value = null
-    return
-  }
-
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.location = printUrl
-    pendingPrintWindow.value.focus?.()
-  } else {
-    window.open(printUrl, '_blank')
-  }
-
-  pendingPrintWindow.value = null
+  printDocument(page?.props?.flash?.print_url)
 }
 
 function cleanupPrintWindow() {
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.close()
-  }
-
-  pendingPrintWindow.value = null
 }
 
 function submit(action = 'update') {
   submitAction.value = action
-
-  if (action === 'save_and_print') {
-    pendingPrintWindow.value = window.open('about:blank', '_blank')
-  }
 
   form.transform((data) => ({
     ...data,
@@ -202,18 +196,34 @@ function submit(action = 'update') {
     },
   })
 }
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('receipt.receipt') })">
-    <FormPageToolbar back-route="receipts.index" module="receipt" />
-    <form @submit.prevent="submit('update')">
+    <FormPageToolbar
+      back-route="receipts.index"
+      module="receipt"
+      :show-preferences="true"
+      @preferences="showPreferencesPanel = true"
+    />
+    <FormPreferencesPanel module="receipt"
+      v-model:open="showPreferencesPanel"
+      pref-group="receipt_payment"
+      :prefs="rpPrefs"
+      :title="t('preferences.tabs.receipt_payment')"
+    />
+    <form ref="saveFormRef" @submit.prevent="submit('update')">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('receipt.receipt') }) }}
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
+            :loading="lazyLoading"
             :options="ledgers"
             v-model="form.selected_ledger"
             @update:modelValue="(v) => handleSelectChange('ledger_id', v.id)"
@@ -221,29 +231,32 @@ function submit(action = 'update') {
             value-key="id"
             :reduce="ledger => ledger"
             :floating-text="t('ledger.customer.customer')"
+            is-required
             :error="form.errors?.ledger_id"
             :searchable="true"
             resource-type="ledgers"
             :search-options="{ types: ['customer', 'supplier'] }"
             :search-fields="['name', 'email', 'phone_no']"
           />
-          <NextInput placeholder="Number" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
+          <NextInput is-required v-if="rpFields.number" :placeholder="t('general.number')" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-          <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+          <NextInput is-required :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
+            v-if="rpFields.currency"
             :options="currencies"
             v-model="form.selected_currency"
-            label-key="code"
+            label-key="display_name"
             value-key="id"
             @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
+            is-required
             :error="form.errors?.currency_id"
             :searchable="true"
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput is-required v-if="rpFields.currency" :placeholder="t('general.rate')" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextSelect
             :options="paymentModes"
             v-model="form.payment_mode"
@@ -256,6 +269,8 @@ function submit(action = 'update') {
             :error="form.errors?.payment_mode"
           />
           <NextSelect
+            v-if="rpFields.debit_account"
+            :loading="lazyLoading"
             :options="accounts"
             v-model="form.selected_bank_account"
             @update:modelValue="(v) => handleSelectChange('bank_account_id', v.id)"
@@ -263,6 +278,7 @@ function submit(action = 'update') {
             value-key="id"
             :reduce="acc => acc"
             :floating-text="t('general.add_to_account')"
+            is-required
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
@@ -281,18 +297,21 @@ function submit(action = 'update') {
               {{ form.allocations.length }} {{ t('general.bills_selected') || 'bills selected' }}
             </p>
           </div>
-          <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
+          <NextInput v-if="rpFields.cheque_number" :placeholder="t('general.cheque_no')" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
               <NextTextarea :placeholder="t('general.enter', { text: t('general.narration') })" :error="form.errors?.narration" v-model="form.narration" :label="t('general.narration')" />
             </div>
-            <div class="md:col-span-1">
+            <div class="md:col-span-1" v-if="rpFields.ledger_old_balance">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">
                 <div class="text-sm font-semibold mb-2 text-violet-500">{{ t('general.old_balance') }}</div>
                 <div class="text-lg font-bold">{{ oldBalanceText() }}</div>
               </div>
             </div>
           </div>
+        </div>
+        <div class="mt-4">
+          <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
         </div>
       </div>
 

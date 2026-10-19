@@ -24,12 +24,6 @@ class TransactionFactory extends Factory
     {
         return [
             'currency_id' => Currency::factory(),
-            // The branch's functional currency, falling back to the voucher's
-            // own when a bare branch has no base currency provisioned yet.
-            'base_currency_id' => fn (array $attributes) => Currency::withoutGlobalScopes()
-                ->where('branch_id', $attributes['branch_id'] ?? null)
-                ->where('is_base_currency', true)
-                ->value('id') ?? $attributes['currency_id'],
             'rate' => fake()->randomFloat(4, 0.5, 2.0),
             'date' => fake()->date(),
             'voucher_number' => fake()->optional()->bothify('VCH-#####'),
@@ -37,6 +31,18 @@ class TransactionFactory extends Factory
             'reference_id' => null,
             'status' => TransactionStatus::POSTED->value,
             'branch_id' => Branch::factory(),
+            // Read off the branch rather than built separately, so the voucher
+            // and its branch always agree on the company.
+            'company_id' => fn (array $attributes) => Branch::withoutGlobalScopes()
+                ->whereKey($attributes['branch_id'])
+                ->value('company_id'),
+            // The company's functional currency, falling back to the voucher's
+            // own when a bare company has no base currency provisioned yet.
+            // Listed after company_id because factory closures resolve in order.
+            'base_currency_id' => fn (array $attributes) => Currency::withoutGlobalScopes()
+                ->where('company_id', $attributes['company_id'] ?? null)
+                ->where('is_base_currency', true)
+                ->value('id') ?? $attributes['currency_id'],
             'remark' => fake()->optional()->sentence(),
         ];
     }

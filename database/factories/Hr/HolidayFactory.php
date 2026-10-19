@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Hr;
 
+use App\Models\Administration\Company;
 use App\Enums\HolidayType;
 use App\Models\Administration\Branch;
 use App\Models\Hr\Holiday;
@@ -21,7 +22,7 @@ class HolidayFactory extends Factory
             'holiday_type' => HolidayType::Public->value,
             'is_recurring' => false,
             'is_paid' => true,
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
         ];
     }
 

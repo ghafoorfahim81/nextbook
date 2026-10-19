@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
@@ -17,7 +19,7 @@ use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 class StockMovement extends Model
 {
-    use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific, HasBranch,BranchSpecific;
+    use HasUlids, SoftDeletes, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch,BranchSpecific;
     protected $table = 'stock_movements';
     protected $primaryKey = 'id';
     protected $keyType = 'string';
@@ -29,7 +31,6 @@ class StockMovement extends Model
         'item_id' => 'string',
         'warehouse_id' => 'string',
         'unit_measure_id' => 'string',
-        'size_id' => 'string',
         'movement_type' => StockMovementType::class,
         'source' => StockSourceType::class,
         'reference_id' => 'string',
@@ -46,12 +47,15 @@ class StockMovement extends Model
         'deleted_by' => 'string',
     ];
     protected $fillable = [
+        'company_id',
         'id',
         'branch_id',
         'item_id',
+        'variant_id',
+        'lot_id',
+        'piece_id',
         'warehouse_id',
         'unit_measure_id',
-        'size_id',
         'movement_type',
         'source',
         'reference_id',
@@ -71,6 +75,11 @@ class StockMovement extends Model
     public function item()
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ItemVariant::class, 'variant_id');
     }
 
     public function branch()

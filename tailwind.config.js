@@ -3,7 +3,16 @@ import defaultTheme from 'tailwindcss/defaultTheme'
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ['class', 'class'],
+  // Plain 'class', not ['class', 'class'].
+  //
+  // The array form's second element is the SELECTOR the variant compiles
+  // against, so 'class' was read as an element type: every dark: utility came
+  // out as `.dark\:x:is(class *)`, i.e. "inside a <class> element", which no
+  // document has. All 210 of them were dead CSS. Nothing looked obviously
+  // broken because the palette is driven by CSS variables under `.dark`, so
+  // bg-card and text-foreground darkened on their own — only the components
+  // that spell out a dark: colour (the Trash header among them) stayed light.
+  darkMode: 'class',
   content: [
     './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
     './storage/framework/views/*.php',

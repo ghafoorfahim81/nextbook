@@ -36,7 +36,7 @@ class BaseAmountMigrationRegressionTest extends TestCase
     private function currency(string $code, float $rate): Currency
     {
         return Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => $code,
             'code' => $code,
             'symbol' => $code,
@@ -141,6 +141,7 @@ class BaseAmountMigrationRegressionTest extends TestCase
         // The report filters on an inclusive date range; it has no "all time".
         $report = app(ReportService::class)->getTrialBalance([
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => '2026-08-01',
             'date_to' => '2026-08-31',
             'per_page' => 100,

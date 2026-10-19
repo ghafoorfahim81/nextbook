@@ -1,10 +1,9 @@
 {
-    "category":{
+    "category": {
         "category": "دسته بندی",
         "parent": "والد",
         "categories": "دسته بندی ها"
     },
-
     "warehouse": {
         "warehouse": "گودام",
         "warehouses": "گودام ها"
@@ -22,6 +21,7 @@
         "rate_updates_history_description": "پخواني تبادلې نرخونه او د ثبت نېټه یې وګورئ.",
         "exchange_rate": "نرخ تبدیل",
         "code": "کد",
+        "local_name": "سیمه‌ییز نوم",
         "format": "فرمت",
         "flag": "پرچم",
         "is_active": "فعال",
@@ -49,8 +49,7 @@
     "company": {
         "company": "شرکت",
         "companies": "شرکت ها",
-        "website": "وبسایت",
-        "sub_domain": "زیر دامنه"
+        "website": "وبسایت"
     },
     "designation": {
         "designation": "دنده",
@@ -76,7 +75,30 @@
         "select_quantity_type_first": "مهرباني وکړئ لومړی د مقدار ډول وټاکئ",
         "custom_quantity": "نوی مقدار جوړ کړئ",
         "custom_measure": "نوی واحد جوړ کړئ",
-        "suggested_measures": "وړاندیز شوي واحدونه"
+        "suggested_measures": "وړاندیز شوي واحدونه",
+        "count": "شمېر",
+        "pair": "جوړه",
+        "dozen": "درجن",
+        "length": "اوږدوالی",
+        "area": "مساحت",
+        "weight": "وزن",
+        "inch": "انچ",
+        "centimetre": "سانتي متر",
+        "metre": "متر",
+        "kilometre": "کیلومتر",
+        "millimetre": "ملي متر",
+        "square_centimetre": "مربع سانتي متر",
+        "square_decimeter": "مربع ډیسي متر",
+        "square_meter": "مربع متر",
+        "gram": "ګرام",
+        "kilogram": "کیلوګرام",
+        "ton": "ټن",
+        "other": "نور",
+        "pcs": "دانه",
+        "other_measure": "بل د اندازه کولو واحد",
+        "litre": "لیټر",
+        "millilitre": "ملي لیټر",
+        "volume": "حجم"
     },
     "size": {
         "size": "اندازه",
@@ -87,11 +109,17 @@
         "branch": "شعبه",
         "branches": "شعبه ها",
         "city": "شهر",
-        "location": "مکان",
-        "sub_domain": "زیر دامنه"
+        "location": "مکان"
+    },
+    "customer_group": {
+        "customer_group": "د پیرودونکي ډله",
+        "customer_groups": "د پیرودونکو ډلې",
+        "name_en": "نوم (انګلیسي)",
+        "local_name": "سیمه‌ییز نوم"
     },
     "shared": {
         "remark": "توضیحات",
+        "local_name": "سیمه‌ییز نوم",
         "parent": "والد",
         "address": "آدرس",
         "symbol": "نماد",
@@ -100,5 +128,12 @@
         "phone": "تلفن",
         "country": "کشور",
         "province": "ولایت"
+    },
+    "payment_term": {
+        "payment_term": "د تادیې شرط",
+        "payment_terms": "د تادیې شرایط",
+        "name": "نوم",
+        "days": "ورځې",
+        "type": "ډول"
     }
 }

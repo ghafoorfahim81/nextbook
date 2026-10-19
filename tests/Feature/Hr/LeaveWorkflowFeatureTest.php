@@ -38,7 +38,7 @@ class LeaveWorkflowFeatureTest extends TestCase
 
         $this->ctx = $this->bootstrapErpContext();
 
-        $this->shift = Shift::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $this->shift = Shift::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->employee = Employee::factory()->create([
             'branch_id' => $this->ctx['branch']->id,
@@ -48,7 +48,7 @@ class LeaveWorkflowFeatureTest extends TestCase
         ]);
 
         $this->annual = LeaveType::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'code' => 'ANNUAL',
             'min_notice_days' => null,
         ]);
@@ -158,7 +158,7 @@ class LeaveWorkflowFeatureTest extends TestCase
 
     public function test_approval_skips_a_public_holiday(): void
     {
-        Holiday::factory()->on('2026-09-08')->create(['branch_id' => $this->ctx['branch']->id]);
+        Holiday::factory()->on('2026-09-08')->create(['company_id' => $this->ctx['company']->id]);
 
         $request = $this->makeRequest('2026-09-07', '2026-09-09', null, 2);
 
@@ -176,7 +176,7 @@ class LeaveWorkflowFeatureTest extends TestCase
 
     public function test_day_counting_excludes_weekends_and_holidays(): void
     {
-        Holiday::factory()->on('2026-09-08')->create(['branch_id' => $this->ctx['branch']->id]);
+        Holiday::factory()->on('2026-09-08')->create(['company_id' => $this->ctx['company']->id]);
 
         $days = $this->service()->countLeaveDays(
             $this->employee,
@@ -193,7 +193,7 @@ class LeaveWorkflowFeatureTest extends TestCase
     public function test_a_leave_type_that_includes_non_working_days_counts_them(): void
     {
         $maternity = LeaveType::factory()->includesNonWorkingDays()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'code' => 'MAT',
         ]);
 
@@ -224,7 +224,7 @@ class LeaveWorkflowFeatureTest extends TestCase
     public function test_unpaid_leave_is_allowed_beyond_the_balance(): void
     {
         $unpaid = LeaveType::factory()->unpaid()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'code' => 'UNPAID',
         ]);
 
@@ -349,7 +349,7 @@ class LeaveWorkflowFeatureTest extends TestCase
         $this->employee->update(['gender' => 'male']);
 
         $maternity = LeaveType::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'code' => 'MAT',
             'applicable_gender' => 'female',
         ]);

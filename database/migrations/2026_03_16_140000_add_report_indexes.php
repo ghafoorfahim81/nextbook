@@ -18,7 +18,7 @@ return new class extends Migration
         });
 
         Schema::table('ledgers', function (Blueprint $table) {
-            $table->index(['branch_id', 'type', 'deleted_at'], 'ledgers_branch_type_deleted_idx');
+            $table->index(['company_id', 'type', 'deleted_at'], 'ledgers_branch_type_deleted_idx');
         });
 
         Schema::table('stock_balances', function (Blueprint $table) {

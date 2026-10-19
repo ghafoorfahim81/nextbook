@@ -25,8 +25,6 @@ return new class extends Migration
             $table->ulid('category_id')->nullable()->index();
             $table->double('minimum_stock')->nullable();
             $table->double('maximum_stock')->nullable();
-            $table->json('colors')->nullable()->default('[]');
-            $table->ulid('size_id')->nullable()->index();
             $table->decimal('purchase_price', 18, 4)->nullable();
             $table->decimal('cost', 18, 4)->nullable();
             $table->decimal('sale_price', 18, 4)->nullable();
@@ -35,13 +33,14 @@ return new class extends Migration
             $table->decimal('rate_c', 18, 4)->nullable();
             $table->string('rack_no')->nullable();
             $table->string('fast_search')->nullable()->index();
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
-            $table->unique(['branch_id', 'name', 'deleted_at']);
-    $table->unique(['branch_id', 'code', 'deleted_at']);
-            $table->unique(['branch_id', 'barcode', 'deleted_at']);
+            $table->unique(['company_id', 'name', 'deleted_at']);
+    $table->unique(['company_id', 'code', 'deleted_at']);
+            $table->unique(['company_id', 'barcode', 'deleted_at']);
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
             $table->softDeletes();
         });
@@ -50,8 +49,7 @@ return new class extends Migration
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
             $table->foreign('brand_id')->references('id')->on('brands');
             $table->foreign('category_id')->references('id')->on('categories');
-            $table->foreign('size_id')->references('id')->on('sizes');
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

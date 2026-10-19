@@ -29,10 +29,26 @@ class PurchaseItemResource extends JsonResource
                     'avg_cost' => $this->item?->avg_cost,
                     'batches' => [],
                     'on_hand' => 0,
+                    'item_variants' => $this->item?->relationLoaded('variants')
+                        ? $this->item->variants->map(fn ($v) => [
+                            'id' => $v->id,
+                            'sku' => $v->sku,
+                            'barcode' => $v->barcode,
+                            'display_name' => $v->displayName(),
+                            'is_default' => (bool) $v->is_default,
+                        ])->values()
+                        : [],
                 ];
             }),
             'item_name' => $this->item?->name,
             'item_code' => $this->item?->code,
+            'variant_id' => $this->variant_id,
+            'variant' => $this->whenLoaded('variant', fn () => $this->variant ? [
+                'id' => $this->variant->id,
+                'display_name' => $this->variant->displayName(),
+                'sku' => $this->variant->sku,
+                'barcode' => $this->variant->barcode,
+            ] : null),
             'batch' => $this->batch,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
             'quantity' => $this->quantity,

@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources\Sale;
 
+use App\Enums\TransactionStatus;
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Http\Resources\AttachmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\SalePurchaseType;
@@ -70,6 +72,8 @@ class SaleResource extends JsonResource
             'customer_id' => $this->customer_id,
             'customer' => $this->whenLoaded('customer'),
             'customer_name' => $this->customer?->name,
+            'sale_order_id' => $this->sale_order_id,
+            'sale_order_number' => $this->whenLoaded('saleOrder', fn () => $this->saleOrder?->number),
             'date' => $dateConversionService->toDisplay($this->date),
             'due_date' => $dateConversionService->toDisplay($this->due_date),
             'updated_at' => $dateConversionService->toDisplay($this->updated_at?->toDateString()),
@@ -90,6 +94,8 @@ class SaleResource extends JsonResource
             'old_balance_nature' => $oldNetBalance >= 0 ? 'dr' : 'cr',
             'description' => $this->description,
             'status' => $this->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status))?->getLabel()
+                ?? (string) ($this->status),
             'payment_status' => $this->payment_status instanceof PaymentStatus
                 ? $this->payment_status->value
                 : $this->payment_status,
@@ -130,6 +136,19 @@ class SaleResource extends JsonResource
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'total_cost' => $totalCostValue,
             'total_profit' => $totalProfitValue,
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
+            // Same shape PurchaseResource returns, so the two show pages render
+            // their returns table from one set of keys.
+            'returns' => $this->whenLoaded('returns', fn () => $this->returns->map(function ($return) {
+                return [
+                    'id' => $return->id,
+                    'number' => $return->number,
+                    'date' => $return->date?->toDateString(),
+                    'status' => $return->status,
+                    'quantity' => $return->items->sum(fn ($item) => (float) $item->quantity),
+                    'amount' => $return->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price),
+                ];
+            })),
         ];
     }
 }

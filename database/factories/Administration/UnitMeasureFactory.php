@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Administration;
 
+use App\Models\Administration\Company;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Quantity;
@@ -25,7 +26,7 @@ class UnitMeasureFactory extends Factory
             'name' => fake()->unique()->word(),
             'unit' => fake()->randomElement(['1', '10', '100']),
             'symbol' => fake()->unique()->lexify('U??'),
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
             'quantity_id' => Quantity::factory(),
             'value' => fake()->randomFloat(2, 1, 1000),
             'is_main' => false,

@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Purchase;
 
+use App\Http\Controllers\Concerns\ResolvesLineVariant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\PurchaseStoreRequest;
 use App\Http\Requests\Purchase\PurchaseUpdateRequest;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Models\Purchase\Purchase;
+use App\Models\Purchase\PurchaseOrder;
+use App\Enums\PurchaseOrderStatus;
 use App\Services\Accounting\PaymentStatusService;
 use App\Services\Accounting\SettlementService;
 use App\Models\Ledger\Ledger;
@@ -18,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Services\StockService;
+use App\Services\AttachmentService;
 use App\Models\Transaction\Transaction;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
@@ -36,6 +40,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use App\Support\BranchContext;
 class PurchaseController extends Controller
 {
+    use ResolvesLineVariant;
+
     private $dateConversionService;
     public function __construct(DateConversionService $dateConversionService)
     {
@@ -60,12 +66,16 @@ class PurchaseController extends Controller
             'purchases' => PurchaseResource::collection($purchases),
             'filterOptions' => [
                 'suppliers' => Ledger::query()->where('type', 'supplier')->orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'types' => [
                     ['id' => 'cash', 'name' => 'Cash'],
                     ['id' => 'credit', 'name' => 'Credit'],
                 ],
+                'paymentStatuses' => collect(\App\Enums\PaymentStatus::cases())->map(fn ($status) => [
+                    'id' => $status->value,
+                    'name' => $status->getLabel(),
+                ])->values(),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -86,29 +96,94 @@ class PurchaseController extends Controller
         return inertia('Purchase/Purchases/Create', [
             'purchaseNumber' => $purchaseNumber,
             'bankAccounts' => $bankAccounts,
+            'purchaseOrderId' => $request->query('purchase_order_id'),
+            // When navigating here from a supplier's page (?supplier_id=...), preselect
+            // that supplier even if it falls outside the capped ledger option list.
+            'preselectedLedger' => $this->resolvePreselectedLedger($request->query('supplier_id')),
         ]);
+    }
+
+    /**
+     * Load a single ledger by id (if given) as a select option, so a purchase form
+     * opened from a supplier page can preselect it regardless of the capped option
+     * list. Returns null when no/invalid id is supplied.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolvePreselectedLedger(?string $ledgerId): ?array
+    {
+        if (! $ledgerId) {
+            return null;
+        }
+
+        $ledger = Ledger::query()
+            ->select([
+                'id',
+                'name',
+                'code',
+                'type',
+                'counterpart_ledger_id',
+                'email',
+                'phone_no',
+                'address',
+                'currency_id',
+                'discount',
+                'credit_limit',
+                'credit_limit_enabled',
+                'credit_terms',
+                'is_active',
+                'company_id',
+            ])
+            ->withStatementTotals()
+            ->find($ledgerId);
+
+        return $ledger
+            ? \App\Http\Resources\Ledger\LedgerOptionResource::make($ledger)->resolve()
+            : null;
     }
 
     public function store(
         PurchaseStoreRequest $request,
         TransactionService $transactionService,
         StockService $stockService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         $validated = $request->validated();
-        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService, $activityLogService) {
+        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService, $activityLogService, $attachmentService) {
             // Create purchase
             $validated = $request->validated();
 
             $validated['type']  = $validated['purchase_type'] ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $postImmediately = (bool) user_preference('transaction.purchase_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
+            $validated['status'] = $documentStatus;
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+
+            if (!empty($validated['purchase_order_id'])) {
+                $purchaseOrder = PurchaseOrder::where('id', $validated['purchase_order_id'])->lockForUpdate()->first();
+
+                abort_unless(
+                    $purchaseOrder
+                        && $purchaseOrder->status === PurchaseOrderStatus::POSTED->value
+                        && $purchaseOrder->supplier_id === $validated['supplier_id'],
+                    422,
+                    'The selected purchase order is no longer available for conversion.'
+                );
+            }
+
             $purchase = Purchase::create($validated);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($purchase, $request->file('attachments'));
+            }
+
             $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
+                $item['variant_id'] = $this->resolveLineVariantId($item);
                 return $item;
             }, $validated['item_list']);
             $purchase->items()->createMany($validated['item_list']);
@@ -134,7 +209,7 @@ class PurchaseController extends Controller
                 //     $unitCost = $unitPrice;
                 // }
                 $totalCost = $unitPrice * $quantity;
-                $stock = $stockService->post([
+                $stockPayloads[] = [
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,
                     'unit_measure_id' => $item['unit_measure_id'], // from item form
@@ -145,12 +220,24 @@ class PurchaseController extends Controller
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $validated['date'],
                     'expire_date'     => $item['expire_date'],
-                    'size_id'         => $validated['size_id'] ?? null,
+                    'variant_id'      => $item['variant_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
                     'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,
                     'reference_id'    => $purchase->id,
-                ]);
+                ];
+
+                if ($postImmediately) {
+                    // Posted on creation: the movement is posted too. The stored
+                    // payload keeps the draft status for the post() route to reuse.
+                    $stockService->post([
+                        ...$stockPayloads[array_key_last($stockPayloads)],
+                        'status' => StockStatus::POSTED->value,
+                    ]);
+                } else {
+                    // Draft: record the incoming stock as reserved_in for visibility.
+                    $stockService->reserve($stockPayloads[array_key_last($stockPayloads)]);
+                }
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
                 $accountId = $itemModel->asset_account_id;
                 $lines[] = [
@@ -243,9 +330,12 @@ class PurchaseController extends Controller
                     'voucher_number' => 'Purchase #' . $purchase->number,
                     'date'          => $validated['date'],
                     'remark'        => 'Purchase #' . $purchase->number,
-                    'status'        => TransactionStatus::POSTED->value,
+                    'status'        => $documentStatus,
                     'reference_type'=> Purchase::class,
                     'reference_id'  => $purchase->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
                 ],
                 lines: $lines
             );
@@ -276,6 +366,9 @@ class PurchaseController extends Controller
 
             // Create accounting transactions
 
+            if ($documentStatus === TransactionStatus::POSTED->value) {
+                $this->markPurchaseOrderCompleted($validated['purchase_order_id'] ?? null);
+            }
 
             return $purchase;
         });
@@ -291,7 +384,20 @@ class PurchaseController extends Controller
 
     public function show(Request $request, Purchase $purchase)
     {
-        $purchase->load(['items.item', 'items.unitMeasure', 'supplier', 'transaction.currency', 'createdBy', 'updatedBy']);
+        $purchase->load([
+            'items.item',
+            'items.variant',
+            'items.unitMeasure',
+            'supplier',
+            'purchaseOrder:id,number',
+            'transaction.currency',
+            'transaction.originalTransaction',
+            'transaction.reversalTransaction',
+            'createdBy',
+            'updatedBy',
+            'attachments',
+            'returns.items',
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -301,26 +407,33 @@ class PurchaseController extends Controller
 
         return inertia('Purchase/Purchases/Show', [
             'purchase' => new PurchaseResource($purchase),
+            'reversal' => $purchase->transaction?->reversalTransaction,
+            'originalDoc' => $purchase->transaction?->originalTransaction,
         ]);
     }
 
     public function edit(Request $request, Purchase $purchase)
     {
+        if ($purchase->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
+        }
+
         $bankAccounts = (new Account())->getAccountsByAccountTypeSlug('cash-or-bank');
-        $stockLocked = $this->purchaseHasPostedStock($purchase);
 
         return inertia('Purchase/Purchases/Edit', [
             'purchase' => new PurchaseResource($purchase->load([
                 'items.item.unitMeasure',
+                'items.item.variants',
+                'items.variant',
                 'items.unitMeasure',
                 'items.warehouse',
                 'supplier',
                 'transaction.currency',
                 'transaction.lines.account',
                 'transaction.lines.ledger',
+                'attachments',
             ])),
             'bankAccounts' => $bankAccounts,
-            'stockLocked' => $stockLocked,
         ]);
     }
 
@@ -329,14 +442,14 @@ class PurchaseController extends Controller
         Purchase $purchase,
         TransactionService $transactionService,
         StockService $stockService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
-        if ($this->purchaseHasPostedStock($purchase)) {
-            throw ValidationException::withMessages([
-                'purchase' => 'This purchase contains posted stock and can no longer be edited.',
-            ]);
+        if ($purchase->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
+
         $beforeState = [
             'number' => $purchase->number,
             'supplier_id' => $purchase->supplier_id,
@@ -350,43 +463,39 @@ class PurchaseController extends Controller
             'transaction_total' => (float) ($purchase->transaction_total ?? 0),
         ];
 
-        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $beforeState) {
+        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $attachmentService, $beforeState) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($purchase, $request->file('attachments'));
+            }
+
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $validated['status'] = TransactionStatus::DRAFT->value;
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $purchase->date;
-            $affectedCombos = $purchase->items()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $purchase->branch_id,
-                ])
-                ->all();
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $purchase, &$affectedCombos) {
+            // Posted/reversed purchases are immutable, so update no longer needs to
+            // rebuild posted stock state or recalculate avg cost.
+            // $affectedCombos = $purchase->items()
+            //     ->get(['item_id', 'warehouse_id', 'branch_id'])
+            //     ->map(fn ($item) => [
+            //         'item_id' => $item->item_id,
+            //         'warehouse_id' => $item->warehouse_id,
+            //         'branch_id' => $item->branch_id ?? $purchase->branch_id,
+            //     ])
+            //     ->all();
+
+            $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
-
-                $affectedCombos[] = [
-                    'item_id' => $item['item_id'],
-                    'warehouse_id' => $validated['warehouse_id'],
-                    'branch_id' => $purchase->branch_id,
-                ];
+                $item['variant_id'] = $this->resolveLineVariantId($item);
 
                 return $item;
             }, $validated['item_list']);
 
             $purchase->update($validated);
             $purchase->items()->forceDelete();
-
-            StockMovement::query()
-                ->where('reference_type', Purchase::class)
-                ->where('reference_id', $purchase->id)
-                ->forceDelete();
-
-            $this->rebuildStockStateForCombos($affectedCombos);
 
             $purchase->items()->createMany($validated['item_list']);
 
@@ -396,11 +505,16 @@ class PurchaseController extends Controller
                 ->first();
 
             if ($transaction) {
+                // Release the reserved_in held by the previous draft payload before rebuilding.
+                foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $oldPayload) {
+                    $stockService->release($oldPayload);
+                }
                 $transaction->lines()->forceDelete();
                 $transaction->forceDelete();
             }
 
             $lines = [];
+            $stockPayloads = [];
             $glAccounts = BranchContext::glAccounts();
             $discountTotal = (float) $request->input('discount_total', 0);
             // See store(): GL lines stay in the transaction currency, stock cost is home currency.
@@ -412,7 +526,7 @@ class PurchaseController extends Controller
                 $itemModel = Item::findOrFail($item['item_id']);
                 $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
 
-                $stockService->post([
+                $stockPayloads[] = [
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,
                     'unit_measure_id' => $item['unit_measure_id'],
@@ -423,12 +537,12 @@ class PurchaseController extends Controller
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $validated['date'],
                     'expire_date'     => $item['expire_date'] ?? null,
-                    'size_id'         => $validated['size_id'] ?? null,
+                    'variant_id'      => $item['variant_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
                     'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,
                     'reference_id'    => $purchase->id,
-                ]);
+                ];
 
                 $lines[] = [
                     'account_id' => $accountId,
@@ -441,15 +555,7 @@ class PurchaseController extends Controller
                 ];
             }
 
-            // Re-recalculate avg_cost after all new movements are posted, because increaseBalance
-            // inside stockService->post() uses current stock quantities (mid-rebuild state) which
-            // gives a wrong weighted average when sales have already consumed some of the stock.
-            $newItemIds = collect($validated['item_list'])->pluck('item_id')->unique()->values();
-            foreach ($newItemIds as $newItemId) {
-                $this->recalculateAvgCostForItem($newItemId);
-            }
-
-            if($discountTotal > 0) {
+            if ($discountTotal > 0) {
                 $lines[] = [
                     'account_id' => $glAccounts['discount-from-supplier'],
                     'ledger_id' => null,
@@ -460,10 +566,10 @@ class PurchaseController extends Controller
                     'remark_ps' => 'د'. ' '. $purchase->number.' '.'تخفیف اخیستل',
                 ];
             }
-            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
 
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
                 $lines[] = [
-                    'account_id' => $validated['bank_account_id'], // cash/bank
+                    'account_id' => $validated['bank_account_id'],
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $validated['transaction_total'],
@@ -472,9 +578,10 @@ class PurchaseController extends Controller
                     'remark_ps' => 'د'. '#'. $purchase->number.' '.'پرداخت اخیستل',
                 ];
             }
+
             if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
                 $lines[] = [
-                    'account_id' => $glAccounts['account-payable'], // cash/bank
+                    'account_id' => $glAccounts['account-payable'],
                     'ledger_id'  => $validated['supplier_id'],
                     'debit'      => 0,
                     'credit'     => $validated['transaction_total'],
@@ -484,8 +591,8 @@ class PurchaseController extends Controller
                 ];
             }
 
-            if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
-                if($validated['payment']['amount'] > 0) {
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
+                if ($validated['payment']['amount'] > 0) {
                     $amount = (float) $validated['payment']['amount'];
                     $lines[] = [
                         'account_id' => $validated['payment']['account_id'],
@@ -504,8 +611,7 @@ class PurchaseController extends Controller
                         'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
                         'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
                     ];
-                }
-                else{
+                } else {
                     $lines[] = [
                         'account_id' => $glAccounts['account-payable'],
                         'ledger_id' => $validated['supplier_id'],
@@ -525,12 +631,20 @@ class PurchaseController extends Controller
                     'voucher_number' => 'Purchase #' . $purchase->number,
                     'date'           => $validated['date'],
                     'remark'         => 'Purchase #' . $purchase->number,
-                    'status'         => TransactionStatus::POSTED->value,
+                    'status'         => TransactionStatus::DRAFT->value,
                     'reference_type' => Purchase::class,
                     'reference_id'   => $purchase->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
                 ],
                 lines: $lines
             );
+
+            // The edited purchase stays a draft, so re-hold the incoming stock as reserved_in.
+            foreach ($stockPayloads as $payload) {
+                $stockService->reserve($payload);
+            }
 
             app(PaymentStatusService::class)->recalculatePurchases([$purchase->id]);
             $afterState = [
@@ -615,32 +729,14 @@ class PurchaseController extends Controller
             return;
         }
 
-        $movements = StockMovement::query()
-            ->where('item_id', $itemId)
-            ->orderBy('date')
-            ->orderBy('id')
-            ->get(['movement_type', 'quantity', 'unit_cost']);
-
-        $avgCost = 0.0;
-        $runningQty = 0.0;
-
-        foreach ($movements as $movement) {
-            $qty = (float) $movement->quantity;
-            if ($movement->movement_type === StockMovementType::IN) {
-                $cost = (float) $movement->unit_cost;
-                if ($runningQty + $qty > 0) {
-                    $avgCost = (($runningQty * $avgCost) + ($qty * $cost)) / ($runningQty + $qty);
-                }
-                $runningQty += $qty;
-            } else {
-                $runningQty = max(0.0, $runningQty - $qty);
-            }
-        }
-
-        if ($runningQty > 0) {
-            $item->avg_cost = $avgCost;
-            $item->save();
-        }
+        // Both figures are replayed by the one implementation, so they cannot
+        // disagree. This loop used to live here in a hand-rolled copy that
+        // blended voided layers back in and ignored the unit a movement was
+        // recorded in — an item stocked in pieces but received in boxes came
+        // out priced per box.
+        $stockService = app(StockService::class);
+        $stockService->recalculateItemAverage($itemId);
+        $stockService->recalculateVariantAverageCosts($itemId);
     }
 
     private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
@@ -804,52 +900,125 @@ class PurchaseController extends Controller
         return $status instanceof StockStatus ? $status->value : (string) $status;
     }
 
-    public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
+    public function post(Purchase $purchase, TransactionService $transactionService, StockService $stockService)
     {
-        DB::transaction(function () use ($purchase) {
-            $affectedCombos = $purchase->items()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $purchase->branch_id,
-                ])
-                ->all();
+        $this->authorize('update', $purchase);
 
-            $stockMovementCombos = StockMovement::query()
-                ->where('reference_type', Purchase::class)
-                ->where('reference_id', $purchase->id)
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($movement) => [
-                    'item_id' => $movement->item_id,
-                    'warehouse_id' => $movement->warehouse_id,
-                    'branch_id' => $movement->branch_id,
-                ])
-                ->all();
+        if ($purchase->status !== TransactionStatus::DRAFT->value) {
+            abort(422, __('messages.document.only_draft_can_be_posted'));
+        }
 
-            $transaction = Transaction::query()
-                ->where('reference_type', Purchase::class)
-                ->where('reference_id', $purchase->id)
-                ->first();
+        DB::transaction(function () use ($purchase, $transactionService, $stockService) {
+            $transaction = $purchase->transaction()->firstOrFail();
 
-            if ($transaction) {
-                $transaction->lines()->delete();
-                $transaction->delete();
+            foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                // The draft's reserved_in becomes a real stock increase. The payload
+                // was frozen when the draft was written, so it still says "draft" —
+                // the movement this creates belongs to a posted document.
+                $payload['status'] = StockStatus::POSTED->value;
+                $stockService->release($payload);
+                $stockService->post($payload);
             }
 
-            StockMovement::query()
-                ->where('reference_type', Purchase::class)
-                ->where('reference_id', $purchase->id)
-                ->delete();
+            $transactionService->postDraft($transaction);
+            $purchase->update([
+                'status' => TransactionStatus::POSTED->value,
+                'updated_by' => auth()->id(),
+            ]);
 
-            $purchase->items()->delete();
-            $purchase->delete();
+            $this->markPurchaseOrderCompleted($purchase->purchase_order_id);
+        });
 
-            $this->rebuildStockStateForCombos([
-                ...$affectedCombos,
-                ...$stockMovementCombos,
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
+    /**
+     * When a Purchase created from a Purchase Order gets posted, the order is fully consumed
+     * (whole-order conversion only) so it flips to Completed to prevent reuse.
+     */
+    private function markPurchaseOrderCompleted(?string $purchaseOrderId): void
+    {
+        if (!$purchaseOrderId) {
+            return;
+        }
+
+        PurchaseOrder::where('id', $purchaseOrderId)->update([
+            'status' => PurchaseOrderStatus::COMPLETED->value,
+            'updated_by' => auth()->id(),
+        ]);
+    }
+
+    public function reverse(Request $request, Purchase $purchase, TransactionService $transactionService)
+    {
+        $this->authorize('update', $purchase);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($purchase->status !== TransactionStatus::POSTED->value) {
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
+        }
+
+        // A return is raised against this document and takes its quantities and
+        // costs from it. Reversing the document underneath would leave the
+        // return standing on something that no longer happened — the goods it
+        // sent back were never received, and its ledger entries reference a
+        // voucher that has been undone. The return has to go first.
+        $standingReturns = $purchase->returns()
+            ->where('status', '!=', TransactionStatus::REVERSED->value)
+            ->pluck('number');
+
+        if ($standingReturns->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'status' => __('general.cannot_reverse_document_with_returns', [
+                    'numbers' => $standingReturns->implode(', '),
+                ]),
+            ]);
+        }
+
+        // Money taken against this document on a SEPARATE voucher. A receipt
+        // allocated here was taken against this debt specifically; undoing the
+        // debt would leave the receipt allocated to nothing and the party's
+        // balance would stop adding up. (A cash purchase settles itself inside
+        // its own voucher and writes no settlement row, so it is untouched by
+        // this.)
+        $paidBy = DB::table('settlements as s')
+            ->join('transaction_lines as tl', 'tl.id', '=', 's.target_line_id')
+            ->join('transactions as target', 'target.id', '=', 'tl.transaction_id')
+            ->join('transactions as settling', 'settling.id', '=', 's.transaction_id')
+            ->where('target.reference_type', Purchase::class)
+            ->where('target.reference_id', $purchase->id)
+            ->whereNull('s.deleted_at')
+            ->distinct()
+            ->pluck('settling.voucher_number');
+
+        if ($paidBy->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'status' => __('general.cannot_reverse_document_with_payments', [
+                    'numbers' => $paidBy->filter()->implode(', '),
+                ]),
+            ]);
+        }
+
+        DB::transaction(function () use ($purchase, $transactionService, $validated) {
+            $transaction = $purchase->transaction()->firstOrFail();
+            $transactionService->reverse($transaction, $validated['reason'], $purchase->number, Purchase::class);
+
+            $purchase->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'updated_by' => auth()->id(),
             ]);
         });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
+    public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService, StockService $stockService)
+    {
+        if ($purchase->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('messages.document.only_draft_can_be_deleted'));
+        }
 
         $oldValues = [
             'number' => $purchase->number,
@@ -864,20 +1033,30 @@ class PurchaseController extends Controller
             'transaction_total' => (float) ($purchase->transaction_total ?? 0),
         ];
 
-        $purchase->items()->delete();
-        $purchase->stocks()->delete();
-        $purchase->transaction()->delete();
-        $purchase->delete();
+        DB::transaction(function () use ($purchase, $activityLogService, $oldValues, $stockService) {
+            $transaction = $purchase->transaction()->first();
+            if ($transaction) {
+                // Release the reserved_in this draft was holding before removing the transaction.
+                foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                    $stockService->release($payload);
+                }
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
 
-        $activityLogService->logDelete(
-            reference: $purchase,
-            module: 'purchase',
-            description: "Purchase #{$purchase->number} deleted.",
-            oldValues: $oldValues,
-            metadata: [
-                'action' => 'purchase_delete',
-            ],
-        );
+            $purchase->items()->delete();
+            $purchase->delete();
+
+            $activityLogService->logDelete(
+                reference: $purchase,
+                module: 'purchase',
+                description: "Purchase #{$purchase->number} deleted.",
+                oldValues: $oldValues,
+                metadata: [
+                    'action' => 'purchase_delete',
+                ],
+            );
+        });
 
         return redirect()->route('purchases.index')->with('success', __('general.purchase_deleted_successfully'));
     }
@@ -887,38 +1066,38 @@ class PurchaseController extends Controller
             $purchase->restore();
             $purchase->items()->withTrashed()->restore();
 
-            StockMovement::withTrashed()
-                ->where('reference_type', Purchase::class)
-                ->where('reference_id', $purchase->id)
-                ->restore();
+            // StockMovement::withTrashed()
+            //     ->where('reference_type', Purchase::class)
+            //     ->where('reference_id', $purchase->id)
+            //     ->restore();
 
-            $transaction = Transaction::withTrashed()
-                ->where('reference_type', Purchase::class)
-                ->where('reference_id', $purchase->id)
-                ->first();
+            // $transaction = Transaction::withTrashed()
+            //     ->where('reference_type', Purchase::class)
+            //     ->where('reference_id', $purchase->id)
+            //     ->first();
 
-            if ($transaction) {
-                $transaction->restore();
-                $transaction->lines()->withTrashed()->restore();
-            }
+            // if ($transaction) {
+            //     $transaction->restore();
+            //     $transaction->lines()->withTrashed()->restore();
+            // }
 
-            $affectedCombos = $purchase->items()
-                ->withTrashed()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $purchase->branch_id,
-                ])
-                ->all();
+            // $affectedCombos = $purchase->items()
+            //     ->withTrashed()
+            //     ->get(['item_id', 'warehouse_id', 'branch_id'])
+            //     ->map(fn ($item) => [
+            //         'item_id' => $item->item_id,
+            //         'warehouse_id' => $item->warehouse_id,
+            //         'branch_id' => $item->branch_id ?? $purchase->branch_id,
+            //     ])
+            //     ->all();
 
-            $this->rebuildStockStateForCombos($affectedCombos);
+            // $this->rebuildStockStateForCombos($affectedCombos);
         });
 
         $purchase->restore();
         $purchase->items()->restore();
-        $purchase->stocks()->restore();
-        $purchase->transaction()->restore();
+        // $purchase->stocks()->restore();
+        // $purchase->transaction()->restore();
 
         $activityLogService->logAction(
             eventType: 'restored',

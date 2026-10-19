@@ -31,8 +31,8 @@ class JobOpeningController extends Controller
 
         $openings = JobOpening::query()
             ->with([
-                'department:id,name,branch_id',
-                'designation:id,name,branch_id',
+                'department:id,name,company_id',
+                'designation:id,name,company_id',
                 'currency:id,code',
                 'hiringManager:id,full_name,branch_id',
                 'createdBy:id,name',
@@ -59,8 +59,8 @@ class JobOpeningController extends Controller
     public function show(JobOpening $jobOpening)
     {
         $jobOpening->load([
-            'department:id,name,branch_id',
-            'designation:id,name,branch_id',
+            'department:id,name,company_id',
+            'designation:id,name,company_id',
             'currency:id,code',
             'hiringManager:id,full_name,branch_id',
             'createdBy:id,name',
@@ -148,7 +148,7 @@ class JobOpeningController extends Controller
         return [
             'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
             'designations' => Designation::query()->orderBy('name')->get(['id', 'name']),
-            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
+            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name', 'local_name']),
             'employmentTypes' => array_map(
                 fn (EmploymentType $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                 EmploymentType::cases()

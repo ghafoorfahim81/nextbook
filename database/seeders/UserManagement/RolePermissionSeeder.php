@@ -48,6 +48,7 @@ class RolePermissionSeeder extends Seeder
             'interviews',
 
             'items',
+            'discount_rules',
             'landed_costs',
             'landed_cost_categories',
             'categories',
@@ -90,6 +91,11 @@ class RolePermissionSeeder extends Seeder
 
             'receipts',
             'payments',
+            // Offsetting one party's two ledgers against each other. Granted
+            // apart from receipts and payments on purpose: a set-off moves two
+            // parties' balances at once and settles no cash, so whoever may
+            // enter a receipt is not automatically trusted with one.
+            'contra_settlements',
             'expenses',
             'expense_categories',
 
@@ -138,9 +144,11 @@ class RolePermissionSeeder extends Seeder
             'purchases',
             'purchase_returns',
             'purchase_orders',
+            'purchase_quotations',
             'sales',
             'sale_returns',
             'sale_orders',
+            'sale_quotations',
             'receipts',
             'payments',
             'account_transfers',
@@ -178,6 +186,10 @@ class RolePermissionSeeder extends Seeder
 
         foreach (['view_any', 'view', 'restore', 'force_delete'] as $action) {
             $this->ensurePermission("deleted_records.{$action}");
+        }
+
+        foreach (['view_any', 'view'] as $action) {
+            $this->ensurePermission("activity_logs.{$action}");
         }
 
         /*
@@ -241,6 +253,29 @@ class RolePermissionSeeder extends Seeder
             'purchases.approve',
             'purchases.print',
 
+            // Purchase Returns
+            'purchase_returns.view_any',
+            'purchase_returns.view',
+            'purchase_returns.create',
+            'purchase_returns.update',
+            'purchase_returns.approve',
+            'purchase_returns.print',
+
+            // Purchase Orders
+            'purchase_orders.view_any',
+            'purchase_orders.view',
+            'purchase_orders.create',
+            'purchase_orders.update',
+            'purchase_orders.approve',
+            'purchase_orders.print',
+
+            // Purchase Quotations
+            'purchase_quotations.view_any',
+            'purchase_quotations.view',
+            'purchase_quotations.create',
+            'purchase_quotations.update',
+            'purchase_quotations.print',
+
             // Sales
             'sales.view_any',
             'sales.view',
@@ -248,6 +283,29 @@ class RolePermissionSeeder extends Seeder
             'sales.update',
             'sales.approve',
             'sales.print',
+
+            // Sale Returns
+            'sale_returns.view_any',
+            'sale_returns.view',
+            'sale_returns.create',
+            'sale_returns.update',
+            'sale_returns.approve',
+            'sale_returns.print',
+
+            // Sale Orders
+            'sale_orders.view_any',
+            'sale_orders.view',
+            'sale_orders.create',
+            'sale_orders.update',
+            'sale_orders.approve',
+            'sale_orders.print',
+
+            // Sale Quotations
+            'sale_quotations.view_any',
+            'sale_quotations.view',
+            'sale_quotations.create',
+            'sale_quotations.update',
+            'sale_quotations.print',
 
             // Receipts & Payments
             'receipts.view_any',
@@ -268,12 +326,13 @@ class RolePermissionSeeder extends Seeder
 
         $accountant->syncPermissions($accountantPermissions);
 
-        // Clerk → view-only access
+        // Clerk → view-only access. The audit trail is not "view-only data":
+        // it shows every colleague's actions, so it stays with admins.
         $clerk->syncPermissions(
             Permission::where(function ($query) {
                 $query->where('name', 'like', '%.view')
                     ->orWhere('name', 'like', '%.view_any');
-            })->get()
+            })->where('name', 'not like', 'activity_logs.%')->get()
         );
 
         /*

@@ -1,10 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeleteResource } from '@/composables/useDeleteResource'
-import ShowDialog from '@/Pages/ItemTransfer/ItemTransfers/ShowDialog.vue'
 import { router } from '@inertiajs/vue3'
 import { useToast } from '@/Components/ui/toast/use-toast'
 const { t } = useI18n()
@@ -17,11 +16,8 @@ const props = defineProps({
   filterOptions: Object,
 })
 
-const showDialog = ref(false)
-const selectedId = ref(null)
-
 const editItem = (item) => {
- if(item.status === 'completed' || item.status === 'cancelled') {
+ if(item.status === 'posted' || item.status === 'reversed') {
   toast({
     title: t('general.error'),
     description: t('item_transfer.cannot_edit_completed_or_cancelled_transfer'),
@@ -36,7 +32,7 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     const transfer = props.transfers.data.find(t => (t.id==id));
-    if(transfer.status === 'completed') {
+    if(transfer.status === 'posted') {
         toast({
         title: t('general.error'),
         description: t('item_transfer.cannot_delete_completed_transfer'),
@@ -47,12 +43,12 @@ const deleteItem = (id) => {
     }
   deleteResource('item-transfers.destroy', id, {
     title: t('general.delete', { name: t('item_transfer.item_transfer') }),
+    name: t('item_transfer.item_transfer'),
   })
 }
 
 const showItem = (id) => {
-  selectedId.value = id
-  showDialog.value = true
+  router.visit(route('item-transfers.show', id))
 }
 
 const columns = computed(() => ([
@@ -122,12 +118,6 @@ const filterFields = computed(() => ([
       :addTitle="t('item_transfer.item_transfer')"
       :addAction="'redirect'"
       :addRoute="'item-transfers.create'"
-    />
-
-    <ShowDialog
-      :open="showDialog"
-      :transfer-id="selectedId"
-      @update:open="showDialog = $event"
     />
   </AppLayout>
 </template>

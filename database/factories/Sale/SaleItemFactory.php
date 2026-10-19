@@ -24,13 +24,18 @@ class SaleItemFactory extends Factory
             'quantity' => fake()->randomFloat(2, 1, 50),
             'unit_measure_id' => UnitMeasure::factory(),
             'warehouse_id' => Warehouse::factory(),
-            'size_id' => null,
             'unit_price' => fake()->randomFloat(4, 10, 500),
             'net_unit_cost' => null,
             'discount' => fake()->randomFloat(2, 0, 10),
             'free' => fake()->randomFloat(2, 0, 5),
             'tax' => fake()->randomFloat(2, 0, 5),
             'branch_id' => Branch::factory(),
+            // Read off the branch rather than built separately: a document's
+            // company and its branch's company have to agree, and the composite
+            // foreign key enforces that.
+            'company_id' => fn (array $attributes) => Branch::withoutGlobalScopes()
+                ->whereKey($attributes['branch_id'])
+                ->value('company_id'),
         ];
     }
 }

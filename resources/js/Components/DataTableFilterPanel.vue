@@ -91,14 +91,14 @@ function clear() {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div class="flex items-center justify-between gap-2">
+  <div class="flex max-h-[70vh] flex-col">
+    <div class="flex shrink-0 items-center justify-between gap-2 pb-3 border-b">
       <div class="text-sm font-medium">
         {{ title || t('datatable.filters') }}
       </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-3">
+    <div class="grid flex-1 grid-cols-1 gap-3 overflow-y-auto pr-1 pt-3">
       <div
         v-for="f in normalizedFields"
         :key="f.key"
@@ -116,11 +116,13 @@ function clear() {
             <div class="grid grid-cols-2 gap-2">
               <NextDate
                 v-model="local[`${f.key}_from`]"
+                :current-date="true"
                 :placeholder="t('general.from')"
                 input-class="h-9"
               />
               <NextDate
                 v-model="local[`${f.key}_to`]"
+                :current-date="true"
                 :placeholder="t('general.to')"
                 input-class="h-9"
               />
@@ -175,7 +177,7 @@ function clear() {
       </div>
     </div>
 
-    <div class="flex justify-end gap-2 pt-1">
+    <div class="mt-1 flex shrink-0 justify-end gap-2 border-t pt-3">
       <Button variant="outline" type="button" @click="clear">
         {{ t('general.clear') }}
       </Button>

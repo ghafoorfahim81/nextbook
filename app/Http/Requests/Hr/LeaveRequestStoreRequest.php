@@ -27,7 +27,7 @@ class LeaveRequestStoreRequest extends FormRequest
     {
         return [
             'employee_id' => ['required', $this->existsInBranch('employees')],
-            'leave_type_id' => ['required', $this->existsInBranch('leave_types')],
+            'leave_type_id' => ['required', $this->existsInCompany('leave_types')],
             'from_date' => ['required', 'date'],
             'to_date' => ['required', 'date'],
             'is_half_day' => ['nullable', 'boolean'],

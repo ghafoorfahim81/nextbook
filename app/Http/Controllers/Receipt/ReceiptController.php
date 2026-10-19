@@ -7,6 +7,7 @@ use App\Http\Requests\Receipt\ReceiptStoreRequest;
 use App\Http\Requests\Receipt\ReceiptUpdateRequest;
 use App\Http\Resources\Receipt\ReceiptResource;
 use App\Enums\PaymentMode;
+use App\Enums\TransactionStatus;
 use App\Models\Account\Account;
 use App\Models\Accounting\Settlement;
 use App\Models\Ledger\Ledger;
@@ -18,12 +19,14 @@ use App\Services\Accounting\SettlementService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
 use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Services\AttachmentService;
 use App\Support\BranchContext;
 class ReceiptController extends Controller
 {
@@ -50,6 +53,88 @@ class ReceiptController extends Controller
         $statuses->recalculateSales($affected['sales']);
     }
 
+    /**
+     * The settlement voucher for a receipt.
+     *
+     * Built in one place because it is needed twice — once when a receipt posts
+     * straight away, and again when a draft is posted later from its stored
+     * payload — and the two must describe the same voucher.
+     *
+     * @return array<string, mixed>
+     */
+    private function settlementVoucher(
+        Receipt $receipt,
+        Ledger $ledger,
+        array $validated,
+        string $bankAccountId,
+        string $currencyId,
+        float $rate,
+        float $amount
+    ): array {
+        return array_filter([
+            'ledger_id' => $ledger->id,
+            // Money coming IN. Stated by the module, never inferred from the
+            // party — a receipt from a supplier is a real thing (they are
+            // refunding an advance), and it still has to debit cash.
+            'direction' => SettlementService::DIRECTION_IN,
+            'date' => $validated['date'],
+            'cash_account_id' => $bankAccountId,
+            'cash_currency_id' => $currencyId,
+            'cash_rate' => $rate,
+            'cash_amount' => $amount,
+            'applied_cash_amount' => $validated['applied_cash_amount'] ?? null,
+            'applied_cash' => $validated['applied_cash'] ?? null,
+            'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
+            'reference_type' => Receipt::class,
+            'reference_id' => $receipt->id,
+            'remark' => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",
+            'remark_fa' => 'دریافت نقدی رسید #' . $receipt->number . ' از ' . $ledger->name,
+            'remark_ps' => 'د' . '#' . $receipt->number . ' ' . 'د نغدي اخیستلو په اړه رسید له  ' . $ledger->name,
+        ], fn ($value) => $value !== null);
+    }
+
+    /**
+     * Post a drafted receipt: settle it now, using the voucher and the invoices
+     * chosen when the draft was saved.
+     *
+     * The draft's placeholder transaction carried no lines, so it is discarded
+     * and SettlementService posts the real one. Allocations are re-validated by
+     * the service against what is still open, so an invoice settled by some
+     * other voucher in the meantime is rejected rather than double-relieved.
+     */
+    public function post(Receipt $receipt)
+    {
+        $this->authorize('update', $receipt);
+
+        if ($receipt->status !== TransactionStatus::DRAFT->value) {
+            abort(422, __('messages.document.only_draft_can_be_posted'));
+        }
+
+        DB::transaction(function () use ($receipt) {
+            $draft = $receipt->transaction()->firstOrFail();
+
+            $voucher = (array) data_get($draft->posting_payload, 'settlement_voucher', []);
+            $allocations = (array) data_get($draft->posting_payload, 'allocations', []);
+
+            if ($voucher === []) {
+                abort(422, __('messages.document.no_settlement_voucher'));
+            }
+
+            $draft->delete();
+
+            $transaction = app(SettlementService::class)->settle(
+                voucher: $voucher,
+                allocations: $allocations,
+            );
+
+            $this->refreshSettledDocuments($transaction->id);
+
+            $receipt->update(['status' => TransactionStatus::POSTED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', recordsPerPage());
@@ -69,7 +154,7 @@ class ReceiptController extends Controller
             'receipts' => ReceiptResource::collection($receipts),
             'filterOptions' => [
                 'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name', 'local_name']),
                 'bankAccounts' => $this->cashBankAccountOptions(),
                 'paymentModes' => $this->paymentModeOptions(),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
@@ -90,6 +175,9 @@ class ReceiptController extends Controller
         $latest = Receipt::nextNumber();
         return inertia('Receipts/Create', [
             'latestNumber' => $latest,
+            // When opened from a customer/supplier page (?ledger_id=...), preselect that
+            // ledger even though the ledger options are loaded on demand via search.
+            'preselectedLedger' => $this->resolvePreselectedLedger($request->query('ledger_id')),
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
                 'id' => $mode->value,
                 'name' => $mode->getLabel(),
@@ -97,14 +185,58 @@ class ReceiptController extends Controller
         ]);
     }
 
+    /**
+     * The ledger a receipt form was opened for, resolved eagerly.
+     *
+     * The ledger dropdown loads its options by search, so a form arriving with
+     * ?ledger_id= would otherwise render with an empty box — the option it
+     * needs has not been fetched yet. Credit fields come along because the form
+     * warns on over-limit parties.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolvePreselectedLedger(?string $ledgerId): ?array
+    {
+        if (! $ledgerId) {
+            return null;
+        }
+
+        $ledger = Ledger::query()
+            ->select([
+                'id',
+                'name',
+                'code',
+                'type',
+                'counterpart_ledger_id',
+                'email',
+                'phone_no',
+                'address',
+                'currency_id',
+                'credit_limit',
+                'credit_limit_enabled',
+                'credit_terms',
+                'is_active',
+                'company_id',
+            ])
+            ->withStatementTotals()
+            ->find($ledgerId);
+
+        return $ledger
+            ? \App\Http\Resources\Ledger\LedgerOptionResource::make($ledger)->resolve()
+            : null;
+    }
+
     public function store(
         ReceiptStoreRequest $request,
         TransactionService $transactionService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
-        $receipt = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
+        $receipt = DB::transaction(function () use ($request, $transactionService, $activityLogService, $attachmentService) {
             $validated = $request->validated();
+
+            $postImmediately = (bool) user_preference('transaction.receipt_post_immediately', true);
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
             $amount = (float) $validated['amount'];
@@ -114,7 +246,6 @@ class ReceiptController extends Controller
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
             $bankAccount = Account::find($bankAccountId);
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $receipt = Receipt::create([
                 'number' => $validated['number'],
                 'date' => $validated['date'],
@@ -122,37 +253,54 @@ class ReceiptController extends Controller
                 'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
+                'status' => $postImmediately
+                    ? TransactionStatus::POSTED->value
+                    : TransactionStatus::DRAFT->value,
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($receipt, $request->file('attachments'));
+            }
+
+            $voucher = $this->settlementVoucher($receipt, $ledger, $validated, $bankAccountId, $currencyId, $rate, $amount);
+
             // SettlementService posts the whole voucher: cash at today's rate,
             // one receivable line per booking rate it relieves, and the FX
             // difference between them. It is deliberately not this controller's
             // job to decide any of that.
-            $transaction = app(SettlementService::class)->settle(
-                voucher: array_filter([
-                    'ledger_id' => $ledger->id,
-                    // Money coming IN. Stated by the module, never inferred
-                    // from the party — a receipt from a supplier is a real
-                    // thing (they are refunding an advance), and it still has
-                    // to debit cash.
-                    'direction' => SettlementService::DIRECTION_IN,
-                    'date' => $validated['date'],
-                    'cash_account_id' => $bankAccountId,
-                    'cash_currency_id' => $currencyId,
-                    'cash_rate' => $rate,
-                    'cash_amount' => $amount,
-                    'applied_cash_amount' => $validated['applied_cash_amount'] ?? null,
-                    'applied_cash' => $validated['applied_cash'] ?? null,
-                    'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
-                    'reference_type' => Receipt::class,
-                    'reference_id' => $receipt->id,
-                    'remark' => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",
-                    'remark_fa' => 'دریافت نقدی رسید #' . $receipt->number . ' از ' . $ledger->name,
-                    'remark_ps' => 'د' . '#' . $receipt->number . ' ' . 'د نغدي اخیستلو په اړه رسید له  ' . $ledger->name,
-                ], fn ($value) => $value !== null),
-                allocations: $validated['allocations'] ?? [],
-            );
+            //
+            // A draft settles nothing yet: it parks the voucher and the chosen
+            // invoices on a lines-less draft transaction and relieves them only
+            // when it is posted, because claiming an open invoice before the
+            // money is real would close one nobody has paid.
+            $transaction = $postImmediately
+                ? app(SettlementService::class)->settle(
+                    voucher: $voucher,
+                    allocations: $validated['allocations'] ?? [],
+                )
+                : $transactionService->post(
+                    header: [
+                        'currency_id' => $currencyId,
+                        'rate' => $rate,
+                        'date' => $validated['date'],
+                        'voucher_number' => $voucher['voucher_number'],
+                        'reference_type' => Receipt::class,
+                        'reference_id' => $receipt->id,
+                        'remark' => $voucher['remark'],
+                        'status' => TransactionStatus::DRAFT->value,
+                        'posting_payload' => [
+                            'settlement_voucher' => $voucher,
+                            'allocations' => $validated['allocations'] ?? [],
+                            'amount' => $amount,
+                        ],
+                    ],
+                    lines: [],
+                );
 
-            $this->refreshSettledDocuments($transaction->id);
+            if ($postImmediately) {
+                $this->refreshSettledDocuments($transaction->id);
+            }
+
             $activityLogService->logCreate(
                 reference: $receipt,
                 module: 'receipt',
@@ -200,6 +348,7 @@ class ReceiptController extends Controller
             'settlements',
             'createdBy',
             'updatedBy',
+            'attachments',
         ]);
 
         $resource = new ReceiptResource($receipt);
@@ -232,6 +381,7 @@ class ReceiptController extends Controller
             'settlements',
             'createdBy',
             'updatedBy',
+            'attachments',
         ]);
 
         $activityLogService->logAction(
@@ -265,8 +415,12 @@ class ReceiptController extends Controller
         ]);
     }
 
-    public function update(ReceiptUpdateRequest $request, Receipt $receipt, ActivityLogService $activityLogService)
-    {
+    public function update(
+        ReceiptUpdateRequest $request,
+        Receipt $receipt,
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
+    ) {
         $beforeState = [
             'number' => $receipt->number,
             'date' => $receipt->date?->toDateString(),
@@ -276,8 +430,13 @@ class ReceiptController extends Controller
             'rate' => $receipt->transaction?->rate,
         ];
 
-        DB::transaction(function () use ($request, $receipt, $activityLogService, $beforeState) {
+        DB::transaction(function () use ($request, $receipt, $activityLogService, $beforeState, $attachmentService) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($receipt, $request->file('attachments'));
+            }
+
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $receipt->date;
             $currentPaymentMode = $receipt->payment_mode instanceof PaymentMode
                 ? $receipt->payment_mode->value
@@ -372,6 +531,58 @@ class ReceiptController extends Controller
         }
 
         return $redirect;
+    }
+
+    /**
+     * Undo a posted receipt.
+     *
+     * The route and the Reverse button have both been here all along; the
+     * method was not, so the button returned a 500. Beyond mirroring the
+     * ledger, this has to release what the receipt was holding: the invoices it
+     * settled are only closed because its settlement rows point at them, and
+     * leaving those behind would keep an invoice paid by a voucher that has
+     * been undone — and would block the invoice from ever being reversed.
+     */
+    public function reverse(Request $request, Receipt $receipt, TransactionService $transactionService)
+    {
+        $this->authorize('update', $receipt);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($receipt->status !== TransactionStatus::POSTED->value) {
+            abort(422, __('messages.document.only_posted_can_be_reversed'));
+        }
+
+        DB::transaction(function () use ($receipt, $transactionService, $validated) {
+            $transaction = $receipt->transaction()->firstOrFail();
+
+            // Read the documents BEFORE the settlements go, or there is nothing
+            // left to look them up by.
+            $affected = app(PaymentStatusService::class)->documentsSettledBy($transaction->id);
+
+            $transactionService->reverse($transaction, $validated['reason'], $receipt->number, Receipt::class);
+
+            // Soft-deleted, not force-deleted: a reversal keeps its trail,
+            // unlike an edit, which re-posts the voucher from scratch.
+            Settlement::withoutGlobalScopes()
+                ->where('transaction_id', $transaction->id)
+                ->delete();
+
+            app(PaymentStatusService::class)->recalculateSales($affected['sales']);
+            app(PaymentStatusService::class)->recalculatePurchases($affected['purchases']);
+
+            $receipt->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'updated_by' => Auth::id(),
+            ]);
+        });
+
+        return redirect()->back()->with(
+            'success',
+            __('general.updated_successfully', ['resource' => __('general.resource.receipt')])
+        );
     }
 
     public function destroy(Request $request, Receipt $receipt, ActivityLogService $activityLogService)

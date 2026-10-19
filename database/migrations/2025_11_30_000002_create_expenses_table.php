@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->date('date');
             $table->text('remarks')->nullable();
             $table->ulid('category_id')->index();

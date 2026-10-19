@@ -30,14 +30,21 @@ use App\Models\Hr\LeaveType;
 use App\Models\Hr\Shift;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\LandedCost;
+use App\Models\Inventory\StockAdjustment;
 use App\Models\Ledger\Ledger;
 use App\Models\Owner\Drawing;
 use App\Models\Owner\Owner;
 use App\Models\Payment\Payment;
 use App\Models\Purchase\Purchase;
+use App\Models\Purchase\PurchaseOrder;
+use App\Models\Purchase\PurchaseQuotation;
+use App\Models\Purchase\PurchaseReturn;
 use App\Models\Receipt\Receipt;
 use App\Models\Role;
 use App\Models\Sale\Sale;
+use App\Models\Sale\SaleOrder;
+use App\Models\Sale\SaleQuotation;
+use App\Models\Sale\SaleReturn;
 use App\Models\User;
 use App\Policies\AccountPolicy;
 use App\Policies\AccountTransferPolicy;
@@ -47,6 +54,7 @@ use App\Policies\BrandPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\CurrencyPolicy;
+use App\Policies\ContraSettlementPolicy;
 use App\Policies\CustomerSupplierPolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\DesignationPolicy;
@@ -66,12 +74,19 @@ use App\Policies\Hr\ShiftPolicy;
 use App\Policies\DrawingPolicy;
 use App\Policies\ItemPolicy;
 use App\Policies\LandedCostPolicy;
+use App\Policies\StockAdjustmentPolicy;
 use App\Policies\OwnerPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PurchasePolicy;
+use App\Policies\PurchaseOrderPolicy;
+use App\Policies\PurchaseQuotationPolicy;
+use App\Policies\PurchaseReturnPolicy;
 use App\Policies\ReceiptPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SalePolicy;
+use App\Policies\SaleOrderPolicy;
+use App\Policies\SaleQuotationPolicy;
+use App\Policies\SaleReturnPolicy;
 use App\Policies\SizePolicy;
 use App\Policies\WarehousePolicy;
 use App\Policies\UnitMeasurePolicy;
@@ -107,6 +122,8 @@ class AuthServiceProvider extends ServiceProvider
         // Inventory
         Item::class => ItemPolicy::class,
         LandedCost::class => LandedCostPolicy::class,
+        StockAdjustment::class => StockAdjustmentPolicy::class,
+        \App\Models\Inventory\DiscountRule::class => \App\Policies\DiscountRulePolicy::class,
 
         // Ledgers (customers & suppliers)
         Ledger::class => CustomerSupplierPolicy::class,
@@ -138,10 +155,17 @@ class AuthServiceProvider extends ServiceProvider
 
         // Purchases & Sales
         Purchase::class => PurchasePolicy::class,
+        PurchaseOrder::class => PurchaseOrderPolicy::class,
+        PurchaseQuotation::class => PurchaseQuotationPolicy::class,
+        PurchaseReturn::class => PurchaseReturnPolicy::class,
         Sale::class => SalePolicy::class,
+        SaleReturn::class => SaleReturnPolicy::class,
+        SaleOrder::class => SaleOrderPolicy::class,
+        SaleQuotation::class => SaleQuotationPolicy::class,
 
         // Receipts & Payments & Transfers
         Receipt::class => ReceiptPolicy::class,
+        \App\Models\Accounting\ContraSettlement::class => ContraSettlementPolicy::class,
         Payment::class => PaymentPolicy::class,
         AccountTransfer::class => AccountTransferPolicy::class,
 

@@ -1,10 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
-import ShowDialog from './ShowDialog.vue'
 import { useDeleteResource } from '@/composables/useDeleteResource'
 import { router } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
@@ -15,10 +14,8 @@ const props = defineProps({
 
 const { t } = useI18n()
 
-const showDialogOpen = ref(false)
-const selectedDrawing = ref(null)
-
 const columns = computed(() => [
+  { key: 'number', label: t('general.number'), sortable: true },
   { key: 'date', label: t('general.date'), sortable: true },
   {
     key: 'owner.name',
@@ -41,6 +38,7 @@ const columns = computed(() => [
     render: (row) => `${row.currency?.symbol || ''} ${Number(row.amount || 0).toLocaleString()}`,
   },
   { key: 'narration', label: t('general.remarks') },
+  { key: 'status_label', label: t('general.status') },
   { key: 'actions', label: t('general.action') },
 ])
 
@@ -49,7 +47,7 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
   deleteResource('drawings.destroy', id, {
     title: t('general.delete', { name: t('sidebar.owners.drawing') }),
-    description: t('general.delete_description', { name: t('sidebar.owners.drawing') }),
+    name: t('sidebar.owners.drawing'),
     successMessage: t('general.delete_success', { name: t('sidebar.owners.drawing') }),
   })
 }
@@ -58,15 +56,8 @@ const editItem = (item) => {
   router.visit(route('drawings.edit', item.id))
 }
 
-const viewItem = async (id) => {
-  try {
-    const response = await fetch(route('drawings.show', id))
-    const data = await response.json()
-    selectedDrawing.value = data?.data || null
-    showDialogOpen.value = true
-  } catch (error) {
-    console.error('Error fetching drawing:', error)
-  }
+const viewItem = (id) => {
+  router.visit(route('drawings.show', id))
 }
 
 const filterFields = computed(() => ([
@@ -82,6 +73,24 @@ const filterFields = computed(() => ([
     type: 'select',
     options: (props.filterOptions?.branches?.data ?? props.filterOptions?.branches ?? []).map((branch) => ({ id: branch.id, name: branch.name })),
   },
+  {
+    key: 'bank_account_id',
+    label: t('general.bank_account'),
+    type: 'select',
+    options: (props.filterOptions?.bankAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+  },
+  {
+    key: 'drawing_account_id',
+    label: t('owner.drawing_account'),
+    type: 'select',
+    options: (props.filterOptions?.drawingAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+  },
+  {
+    key: 'transaction.currency_id',
+    label: t('admin.currency.currency'),
+    type: 'select',
+    options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+  },
   { key: 'date', label: t('general.date'), type: 'daterange' },
   {
     key: 'created_by',
@@ -94,12 +103,6 @@ const filterFields = computed(() => ([
 
 <template>
   <AppLayout :title="t('resources.drawings')">
-    <ShowDialog
-      :open="showDialogOpen"
-      :drawing="selectedDrawing"
-      @update:open="showDialogOpen = $event"
-    />
-
     <DataTable
       can="drawings"
       :items="drawings"

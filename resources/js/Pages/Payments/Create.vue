@@ -1,7 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -10,11 +11,15 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SettlementDialog from '@/Components/next/SettlementDialog.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { printDocument } from '@/composables/usePrintDocument'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n()
 
 const page = usePage()
@@ -32,7 +37,14 @@ const accounts = computed(() => (page.props.accounts?.data || [])
   .filter((account) => account.account_type?.slug === 'cash-or-bank'))
 const currencies = computed(() => page.props.currencies?.data || [])
 const paymentModes = computed(() => page.props.paymentModes || [])
+// Single reactive copy of the receipt/payment preferences so the panel and form stay in sync live.
+const rpPrefs = reactive(JSON.parse(JSON.stringify(page.props.user_preferences?.receipt_payment ?? {})))
+if (!rpPrefs.visible_fields || typeof rpPrefs.visible_fields !== 'object') rpPrefs.visible_fields = {}
+const rpFields = computed(() => rpPrefs.visible_fields)
+const showPreferencesPanel = ref(false)
 
+const { loading: lazyLoading } = useLazyProps(page.props, ['ledgers', 'accounts'])
+const billLoading = ref(false)
 useLazyProps(page.props, ['ledgers', 'accounts'])
 const showBillDialog = ref(false)
 const initialized = ref(false)
@@ -52,6 +64,7 @@ const form = useForm({
   cheque_no: '',
   narration: '',
   allocations: [],
+  attachments: [],
   // Only sent when the cash and the claim are in different currencies. The
   // server refuses to guess the conversion the two parties agreed on.
   applied_cash: [],
@@ -61,14 +74,8 @@ const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'create_and_print')
-const pendingPrintWindow = ref(null)
-
 const submitActionHandler = (action = 'create') => {
   submitAction.value = action
-
-  if (action === 'create_and_print') {
-    pendingPrintWindow.value = window.open('about:blank', '_blank')
-  }
 
   submit({
     createAndNew: action === 'create_and_new',
@@ -96,6 +103,13 @@ const applyCreateDefaults = ({ number = page.props.latestNumber ?? form.number }
     form.selected_currency = base
     form.currency_id = base.id
     form.rate = base.exchange_rate
+  }
+
+  // Ledger passed via the URL (e.g. from a customer/supplier page) is preselected.
+  const presetLedger = page.props.preselectedLedger?.data ?? page.props.preselectedLedger ?? null
+  if (presetLedger?.id) {
+    form.selected_ledger = presetLedger
+    form.ledger_id = presetLedger.id
   }
 }
 
@@ -144,24 +158,7 @@ function oldBalanceText() {
 }
 
 function finalizePrint(page) {
-  const printUrl = page?.props?.flash?.print_url
-
-  if (!printUrl) {
-    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-      pendingPrintWindow.value.close()
-    }
-    pendingPrintWindow.value = null
-    return
-  }
-
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.location = printUrl
-    pendingPrintWindow.value.focus?.()
-  } else {
-    window.open(printUrl, '_blank')
-  }
-
-  pendingPrintWindow.value = null
+  printDocument(page?.props?.flash?.print_url)
 }
 
 // The store redirects back to the create page, so the response carries a
@@ -176,11 +173,6 @@ function nextNumberAfterSave(page) {
 }
 
 function cleanupPrintWindow() {
-  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
-    pendingPrintWindow.value.close()
-  }
-
-  pendingPrintWindow.value = null
 }
 
 function submit({ createAndNew = false, createAndPrint = false } = {}) {
@@ -194,6 +186,7 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
         form.reset('date', 'amount', 'cheque_no', 'narration')
         form.payment_mode = 'on_account'
         form.allocations = []
+        form.attachments = []
         form.applied_cash = []
         showBillDialog.value = false
         applyCreateDefaults({ number: String(nextNumberAfterSave(page)) })
@@ -216,12 +209,27 @@ onMounted(() => {
   applyCreateDefaults()
   initialized.value = true
 })
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
   <AppLayout :title="t('general.create', { name: t('payment.payment') })">
-    <FormPageToolbar back-route="payments.index" module="payments" />
-    <form @submit.prevent="submitActionHandler('create')">
+    <FormPageToolbar
+      back-route="payments.index"
+      module="payments"
+      :show-preferences="true"
+      @preferences="showPreferencesPanel = true"
+    />
+    <FormPreferencesPanel module="payment"
+      v-model:open="showPreferencesPanel"
+      pref-group="receipt_payment"
+      :prefs="rpPrefs"
+      :title="t('preferences.tabs.receipt_payment')"
+    />
+    <form ref="saveFormRef" @submit.prevent="submitActionHandler('create')">
       <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('payment.payment') }) }}
@@ -229,6 +237,7 @@ onMounted(() => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
             autofocus
+            :loading="lazyLoading"
             :options="ledgers"
             v-model="form.selected_ledger"
             @update:modelValue="(v) => handleSelectChange('ledger_id', v.id)"
@@ -236,6 +245,7 @@ onMounted(() => {
             value-key="id"
             :reduce="ledger => ledger"
             :floating-text="t('ledger.supplier.supplier')"
+            is-required
             :error="form.errors?.ledger_id"
             :searchable="true"
             resource-type="ledgers"
@@ -243,23 +253,25 @@ onMounted(() => {
             :search-fields="['name', 'email', 'phone_no']"
           />
 
-          <NextInput placeholder="Number" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
+          <NextInput is-required v-if="rpFields.number" :placeholder="t('general.number')" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-          <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+          <NextInput is-required :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
+            v-if="rpFields.currency"
             :options="currencies"
             v-model="form.selected_currency"
-            label-key="code"
+            label-key="display_name"
             value-key="id"
             @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
+            is-required
             :error="form.errors?.currency_id"
             :searchable="true"
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput is-required v-if="rpFields.currency" :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextSelect
             :options="paymentModes"
             v-model="form.payment_mode"
@@ -272,6 +284,8 @@ onMounted(() => {
             :error="form.errors?.payment_mode"
           />
           <NextSelect
+            v-if="rpFields.debit_account"
+            :loading="lazyLoading"
             :options="accounts"
             v-model="form.selected_bank_account"
             @update:modelValue="(v) => handleSelectChange('bank_account_id', v.id)"
@@ -279,6 +293,7 @@ onMounted(() => {
             value-key="id"
             :reduce="acc => acc"
             :floating-text="t('payment.pay_from_account')"
+            is-required
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
@@ -297,12 +312,12 @@ onMounted(() => {
               {{ form.allocations.length }} {{ t('general.bills_selected') || 'bills selected' }}
             </p>
           </div>
-          <NextInput :placeholder="t('general.enter', { text: t('general.cheque_no') })" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
+          <NextInput v-if="rpFields.cheque_number" :placeholder="t('general.enter', { text: t('general.cheque_no') })" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
               <NextTextarea :placeholder="t('general.enter', { text: t('general.narration') })" :error="form.errors?.narration" v-model="form.narration" :label="t('general.narration')" />
             </div>
-            <div class="md:col-span-1">
+            <div class="md:col-span-1" v-if="rpFields.ledger_old_balance">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">
                 <div class="text-sm font-semibold mb-2 text-violet-500">{{ t('general.old_balance') }}</div>
                 <div class="text-lg font-bold">{{ oldBalanceText() }}</div>
@@ -310,9 +325,12 @@ onMounted(() => {
             </div>
           </div>
         </div>
+        <div class="mt-4">
+          <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
+        </div>
       </div>
 
-      <SubmitButtons
+      <SubmitButtons module="payment"
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
         :save-and-print-label="t('general.save_and_print')"

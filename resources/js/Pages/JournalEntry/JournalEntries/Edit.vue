@@ -1,6 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useFormGuard } from '@/composables/useFormGuard'
+import { useForm, usePage, router } from '@inertiajs/vue3'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -11,6 +13,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n'
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n()
 const page = usePage()
@@ -19,7 +22,7 @@ const accounts = computed(() => page.props.accounts?.data || [])
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const journalClasses = computed(() => page.props.journalClasses?.data || [])
-useLazyProps(page.props, ['accounts', 'ledgers', 'currencies'])
+const { loading: lazyLoading } = useLazyProps(page.props, ['accounts', 'ledgers', 'currencies'])
 
 const form = useForm({
   id: '',
@@ -30,12 +33,16 @@ const form = useForm({
   rate: '',
   remarks: '',
   lines: [],
-  // Optionally support attachment editing
-  attachment: null
+  attachments: [],
 })
 
-const attachmentPreview = ref(null)
-const fileInput = ref(null)
+const existingAttachments = ref([])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 
 // Helper to handle line remarks (null fallback)
 function getLineRemark(line) {
@@ -64,7 +71,9 @@ onMounted(() => {
   form.remarks = je.remarks ?? je.remark ?? ''
 
   // Map in detail lines: enhance for editability, map by account_id, remark/null handling.
-  form.lines = (je.transaction?.lines || je.lines || []).map(line => ({
+  // For drafts the transaction has no posted lines, so fall back to the resolved je.lines (from posting_payload).
+  const sourceLines = je.transaction?.lines?.length ? je.transaction.lines : (je.lines || [])
+  form.lines = sourceLines.map(line => ({
     ...line,
     debit: Number(line.debit) || 0,
     credit: Number(line.credit) || 0,
@@ -80,6 +89,8 @@ onMounted(() => {
   if (!form.selected_currency && form.currency_id) {
     form.selected_currency = currencies.value.find(c => c.id === form.currency_id) || null
   }
+
+  existingAttachments.value = je.attachments || []
 })
 
 watch(currencies, () => {
@@ -128,23 +139,6 @@ function removeLine(index) {
   form.lines.splice(index, 1)
 }
 
-// For attachment, you may extend as needed
-function handleFileChange(e) {
-  const file = e.target.files[0]
-  if (file) {
-    form.attachment = file
-    const reader = new FileReader()
-    reader.onload = e => {
-      attachmentPreview.value = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-function removeAttachment() {
-  form.attachment = null
-  attachmentPreview.value = null
-  if (fileInput.value) fileInput.value.value = ''
-}
 const totalCredit = computed(() => {
     return form.lines.reduce((sum, d) => sum + (Number(d.credit) || 0), 0);
 });
@@ -180,12 +174,16 @@ function submit() {
     form.lines = normalize();
   form.put(`/journal-entries/${form.id}`)
 }
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('journal_entry.journal_entry') })">
-    <FormPageToolbar back-route="journal-entries.index" module="journal_entry" />
-    <form @submit.prevent="submit()">
+    <FormPageToolbar confirm-module="journal_entry" back-route="journal-entries.index" module="journal_entry" />
+    <form ref="saveFormRef" @submit.prevent="submit()">
       <!-- MAIN HEADER SECTION -->
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
@@ -207,17 +205,20 @@ function submit() {
           />
           <div class="grid grid-cols-2 gap-2">
             <NextSelect
+                :loading="lazyLoading"
                 :options="currencies.data || currencies"
                 v-model="form.selected_currency"
                 @update:modelValue="handleCurrencyChange"
-                label-key="code"
+                label-key="display_name"
                 value-key="id"
                 :reduce="cur => cur"
                 :floating-text="t('admin.currency.currency')"
+                is-required
                 :error="form.errors?.currency_id"
                 :searchable="true"
             />
             <NextInput
+                is-required
                 v-model="form.rate"
                 type="number"
                 step="any"
@@ -235,36 +236,7 @@ function submit() {
           />
         </div>
         <div class="mt-4">
-          <label class="block text-sm font-medium mb-2">{{ t('general.attachment') }}</label>
-          <div class="flex items-center gap-4">
-            <input
-              ref="fileInput"
-              type="file"
-              @change="handleFileChange"
-              class="hidden"
-              accept="image/*,.pdf,.doc,.docx"
-            />
-            <button
-              type="button"
-              class="btn btn-outline"
-              @click="() => fileInput?.click()"
-            >
-              {{ t('general.upload_file') }}
-            </button>
-            <span v-if="form.attachment" class="text-sm text-muted-foreground">
-              {{ form.attachment.name }}
-              <button
-                type="button"
-                @click="removeAttachment"
-                class="ml-2 text-red-500 hover:text-red-700"
-              >x</button>
-            </span>
-          </div>
-          <img
-            v-if="attachmentPreview"
-            :src="attachmentPreview"
-            class="mt-2 max-h-32 rounded border"
-          />
+          <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
         </div>
         </div>
       </div>
@@ -276,9 +248,9 @@ function submit() {
           <thead class="bg-muted/50">
             <tr class="text-sm text-muted-foreground rtl:text-right ltr:text-left">
               <th class="px-4 py-2 w-12">#</th>
-              <th class="px-4 py-2">{{ t('account.account') }} *</th>
-              <th class="px-4 py-2">{{ t('general.debit') }} *</th>
-              <th class="px-4 py-2">{{ t('general.credit') }} *</th>
+              <th class="px-4 py-2">{{ t('account.account') }} <span class="text-red-500">*</span></th>
+              <th class="px-4 py-2">{{ t('general.debit') }} <span class="text-red-500">*</span></th>
+              <th class="px-4 py-2">{{ t('general.credit') }} <span class="text-red-500">*</span></th>
               <th class="px-4 py-2">{{ t('general.remark') }}</th>
               <th class="px-4 py-2">{{ t('general.ledger') }}</th>
               <th class="px-4 py-2">{{ t('sidebar.journal_entry.journal_class') }}</th>
@@ -290,6 +262,7 @@ function submit() {
                 <td class="px-4 py-2 text-center text-muted-foreground">{{ index + 1 }}</td>
                 <td class="px-4 py-2 w-64">
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="accounts.data || accounts"
                         v-model="line.selected_account"
                         @update:modelValue="(val) => { line.account_id = val?.id || null }"
@@ -332,6 +305,7 @@ function submit() {
                 </td>
                 <td class="px-4 py-2 w-64">
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="ledgers.data || ledgers"
                             v-model="line.selected_ledger"
                         @update:modelValue="(val) => { line.ledger_id = val?.id || '' }"

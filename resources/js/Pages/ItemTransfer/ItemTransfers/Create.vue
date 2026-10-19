@@ -1,8 +1,10 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { firstServerError } from '@/composables/useDocumentAction'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import axios from 'axios'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -10,18 +12,40 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
-import { Trash2 } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import { pickDefaultVariant, resolveVariantOnHand } from '@/composables/useVariantLine'
+import VariantCell from '@/Components/inventory/VariantCell.vue'
+import { Switch } from '@/Components/ui/switch'
+import { Label } from '@/Components/ui/label'
+import { Trash2, Info } from 'lucide-vue-next'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/Components/ui/tooltip'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 
 const { t } = useI18n()
 const { toast } = useToast()
+
+const props = defineProps({
+  bankAccounts: { type: [Array, Object], default: () => [] },
+  expenseAccounts: { type: [Array, Object], default: () => [] },
+  defaultExpenseAccountId: { type: String, default: null },
+})
 
 const page = usePage()
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
+const currencies = computed(() => page.props.currencies?.data || page.props.currencies || [])
+const homeCurrency = computed(() => page.props.homeCurrency?.data || page.props.homeCurrency || null)
+const bankAccounts = computed(() => props.bankAccounts?.data || props.bankAccounts || [])
+const expenseAccounts = computed(() => props.expenseAccounts?.data || props.expenseAccounts || [])
 const itemOptions = ref([])
 const createEmptyRow = () => ({
   item_id: '',
@@ -35,6 +59,9 @@ const createEmptyRow = () => ({
   unit_price: '',
   base_unit_price: '',
   available_measures: [],
+  variant_id: null,
+  selected_variant: null,
+  item_variants: [],
 })
 const defaultTransferRows = () => [createEmptyRow(), createEmptyRow(), createEmptyRow(), createEmptyRow()]
 
@@ -44,9 +71,18 @@ const form = useForm({
   to_warehouse_id: '',
   selected_from_warehouse: null,
   selected_to_warehouse: null,
+  has_transfer_cost: false,
   transfer_cost: '',
+  bank_account_id: '',
+  selected_bank_account: null,
+  expense_account_id: '',
+  selected_expense_account: null,
+  currency_id: '',
+  selected_currency: null,
+  rate: 1,
   remarks: '',
   items: defaultTransferRows(),
+  attachments: [],
 })
 
 const submitAction = ref(null)
@@ -102,6 +138,8 @@ const applyCreateDefaults = () => {
   form.date = todayValueForCalendar(calendarType.value)
   form.selected_from_warehouse = preferredWarehouse
   form.from_warehouse_id = preferredWarehouse?.id || ''
+  form.has_transfer_cost = false
+  applyTransferCostDefaults()
 }
 
 watch(() => form.from_warehouse_id, (warehouseId) => {
@@ -111,6 +149,49 @@ watch(() => form.from_warehouse_id, (warehouseId) => {
   }
   loadItemOptions(warehouseId)
 }, { immediate: true });
+
+/**
+ * Turning the switch off clears everything behind it, so a cost that was typed
+ * and then abandoned cannot be posted by accident. Turning it on pre-selects
+ * the branch's Item Transfer Expense account and the home currency at rate 1 —
+ * the answer for almost every transfer.
+ */
+const applyTransferCostDefaults = () => {
+  if (!form.has_transfer_cost) {
+    form.transfer_cost = ''
+    form.bank_account_id = ''
+    form.selected_bank_account = null
+    form.expense_account_id = ''
+    form.selected_expense_account = null
+    form.currency_id = ''
+    form.selected_currency = null
+    form.rate = 1
+    return
+  }
+
+  if (!form.expense_account_id) {
+    const preferred = expenseAccounts.value.find(a => a.id === props.defaultExpenseAccountId)
+    form.selected_expense_account = preferred || null
+    form.expense_account_id = preferred?.id || ''
+  }
+
+  if (!form.currency_id) {
+    const preferred = currencies.value.find(c => c.id === homeCurrency.value?.id)
+      || currencies.value.find(c => c.is_base_currency)
+      || null
+    form.selected_currency = preferred
+    form.currency_id = preferred?.id || ''
+    form.rate = Number(preferred?.exchange_rate) || 1
+  }
+}
+
+watch(() => form.has_transfer_cost, applyTransferCostDefaults)
+
+const handleCurrencyChange = (currency) => {
+  form.selected_currency = currency || null
+  form.currency_id = currency?.id || ''
+  form.rate = Number(currency?.exchange_rate) || 1
+}
 
 const sameWarehouseError = computed(() => {
   return form.from_warehouse_id && form.to_warehouse_id && form.from_warehouse_id === form.to_warehouse_id
@@ -142,32 +223,78 @@ const handleItemChange = (index, selectedItem) => {
     row.batch = ''
     row.expire_date = ''
     row.unit_price = ''
+    row.item_variants = []
+    row.selected_variant = null
+    row.variant_id = null
     return
   }
   row.available_measures = buildAvailableMeasures(selectedItem)
   row.selected_measure = selectedItem.unitMeasure || null
   row.item_id = selectedItem.id
-  row.base_unit_price = selectedItem.avg_cost ?? selectedItem.purchase_price ?? selectedItem.unit_price ?? 0
-  const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
+  row.item_variants = selectedItem.item_variants || []
+  row.selected_variant = pickDefaultVariant(row.item_variants)
+  row.variant_id = row.selected_variant?.id || null
+  row.selected_batch = null
+  row.batch = ''
+  row.expire_date = ''
+  repriceRow(row)
+}
+
+/**
+ * What the moved stock is worth.
+ *
+ * A transfer is not a purchase: the line carries the cost of the goods, so the
+ * variant's own average wins, then its purchase price, then the item's figures.
+ * Reading the parent item's cost for a variant that has its own would move the
+ * goods at the wrong value and then bake that value into the variant average.
+ */
+const resolveRowCost = (row) => {
+  const positive = (value) => {
+    const number = Number(value)
+    return Number.isFinite(number) && number > 0 ? number : null
+  }
+
+  return positive(row.selected_variant?.avg_cost)
+    ?? positive(row.selected_variant?.purchase_price)
+    ?? positive(row.selected_item?.avg_cost)
+    ?? positive(row.selected_item?.purchase_price)
+    ?? 0
+}
+
+const repriceRow = (row) => {
+  if (!row?.selected_item) return
+  row.base_unit_price = resolveRowCost(row)
+  const baseUnit = Number(row.selected_item.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
   row.unit_price = (row.base_unit_price / baseUnit) * selectedUnit
-    row.selected_batch = null
-    row.batch = ''
-    row.expire_date = ''
+}
+
+const handleVariantChange = (index, variant) => {
+  const row = form.items[index]
+  if (!row) return
+  row.selected_variant = variant || null
+  row.variant_id = variant?.id || null
+  // Switching variant moves both the on-hand shown and the cost used with it.
+  repriceRow(row)
 }
 
 function handleBatchChange(index, batch){
     const row = form.items[index]
-    row.batch = batch?.batch
-    row.on_hand = onhand(row)
-    row.expire_date = batch?.expire_date
+    if (!row) return
+    row.batch = batch?.batch || ''
+    row.expire_date = batch?.expire_date || ''
+    // A batch carries its own on-hand, which onhand(index) now reads straight
+    // off selected_batch; the stale row.on_hand copy it used to write was
+    // passed the row instead of its index and always came back empty.
 }
 
 function onhand(index) {
   const item = form.items[index]
   if (!item || !item.selected_item) return ''
   const selected_item = item.selected_item
-  const onHand = item?.selected_batch?.on_hand ?? item.selected_item.on_hand
+  // A chosen batch is the most specific figure; otherwise a variant that has
+  // stock recorded against it shows its own, not the parent item's total.
+  const onHand = resolveVariantOnHand(item) ?? 0
   const baseUnit = Number(selected_item?.unitMeasure?.unit) || 1
   const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
   const converted = (onHand * baseUnit) / selectedUnit
@@ -228,6 +355,7 @@ function handleSubmit(createAndNew = false) {
       batch: item.batch || '',
       expire_date: item.expire_date || null,
       unit_price: item.unit_price || 0,
+      variant_id: item.selected_variant?.id ?? item.variant_id ?? null,
     }))
 
   if (!payloadItems.length) {
@@ -244,9 +372,15 @@ function handleSubmit(createAndNew = false) {
     date: form.date,
     from_warehouse_id: form.from_warehouse_id,
     to_warehouse_id: form.to_warehouse_id,
-    transfer_cost: form.transfer_cost,
+    has_transfer_cost: form.has_transfer_cost,
+    transfer_cost: form.has_transfer_cost ? form.transfer_cost : null,
+    bank_account_id: form.has_transfer_cost ? form.bank_account_id : null,
+    expense_account_id: form.has_transfer_cost ? form.expense_account_id : null,
+    currency_id: form.has_transfer_cost ? form.currency_id : null,
+    rate: form.has_transfer_cost ? form.rate : null,
     remarks: form.remarks,
     items: payloadItems,
+    attachments: form.attachments,
     ...(createAndNew ? { create_and_new: true } : {}),
   })).post(route('item-transfers.store'), {
     onSuccess: () => {
@@ -260,8 +394,17 @@ function handleSubmit(createAndNew = false) {
       if (createAndNew) {
         form.reset()
         form.items = defaultTransferRows()
+        form.attachments = []
         applyCreateDefaults()
       }
+    },
+    onError: (errors) => {
+        toast({
+            title: t('general.error'),
+            description: firstServerError(errors) ?? t('general.create_error', { name: t('item_transfer.item_transfer') }),
+            variant: 'destructive',
+            class: 'bg-pink-600 text-white',
+        })
     },
   })
 }
@@ -286,12 +429,16 @@ onUnmounted(() => {
     sidebar.setOpen(prevSidebarOpen.value)
   }
 })
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
   <AppLayout :title="t('general.create', { name: t('item_transfer.item_transfer') })" :sidebar-collapsed="true">
-    <FormPageToolbar back-route="item-transfers.index" module="transfer" />
-    <form @submit.prevent="handleSubmitAction">
+    <FormPageToolbar confirm-module="item_transfer" back-route="item-transfers.index" module="transfer" />
+    <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
       <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('item_transfer.item_transfer') }) }}
@@ -307,8 +454,11 @@ onUnmounted(() => {
             value-key="id"
             :reduce="warehouse => warehouse"
             :floating-text="t('item_transfer.from_warehouse')"
+            is-required
             :error="form.errors?.from_warehouse_id"
             :searchable="true"
+            resource-type="warehouses"
+            :search-fields="['name','code']"
           />
           <NextSelect
             :options="warehouses"
@@ -318,19 +468,12 @@ onUnmounted(() => {
             value-key="id"
             :reduce="warehouse => warehouse"
             :floating-text="t('item_transfer.to_warehouse')"
+            is-required
             :error="form.errors?.to_warehouse_id"
             :searchable="true"
             resource-type="warehouses"
             :search-fields="['name','code']"
 
-          />
-          <NextInput
-            v-model="form.transfer_cost"
-            type="number"
-            step="any"
-            inputmode="decimal"
-            :error="form.errors?.transfer_cost"
-            :label="t('item_transfer.transfer_cost')"
           />
           <NextTextarea
             v-model="form.remarks"
@@ -338,19 +481,100 @@ onUnmounted(() => {
             :label="t('general.remarks')"
           />
         </div>
+
+        <div class="mt-4 flex items-center gap-2">
+          <Switch id="has_transfer_cost" v-model="form.has_transfer_cost" />
+          <Label for="has_transfer_cost" class="cursor-pointer">{{ t('item_transfer.has_transfer_cost') }}</Label>
+        </div>
+
+        <div v-if="form.has_transfer_cost" class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+          <NextSelect
+            :options="bankAccounts"
+            v-model="form.selected_bank_account"
+            @update:modelValue="(value) => { form.selected_bank_account = value; form.bank_account_id = value?.id || '' }"
+            label-key="name"
+            value-key="id"
+            :reduce="account => account"
+            :floating-text="t('item_transfer.bank_account')"
+            is-required
+            :error="form.errors?.bank_account_id"
+            :searchable="true"
+          />
+          <NextSelect
+            :options="currencies"
+            v-model="form.selected_currency"
+            @update:modelValue="handleCurrencyChange"
+            label-key="name"
+            value-key="id"
+            :reduce="currency => currency"
+            :floating-text="t('admin.currency.currency')"
+            is-required
+            :error="form.errors?.currency_id"
+            :searchable="true"
+          />
+          <NextInput
+            v-model="form.rate"
+            type="number"
+            step="any"
+            inputmode="decimal"
+            :error="form.errors?.rate"
+            :label="t('general.rate')"
+          />
+          <NextInput
+            v-model="form.transfer_cost"
+            type="number"
+            step="any"
+            inputmode="decimal"
+            :error="form.errors?.transfer_cost"
+            :label="t('general.amount')"
+          />
+          <div class="md:col-span-2 flex items-start gap-2">
+            <div class="flex-1 min-w-0">
+              <NextSelect
+                :options="expenseAccounts"
+                v-model="form.selected_expense_account"
+                @update:modelValue="(value) => { form.selected_expense_account = value; form.expense_account_id = value?.id || '' }"
+                label-key="name"
+                value-key="id"
+                :reduce="account => account"
+                :floating-text="t('item_transfer.expense_account')"
+                :error="form.errors?.expense_account_id"
+                :searchable="true"
+              />
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <button
+                    type="button"
+                    tabindex="-1"
+                    class="mt-3 shrink-0 text-violet-500"
+                    :aria-label="t('item_transfer.expense_account_hint')"
+                  >
+                    <Info class="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p class="max-w-xs">{{ t('item_transfer.expense_account_hint') }}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
       </div>
 
       <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-80">
         <table class="w-full table-fixed min-w-[900px] purchase-table border-separate">
-          <thead class="bg-card sticky top-0 z-[200]">
+          <thead class="bg-card sticky top-0 z-10">
             <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
               <th class="px-1 py-1 w-5 min-w-5">#</th>
-              <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+              <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
+              <th class="px-1 py-1 w-32">{{ t('item.variant') }}</th>
               <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
               <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
-              <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+              <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
-              <th class="px-1 py-1 w-24">{{ t('general.unit') }}</th>
+              <th class="px-1 py-1 w-24">{{ t('general.unit') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-24">{{ t('general.unit_price') }}</th>
               <th class="px-1 py-1 w-24">{{ t('general.total') }}</th>
               <th class="px-1 py-1 w-10">
@@ -380,6 +604,16 @@ onUnmounted(() => {
                 />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                <VariantCell
+                  :model-value="item.selected_variant"
+                  :item-variants="item.item_variants"
+                  :disabled="!item?.selected_item"
+                  :error="form.errors?.[`items.${index}.variant_id`]"
+                  :id="`transfer_variant_${index}`"
+                  @update:modelValue="value => handleVariantChange(index, value)"
+                />
+              </td>
+              <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
                     :options="item.selected_item?.batches"
                     v-model="item.selected_batch"
@@ -395,7 +629,7 @@ onUnmounted(() => {
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextDate v-model="item.expire_date"
-                disabled='true'
+                :lock-future-dates="false"
                 :error="form.errors?.[`items.${index}.expire_date`]"   />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -453,6 +687,7 @@ onUnmounted(() => {
               <td class="text-center">{{ totalRows }}</td>
               <td></td>
               <td></td>
+              <td></td>
               <td class="text-center">{{ totalQuantity || 0 }}</td>
               <td></td>
               <td class="text-center"></td>
@@ -463,7 +698,11 @@ onUnmounted(() => {
         </table>
       </div>
 
-      <SubmitButtons
+      <div class="mt-4">
+        <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
+      </div>
+
+      <SubmitButtons module="item_transfer"
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
         :cancel-label="t('general.cancel')"

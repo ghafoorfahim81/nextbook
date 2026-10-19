@@ -1,23 +1,79 @@
 import './bootstrap';
 import '../css/app.css';
+// Loaded after app.css so its html[data-surface='glass'] rules override the
+// Tailwind utilities they replace. Inert unless that attribute is set.
+import '../css/glass.css';
 import '../css/vue-select.css';
+// After vue-select's own sheet: the shared field outline strips the toggle's
+// border and padding, and both selectors are single-class, so load order is
+// what decides. Glass still wins over it on specificity.
+import '../css/next-field.css';
 import 'vue-sonner/style.css';
-import { createApp, h } from 'vue';
+import { createApp, h, ref } from 'vue';
 import { createInertiaApp, Head, Link, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { ConfigProvider } from 'radix-vue';
+import { ConfigProvider as RekaConfigProvider } from 'reka-ui';
 import vSelect from 'vue-select'; // ✅ Import v-select
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { createI18nInstance } from './lib/i18n'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { applyAppearanceTheme } from './lib/theme'
+import { installGuestPageGuard } from './lib/guestPageGuard'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Nextbook';
 
+// Guard against `DataCloneError: ... could not be cloned` from
+// history.pushState/replaceState. Inertia calls these synchronously as part
+// of every router.visit() (e.g. saveScrollPositions() runs before a form's
+// .post() even sends its request), so if the current page's state ever picks
+// up a value the structured-clone algorithm can't serialize, the error is
+// thrown inside the click handler and the visit — including a plain form
+// submit — never happens. Losing scroll-position/history state is harmless;
+// silently failing to submit a form is not, so this degrades instead of
+// throwing: retry with a JSON-safe copy of the state (drops whatever wasn't
+// serializable), and if even that fails, skip the history write and warn.
+;['pushState', 'replaceState'].forEach((method) => {
+    const original = window.history[method].bind(window.history)
+    window.history[method] = function (state, title, url) {
+        try {
+            return original(state, title, url)
+        } catch (error) {
+            if (!(error instanceof DOMException) || error.name !== 'DataCloneError') throw error
+            console.warn(`[history.${method}] page state contained a non-serializable value; retrying with a sanitized copy.`, error)
+            let safeState = null
+            try { safeState = JSON.parse(JSON.stringify(state)) } catch { /* leave null */ }
+            if (safeState === null) return
+            try {
+                return original(safeState, title, url)
+            } catch {
+                // Sanitized copy still failed — proceed without updating history state.
+            }
+        }
+    }
+})
+
+const resolveDirection = (locale, direction) =>
+    direction || (['fa', 'ps'].includes(locale) ? 'rtl' : 'ltr')
+
+// Mirrors <html dir> for radix-vue. Every radix primitive resolves its reading
+// direction through ConfigProvider and *stamps the result as a dir attribute on
+// its own element* — defaulting to 'ltr'. For inline primitives that is
+// invisible (they inherit rtl from <html> anyway, and the stamped value agrees
+// by accident in LTR locales), but menus, selects, dialogs and popovers are
+// portalled to document.body, where an explicit dir='ltr' is the nearest
+// declaration and wins over the rtl on <html>. That is why the user menu and
+// the other portalled surfaces kept laying out left-to-right in Persian and
+// Pashto while the sidebar behind them was correct.
+const documentDirection = ref('ltr')
+
 function applyDocumentLocale(locale, direction) {
     if (!locale) return
+    const dir = resolveDirection(locale, direction)
+    documentDirection.value = dir
     document.documentElement.setAttribute('lang', locale)
-    document.documentElement.setAttribute('dir', direction || (['fa', 'ps'].includes(locale) ? 'rtl' : 'ltr'))
+    document.documentElement.setAttribute('dir', dir)
 }
 
 createInertiaApp({
@@ -46,8 +102,20 @@ createInertiaApp({
         // "success" fires after any successful Inertia visit (GET/POST/etc) and includes the updated page props.
         router.on('navigate', (event) => applyFromPage(event.detail.page))
         router.on('success', (event) => applyFromPage(event.detail.page))
+        installGuestPageGuard()
 
-        return createApp({ render: () => h(App, props) })
+        return createApp({
+            // ConfigProvider renders no element of its own — it only provides the
+            // direction, so every portalled primitive stamps 'rtl' instead of the
+            // default. Reading the ref inside render() keeps it live across
+            // language switches, which are a POST + redirect, not a remount.
+            // The select, switch and accordion primitives come from reka-ui,
+            // which reads its own ConfigProvider, not radix-vue's; without it
+            // their portalled dropdowns stamped dir='ltr' in Persian and Pashto.
+            render: () => h(ConfigProvider, { dir: documentDirection.value }, () =>
+                h(RekaConfigProvider, { dir: documentDirection.value }, () => h(App, props)),
+            ),
+        })
             .use(plugin)
             .use(i18n)
             .use(ZiggyVue)
@@ -57,7 +125,5 @@ createInertiaApp({
             .component('NextDate', NextDate)
             .mount(el);
     },
-    progress: {
-        color: '#4B5563',
-    },
+    progress: false,
 });

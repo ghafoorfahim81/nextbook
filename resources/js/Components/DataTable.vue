@@ -6,15 +6,15 @@
                 <div class="flex justify-items-start">
                     <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1 text-primary' : 'text-lg font-semibold mr-2 text-nowrap mt-1 text-primary'">{{ props.title }}</h1>
                 </div>
-                <div class="relative w-full max-w-full sm:max-w-md">
+                <div class="relative w-full max-w-full sm:w-[320px] lg:w-[400px]">
                     <input
                         id="search"
                         v-model="search"
                         @input="debouncedSearch"
                         type="text"
                         :placeholder="`${t('datatable.search')} ${props.title ? props.title : ''}`"
-                        :class="isRTL ? 'flex h-10 w-full rounded-md border border-primary bg-background px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring pl-8 pr-10 text-primary' :
-                        'flex h-10 w-full rounded-md border border-primary bg-background px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring pl-8 pr-20 text-primary'"
+                        :class="isRTL ? 'flex h-9 w-full rounded-md border border-primary bg-background px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring pl-8 pr-10 text-primary' :
+                        'flex h-9 w-full rounded-md border border-primary bg-background px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring pl-8 pr-20 text-primary'"
                     />
                     <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                         <Search class="size-4 text-primary hover:text-primary/80" />
@@ -31,16 +31,27 @@
 
                         <Popover v-if="hasAdvancedFilters" v-model:open="filtersOpen">
                             <PopoverTrigger as-child>
-                                <button
-                                    type="button"
-                                    class="flex items-center justify-center text-primary"
-                                    @click="openFilters"
-                                >
-                                    <SlidersHorizontal
-                                        class="size-4"
-                                        :class="isAdvancedFiltering ? 'text-primary' : 'text-primary/70 hover:text-primary'"
-                                    />
-                                </button>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger as-child>
+                                        <button
+                                        type="button"
+                                        class="flex items-center justify-center text-primary"
+                                        @click="openFilters"
+                                    >
+                                        <SlidersHorizontal
+                                            class="size-4"
+                                            :class="isAdvancedFiltering ? 'text-primary' : 'text-primary/70 hover:text-primary'"
+                                        />
+                                    </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{{ t('datatable.show_filter_options', { title: props.title ? props.title : '' }) }}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+
+
                             </PopoverTrigger>
                             <PopoverContent
                                 :align="isRTL ? 'start' : 'start'"
@@ -68,7 +79,7 @@
                     variant="outline"
                     size="sm"
                     @click="exportToExcel"
-                    class="h-9 border-primary text-primary hover:bg-primary hover:text-white"
+                    class="h-9 border-green-800 text-green-600 hover:bg-green-700 hover:text-white"
                 >
                     <FileDown class="h-4 w-4" />
                     <span class="ml-1">{{ t('general.excel') }}</span>
@@ -107,8 +118,14 @@
                     </TableRow>
                 </TableHeader>
                 <TableBody>
+                    <!-- Skeleton Loading Rows -->
+                    <TableRow v-if="loading" v-for="n in skeletonRowsToShow" :key="`skeleton-${n}`" class="h-11">
+                        <TableCell v-for="column in derivedColumns" :key="column.key" class="py-1 px-3">
+                            <Skeleton class="h-7 w-full max-w-[160px]" />
+                        </TableCell>
+                    </TableRow>
                     <!-- Empty State Message -->
-                    <TableRow v-if="isEmpty">
+                    <TableRow v-else-if="isEmpty">
                         <TableCell :colspan="derivedColumns.length" class="h-48 text-center">
                             <div class="flex flex-col items-center justify-center space-y-4 py-8">
                                 <div class="rounded-full bg-violet-100 p-4">
@@ -145,13 +162,46 @@
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent class="w-48 rtl:text-right" side="bottom" :align="isRTL ? 'end' : 'start'">
                                         <DropdownMenuLabel class="rtl:text-right text-xs">{{ t('datatable.actions') }}</DropdownMenuLabel>
-                                        <DropdownMenuItem v-if="props.hasEdit && can(`${props.can}.update`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']"
-                                        @click="$emit('edit', item)"><SquarePen class="h-3 w-3" /> {{ t('datatable.edit') }}
-                                    </DropdownMenuItem>
-                                        <DropdownMenuItem v-if="can(`${props.can}.delete`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('delete', item.id)"><Trash2 class="h-3 w-3" /> {{ t('datatable.delete') }}</DropdownMenuItem>
-                                        <DropdownMenuItem v-if="props.hasShow && can(`${props.can}.view`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('show', item.id)"><Eye class="h-3 w-3" /> {{ t('datatable.show') }}</DropdownMenuItem>
-                                        <DropdownMenuItem v-if="props.hasPrint && can(`${props.can}.print`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('print', item.id)"><Printer class="h-3 w-3" /> {{ t('datatable.print') }}</DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="props.hasEdit && can(`${props.can}.update`)"
+                                            :disabled="props.canEditItem ? !props.canEditItem(item) || item.status === 'posted' || item.status === 'reversed' : (item.status === 'posted' || item.status === 'reversed')"
+                                            :class="[
+                                                'gap-2',
+                                                '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5',
+                                                (
+                                                    (props.canEditItem && !props.canEditItem(item)) ||
+                                                    item.status === 'posted' ||
+                                                    item.status === 'reversed'
+                                                ) ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''
+                                            ]"
+                                            @click="$emit('edit', item)"
+                                        ><SquarePen class="h-3 w-3" /> {{ t('datatable.edit') }}</DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="can(`${props.can}.delete`)"
+                                            :disabled="props.canDeleteItem ? !props.canDeleteItem(item) || item.status === 'posted' || item.status === 'reversed' : (item.status === 'posted' || item.status === 'reversed')"
+                                            :class="[
+                                                'gap-2',
+                                                '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5',
+                                                (
+                                                    (props.canDeleteItem && !props.canDeleteItem(item)) ||
+                                                    item.status === 'posted' ||
+                                                    item.status === 'reversed'
+                                                ) ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''
+                                            ]"
+                                            @click="$emit('delete', item.id)"
+                                        ><Trash2 class="h-3 w-3" /> {{ t('datatable.delete') }}</DropdownMenuItem>
+                                        <DropdownMenuItem v-if="props.hasShow && can(`${props.can}.view`)" :class="['gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('show', item.id)"><Eye class="h-3 w-3" /> {{ t('datatable.show') }}</DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="props.hasStatusToggle && can(`${props.can}.update`)"
+                                            :class="['gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']"
+                                            @click="$emit('toggle-status', item)"
+                                        >
+                                            <Power class="h-3 w-3" />
+                                            {{ props.isItemActive(item) ? t('general.deactivate') : t('general.activate') }}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem v-if="props.hasPrint && can(`${props.can}.print`)" :class="['gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('print', item.id)"><Printer class="h-3 w-3" /> {{ t('datatable.print') }}</DropdownMenuItem>
                                     </DropdownMenuContent>
+
                                 </DropdownMenu>
                                 </div>
                             </template>
@@ -169,6 +219,26 @@
                             </template>
                             <template v-else-if="column.render">
                                 {{ column.render(item) }}
+                            </template>
+                            <template v-else-if="isPaymentStatusColumn(column.key)">
+                                <span
+                                    :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(item.payment_status ?? getNestedValue(item, column.key))]"
+                                >
+                                    {{ getNestedValue(item, column.key) || item.payment_status_label || '-' }}
+                                </span>
+                            </template>
+                            <template v-else-if="isStatusColumn(column.key)">
+                                <!-- Tone comes from the raw status, text from the
+                                     label. Reading the tone off the displayed text
+                                     worked only while that text was English: a
+                                     translated "باطل شده" matched no case and every
+                                     status came out the same neutral grey. -->
+                                <span
+                                    class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize"
+                                    :class="statusBadgeClass(item.status ?? getNestedValue(item, column.key))"
+                                >
+                                    {{ getNestedValue(item, column.key) || item.status_label || item.status || '-' }}
+                                </span>
                             </template>
                             <template v-else-if="isBalanceColumn(column.key)">
                                 <span dir="ltr" class="inline-block text-left tabular-nums">
@@ -188,7 +258,7 @@
         <div class="shrink-0 flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
             <!-- Left: Showing X - Y of Z [title] -->
             <div class="text-xs text-muted-foreground">
-                {{ t('datatable.showing', { from: items.meta.from, to: items.meta.to, total: items.total }) }}
+                {{ t('datatable.showing', { from: pageMeta.from ?? 0, to: pageMeta.to ?? 0, total: pageMeta.total ?? 0 }) }}
                 <template v-if="props.title"> {{ props.title.toLowerCase() }}</template>
             </div>
 
@@ -197,8 +267,8 @@
                 <div class="flex items-center gap-1 text-xs text-muted-foreground">
                     <span>{{ t('datatable.per_page') }}:</span>
                     <Select v-model="perPage" @update:modelValue="updatePerPage">
-                        <SelectTrigger class="w-[80px] h-7 text-xs border-input">
-                            <SelectValue :placeholder="t('datatable.per_page')" />
+                        <SelectTrigger class="w-[100px] h-7 text-xs border-input">
+                            <SelectValue :value="perPage ?? 10" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem
@@ -236,7 +306,7 @@
                 </Button>
 
                 <span class="mx-2 text-xs text-muted-foreground">
-                    Page {{ currentPage }} of {{ lastPage }}
+                    {{ t('datatable.page', { page: currentPage, total: lastPage }) }}
                 </span>
 
                 <!-- Next -->
@@ -275,11 +345,17 @@ import { useI18n } from 'vue-i18n'
 import AddNewButton from '@/Components/next/AddNewButton.vue'
 import DataTableFilterPanel from '@/Components/DataTableFilterPanel.vue'
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover'
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/Components/ui/tooltip'
 // UI Components
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/Components/ui/table'
+import { Skeleton } from '@/Components/ui/skeleton'
 import { Button } from '@/Components/ui/button'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -287,12 +363,14 @@ import {
 import {
     Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis, SquarePen, Trash,
     Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileX,
-    Eye, Printer, FileDown,
+    Eye, Printer, FileDown, Power,
 } from 'lucide-vue-next'
 import {
     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 } from '@/Components/ui/dropdown-menu'
 import { useAuth } from '@/composables/useAuth'
+import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
+
 const { can } = useAuth();
 const props = defineProps({
     can: String,
@@ -309,8 +387,17 @@ const props = defineProps({
     hasEdit:{ type: Boolean, default: true },
     hasShow:{ type: Boolean, default: false },
     hasPrint:{ type: Boolean, default: false },
+    // Offers "Activate"/"Deactivate" in the row menu for records that carry a
+    // status. Deactivating is the only way to retire something the dependency
+    // guard will not let you delete.
+    hasStatusToggle: { type: Boolean, default: false },
+    // How to read "is this row active" — the column differs by module.
+    isItemActive: { type: Function, default: (item) => item?.is_active !== false && item?.status !== 'inactive' && item?.status !== 'blocked' },
     // Hide delete action when the provided key path resolves to true on the row item
     hideDeleteOnKeyTrue: { type: String, default: null },
+    // Optional per-row callbacks: receive the row item, return true to allow the action
+    canEditItem: { type: Function, default: null },
+    canDeleteItem: { type: Function, default: null },
     addRoute: { type: String, default: null },
     addRouteParams: { type: Object, default: () => ({}) },
     // Controls for empty state and rows
@@ -321,11 +408,23 @@ const props = defineProps({
 const { t, locale } = useI18n()
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 // Declare emits for clarity
-defineEmits(['edit', 'delete', 'add', 'print', 'show'])
+defineEmits(['edit', 'delete', 'add', 'print', 'show', 'toggle-status'])
 
 const pageOptions = [10, 20, 50, 100]
+
+/**
+ * Pagination figures, whichever shape the page sent.
+ *
+ * An API Resource collection nests them under `meta`; a raw Laravel paginator
+ * puts them at the top level. Both reach this table from different controllers,
+ * so read `meta` when it is there and fall back to the object itself. Reaching
+ * straight into `items.meta.from` blanked the whole page for every screen that
+ * passes a raw paginator.
+ */
+const pageMeta = computed(() => props.items?.meta ?? props.items ?? {})
+
 const search = ref(props.filters?.search || '')
-const perPage = ref(props.filters?.perPage || 10)
+const perPage = ref(props.items?.meta?.per_page ?? props.items?.per_page ?? 10)
 const sortField = ref(props.filters?.sortField || 'id')
 const sortDirection = ref(props.filters?.sortDirection || 'asc')
 const advancedFilters = ref(props.filters?.filters || {})
@@ -335,8 +434,8 @@ const isAdvancedFiltering = computed(() => {
     const f = advancedFilters.value || {}
     return Object.keys(f).some((k) => f[k] !== null && f[k] !== undefined && f[k] !== '')
 })
-const currentPage = computed(() => props.items?.meta?.current_page ?? 1)
-const lastPage = computed(() => props.items?.meta?.last_page ?? 1)
+const currentPage = computed(() => pageMeta.value.current_page ?? 1)
+const lastPage = computed(() => pageMeta.value.last_page ?? 1)
 
 // Empty state and rows handling
 const isEmpty = computed(() => !props.items?.data || props.items.data.length === 0)
@@ -345,6 +444,10 @@ const emptyRowsToShow = computed(() => {
     if (isEmpty.value) return props.emptyRowsCount
     return Math.max(0, props.emptyRowsCount - dataRowsCount.value)
 })
+
+// Loading state: shown while navigating, searching, filtering or sorting
+const loading = ref(false)
+const skeletonRowsToShow = computed(() => dataRowsCount.value || props.emptyRowsCount)
 
 // Derived columns: inject index column at the start
 const derivedColumns = computed(() => {
@@ -368,8 +471,40 @@ const isBalanceColumn = (key) => {
     return key === 'balance' || key.endsWith('_balance') || key.includes('.balance') || key.includes('amount')
 }
 
+const isStatusColumn = (key) => key === 'status' || key === 'status_label'
+
+const isPaymentStatusColumn = (key) => key === 'payment_status' || key === 'payment_status_label'
+
+const statusBadgeClass = (status) => {
+    switch (String(status || '').toLowerCase()) {
+        case 'draft':
+        case 'pending':
+            return 'border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-300'
+        case 'posted':
+        case 'completed':
+        case 'approved':
+            return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300'
+        case 'reversed':
+        case 'cancelled':
+        case 'rejected':
+        case 'voided':
+            return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
+        default:
+            return 'border-border bg-muted text-foreground'
+    }
+}
+
+// Requests triggered from within the table (search, sort, filter, paginate)
+// carry this header so the global BookLoader overlay skips them — the table
+// renders its own skeleton loader for these in-place refreshes.
+const DATATABLE_REQUEST_HEADERS = { 'X-DataTable-Refresh': '1' }
+
+// Wait until the user pauses typing before firing a search, so we don't send a
+// request on every keystroke while a word is still being typed.
+const SEARCH_DEBOUNCE_MS = 1000
+
 // Search handling
-const debouncedSearch = debounce(() => updateFilters(), 300)
+const debouncedSearch = debounce(() => updateFilters(), SEARCH_DEBOUNCE_MS)
 
 const updateFilters = () => {
     router.get(
@@ -381,7 +516,13 @@ const updateFilters = () => {
             sortDirection: sortDirection.value,
             filters: advancedFilters.value,
         },
-        { preserveState: true, preserveScroll: true }
+        {
+            preserveState: true,
+            preserveScroll: true,
+            headers: DATATABLE_REQUEST_HEADERS,
+            onStart: () => { loading.value = true },
+            onFinish: () => { loading.value = false },
+        }
     )
 }
 
@@ -411,7 +552,13 @@ const changePage = (page) => {
             sortDirection: sortDirection.value,
             filters: advancedFilters.value,
         },
-        { preserveState: true, preserveScroll: true }
+        {
+            preserveState: true,
+            preserveScroll: true,
+            headers: DATATABLE_REQUEST_HEADERS,
+            onStart: () => { loading.value = true },
+            onFinish: () => { loading.value = false },
+        }
     )
 }
 
@@ -436,7 +583,13 @@ const applyAdvancedFilters = () => {
             sortDirection: sortDirection.value,
             filters: advancedFilters.value,
         },
-        { preserveState: true, preserveScroll: true }
+        {
+            preserveState: true,
+            preserveScroll: true,
+            headers: DATATABLE_REQUEST_HEADERS,
+            onStart: () => { loading.value = true },
+            onFinish: () => { loading.value = false },
+        }
     )
 }
 
@@ -447,8 +600,8 @@ const clearAdvancedFilters = () => {
 
 // Row number: starts at 1 and increments across pages
 const getRowNumber = (rowIndex) => {
-    const current = props.items?.meta?.current_page ?? 1
-    const per = props.items?.meta?.per_page ?? (perPage.value || 10)
+    const current = pageMeta.value.current_page ?? 1
+    const per = pageMeta.value.per_page ?? (perPage.value || 10)
     return (current - 1) * per + rowIndex + 1
 }
 

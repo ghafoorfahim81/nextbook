@@ -8,7 +8,9 @@ use App\Models\Administration\Currency;
 use App\Models\Administration\Department;
 use App\Models\Administration\Designation;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -28,13 +30,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class JobOpening extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'code', 'title', 'department_id', 'designation_id', 'employment_type',
         'vacancies', 'description', 'requirements', 'responsibilities',
         'min_salary', 'max_salary', 'currency_id', 'location',

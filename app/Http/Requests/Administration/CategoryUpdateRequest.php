@@ -21,6 +21,7 @@ class CategoryUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('categories')->ignore($this->route('category'))->whereNull('deleted_at')],
+            'local_name' => ['nullable', 'string', 'max:256'],
             'parent_id' => ['nullable', 'string', 'exists:categories,id'],
             'remark' => ['nullable', 'string'],
         ];

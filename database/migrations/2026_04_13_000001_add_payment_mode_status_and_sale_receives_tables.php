@@ -42,6 +42,7 @@ return new class extends Migration
 
         Schema::create('sale_receives', function (Blueprint $table): void {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('sale_id');
             $table->ulid('receipt_id');
             $table->decimal('amount', 15, 2)->default(0);

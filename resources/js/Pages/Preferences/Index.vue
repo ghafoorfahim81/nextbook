@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { ref, computed, watch } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { useForm, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useColorMode } from '@vueuse/core'
 import { Button } from '@/Components/ui/button'
@@ -20,10 +20,11 @@ import { toast } from 'vue-sonner';
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
-    Save, Plug, Eye, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText
+    Save, Plug, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText, Check
 } from 'lucide-vue-next'
-import InvoiceDesigner from '@/Pages/Preferences/InvoiceDesigner.vue'
-import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode } from '@/lib/theme'
+import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode, resolveSurfaceStyle } from '@/lib/theme'
+import { vHighlightSearch } from '@/directives/highlightSearch'
+import { stringsMatchQuery, tabSearchValues, translateSearchKeys } from '@/Pages/Preferences/preferenceSearchIndex'
 
 const props = defineProps({
     preferences: Object,
@@ -37,9 +38,7 @@ const props = defineProps({
     sizes: { type: [Array, Object], required: true },
     currencies: { type: [Array, Object], required: true },
     ledgers: { type: [Array, Object], required: true },
-    invoiceThemes:         { type: Array,  required: true },
-    invoiceFormats:        { type: Array,  default: () => [] },
-    invoiceFormatDefaults: { type: Object, default: () => ({}) },
+    soundOptions:          { type: Object, default: () => ({}) },
 })
 
 const { t, locale } = useI18n()
@@ -50,6 +49,23 @@ const tOr = (key, fallback, params = {}) => {
 }
 
 const activeTab = ref('appearance')
+
+// Tabs are built the first time they are opened, not all fourteen at once.
+// Opened tabs stay mounted (v-show), so switching back is instant and any
+// unsaved edits in them survive.
+const visitedTabs = ref(new Set([activeTab.value]))
+watch(activeTab, (tab) => {
+    if (!visitedTabs.value.has(tab)) {
+        visitedTabs.value = new Set([...visitedTabs.value, tab])
+    }
+
+    // This tab's lists are lazy on the server; fetch them on first open.
+    if (tab === 'install_plugins' && !pluginLists.value) {
+        loadPluginLists()
+    }
+})
+const isTabBuilt = (tab) => visitedTabs.value.has(tab)
+
 const menuSearchQuery = ref('')
 const normalizedMenuSearch = computed(() => menuSearchQuery.value.trim().toLowerCase())
 const resettingCategory = ref('')
@@ -58,9 +74,11 @@ const importLoading = ref(false)
 const tabs = [
     { id: 'appearance', label: 'preferences.tabs.appearance', icon: Palette },
     { id: 'item_management', label: 'preferences.tabs.item_management', icon: Package },
+    { id: 'stock_adjustment', label: 'preferences.tabs.stock_adjustment', icon: preferencesIcon },
     { id: 'sale', label: 'preferences.tabs.sale', icon: ShoppingCart },
     { id: 'purchase', label: 'preferences.tabs.purchase', icon: ShoppingBag },
     { id: 'receipt_payment', label: 'preferences.tabs.receipt_payment', icon: CreditCard },
+    { id: 'transaction', label: 'preferences.tabs.transaction', icon: FileText },
     { id: 'tax_currency', label: 'preferences.tabs.tax_currency', icon: Calculator },
     { id: 'notifications', label: 'preferences.tabs.notifications', icon: Bell },
     { id: 'security', label: 'preferences.tabs.security', icon: Shield },
@@ -68,7 +86,6 @@ const tabs = [
     { id: 'backup', label: 'preferences.tabs.backup', icon: Database },
     { id: 'localization', label: 'preferences.tabs.localization', icon: Globe },
     { id: 'display', label: 'preferences.tabs.display', icon: Monitor },
-    { id: 'invoice_designer', label: 'preferences.tabs.invoice_designer', icon: FileText },
 ]
 
 const tabSearchTerms = {
@@ -100,8 +117,6 @@ const tabSearchTerms = {
         'code',
         'generic name',
         'packing',
-        'colors',
-        'size',
         'brand',
         'minimum stock',
         'maximum stock',
@@ -129,7 +144,6 @@ const tabSearchTerms = {
         'start number',
         'due days',
         'terms',
-        'invoice theme',
         'auto reminders',
         'reminder days',
         'late fee percentage',
@@ -145,8 +159,7 @@ const tabSearchTerms = {
         'type',
         'warehouse',
         'packing',
-        'colors',
-        'size',
+        'variant',
         'brand',
         'rack no',
         'category',
@@ -181,8 +194,7 @@ const tabSearchTerms = {
         'type',
         'warehouse',
         'packing',
-        'colors',
-        'size',
+        'variant',
         'brand',
         'rack no',
         'category',
@@ -210,6 +222,20 @@ const tabSearchTerms = {
         'lock after days',
         'auto sequence',
         'require approval',
+    ],
+    transaction: [
+        'transaction',
+        'post immediately',
+        'draft',
+        'sale',
+        'purchase',
+        'expense',
+        'journal entry',
+        'receipt',
+        'payment',
+        'account transfer',
+        'item transfer',
+        'drawing',
     ],
     tax_currency: [
         'tax currency',
@@ -291,23 +317,9 @@ const tabSearchTerms = {
     ],
 }
 
-const visibleTabs = computed(() => {
-    const q = normalizedMenuSearch.value
-
-    if (!q) {
-        return tabs
-    }
-
-    return tabs.filter((tab) => {
-        return [
-            tab.id,
-            t(tab.label),
-            ...(tabSearchTerms[tab.id] || []),
-        ].some((value) => String(value || '').toLowerCase().includes(q))
-    })
-})
-
-const isPreferencesLoading = computed(() => form.processing || pluginForm.processing || importLoading.value || Boolean(resettingCategory.value))
+// Auto-save runs `form` in the background and reports through the header status,
+// so it is left out here to keep the banner from flashing on every edit.
+const isPreferencesLoading = computed(() => pluginForm.processing || importLoading.value || Boolean(resettingCategory.value))
 
 const form = useForm({ ...props.preferences })
 const previewColorMode = useColorMode({
@@ -367,11 +379,26 @@ form.display.theme = legacyColorModes.includes(form.display.theme) ? form.displa
 form.appearance.accent_color = accentColorOptions.includes(form.appearance.accent_color)
     ? form.appearance.accent_color
     : resolveAccentColor(props.preferences)
+// Preferences saved before the surface style existed have no key at all, so
+// the Select would start blank and post nothing.
+form.appearance.surface_style = resolveSurfaceStyle(form)
+
+const allSidebarMenusSelected = computed(() => {
+    const selected = form.appearance.sidebar_menus ?? []
+    return (props.sidebarMenus ?? []).every((menu) => selected.includes(menu.value))
+})
+
+function toggleAllSidebarMenus() {
+    form.appearance.sidebar_menus = allSidebarMenusSelected.value
+        ? []
+        : (props.sidebarMenus ?? []).map((menu) => menu.value)
+}
 
 watch(
     () => [
         form.appearance?.theme,
         form.appearance?.accent_color,
+        form.appearance?.surface_style,
         form.appearance?.font_size,
         form.appearance?.sidebar_font_size,
         form.appearance?.heading_font_size,
@@ -391,27 +418,82 @@ watch(
     { immediate: true },
 )
 
-const allUnitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
-const allCategories = computed(() => props.categories?.data ?? props.categories ?? [])
-const allWarehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
-const allSizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
-const allCurrencies = computed(() => props.currencies?.data ?? props.currencies ?? [])
-const allLedgers = computed(() => props.ledgers?.data ?? props.ledgers ?? [])
-const invoiceThemes = computed(() => props.invoiceThemes ?? [])
+/*
+ * The "Install plugins" lists are lazy props: the server leaves them out of
+ * the first load and sends them when that tab asks (see loadPluginLists).
+ * They are copied into local state because any later visit to this page —
+ * the auto-save redirects back here — omits lazy props again, and reading
+ * them straight from props would empty the tab.
+ */
+const PLUGIN_PROPS = ['unitMeasures', 'categories', 'warehouses', 'sizes', 'currencies', 'ledgers']
+const pluginLists = ref(null)
+const pluginListsLoading = ref(false)
+
+const unwrapList = (value) => value?.data ?? value ?? []
+
+const pluginForm = useForm({
+    unit_measures: [],
+    categories: [],
+    warehouses: [],
+    sizes: [],
+    currencies: [],
+    ledgers: [],
+})
+
+watch(
+    () => PLUGIN_PROPS.map((key) => props[key]),
+    (values) => {
+        if (values.every((value) => value === undefined)) return
+
+        pluginLists.value = Object.fromEntries(PLUGIN_PROPS.map((key, index) => [key, unwrapList(values[index])]))
+        syncPluginForm()
+    },
+    { immediate: true },
+)
+
+const allUnitMeasures = computed(() => pluginLists.value?.unitMeasures ?? [])
+const allCategories = computed(() => pluginLists.value?.categories ?? [])
+const allWarehouses = computed(() => pluginLists.value?.warehouses ?? [])
+const allSizes = computed(() => pluginLists.value?.sizes ?? [])
+const allCurrencies = computed(() => pluginLists.value?.currencies ?? [])
+const allLedgers = computed(() => pluginLists.value?.ledgers ?? [])
 
 const customerLedgers = computed(() => allLedgers.value.filter(l => l.type === 'customer'))
 const supplierLedgers = computed(() => allLedgers.value.filter(l => l.type === 'supplier'))
 
 const activeIds = (list) => (Array.isArray(list) ? list : []).filter(x => x?.is_active === true).map(x => x.id)
 
-const pluginForm = useForm({
-    unit_measures: activeIds(allUnitMeasures.value),
-    categories: activeIds(allCategories.value),
-    warehouses: activeIds(allWarehouses.value),
-    sizes: activeIds(allSizes.value),
-    currencies: activeIds(allCurrencies.value),
-    ledgers: activeIds(allLedgers.value),
-})
+// Seed the checkboxes from what is currently active once the lists arrive.
+// A function declaration, so the immediate watcher above can call it.
+function syncPluginForm() {
+    const lists = pluginLists.value
+    if (!lists) return
+
+    // Self-contained on purpose: the watcher runs before the helpers below exist.
+    const active = (list) => (Array.isArray(list) ? list : []).filter(x => x?.is_active === true).map(x => x.id)
+    const selection = {
+        unit_measures: active(lists.unitMeasures),
+        categories: active(lists.categories),
+        warehouses: active(lists.warehouses),
+        sizes: active(lists.sizes),
+        currencies: active(lists.currencies),
+        ledgers: active(lists.ledgers),
+    }
+    Object.assign(pluginForm, selection)
+    pluginForm.defaults(selection)
+}
+
+function loadPluginLists() {
+    if (pluginListsLoading.value) return
+
+    pluginListsLoading.value = true
+    router.reload({
+        only: PLUGIN_PROPS,
+        preserveState: true,
+        preserveScroll: true,
+        onFinish: () => { pluginListsLoading.value = false },
+    })
+}
 const pluginSaving = computed(() => pluginForm.processing)
 
 const togglePluginIds = (field, id, checked) => {
@@ -429,23 +511,154 @@ const savePlugins = () => {
                 description: t('preferences.install_plugins.saved_description'),
                 class: 'bg-green-600',
             });
+            // The redirect back omits lazy props; refetch so the lists
+            // reflect what was just activated.
+            loadPluginLists()
         },
     })
 }
 
-const save = () => {
-    form.put(route('preferences.update'), {
+const soundCategories = ['notification', 'warning', 'success', 'login']
+const soundUploading = ref('')
+const soundRemoving = ref('')
+const soundFileInputs = {}
+
+if (!form.notifications) form.notifications = {}
+if (!form.notifications.sound) {
+    form.notifications.sound = { ...(props.defaultPreferences?.notifications?.sound ?? {}) }
+}
+
+const soundOptionsFor = (category) => {
+    const builtins = props.soundOptions?.[category] || []
+    const customUrl = form.notifications.sound[`${category}_custom_url`]
+    if (!customUrl) return builtins
+    return [...builtins, { id: 'custom', name: null, url: customUrl }]
+}
+
+const previewSound = (category) => {
+    const choice = form.notifications.sound[`${category}_choice`]
+    const customUrl = form.notifications.sound[`${category}_custom_url`]
+    const url = choice === 'custom' && customUrl ? customUrl : (choice ? `/sounds/${choice}.mp3` : null)
+    if (!url) return
+    new Audio(url).play().catch(() => {})
+}
+
+const triggerSoundUpload = (category) => {
+    soundFileInputs[category]?.click()
+}
+
+const handleSoundUpload = (category, event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+    soundUploading.value = category
+
+    router.post(route('preferences.sounds.store', category), formData, {
         preserveScroll: true,
-        onSuccess: () => {
-            toast.success(t('preferences.saved'), {
-                description: t('preferences.saved_description'),
-                class: 'bg-green-600',
-            })
-        // Store form values to local storage after a successful save
-        localStorage.setItem('user_preferences', JSON.stringify(form));
+        preserveState: true,
+        onSuccess: (page) => {
+            const updated = page.props.preferences?.notifications?.sound
+            if (updated) {
+                form.notifications.sound = { ...updated }
+                form.defaults(page.props.preferences)
+            }
+            toast.success(t('preferences.saved'), { class: 'bg-green-600' })
+        },
+        onError: () => {
+            toast.error(t('preferences.notifications.sound.upload_error'))
+        },
+        onFinish: () => {
+            soundUploading.value = ''
+            event.target.value = ''
         },
     })
 }
+
+const removeSoundUpload = (category) => {
+    soundRemoving.value = category
+    router.delete(route('preferences.sounds.destroy', category), {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (page) => {
+            const updated = page.props.preferences?.notifications?.sound
+            if (updated) {
+                form.notifications.sound = { ...updated }
+                form.defaults(page.props.preferences)
+            }
+        },
+        onFinish: () => {
+            soundRemoving.value = ''
+        },
+    })
+}
+
+// Every change is saved in the background: edits are debounced so typing into a
+// number field sends one request, and preserveState keeps the page (active tab,
+// search, scroll) in place instead of remounting it.
+const AUTO_SAVE_DELAY = 800
+const snapshotForm = () => JSON.stringify(form.data())
+let lastSavedSnapshot = snapshotForm()
+let autoSaveTimer = null
+const autoSaveStatus = ref('idle') // idle | pending | saving | saved | error
+
+const save = ({ silent = false } = {}) => {
+    clearTimeout(autoSaveTimer)
+    const snapshot = snapshotForm()
+    autoSaveStatus.value = 'saving'
+    form.put(route('preferences.update'), {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            lastSavedSnapshot = snapshot
+            autoSaveStatus.value = 'saved'
+            if (!silent) {
+                toast.success(t('preferences.saved'), {
+                    description: t('preferences.saved_description'),
+                    class: 'bg-green-600',
+                })
+            }
+            // Store form values to local storage after a successful save
+            try { localStorage.setItem('user_preferences', JSON.stringify(form.data())) } catch {}
+        },
+        onError: () => {
+            autoSaveStatus.value = 'error'
+            toast.error(t('preferences.save_error'))
+        },
+        onFinish: () => {
+            // A change made while this request was in flight still needs saving.
+            if (autoSaveStatus.value === 'saved' && snapshotForm() !== lastSavedSnapshot) {
+                scheduleAutoSave()
+            }
+        },
+    })
+}
+
+const scheduleAutoSave = () => {
+    clearTimeout(autoSaveTimer)
+    autoSaveStatus.value = 'pending'
+    autoSaveTimer = setTimeout(() => {
+        if (form.processing) return // onFinish reschedules once the current save lands
+        if (snapshotForm() === lastSavedSnapshot) {
+            autoSaveStatus.value = 'saved'
+            return
+        }
+        save({ silent: true })
+    }, AUTO_SAVE_DELAY)
+}
+
+watch(snapshotForm, (snapshot) => {
+    if (snapshot !== lastSavedSnapshot) scheduleAutoSave()
+})
+
+// Flush a pending edit instead of dropping it when the user navigates away.
+onBeforeUnmount(() => {
+    if (autoSaveStatus.value === 'pending' && snapshotForm() !== lastSavedSnapshot) {
+        clearTimeout(autoSaveTimer)
+        save({ silent: true })
+    }
+})
 
 const resetCategory = (category) => {
     if (confirm(t('preferences.confirm_reset'))) {
@@ -487,6 +700,8 @@ const handleFileUpload = (event) => {
 
     router.post(route('preferences.import'), formData, {
         onSuccess: () => {
+            form.defaults(props.preferences)
+            form.reset()
             toast({ title: t('preferences.import_success') })
         },
         onError: () => {
@@ -503,43 +718,11 @@ const clearMenuSearch = () => {
     menuSearchQuery.value = ''
 }
 
-watch(
-    () => visibleTabs.value,
-    (nextTabs) => {
-        if (!nextTabs.length) {
-            return
-        }
-
-        if (normalizedMenuSearch.value && !nextTabs.some((tab) => tab.id === activeTab.value)) {
-            activeTab.value = nextTabs[0].id
-        }
-    },
-    { immediate: true },
-)
-
 // Transaction Types for Sale and Purchases
 const saleTransactionTypes = ['sale', 'sale_order', 'sale_return', 'sale_quotation']
 const purchaseTransactionTypes = ['purchase', 'purchase_order', 'purchase_return', 'purchase_quotation']
 const activeSaleType = ref('sale')
 const activePurchaseType = ref('purchase')
-const previewInvoiceTheme = ref(null)
-const invoiceThemePreviewOpen = ref(false)
-
-const selectedInvoiceTheme = computed(() => {
-    return invoiceThemes.value.find(theme => theme.id === form.sale?.invoice_theme) ?? invoiceThemes.value[0] ?? null
-})
-
-const selectInvoiceTheme = (themeId) => {
-    if (!form.sale) form.sale = {}
-    form.sale.invoice_theme = themeId
-}
-
-const openInvoiceThemePreview = (theme) => {
-    previewInvoiceTheme.value = theme
-    invoiceThemePreviewOpen.value = true
-}
-
-const invoiceThemeLabel = (theme) => t(theme?.name ?? '')
 
 const generalFields = [
     { key: 'number', label: 'preferences.fields.number' },
@@ -552,8 +735,7 @@ const generalFields = [
 
 const itemColumns = [
     { key: 'packing', label: 'preferences.fields.packing' },
-    { key: 'colors', label: 'preferences.fields.colors' },
-    { key: 'size', label: 'preferences.fields.size' },
+    { key: 'variant', label: 'preferences.fields.variant' },
     { key: 'brand', label: 'preferences.fields.brand' },
     { key: 'rack_no', label: 'preferences.fields.rack_no' },
     { key: 'category', label: 'preferences.fields.category' },
@@ -561,6 +743,8 @@ const itemColumns = [
     { key: 'batch', label: 'preferences.fields.batch' },
     { key: 'expiry', label: 'preferences.fields.expiry' },
     { key: 'on_hand', label: 'preferences.fields.on_hand' },
+    { key: 'reserved_out', label: 'general.reserved_out' },
+    { key: 'reserved_in', label: 'general.reserved_in' },
     { key: 'measure', label: 'preferences.fields.measure' },
     { key: 'discount', label: 'preferences.fields.discount' },
     { key: 'tax', label: 'preferences.fields.tax' },
@@ -569,26 +753,61 @@ const itemColumns = [
 
 ]
 
+// A field with no explicit override inherits its visibility from the company's
+// business profile, so the checkbox matches what the item form actually shows.
+const _page = usePage()
+const itemFieldChecked = (key) => {
+    const stored = form.item_management?.visible_fields?.[key]
+    if (stored !== undefined && stored !== null) return stored
+    return Boolean(_page.props?.business_profile?.fields?.[key])
+}
+
+// Mirrors config/business_profiles.php `base.fields` — every field a trade
+// profile can hide, so the owner can switch it back on. Labels from `item.*`.
 const itemManagementFields = [
-    { key: 'code', label: 'preferences.item_fields.code' },
-    { key: 'generic_name', label: 'preferences.item_fields.generic_name' },
-    { key: 'packing', label: 'preferences.item_fields.packing' },
-    { key: 'colors', label: 'preferences.item_fields.colors' },
-    { key: 'size', label: 'preferences.item_fields.size' },
-    { key: 'brand', label: 'preferences.item_fields.brand' },
-    { key: 'minimum_stock', label: 'preferences.item_fields.minimum_stock' },
-    { key: 'maximum_stock', label: 'preferences.item_fields.maximum_stock' },
-    { key: 'file_upload', label: 'preferences.item_fields.file_upload' },
-    { key: 'rate_a', label: 'preferences.item_fields.rate_a' },
-    { key: 'rate_b', label: 'preferences.item_fields.rate_b' },
-    { key: 'rate_c', label: 'preferences.item_fields.rate_c' },
-    { key: 'barcode', label: 'preferences.item_fields.barcode' },
-    { key: 'rack_no', label: 'preferences.item_fields.rack_no' },
-    { key: 'fast_search', label: 'preferences.item_fields.fast_search' },
-    { key: 'item_type', label: 'preferences.fields.item_type' },
-    { key: 'sku', label: 'preferences.fields.sku' },
-    { key: 'is_batch_tracked', label: 'preferences.item_fields.is_batch_tracked' },
-    { key: 'is_expiry_tracked', label: 'preferences.item_fields.is_expiry_tracked' },
+    { key: 'code', label: 'item.code' },
+    // Asset/income/cost as one group — filled in from the item type, so they
+    // are off by default and this switches all three back on.
+    { key: 'accounts', label: 'preferences.fields.accounts' },
+    { key: 'generic_name', label: 'item.generic_name' },
+    { key: 'packing', label: 'item.packing' },
+    { key: 'description', label: 'item.description' },
+    { key: 'photo', label: 'item.photo' },
+    { key: 'item_type', label: 'item.item_type' },
+    { key: 'category', label: 'admin.category.category' },
+    { key: 'brand', label: 'admin.brand.brand' },
+    { key: 'unit_measure', label: 'admin.unit_measure.unit_measure' },
+    { key: 'model', label: 'item.model' },
+    { key: 'rate_a', label: 'item.rate_a' },
+    { key: 'rate_b', label: 'item.rate_b' },
+    { key: 'rate_c', label: 'item.rate_c' },
+    { key: 'pricing_method', label: 'item.pricing_method' },
+    { key: 'costing_method', label: 'item.costing_method' },
+    { key: 'reorder_quantity', label: 'item.reorder_quantity' },
+    { key: 'lead_time_days', label: 'item.lead_time_days' },
+    { key: 'default_warehouse', label: 'item.default_warehouse' },
+    { key: 'rack_no', label: 'item.rack_no' },
+    { key: 'fast_search', label: 'item.fast_search' },
+    { key: 'weight', label: 'item.weight' },
+    { key: 'dimensions', label: 'item.dimensions' },
+    { key: 'manufacturer', label: 'item.manufacturer' },
+    { key: 'country_of_origin', label: 'item.country_of_origin' },
+    { key: 'hs_code', label: 'item.hs_code' },
+    { key: 'warranty_months', label: 'item.warranty_months' },
+    { key: 'shelf_life_days', label: 'item.shelf_life_days' },
+    { key: 'min_shelf_life_percent', label: 'item.min_shelf_life_percent' },
+    { key: 'storage_zone', label: 'item.storage_zone' },
+    { key: 'requires_prescription', label: 'item.requires_prescription' },
+    { key: 'is_controlled', label: 'item.is_controlled' },
+    { key: 'is_batch_tracked', label: 'item.is_batch_tracked' },
+    { key: 'is_expiry_tracked', label: 'item.is_expiry_tracked' },
+    { key: 'is_serial_tracked', label: 'item.is_serial_tracked' },
+    { key: 'is_stockable', label: 'item.is_stockable' },
+    { key: 'is_sellable', label: 'item.is_sellable' },
+    { key: 'is_purchasable', label: 'item.is_purchasable' },
+    { key: 'is_weighted', label: 'item.is_weighted' },
+    { key: 'allow_negative_stock', label: 'item.allow_negative_stock' },
+    { key: 'show_in_pos', label: 'item.show_in_pos' },
     ]
 
 const receiptPaymentFields = [
@@ -598,11 +817,245 @@ const receiptPaymentFields = [
     { key: 'debit_account', label: 'preferences.receipt_fields.debit_account' },
     { key: 'ledger_old_balance', label: 'preferences.receipt_fields.ledger_old_balance' },
 ]
+
+const transactionPostModules = [
+    { key: 'sale_post_immediately', label: 'preferences.transaction.modules.sale' },
+    { key: 'sale_order_post_immediately', label: 'preferences.transaction.modules.sale_order' },
+    { key: 'purchase_post_immediately', label: 'preferences.transaction.modules.purchase' },
+    { key: 'expense_post_immediately', label: 'preferences.transaction.modules.expense' },
+    { key: 'journal_entry_post_immediately', label: 'preferences.transaction.modules.journal_entry' },
+    { key: 'receipt_post_immediately', label: 'preferences.transaction.modules.receipt' },
+    { key: 'payment_post_immediately', label: 'preferences.transaction.modules.payment' },
+    { key: 'account_transfer_post_immediately', label: 'preferences.transaction.modules.account_transfer' },
+    { key: 'item_transfer_post_immediately', label: 'preferences.transaction.modules.item_transfer' },
+    { key: 'drawing_post_immediately', label: 'preferences.transaction.modules.drawing' },
+    { key: 'stock_adjustment_post_immediately', label: 'preferences.transaction.modules.stock_adjustment' },
+    { key: 'sale_return_post_immediately', label: 'preferences.transaction.modules.sale_return' },
+    { key: 'sale_quotation_post_immediately', label: 'preferences.transaction.modules.sale_quotation' },
+    { key: 'purchase_order_post_immediately', label: 'preferences.transaction.modules.purchase_order' },
+    { key: 'purchase_return_post_immediately', label: 'preferences.transaction.modules.purchase_return' },
+    { key: 'purchase_quotation_post_immediately', label: 'preferences.transaction.modules.purchase_quotation' },
+]
+
+// Per-module "confirm before save" toggles for modules without a dedicated
+// preferences tab. Sale/Purchase/Receipt/Payment/Item are configured in their own tabs.
+const confirmSaveModules = [
+    { key: 'expense', label: 'preferences.transaction.modules.expense' },
+    { key: 'journal_entry', label: 'preferences.transaction.modules.journal_entry' },
+    { key: 'account_transfer', label: 'preferences.transaction.modules.account_transfer' },
+    { key: 'item_transfer', label: 'preferences.transaction.modules.item_transfer' },
+    { key: 'drawing', label: 'preferences.transaction.modules.drawing' },
+    { key: 'ledger', label: 'preferences.transaction.modules.ledger' },
+    { key: 'account', label: 'preferences.transaction.modules.account' },
+    { key: 'owner', label: 'preferences.transaction.modules.owner' },
+]
+
+// Stock adjustment: reason → offset account mapping (9040 shrinkage vs 9050 adjustments).
+const stockAdjustmentReasons = [
+    { key: 'damage', direction: 'out' },
+    { key: 'expiry', direction: 'out' },
+    { key: 'theft', direction: 'out' },
+    { key: 'loss', direction: 'out' },
+    { key: 'count_down', direction: 'out' },
+    { key: 'internal_use', direction: 'out' },
+    { key: 'sample', direction: 'out' },
+    { key: 'wastage', direction: 'out' },
+    { key: 'quality_rejection', direction: 'out' },
+    { key: 'count_up', direction: 'in' },
+    { key: 'found', direction: 'in' },
+    { key: 'opening_stock', direction: 'in' },
+    { key: 'production_output', direction: 'in' },
+    { key: 'surplus', direction: 'in' },
+]
+const stockAdjustmentDefaultAccounts = {
+    damage: 'inventory-shrinkage-and-wastage',
+    expiry: 'inventory-shrinkage-and-wastage',
+    theft: 'inventory-shrinkage-and-wastage',
+    loss: 'inventory-shrinkage-and-wastage',
+    internal_use: 'inventory-shrinkage-and-wastage',
+    sample: 'inventory-shrinkage-and-wastage',
+    wastage: 'inventory-shrinkage-and-wastage',
+    quality_rejection: 'inventory-shrinkage-and-wastage',
+    count_down: 'inventory-adjustments',
+    count_up: 'inventory-adjustments',
+    found: 'inventory-adjustments',
+    opening_stock: 'inventory-adjustments',
+    production_output: 'inventory-adjustments',
+    surplus: 'inventory-adjustments',
+}
+const offsetAccountOptions = [
+    { id: 'inventory-shrinkage-and-wastage', label: 'preferences.stock_adjustment.accounts.shrinkage' },
+    { id: 'inventory-adjustments', label: 'preferences.stock_adjustment.accounts.adjustments' },
+]
+const ensureStockAdjustmentPrefs = () => {
+    if (!form.stock_adjustment) form.stock_adjustment = {}
+    if (!form.stock_adjustment.reason_accounts) form.stock_adjustment.reason_accounts = {}
+}
+const getStockAdjustmentPref = (key, fallback) => form.stock_adjustment?.[key] ?? fallback
+const setStockAdjustmentPref = (key, value) => {
+    ensureStockAdjustmentPrefs()
+    form.stock_adjustment[key] = value
+}
+const getReasonAccount = (reason) =>
+    form.stock_adjustment?.reason_accounts?.[reason] ?? stockAdjustmentDefaultAccounts[reason]
+const setReasonAccount = (reason, value) => {
+    ensureStockAdjustmentPrefs()
+    form.stock_adjustment.reason_accounts[reason] = value
+}
+
+const getConfirmSave = (key) => form.confirmations?.[key] ?? true
+const setConfirmSave = (key, value) => {
+    if (!form.confirmations) form.confirmations = {}
+    form.confirmations[key] = value
+}
+
+const getTransactionPost = (key) => form.transaction?.[key] ?? true
+const allTransactionsPostImmediately = computed(() =>
+    transactionPostModules.every((module) => getTransactionPost(module.key))
+)
+const setAllTransactionsPostImmediately = (checked) => {
+    if (!form.transaction) form.transaction = {}
+    transactionPostModules.forEach((module) => {
+        form.transaction[module.key] = checked
+    })
+}
+
+const sharedFieldLabelKeys = computed(() => [
+    ...generalFields.map((field) => field.label),
+    ...itemColumns.map((col) => col.label),
+])
+
+const tabSearchExtras = computed(() => ({
+    appearance: [
+        t('preferences.tabs.appearance'),
+        ...(props.sidebarMenus ?? []).map((menu) => t(menu.label)),
+        ...(tabSearchTerms.appearance ?? []),
+    ],
+    item_management: [
+        t('preferences.tabs.item_management'),
+        ...translateSearchKeys(t, itemManagementFields.map((field) => field.label)),
+        ...(tabSearchTerms.item_management ?? []),
+    ],
+    sale: [
+        t('preferences.tabs.sale'),
+        ...translateSearchKeys(t, [
+            ...sharedFieldLabelKeys.value,
+            ...saleTransactionTypes.map((type) => `preferences.sale.types.${type}`),
+        ]),
+        ...(tabSearchTerms.sale ?? []),
+    ],
+    purchase: [
+        t('preferences.tabs.purchase'),
+        ...translateSearchKeys(t, [
+            ...sharedFieldLabelKeys.value,
+            ...purchaseTransactionTypes.map((type) => `preferences.purchase.types.${type}`),
+        ]),
+        ...(tabSearchTerms.purchase ?? []),
+    ],
+    receipt_payment: [
+        t('preferences.tabs.receipt_payment'),
+        ...translateSearchKeys(t, [
+            ...receiptPaymentFields.map((field) => field.label),
+            'preferences.receipt_fields.cheque_number',
+            'preferences.receipt_fields.debit_account',
+            'preferences.receipt_fields.ledger_old_balance',
+        ]),
+        ...(props.cashAccounts ?? []).map((account) => account.name),
+        ...(tabSearchTerms.receipt_payment ?? []),
+    ],
+    transaction: [
+        t('preferences.tabs.transaction'),
+        ...translateSearchKeys(t, [
+            ...transactionPostModules.map((module) => module.label),
+            ...confirmSaveModules.map((module) => module.label),
+        ]),
+        ...(tabSearchTerms.transaction ?? []),
+    ],
+    tax_currency: [
+        t('preferences.tabs.tax_currency'),
+        ...(tabSearchTerms.tax_currency ?? []),
+    ],
+    notifications: [
+        t('preferences.tabs.notifications'),
+        ...(tabSearchTerms.notifications ?? []),
+    ],
+    security: [
+        t('preferences.tabs.security'),
+        ...(tabSearchTerms.security ?? []),
+    ],
+    install_plugins: [
+        t('preferences.tabs.install_plugins'),
+        ...allUnitMeasures.value.map((item) => item.name),
+        ...allUnitMeasures.value.map((item) => item.symbol).filter(Boolean),
+        ...allWarehouses.value.map((item) => item.name),
+        ...allCategories.value.flatMap((item) => [item.name, item.local_name].filter(Boolean)),
+        ...allSizes.value.map((item) => item.name),
+        ...allCurrencies.value.flatMap((item) => [item.name, item.code].filter(Boolean)),
+        ...allLedgers.value.map((item) => item.name),
+        ...(tabSearchTerms.install_plugins ?? []),
+    ],
+    backup: [
+        t('preferences.tabs.backup'),
+        'PDF',
+        'Excel',
+        'CSV',
+        'Amazon S3',
+        'Google Cloud',
+        'Azure Blob',
+        ...(tabSearchTerms.backup ?? []),
+    ],
+    localization: [
+        t('preferences.tabs.localization'),
+        'English',
+        'فارسی (Persian)',
+        'پښتو (Pashto)',
+        ...(Object.values(props.timezones ?? {})),
+        ...(tabSearchTerms.localization ?? []),
+    ],
+    display: [
+        t('preferences.tabs.display'),
+        ...(tabSearchTerms.display ?? []),
+    ],
+}))
+
+const preferenceSearchContext = computed(() => ({
+    query: normalizedMenuSearch.value,
+    token: activeTab.value,
+}))
+
+const tabMatchesQuery = (tabId, query) => stringsMatchQuery(
+    tabSearchValues(tabId, t, tabSearchExtras.value[tabId] ?? []),
+    query,
+)
+
+const visibleTabs = computed(() => {
+    const q = normalizedMenuSearch.value
+    if (!q) {
+        return tabs
+    }
+
+    return tabs.filter((tab) => tabMatchesQuery(tab.id, q))
+})
+
+watch(normalizedMenuSearch, (query) => {
+    if (!query) {
+        return
+    }
+
+    const matchingTabs = visibleTabs.value
+    if (!matchingTabs.length) {
+        return
+    }
+
+    if (!tabMatchesQuery(activeTab.value, query)) {
+        activeTab.value = matchingTabs[0].id
+    }
+})
 </script>
 
 <template>
     <AppLayout :title="t('preferences.title')">
-        <div class="container mx-auto space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div v-highlight-search="preferenceSearchContext" class="container mx-auto space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <!-- Header -->
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-start gap-3 sm:items-center">
@@ -613,20 +1066,36 @@ const receiptPaymentFields = [
                     </div>
                 </div>
                 <div class="flex w-full flex-wrap gap-2 md:w-auto">
-                    <ModuleHelpButton module="preferences" positionClass="" />
+                    <ModuleHelpButton module="preferences" toolbar />
                     <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileUpload" />
-                    <Button variant="outline" size="sm" @click="importPreferences">
+                    <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="importPreferences">
                         <Upload class="w-4 h-4 mr-2" />
                         {{ t('preferences.import') }}
                     </Button>
-                    <Button variant="outline" size="sm" @click="exportPreferences">
+                    <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="exportPreferences">
                         <Download class="w-4 h-4 mr-2" />
                         {{ t('preferences.export') }}
                     </Button>
-                    <Button @click="save" :disabled="form.processing">
+                    <span
+                        v-if="autoSaveStatus !== 'idle'"
+                        class="flex items-center gap-1.5 px-1 text-xs"
+                        :class="autoSaveStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'"
+                        aria-live="polite"
+                    >
+                        <Spinner v-if="autoSaveStatus === 'saving'" class="h-3.5 w-3.5" />
+                        <CircleX v-else-if="autoSaveStatus === 'error'" class="h-3.5 w-3.5" />
+                        <Check v-else-if="autoSaveStatus === 'saved'" class="h-3.5 w-3.5" />
+                        {{ {
+                            pending: t('preferences.autosave.pending'),
+                            saving: t('general.saving'),
+                            saved: t('preferences.autosave.saved'),
+                            error: t('preferences.save_error'),
+                        }[autoSaveStatus] }}
+                    </span>
+                    <Button @click="save()" :disabled="form.processing" size="sm" class="bg-primary text-white hover:bg-primary/90" :class="form.processing ? 'bg-primary/90' : 'bg-primary'">
                         <Spinner v-if="form.processing" class="w-4 h-4 mr-2" />
                         <Save v-else class="w-4 h-4 mr-2" />
-                        {{ form.processing ? t('general.loading') : t('preferences.save') }}
+                        {{ form.processing ? t('general.saving') : t('preferences.save') }}
                     </Button>
                 </div>
             </div>
@@ -640,7 +1109,7 @@ const receiptPaymentFields = [
                 <!-- Sidebar Navigation -->
                 <div class="w-full shrink-0 lg:w-64">
                     <div class="space-y-3 lg:sticky lg:top-4">
-                        <div class="relative">
+                        <div class="relative" data-search-input>
                             <Search
                                 class="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                                 :class="isRTL ? 'right-3' : 'left-3'"
@@ -662,7 +1131,7 @@ const receiptPaymentFields = [
                             </button>
                         </div>
 
-                        <nav class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:block lg:space-y-1">
+                        <nav v-if="visibleTabs.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:block lg:space-y-1">
                             <button
                                 v-for="tab in visibleTabs"
                                 :key="tab.id"
@@ -678,19 +1147,25 @@ const receiptPaymentFields = [
                                 {{ t(tab.label) }}
                             </button>
                         </nav>
+                        <p
+                            v-else-if="normalizedMenuSearch"
+                            class="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground"
+                        >
+                            {{ t('general.no_results') }}
+                        </p>
                     </div>
                 </div>
 
                 <!-- Content Area -->
                 <div class="flex-1 min-w-0">
                     <!-- Appearance preferences -->
-                    <Card v-show="activeTab === 'appearance'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('appearance')" v-show="activeTab === 'appearance'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.appearance') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.appearance.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('appearance')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('appearance')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -707,7 +1182,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
                                             <SelectItem
                                                 v-for="color in colorOptions"
@@ -720,12 +1195,27 @@ const receiptPaymentFields = [
                                     </Select>
                                 </div>
                                 <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.surface_style') }}</Label>
+                                    <Select v-model="form.appearance.surface_style">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
+                                            <SelectItem value="solid">{{ t('preferences.appearance.surface_solid') }}</SelectItem>
+                                            <SelectItem value="glass">{{ t('preferences.appearance.surface_glass') }}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ t('preferences.appearance.surface_style_hint') }}
+                                    </p>
+                                </div>
+                                <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.color_mode') }}</Label>
                                     <Select v-model="form.display.theme">
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="light">{{ t('preferences.appearance.light') }}</SelectItem>
                                             <SelectItem value="dark">{{ t('preferences.appearance.dark') }}</SelectItem>
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
@@ -738,7 +1228,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
                                             <SelectItem
                                                 v-for="color in colorOptions"
@@ -756,7 +1246,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem :value="0">0</SelectItem>
                                             <SelectItem :value="2">2</SelectItem>
                                             <SelectItem :value="3">3</SelectItem>
@@ -769,7 +1259,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem :value="'without_nature'">{{ t('preferences.appearance.without_nature') }}</SelectItem>
                                             <SelectItem :value="'with_nature'">{{ t('preferences.appearance.with_nature') }}</SelectItem>
                                         </SelectContent>
@@ -778,6 +1268,13 @@ const receiptPaymentFields = [
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.records_per_page') }}</Label>
                                     <Input v-model.number="form.appearance.records_per_page" type="number" min="1" max="100" />
+                                </div>
+                                <div class="flex items-center justify-between rounded-lg border px-3 py-2">
+                                    <Label class="font-normal">{{ t('preferences.appearance.show_field_hints') }}</Label>
+                                    <Switch
+                                        :model-value="form.appearance.show_field_hints ?? true"
+                                        @update:model-value="(v) => form.appearance.show_field_hints = v"
+                                    />
                                 </div>
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.sidebar_font_size') }}</Label>
@@ -817,20 +1314,30 @@ const receiptPaymentFields = [
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <Label>{{ t('preferences.appearance.sidebar_menus') }}</Label>
+                                <div class="flex items-center justify-between gap-3">
+                                    <Label>{{ t('preferences.appearance.sidebar_menus') }}</Label>
+                                    <Button
+                                        type="button"
+                                        variant="link"
+                                        size="sm"
+                                        class="h-auto p-0"
+                                        @click="toggleAllSidebarMenus"
+                                    >
+                                        {{ allSidebarMenusSelected
+                                            ? t('preferences.appearance.sidebar_menus_deselect_all')
+                                            : t('preferences.appearance.sidebar_menus_select_all') }}
+                                    </Button>
+                                </div>
                                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                     <div v-for="menu in sidebarMenus" :key="menu.value" class="flex items-center gap-2">
                                         <Checkbox
                                             :id="`menu-${menu.value}`"
                                             :checked="form.appearance.sidebar_menus?.includes(menu.value)"
                                             @update:checked="(checked) => {
-                                                if (!form.appearance.sidebar_menus) form.appearance.sidebar_menus = []
-                                                if (checked) {
-                                                    if (form.appearance.sidebar_menus.includes(menu.value)) return
-                                                    form.appearance.sidebar_menus.push(menu.value)
-                                                } else {
-                                                    form.appearance.sidebar_menus = form.appearance.sidebar_menus.filter(m => m !== menu.value)
-                                                }
+                                                const current = Array.isArray(form.appearance.sidebar_menus) ? form.appearance.sidebar_menus : []
+                                                form.appearance.sidebar_menus = checked
+                                                    ? [...new Set([...current, menu.value])]
+                                                    : current.filter(m => m !== menu.value)
                                             }"
                                         />
                                         <Label :for="`menu-${menu.value}`" class="font-normal cursor-pointer">{{ t(menu.label) }}</Label>
@@ -841,13 +1348,13 @@ const receiptPaymentFields = [
                     </Card>
 
                     <!-- Item Management preferences -->
-                    <Card v-show="activeTab === 'item_management'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('item_management')" v-show="activeTab === 'item_management'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.item_management') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.item_management.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('item_management')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('item_management')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -859,7 +1366,7 @@ const receiptPaymentFields = [
                                     <div v-for="field in itemManagementFields" :key="field.key" class="flex items-center gap-2">
                                         <Checkbox
                                             :id="`item-${field.key}`"
-                                            :checked="form.item_management.visible_fields[field.key]"
+                                            :checked="itemFieldChecked(field.key)"
                                             @update:checked="(checked) => form.item_management.visible_fields[field.key] = checked"
                                         />
                                         <Label :for="`item-${field.key}`" class="font-normal cursor-pointer">{{ t(field.label) }}</Label>
@@ -868,19 +1375,26 @@ const receiptPaymentFields = [
                             </div>
                             <div class="space-y-2 mt-3">
                                 <Label>{{ t('preferences.tax_currency.spec_text') }}</Label>
-                                <Input v-model="form.item_management.spec_text" rows="3" />
+                                <Textarea v-model="form.item_management.spec_text" rows="3" />
+                            </div>
+                            <div class="rounded-lg border border-border bg-background/70 p-4 mt-3 flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                    <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                </div>
+                                <Switch :model-value="getConfirmSave('item')" @update:model-value="(v) => setConfirmSave('item', v)" />
                             </div>
                         </CardContent>
                     </Card>
 
                     <!-- Sale preferences -->
-                    <Card v-show="activeTab === 'sale'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('sale')" v-show="activeTab === 'sale'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.sale') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.sale.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory(activeSaleType)">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory(activeSaleType)">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -961,80 +1475,6 @@ const receiptPaymentFields = [
                             </template>
 
                             <template v-if="activeSaleType === 'sale'">
-                                <div class="space-y-4">
-                                    <div class="space-y-1">
-                                        <Label class="text-base font-medium">{{ t('preferences.sale.invoice_theme') }}</Label>
-                                        <p class="text-sm text-muted-foreground">
-                                            {{ t('preferences.sale.invoice_theme_description') }}
-                                        </p>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                        <div
-                                            v-for="theme in invoiceThemes"
-                                            :key="theme.id"
-                                            class="overflow-hidden rounded-xl border bg-background shadow-sm transition-all"
-                                            :class="form.sale.invoice_theme === theme.id ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'"
-                                        >
-                                            <button
-                                                type="button"
-                                                class="block w-full bg-muted/40"
-                                                @click="openInvoiceThemePreview(theme)"
-                                            >
-                                                <img
-                                                    :src="theme.preview_url"
-                                                    :alt="invoiceThemeLabel(theme)"
-                                                    class="aspect-[4/5] h-full w-full object-cover object-top transition-transform duration-200 hover:scale-[1.01]"
-                                                >
-                                            </button>
-
-                                            <div class="space-y-3 p-4">
-                                                <div class="flex items-start justify-between gap-3">
-                                                    <div>
-                                                        <p class="font-medium text-foreground">{{ invoiceThemeLabel(theme) }}</p>
-                                                        <p class="text-sm text-muted-foreground">
-                                                            {{ form.sale.invoice_theme === theme.id
-                                                                ? t('preferences.sale.selected_theme')
-                                                                : t('preferences.sale.preview_hint')
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                    <span
-                                                        v-if="form.sale.invoice_theme === theme.id"
-                                                        class="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-                                                    >
-                                                        {{ t('preferences.sale.selected') }}
-                                                    </span>
-                                                </div>
-
-                                                <div class="flex gap-2">
-                                                    <Button type="button" variant="outline" size="sm" class="flex-1" @click="openInvoiceThemePreview(theme)">
-                                                        <Eye class="mr-2 h-4 w-4" />
-                                                        {{ t('preferences.sale.preview') }}
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        class="flex-1"
-                                                        :variant="form.sale.invoice_theme === theme.id ? 'default' : 'secondary'"
-                                                        @click="selectInvoiceTheme(theme.id)"
-                                                    >
-                                                        {{ form.sale.invoice_theme === theme.id
-                                                            ? t('preferences.sale.selected')
-                                                            : t('preferences.sale.select_theme')
-                                                        }}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div v-if="selectedInvoiceTheme" class="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-                                        <span class="font-medium text-foreground">{{ t('preferences.sale.current_theme') }}:</span>
-                                        {{ invoiceThemeLabel(selectedInvoiceTheme) }}
-                                    </div>
-                                </div>
-
                                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     <div class="flex items-center gap-3">
                                         <Switch
@@ -1080,19 +1520,54 @@ const receiptPaymentFields = [
                                         />
                                         <Label>{{ t('preferences.sale.show_item_transactions') }}</Label>
                                     </div>
+                                    <div class="flex items-center gap-3">
+                                        <Switch
+                                            :model-value="form.sale.show_attachments"
+                                            @update:model-value="(v) => form.sale.show_attachments = v"
+                                        />
+                                        <Label>{{ t('preferences.sale.show_attachments') }}</Label>
+                                    </div>
                                 </div>
                             </template>
+
+                            <div class="rounded-lg border border-border bg-background/70 p-4">
+                                <div class="flex items-start gap-3">
+                                    <Checkbox
+                                        id="sale-enforce_sale_stock_reservation"
+                                        :checked="form.sale?.enforce_sale_stock_reservation ?? false"
+                                        @update:checked="(checked) => {
+                                            if (!form.sale) form.sale = {}
+                                            form.sale.enforce_sale_stock_reservation = checked
+                                        }"
+                                    />
+                                    <div class="space-y-1">
+                                        <Label for="sale-enforce_sale_stock_reservation" class="cursor-pointer font-medium">
+                                            {{ t('preferences.sale.enforce_sale_stock_reservation') }}
+                                        </Label>
+                                        <p class="text-sm text-muted-foreground">
+                                            {{ t('preferences.sale.enforce_sale_stock_reservation_help') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                    <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                </div>
+                                <Switch :model-value="getConfirmSave(activeSaleType)" @update:model-value="(v) => setConfirmSave(activeSaleType, v)" />
+                            </div>
                         </CardContent>
                     </Card>
 
                     <!-- Purchase preferences -->
-                    <Card v-show="activeTab === 'purchase'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('purchase')" v-show="activeTab === 'purchase'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.purchase') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.purchase.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory(activePurchaseType)">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory(activePurchaseType)">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1202,19 +1677,33 @@ const receiptPaymentFields = [
                                         />
                                         <Label>{{ t('preferences.purchase.show_item_transactions') }}</Label>
                                     </div>
+                                    <div class="flex items-center gap-3">
+                                        <Switch
+                                            :model-value="form.purchase.show_attachments"
+                                            @update:model-value="(v) => form.purchase.show_attachments = v"
+                                        />
+                                        <Label>{{ t('preferences.purchase.show_attachments') }}</Label>
+                                    </div>
                                 </div>
                             </template>
+                            <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                    <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                </div>
+                                <Switch :model-value="getConfirmSave(activePurchaseType)" @update:model-value="(v) => setConfirmSave(activePurchaseType, v)" />
+                            </div>
                         </CardContent>
                     </Card>
 
                     <!-- Receipt & Payment preferences -->
-                    <Card v-show="activeTab === 'receipt_payment'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('receipt_payment')" v-show="activeTab === 'receipt_payment'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.receipt_payment') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.receipt_payment.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('receipt_payment')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('receipt_payment')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1240,7 +1729,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue :placeholder="t('preferences.receipt_payment.select_account')" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem v-for="account in cashAccounts" :key="account.id" :value="account.id">
                                                 {{ account.name }}
                                             </SelectItem>
@@ -1268,17 +1757,194 @@ const receiptPaymentFields = [
                                     <Label>{{ t('preferences.receipt_payment.require_approval') }}</Label>
                                 </div>
                             </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                    <Label class="font-normal">{{ t('preferences.transaction.modules.receipt') }} - {{ t('general.confirm_before_save') }}</Label>
+                                    <Switch :model-value="getConfirmSave('receipt')" @update:model-value="(v) => setConfirmSave('receipt', v)" />
+                                </div>
+                                <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                    <Label class="font-normal">{{ t('preferences.transaction.modules.payment') }} - {{ t('general.confirm_before_save') }}</Label>
+                                    <Switch :model-value="getConfirmSave('payment')" @update:model-value="(v) => setConfirmSave('payment', v)" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Transaction posting preferences -->
+                    <Card v-if="isTabBuilt('transaction')" v-show="activeTab === 'transaction'" class="animate-in fade-in duration-200">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <CardTitle>{{ t('preferences.tabs.transaction') }}</CardTitle>
+                                <CardDescription>{{ t('preferences.transaction.description') }}</CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('transaction')">
+                                <RotateCcw class="w-4 h-4 mr-2" />
+                                {{ t('preferences.reset') }}
+                            </Button>
+                        </CardHeader>
+                        <CardContent class="space-y-4">
+                            <div class="flex items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+                                <Checkbox
+                                    id="transaction-select-all"
+                                    :checked="allTransactionsPostImmediately"
+                                    @update:checked="setAllTransactionsPostImmediately"
+                                />
+                                <Label for="transaction-select-all" class="cursor-pointer font-medium">
+                                    {{ allTransactionsPostImmediately ? t('preferences.transaction.deselect_all') : t('preferences.transaction.select_all') }}
+                                </Label>
+                            </div>
+                            <div
+                                v-for="module in transactionPostModules"
+                                :key="module.key"
+                                class="rounded-lg border border-border bg-background/70 p-4"
+                            >
+                                <div class="flex items-start gap-3">
+                                    <Checkbox
+                                        :id="`transaction-${module.key}`"
+                                        :checked="getTransactionPost(module.key)"
+                                        @update:checked="(checked) => {
+                                            if (!form.transaction) form.transaction = {}
+                                            form.transaction[module.key] = checked
+                                        }"
+                                    />
+                                    <div class="space-y-1">
+                                        <Label :for="`transaction-${module.key}`" class="cursor-pointer font-medium">
+                                            {{ t(module.label) }} - {{ t('preferences.transaction.post_immediately') }}
+                                        </Label>
+                                        <p class="text-sm text-muted-foreground">
+                                            {{ t('preferences.transaction.post_immediately_help') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Confirm before save (modules without a dedicated tab) -->
+                            <div class="pt-2">
+                                <Label class="text-base font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                <p class="text-sm text-muted-foreground mb-3">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div
+                                        v-for="module in confirmSaveModules"
+                                        :key="`confirm-${module.key}`"
+                                        class="flex items-center justify-between rounded-lg border border-border bg-background/70 px-4 py-3"
+                                    >
+                                        <Label :for="`confirm-${module.key}`" class="cursor-pointer font-normal">
+                                            {{ t(module.label) }}
+                                        </Label>
+                                        <Switch
+                                            :id="`confirm-${module.key}`"
+                                            :model-value="getConfirmSave(module.key)"
+                                            @update:model-value="(v) => setConfirmSave(module.key, v)"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                        </CardContent>
+                    </Card>
+
+                    <!-- Stock adjustment preferences -->
+                    <Card v-if="isTabBuilt('stock_adjustment')" v-show="activeTab === 'stock_adjustment'" class="animate-in fade-in duration-200">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <CardTitle>{{ t('preferences.stock_adjustment.title') }}</CardTitle>
+                                <CardDescription>{{ t('preferences.stock_adjustment.description') }}</CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('stock_adjustment')">
+                                <RotateCcw class="w-4 h-4 mr-2" />
+                                {{ t('preferences.reset') }}
+                            </Button>
+                        </CardHeader>
+                        <CardContent class="space-y-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="flex items-center justify-between rounded-lg border border-border bg-background/70 px-4 py-3">
+                                    <div class="space-y-0.5">
+                                        <Label class="font-normal">{{ t('preferences.transaction.post_immediately') }}</Label>
+                                        <p class="text-xs text-muted-foreground">{{ t('preferences.transaction.post_immediately_help') }}</p>
+                                    </div>
+                                    <Switch
+                                        :model-value="getTransactionPost('stock_adjustment_post_immediately')"
+                                        @update:model-value="(v) => {
+                                            if (!form.transaction) form.transaction = {}
+                                            form.transaction.stock_adjustment_post_immediately = v
+                                        }"
+                                    />
+                                </div>
+                                <div class="flex items-center justify-between rounded-lg border border-border bg-background/70 px-4 py-3">
+                                    <Label class="font-normal">{{ t('general.confirm_before_save') }}</Label>
+                                    <Switch
+                                        :model-value="getConfirmSave('stock_adjustment')"
+                                        @update:model-value="(v) => setConfirmSave('stock_adjustment', v)"
+                                    />
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.stock_adjustment.reference_prefix') }}</Label>
+                                    <Input
+                                        :model-value="getStockAdjustmentPref('reference_prefix', 'ADJ-')"
+                                        @update:model-value="(v) => setStockAdjustmentPref('reference_prefix', v)"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3 sm:pt-7">
+                                    <Switch
+                                        :model-value="getStockAdjustmentPref('allow_in_cost_override', true)"
+                                        @update:model-value="(v) => setStockAdjustmentPref('allow_in_cost_override', v)"
+                                    />
+                                    <Label>{{ t('preferences.stock_adjustment.allow_in_cost_override') }}</Label>
+                                </div>
+                            </div>
+                            <div>
+                                <Label class="font-medium">{{ t('preferences.stock_adjustment.reason_accounts') }}</Label>
+                                <p class="text-sm text-muted-foreground mb-3">{{ t('preferences.stock_adjustment.reason_accounts_help') }}</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div
+                                        v-for="reason in stockAdjustmentReasons"
+                                        :key="`reason-account-${reason.key}`"
+                                        class="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/70 px-4 py-3"
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            <Label class="font-normal">{{ t(`adjustment.reasons.${reason.key}`) }}</Label>
+                                            <span
+                                                class="text-[10px] font-semibold uppercase rounded px-1.5 py-0.5"
+                                                :class="reason.direction === 'in'
+                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'"
+                                            >
+                                                {{ t(`adjustment.direction.${reason.direction}`) }}
+                                            </span>
+                                        </div>
+                                        <Select
+                                            :model-value="getReasonAccount(reason.key)"
+                                            @update:model-value="(v) => setReasonAccount(reason.key, v)"
+                                        >
+                                            <SelectTrigger class="w-56">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem
+                                                    v-for="option in offsetAccountOptions"
+                                                    :key="option.id"
+                                                    :value="option.id"
+                                                >
+                                                    {{ t(option.label) }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
                     <!-- Tax & Currency preferences -->
-                    <Card v-show="activeTab === 'tax_currency'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('tax_currency')" v-show="activeTab === 'tax_currency'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.tax_currency') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.tax_currency.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('tax_currency')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('tax_currency')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1312,13 +1978,13 @@ const receiptPaymentFields = [
                     </Card>
 
                     <!-- Notification preferences -->
-                    <Card v-show="activeTab === 'notifications'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('notifications')" v-show="activeTab === 'notifications'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.notifications') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.notifications.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('notifications')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('notifications')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1448,17 +2114,93 @@ const receiptPaymentFields = [
                                     />
                                 </div>
                             </div>
+
+                            <div class="pt-4 mt-2 space-y-4 border-t">
+                                <div>
+                                    <Label class="text-base font-semibold">{{ t('preferences.notifications.sound.title') }}</Label>
+                                    <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.sound.description') }}</p>
+                                </div>
+
+                                <div
+                                    v-for="category in soundCategories"
+                                    :key="category"
+                                    class="p-4 space-y-3 border rounded-lg"
+                                >
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <Label class="text-base">{{ t(`preferences.notifications.sound.categories.${category}`) }}</Label>
+                                            <p class="text-sm text-muted-foreground">{{ t(`preferences.notifications.sound.categories.${category}_desc`) }}</p>
+                                        </div>
+                                        <Switch
+                                            :model-value="form.notifications.sound[`${category}_enabled`]"
+                                            @update:model-value="(v) => form.notifications.sound[`${category}_enabled`] = v"
+                                        />
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <Select
+                                            :model-value="form.notifications.sound[`${category}_choice`]"
+                                            @update:model-value="(v) => form.notifications.sound[`${category}_choice`] = v"
+                                        >
+                                            <SelectTrigger class="w-full sm:w-64">
+                                                <SelectValue :placeholder="t('preferences.notifications.sound.choose_sound')" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem
+                                                    v-for="option in soundOptionsFor(category)"
+                                                    :key="option.id"
+                                                    :value="option.id"
+                                                >
+                                                    {{ option.id === 'custom' ? t('preferences.notifications.sound.custom_option') : t(option.name) }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+
+                                        <Button type="button" variant="outline" size="sm" @click="previewSound(category)">
+                                            {{ t('preferences.notifications.sound.preview') }}
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            :disabled="soundUploading === category"
+                                            @click="triggerSoundUpload(category)"
+                                        >
+                                            {{ soundUploading === category ? t('preferences.notifications.sound.uploading') : t('preferences.notifications.sound.upload') }}
+                                        </Button>
+                                        <input
+                                            :ref="(el) => { soundFileInputs[category] = el }"
+                                            type="file"
+                                            accept="audio/*"
+                                            class="hidden"
+                                            @change="(e) => handleSoundUpload(category, e)"
+                                        >
+
+                                        <Button
+                                            v-if="form.notifications.sound[`${category}_custom_url`]"
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            :disabled="soundRemoving === category"
+                                            @click="removeSoundUpload(category)"
+                                        >
+                                            {{ t('preferences.notifications.sound.remove_custom') }}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
                     <!-- Security preferences -->
-                    <Card v-show="activeTab === 'security'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('security')" v-show="activeTab === 'security'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.security') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.security.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('security')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('security')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1513,19 +2255,24 @@ const receiptPaymentFields = [
                     </Card>
 
                     <!-- Install Plugins -->
-                    <Card v-show="activeTab === 'install_plugins'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('install_plugins')" v-show="activeTab === 'install_plugins'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.install_plugins') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.install_plugins.description') }}</CardDescription>
                             </div>
-                            <Button variant="default" size="sm" @click="savePlugins" :disabled="pluginSaving">
-                                <Spinner v-if="pluginSaving" class="w-4 h-4 mr-2" />
-                                <Save v-else class="w-4 h-4 mr-2" />
+                            <Button variant="default" size="sm" @click="savePlugins" :disabled="pluginSaving || !pluginLists">
+                                <Spinner v-if="pluginSaving" class="w-4 h-4 me-2" />
+                                <Save v-else class="w-4 h-4 me-2" />
                                 {{ pluginSaving ? t('general.loading') : t('preferences.install_plugins.save') }}
                             </Button>
                         </CardHeader>
-                        <CardContent class="space-y-6">
+                        <!-- The lists load when this tab is first opened. -->
+                        <CardContent v-if="!pluginLists" class="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+                            <Spinner class="h-4 w-4" />
+                            {{ t('general.loading') }}
+                        </CardContent>
+                        <CardContent v-else class="space-y-6">
                             <div class="space-y-2">
                                 <Label class="text-base font-medium">{{ t('preferences.install_plugins.measures_title') }}</Label>
                                 <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.measures_hint') }}</p>
@@ -1589,7 +2336,7 @@ const receiptPaymentFields = [
                                             @update:checked="(checked) => togglePluginIds('categories', c.id, checked)"
                                         />
                                         <Label :for="`fav-category-${c.id}`" class="font-normal cursor-pointer">
-                                            {{ c.name }}
+                                            {{ c.localized_name || c.name }}
                                         </Label>
                                     </div>
                                 </div>
@@ -1690,13 +2437,13 @@ const receiptPaymentFields = [
                     </Card>
 
                     <!-- Backup preferences -->
-                    <Card v-show="activeTab === 'backup'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('backup')" v-show="activeTab === 'backup'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.backup') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.backup.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('backup')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('backup')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1709,7 +2456,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="none">{{ t('preferences.backup.none') }}</SelectItem>
                                             <SelectItem value="daily">{{ t('preferences.backup.daily') }}</SelectItem>
                                             <SelectItem value="weekly">{{ t('preferences.backup.weekly') }}</SelectItem>
@@ -1736,7 +2483,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="aws">Amazon S3</SelectItem>
                                             <SelectItem value="google">Google Cloud</SelectItem>
                                             <SelectItem value="azure">Azure Blob</SelectItem>
@@ -1777,13 +2524,13 @@ const receiptPaymentFields = [
                     </Card>
 
                     <!-- Localization preferences -->
-                    <Card v-show="activeTab === 'localization'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('localization')" v-show="activeTab === 'localization'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.localization') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.localization.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('localization')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('localization')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1796,7 +2543,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="en">English</SelectItem>
                                             <SelectItem value="fa">فارسی (Persian)</SelectItem>
                                             <SelectItem value="ps">پښتو (Pashto)</SelectItem>
@@ -1809,7 +2556,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem v-for="(label, value) in timezones" :key="value" :value="value">
                                                 {{ label }}
                                             </SelectItem>
@@ -1824,7 +2571,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="Y-m-d">2024-01-15</SelectItem>
                                             <SelectItem value="d/m/Y">15/01/2024</SelectItem>
                                             <SelectItem value="m/d/Y">01/15/2024</SelectItem>
@@ -1838,7 +2585,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
                                             <SelectItem value="24h">24-hour</SelectItem>
                                         </SelectContent>
@@ -1852,7 +2599,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="1,000.00">1,000.00</SelectItem>
                                             <SelectItem value="1.000,00">1.000,00</SelectItem>
                                         </SelectContent>
@@ -1864,7 +2611,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="sunday">{{ t('preferences.localization.sunday') }}</SelectItem>
                                             <SelectItem value="monday">{{ t('preferences.localization.monday') }}</SelectItem>
                                             <SelectItem value="saturday">{{ t('preferences.localization.saturday') }}</SelectItem>
@@ -1876,13 +2623,13 @@ const receiptPaymentFields = [
                     </Card>
 
                     <!-- Display preferences -->
-                    <Card v-show="activeTab === 'display'" class="animate-in fade-in duration-200">
+                    <Card v-if="isTabBuilt('display')" v-show="activeTab === 'display'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.display') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.display.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('display')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('display')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1895,7 +2642,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="light">{{ t('preferences.display.light') }}</SelectItem>
                                             <SelectItem value="dark">{{ t('preferences.display.dark') }}</SelectItem>
                                             <SelectItem value="system">{{ t('preferences.display.system') }}</SelectItem>
@@ -1908,7 +2655,7 @@ const receiptPaymentFields = [
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem :value="10">10</SelectItem>
                                             <SelectItem :value="25">25</SelectItem>
                                             <SelectItem :value="50">50</SelectItem>
@@ -1962,44 +2709,8 @@ const receiptPaymentFields = [
                         </CardContent>
                     </Card>
 
-                    <!-- Invoice Designer -->
-                    <Card v-show="activeTab === 'invoice_designer'" class="animate-in fade-in duration-200">
-                        <CardHeader>
-                            <CardTitle>{{ t('preferences.tabs.invoice_designer') }}</CardTitle>
-                            <CardDescription>{{ t('preferences.invoice_designer.select_help') }}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <InvoiceDesigner
-                                :invoice-themes="invoiceThemes"
-                                :invoice-formats="invoiceFormats"
-                                :invoice-format-defaults="invoiceFormatDefaults"
-                                :current-theme="form.sale?.invoice_theme ?? 'format1'"
-                                @select-theme="(id) => { selectInvoiceTheme(id); save() }"
-                            />
-                        </CardContent>
-                    </Card>
-
                 </div>
             </div>
         </div>
-
-        <Dialog :open="invoiceThemePreviewOpen" @update:open="invoiceThemePreviewOpen = $event">
-            <DialogContent class="max-w-5xl">
-                <DialogHeader>
-                    <DialogTitle>{{ previewInvoiceTheme ? invoiceThemeLabel(previewInvoiceTheme) : t('preferences.sale.invoice_theme') }}</DialogTitle>
-                    <DialogDescription>
-                        {{ t('preferences.sale.preview_dialog_description') }}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div v-if="previewInvoiceTheme" class="overflow-hidden rounded-xl border bg-muted/30">
-                    <img
-                        :src="previewInvoiceTheme.preview_url"
-                        :alt="invoiceThemeLabel(previewInvoiceTheme)"
-                        class="max-h-[75vh] w-full object-contain object-top"
-                    >
-                </div>
-            </DialogContent>
-        </Dialog>
     </AppLayout>
 </template>

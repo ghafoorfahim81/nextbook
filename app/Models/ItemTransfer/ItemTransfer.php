@@ -2,9 +2,12 @@
 
 namespace App\Models\ItemTransfer;
 
-use App\Enums\TransferStatus;
+use App\Enums\TransactionStatus;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -19,16 +22,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransfer extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $table = 'item_transfers';
 
     protected $fillable = [
+        'company_id',
         'date',
         'from_warehouse_id',
         'to_warehouse_id',
         'status',
+        'has_transfer_cost',
         'transfer_cost',
+        'bank_account_id',
+        'expense_account_id',
+        'currency_id',
+        'rate',
         'branch_id',
         'remarks',
         'created_by',
@@ -41,8 +50,13 @@ class ItemTransfer extends Model
             'date' => 'date',
             'from_warehouse_id' => 'string',
             'to_warehouse_id' => 'string',
-            'status' => TransferStatus::class,
+            'status' => TransactionStatus::class,
+            'has_transfer_cost' => 'boolean',
             'transfer_cost' => 'decimal:4',
+            'bank_account_id' => 'string',
+            'expense_account_id' => 'string',
+            'currency_id' => 'string',
+            'rate' => 'decimal:6',
             'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
@@ -88,10 +102,25 @@ class ItemTransfer extends Model
         return $this->hasMany(ItemTransferItem::class);
     }
 
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'bank_account_id');
+    }
+
+    public function expenseAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'expense_account_id');
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Currency::class, 'currency_id');
+    }
+
 
 
     public function getDependencyMessage(): string
     {
-        return 'You cannot delete this transfer because it has dependencies.';
+        return __('messages.dependency.cannot_delete_document', ['document' => __('messages.dependency.documents.item_transfer')]);
     }
 }

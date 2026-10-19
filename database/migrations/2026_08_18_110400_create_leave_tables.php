@@ -56,18 +56,20 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->text('remark')->nullable();
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->unique(['branch_id', 'code', 'deleted_at']);
+            $table->unique(['company_id', 'code', 'deleted_at']);
         });
 
         Schema::create('leave_allocations', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('employee_id')->index();
             $table->ulid('leave_type_id')->index();
 
@@ -101,6 +103,7 @@ return new class extends Migration
 
         Schema::create('leave_requests', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->string('number')->index();
             $table->ulid('employee_id')->index();
             $table->ulid('leave_type_id')->index();
@@ -144,7 +147,7 @@ return new class extends Migration
         Schema::enableForeignKeyConstraints();
 
         Schema::table('leave_types', function (Blueprint $table) {
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

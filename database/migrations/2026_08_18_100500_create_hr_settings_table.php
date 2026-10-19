@@ -39,20 +39,21 @@ return new class extends Migration
             $table->integer('geofence_radius_meters')->nullable();
             $table->jsonb('allowed_ip_ranges')->nullable();
 
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
 
-            $table->unique(['branch_id', 'deleted_at']);
+            $table->unique(['company_id', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();
 
         Schema::table('hr_settings', function (Blueprint $table) {
-            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');

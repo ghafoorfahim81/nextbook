@@ -2,10 +2,12 @@
 
 namespace App\Http\Resources\Expense;
 
+use App\Enums\TransactionStatus;
 use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\AttachmentResource;
 class ExpenseResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -14,8 +16,12 @@ class ExpenseResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'remarks' => $this->remarks,
+            'status' => $this->status ?? $this->transaction?->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status ?? $this->transaction?->status))?->getLabel()
+                ?? (string) ($this->status ?? $this->transaction?->status),
             'category_id' => $this->category_id,
             'category' => $this->whenLoaded('category', fn() => [
                 'id' => $this->category->id,
@@ -30,6 +36,7 @@ class ExpenseResource extends JsonResource
             'rate' => $this->transaction?->rate,
             'attachment' => $this->attachment,
             'attachment_url' => $this->attachment ? asset('storage/' . $this->attachment) : null,
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
             'details' => ExpenseDetailResource::collection($this->whenLoaded('details')),
             'total' => $this->whenLoaded('details', fn() => $this->details->sum('amount')),
             'base_total' => $this->whenLoaded('details', fn() => $this->details->sum('amount') * ($this->rate ?? 1)),

@@ -38,7 +38,7 @@ class AttendanceImportFeatureTest extends TestCase
 
         $this->ctx = $this->bootstrapErpContext();
 
-        $shift = Shift::factory()->create(['branch_id' => $this->ctx['branch']->id]);
+        $shift = Shift::factory()->create(['company_id' => $this->ctx['company']->id]);
 
         $this->employee = Employee::factory()->create([
             'branch_id' => $this->ctx['branch']->id,

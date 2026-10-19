@@ -8,7 +8,7 @@
   "previous": "قبلی",
   "next": "بعدی",
   "show": "نمایش",
-  "print": "چاپ"
+  "print": "چاپ",
+  "show_filter_options": "نمایش گزینه های فیلتر برای {title}",
+  "page": "صفحه {page} از {total}" 
 }
-
-

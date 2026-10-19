@@ -6,7 +6,9 @@ use App\Enums\PayrollLinePaymentStatus;
 use App\Models\Administration\Currency;
 use App\Models\Transaction\TransactionLine;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -29,13 +31,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class PayrollLine extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable,
-        HasDynamicFilters, BranchSpecific, HasBranch, SoftDeletes;
+        HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'payroll_id', 'employee_id', 'salary_structure_id', 'tax_bracket_set_id',
         'liability_line_id', 'currency_id', 'rate',
         'working_days', 'present_days', 'absent_days', 'paid_leave_days',

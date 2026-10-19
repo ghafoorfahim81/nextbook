@@ -30,6 +30,7 @@ class TransactionLedgerIntegrationTest extends TestCase
         $result = $service->getTrialBalance([
             'report' => 'trial_balance',
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => '2026-03-01',
             'date_to' => '2026-03-31',
             'ledger_id' => null,
@@ -98,6 +99,7 @@ class TransactionLedgerIntegrationTest extends TestCase
         $result = $reportService->getTrialBalance([
             'report' => 'trial_balance',
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => '2026-03-01',
             'date_to' => '2026-03-31',
             'ledger_id' => null,
@@ -184,6 +186,7 @@ class TransactionLedgerIntegrationTest extends TestCase
         $customerStatement = $reportService->getCustomerStatement([
             'report' => 'customer_statement',
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => '2026-03-01',
             'date_to' => '2026-03-31',
             'ledger_id' => null,
@@ -198,6 +201,7 @@ class TransactionLedgerIntegrationTest extends TestCase
         $supplierStatement = $reportService->getSupplierStatement([
             'report' => 'supplier_statement',
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => '2026-03-01',
             'date_to' => '2026-03-31',
             'ledger_id' => null,

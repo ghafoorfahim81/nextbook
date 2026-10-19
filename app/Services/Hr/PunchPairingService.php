@@ -43,7 +43,7 @@ class PunchPairingService
      */
     public function pairForDate(Employee $employee, Carbon $date, ?Shift $shift = null): ?Attendance
     {
-        $shift = $shift ?? $employee->shift ?? $this->defaultShift($employee->branch_id);
+        $shift = $shift ?? $employee->shift ?? $this->defaultShift($employee->company_id);
 
         $existing = Attendance::withoutGlobalScopes()
             ->where('branch_id', $employee->branch_id)
@@ -327,7 +327,7 @@ class PunchPairingService
             return AttendanceStatus::OnLeave->value;
         }
 
-        if ($this->isHoliday($employee->branch_id, $date)) {
+        if ($this->isHoliday($employee->company_id, $date)) {
             return AttendanceStatus::Holiday->value;
         }
 
@@ -369,10 +369,10 @@ class PunchPairingService
             ->exists();
     }
 
-    private function isHoliday(string $branchId, Carbon $date): bool
+    private function isHoliday(string $companyId, Carbon $date): bool
     {
         return Holiday::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->whereNull('deleted_at')
             ->covering($date)
             ->exists();
@@ -385,10 +385,10 @@ class PunchPairingService
             : (PunchDirection::tryFrom((string) $punch->punch_direction) ?? PunchDirection::Unknown);
     }
 
-    private function defaultShift(string $branchId): ?Shift
+    private function defaultShift(string $companyId): ?Shift
     {
         return Shift::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('is_default', true)
             ->whereNull('deleted_at')
             ->first();

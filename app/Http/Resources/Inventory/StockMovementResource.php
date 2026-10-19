@@ -18,12 +18,24 @@ class StockMovementResource extends JsonResource
         return [
             'id' => $this->id,
             'item_id' => $this->item_id,
+            'variant_id' => $this->variant_id,
+            // Where this movement came from, so the item's in/out list can link
+            // each row to the document that created it (opening has none).
+            'source_type' => $this->source?->value,
+            'reference_id' => $this->reference_id,
             'warehouse' => WarehouseResource::make($this->whenLoaded('warehouse')),
             'warehouse_name' => $this->warehouse?->name ?? null,
             'warehouse_id' => $this->warehouse_id,
             'batch' => $this->batch,
+            'variant' => $this->whenLoaded('variant', fn () => $this->variant ? [
+                'id' => $this->variant->id,
+                'display_name' => $this->variant->displayName(),
+            ] : null),
             'source' => $this->source?->getLabel() ?? null,
-            'status' => $this->status,
+            'status' => $this->status?->getLabel() ?? null,
+            'status_color' => $this->status?->color() ?? null,
+            'status_label' => $this->status?->label() ?? null,
+            'status_value' => $this->status?->value ?? null,
             'movement_type' => $this->movement_type?->getLabel() ?? null,
             'quantity' => (new DecimalNumberFormat())->removeTrailingDecimalZeros($this->quantity),
             'unit_cost' => $this->unit_cost,

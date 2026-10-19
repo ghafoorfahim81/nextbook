@@ -1,0 +1,23 @@
+{
+    "purchase_return": "Purchase Return",
+    "purchase_returns": "Purchase Returns",
+    "purchase_return_details": "Purchase Return Details",
+    "create_return": "Create Return",
+    "select_purchase": "Select Purchase",
+    "search_purchase_placeholder": "Search by purchase number or supplier",
+    "returnable_items": "Returnable Items",
+    "original_quantity": "Original Qty",
+    "returned_quantity": "Already Returned",
+    "remaining_quantity": "Remaining",
+    "quantity_to_return": "Return Qty",
+    "total_debit_to_supplier": "Total Debit to Supplier",
+    "reason": "Reason",
+    "post_purchase_return": "Post Purchase Return",
+    "reverse_purchase_return": "Reverse Purchase Return",
+    "post_purchase_return_description": "This will write the accounting and stock entries. Posted documents cannot be edited or deleted.",
+    "reverse_purchase_return_description": "This creates a counter transaction and counter stock movement, then marks this purchase return as reversed.",
+    "no_item_warning": "No Item",
+    "no_item_warning_description": "Please select at least one item with a return quantity greater than zero",
+    "linked_purchase": "Purchase",
+    "no_purchase_selected": "Select a posted purchase to load its returnable items"
+}

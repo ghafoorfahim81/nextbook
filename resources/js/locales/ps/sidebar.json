@@ -11,16 +11,23 @@
         "purchase": "پېرود",
         "sale": "خرڅ",
         "ledger": "لیجر",
-        "hr": "بشري سرچینې",
+        "cash_transactions": "نغدي معاملې",
         "receipt": "رسید",
         "payment": "پرېمینټ",
         "transfer": "حساب لېږد",
         "user_management": "کارن شمیر",
         "preferences": "ترتیبات",
+        "hr": "بشري سرچینې",
         "attendance": "حاضري",
         "leave": "رخصتي",
         "payroll": "معاشونه",
-        "recruitment": "ګمارنه"
+        "recruitment": "ګمارنه",
+        "trash": "کثافت دانی",
+        "expense": "مصارف",
+        "contra_settlement": "تهاتر",
+        "reports": "راپورونه",
+        "system": "سیستم",
+        "deleted_records": "ړنګ شوي ریکارډونه"
     },
     "administration": {
         "category": "کټګوري",
@@ -42,14 +49,25 @@
         "fast_opening": "چټک افتتاح",
         "barcode_print": "بارکوډ چاپ",
         "item_transfer": "جنس لېږد",
-        "pricing": "د قیمتونو کتنه"
+        "stock_adjustment": "د موجودۍ تعدیل",
+        "pricing": "د قیمتونو کتنه",
+        "landed_cost": "د تحویلي لګښت",
+        "landed_costs": "د تحویلي لګښتونه"
     },
     "account": {
         "chart_of_account": "حسابونو جدول",
         "account_type": "د حساب ډول"
     },
+    "journal_entry": {
+        "journal_entry": "ژورنال",
+        "journal_entries": "ژورنالونه",
+        "journal_class": "د ژورنال ټولګی",
+        "journal_classes": "د ژورنال ټولګي"
+    },
     "purchase": {
         "purchase": "پېرود",
+        "purchase_order": "د پیرودنې امر",
+        "purchase_quotation": "د پیرودنې کوټیشن",
         "purchase_return": "د پېرود ستنول"
     },
     "sale": {
@@ -59,7 +77,9 @@
         "edit_sale": "خرڅ سمول",
         "sale_created_successfully": "خرڅ په بریالیتوب سره جوړ شو",
         "sale_updated_successfully": "خرڅ په بریالیتوب سره تازه شو",
-        "sale_return": "د خرڅ ستنول"
+        "sale_return": "د خرڅ ستنول",
+        "sale_order": "د خرڅ امر",
+        "sale_quotation": "د خرڅلاو کوټیشن"
     },
     "ledger": {
         "customer": "پېرېدونکی",
@@ -106,5 +126,20 @@
         "opening": "خالي بستونه",
         "application": "غوښتنې",
         "interview": "مرکې"
+    },
+    "expense": {
+        "expense": "لګښت",
+        "expenses": "لګښتونه",
+        "expense_category": "د لګښت کټګوري"
+    },
+    "reports": {
+        "reports": "راپورونه",
+        "report": "راپور",
+        "activity_logs": "د کاروونکو فعالیت"
+    },
+    "system": {
+        "trash": "کثافت دانی",
+        "deleted_records": "ړنګ شوي ریکارډونه",
+        "activity_logs": "د کاروونکو فعالیتونه"
     }
 }

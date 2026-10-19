@@ -1,10 +1,9 @@
 {
-    "category":{
+    "category": {
         "category": "دسته بندی",
         "parent": "والد",
         "categories": "دسته بندی ها"
     },
-
     "warehouse": {
         "warehouse": "گدام/انبار",
         "warehouses": "گدام/انبار ها"
@@ -22,6 +21,7 @@
         "rate_updates_history_description": "تغییرات گذشته نرخ تبدیل و تاریخ ثبت هر نرخ را مشاهده کنید.",
         "exchange_rate": "نرخ تبدیل",
         "code": "کد",
+        "local_name": "نام محلی",
         "format": "فرمت",
         "flag": "پرچم",
         "is_active": "فعال",
@@ -33,7 +33,7 @@
         "no_currencies_to_update": "هیچ ارز فعال غیر اصلی برای به‌روزرسانی وجود ندارد.",
         "home_currency_cannot_be_updated": "نرخ ارز اصلی از این صفحه قابل به‌روزرسانی نیست."
     },
-        "brand": {
+    "brand": {
         "brand": "برند",
         "brands": "برند ها",
         "website": "وبسایت",
@@ -49,8 +49,7 @@
     "company": {
         "company": "شرکت",
         "companies": "شرکت ها",
-        "website": "وبسایت",
-        "sub_domain": "زیر دامنه"
+        "website": "وبسایت"
     },
     "designation": {
         "designation": "وظیفه",
@@ -110,11 +109,17 @@
         "branch": "شعبه",
         "branches": "شعبه ها",
         "city": "شهر",
-        "location": "مکان",
-        "sub_domain": "زیر دامنه"
+        "location": "مکان"
+    },
+    "customer_group": {
+        "customer_group": "گروه مشتری",
+        "customer_groups": "گروه‌های مشتری",
+        "name_en": "نام (انگلیسی)",
+        "local_name": "نام محلی"
     },
     "shared": {
         "remark": "توضیحات",
+        "local_name": "نام محلی",
         "parent": "والد",
         "address": "آدرس",
         "symbol": "نماد",
@@ -123,5 +128,12 @@
         "phone": "تلفن",
         "country": "کشور",
         "province": "ولایت"
+    },
+    "payment_term": {
+        "payment_term": "شرایط پرداخت",
+        "payment_terms": "شرایط پرداخت",
+        "name": "نام",
+        "days": "روزها",
+        "type": "نوع"
     }
 }

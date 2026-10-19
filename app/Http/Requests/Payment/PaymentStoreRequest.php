@@ -20,7 +20,7 @@ class PaymentStoreRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'number' => ['required', 'integer', 'max:255'],
+            'number' => ['required', 'integer', 'min:1'],
             'date' => ['required', 'date'],
             'ledger_id' => ['required', 'exists:ledgers,id'],
             'payment_mode' => ['nullable', Rule::in(PaymentMode::values())],
@@ -30,6 +30,8 @@ class PaymentStoreRequest extends FormRequest
             'rate' => ['required', 'numeric', 'gt:0'],
             'cheque_no' => ['nullable', 'string', 'max:255'],
             'narration' => ['nullable', 'string'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ], $this->settlementRules());
     }
 

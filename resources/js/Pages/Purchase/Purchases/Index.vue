@@ -21,6 +21,7 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('purchases.destroy', id, {
         title: t('general.delete', { name: t('purchase.purchase') }),
+        name: t('purchase.purchase'),
     })
 }
 
@@ -36,7 +37,7 @@ const columns = computed(() => ([
     { key: 'currency_code', label: t('general.currency') },
     { key: 'date', label: t('general.date'), sortable: true },
     { key: 'type', label: t('general.type'), sortable: true },
-    { key: 'status', label: t('general.status') },
+    { key: 'status_label', label: t('general.status') },
     { key: 'actions', label: t('general.actions') },
 ]))
 
@@ -64,6 +65,12 @@ const filterFields = computed(() => ([
         label: t('admin.warehouse.warehouse'),
         type: 'select',
         options: (props.filterOptions?.warehouses || []).map((s) => ({ id: s.id, name: s.name })),
+    },
+    {
+        key: 'payment_status',
+        label: t('general.payment_status'),
+        type: 'select',
+        options: (props.filterOptions?.paymentStatuses || []).map((s) => ({ id: s.id, name: s.name })),
     },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {

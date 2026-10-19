@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Inventory;
 
+use App\Enums\TransactionStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
-use App\Enums\TransferStatus;
 use App\Models\Administration\Warehouse;
 use App\Models\ItemTransfer\ItemTransfer;
 use App\Services\StockService;
@@ -48,7 +48,6 @@ class ItemTransferFeatureTest extends TestCase
             'batch' => 'LOT-1',
             'date' => '2026-03-10',
             'expire_date' => '2027-03-10',
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'seed-transfer-stock',
@@ -81,7 +80,7 @@ class ItemTransferFeatureTest extends TestCase
         $completeResponse->assertRedirect();
 
         $transfer->refresh();
-        $this->assertEquals(TransferStatus::COMPLETED->value, $transfer->status->value);
+        $this->assertEquals(TransactionStatus::POSTED->value, $transfer->status->value);
 
         $this->assertDatabaseHas('stock_balances', [
             'item_id' => $this->ctx['item']->id,

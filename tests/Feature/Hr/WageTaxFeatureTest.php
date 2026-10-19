@@ -53,14 +53,14 @@ class WageTaxFeatureTest extends TestCase
             'currency_id' => $this->ctx['currency']->id,
             'is_active' => true,
             'is_system' => true,
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_by' => $this->ctx['user']->id,
         ]);
 
         foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
             TaxBracket::create(array_merge($bracket, [
                 'tax_bracket_set_id' => $set->id,
-                'branch_id' => $this->ctx['branch']->id,
+                'company_id' => $this->ctx['company']->id,
                 'created_by' => $this->ctx['user']->id,
             ]));
         }
@@ -185,7 +185,7 @@ class WageTaxFeatureTest extends TestCase
     {
         $service = app(WageTaxService::class);
 
-        $resolved = $service->resolveSet(Carbon::parse('2026-08-31'), TaxPeriod::Monthly, $this->ctx['branch']->id);
+        $resolved = $service->resolveSet(Carbon::parse('2026-08-31'), TaxPeriod::Monthly, $this->ctx['company']->id);
 
         $this->assertSame($this->set->id, $resolved->id);
     }
@@ -201,8 +201,8 @@ class WageTaxFeatureTest extends TestCase
 
         $service = app(WageTaxService::class);
 
-        $old = $service->resolveSet(Carbon::parse('2025-06-30'), TaxPeriod::Monthly, $this->ctx['branch']->id);
-        $new = $service->resolveSet(Carbon::parse('2026-06-30'), TaxPeriod::Monthly, $this->ctx['branch']->id);
+        $old = $service->resolveSet(Carbon::parse('2025-06-30'), TaxPeriod::Monthly, $this->ctx['company']->id);
+        $new = $service->resolveSet(Carbon::parse('2026-06-30'), TaxPeriod::Monthly, $this->ctx['company']->id);
 
         $this->assertSame($this->set->id, $old->id);
         $this->assertSame($newer->id, $new->id);
@@ -221,7 +221,7 @@ class WageTaxFeatureTest extends TestCase
         app(WageTaxService::class)->resolveSet(
             Carbon::parse('2026-08-31'),
             TaxPeriod::Monthly,
-            $this->ctx['branch']->id
+            $this->ctx['company']->id
         );
     }
 
@@ -238,13 +238,22 @@ class WageTaxFeatureTest extends TestCase
     public function test_branch_provisioning_seeds_a_usable_table(): void
     {
         // The bootstrap context creates its accounts directly, so provisioning
-        // is exercised here on a fresh branch.
-        $branch = \App\Models\Administration\Branch::factory()->create(['is_main' => false]);
+        // is exercised here on a fresh branch. The table belongs to the
+        // company, so the one setUp seeded has to go first or provisioning
+        // would rightly find it and seed nothing.
+        TaxBracket::query()->forceDelete();
+        TaxBracketSet::query()->forceDelete();
+
+        $company = $this->ctx['company'];
+        $branch = \App\Models\Administration\Branch::factory()->create([
+            'company_id' => $company->id,
+            'is_main' => false,
+        ]);
 
         app(\App\Services\BranchProvisioningService::class)->provision($branch, $this->ctx['user']->id);
 
         $set = TaxBracketSet::withoutGlobalScopes()
-            ->where('branch_id', $branch->id)
+            ->where('company_id', $company->id)
             ->first();
 
         $this->assertNotNull($set, 'Provisioning should seed a wage tax table.');

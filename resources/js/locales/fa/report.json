@@ -39,8 +39,11 @@
         "item": "کالا",
         "account": "حساب نقد / بانک",
         "warehouse": "انبار",
+        "color": "همه رنگ‌ها",
+        "size": "همه سایزها",
         "currency": "ارز",
         "type": "نوع معامله",
+        "reason": "دلیل",
         "balance_type": "نوع مانده",
         "expense_category": "دسته‌بندی مصرف",
         "expense_account": "حساب مصرف",
@@ -53,7 +56,8 @@
         "payroll": "دوره معاش",
         "leave_type": "نوع رخصتی",
         "employment_type": "نوع استخدام",
-        "employment_status": "وضعیت استخدام"
+        "employment_status": "وضعیت استخدام",
+        "variant": "واریانت"
     },
     "balance_types": {
         "all": "همه",
@@ -80,7 +84,9 @@
         "balance_label": "مانده",
         "total_amount": "مجموع مبلغ",
         "total_quantity": "مجموع مقدار",
+        "total_movement": "مجموع ورودی/خروجی",
         "total_value": "مجموع ارزش",
+        "total_cost": "مجموع قیمت تمام‌شده",
         "total_items": "تعداد اقلام",
         "total_in": "مجموع ورودی",
         "total_out": "مجموع خروجی",
@@ -110,6 +116,11 @@
         "total_expenses": "مجموع مصارف",
         "net_profit": "سود خالص",
         "expense_count": "مصارف",
+        "current": "جاری (۰-۳۰)",
+        "days_31_60": "۳۱-۶۰ روز",
+        "days_61_90": "۶۱-۹۰ روز",
+        "days_90_plus": "۹۰+ روز",
+        "total_outstanding": "مجموع معوق",
         "party_count": "تعداد طرف حساب",
         "total_debtor": "مجموع طلب",
         "total_creditor": "مجموع بدهی",
@@ -178,6 +189,9 @@
         "total_value": "ارزش کل",
         "item_code": "کد کالا",
         "item_name": "نام کالا",
+        "color": "رنگ",
+        "size": "سایز",
+        "stock_value": "ارزش موجودی",
         "batch_number": "شماره بچ",
         "expiry_date": "تاریخ انقضا",
         "in_quantity": "ورودی",
@@ -217,12 +231,21 @@
         "expense_account": "حساب مصرف",
         "bank_account": "حساب بانکی / نقدی",
         "remark": "ملاحظات",
+        "reason": "دلیل",
+        "unit_cost": "قیمت فی واحد",
+        "total_cost": "مجموع قیمت",
+        "notes": "یادداشت",
+        "current": "جاری (۰-۳۰)",
+        "days_31_60": "۳۱-۶۰ روز",
+        "days_61_90": "۶۱-۹۰ روز",
+        "days_90_plus": "۹۰+ روز",
+        "total_outstanding": "مجموع معوق",
         "party_name": "طرف حساب",
         "balance_type": "نوع مانده",
         "currency": "ارز",
-        "rate": "نرخ",
         "home_equivalent": "معادل ارز پایه",
         "currency_name": "نام ارز",
+        "rate": "نرخ",
         "period": "دوره",
         "employee": "کارمند",
         "employee_code": "کود",
@@ -266,7 +289,6 @@
         "to_date": "الی تاریخ",
         "days": "روزها",
         "approved_by": "تایید کننده",
-        "reason": "دلیل",
         "headcount": "تعداد کارمندان",
         "joiners": "استخدام شده",
         "leavers": "ترک کرده",
@@ -277,7 +299,8 @@
         "phone": "تیلفون",
         "start_date": "تاریخ شروع",
         "end_date": "تاریخ ختم",
-        "days_remaining": "روزهای باقی"
+        "days_remaining": "روزهای باقی",
+        "variant": "واریانت"
     },
     "view_types": {
         "general": "عمومی",
@@ -286,7 +309,7 @@
     "reports": {
         "trial_balance": {
             "label": "تراز آزمایشی",
-            "description": "بدهکار، بستانکار و مانده خالص حساب‌ها بر اساس اسناد ثبت‌شده."
+            "description": "مانده بدهکار یا بستانکار هر حساب تا تاریخ گزارش؛ مجموع دو ستون باید برابر باشد."
         },
         "balance_sheet": {
             "label": "بیلانس شیت",
@@ -307,6 +330,14 @@
         "supplier_statement": {
             "label": "صورت‌حساب تأمین‌کننده",
             "description": "به صورت پیش‌فرض مانده همه تأمین‌کنندگان، یا صورت‌حساب کامل تأمین‌کننده انتخاب‌شده."
+        },
+        "aged_receivables": {
+            "label": "مطالبات بر اساس سن",
+            "description": "مانده‌های معوق مشتریان بر اساس سن تا تاریخ انتخاب‌شده."
+        },
+        "aged_payables": {
+            "label": "بدهی‌ها بر اساس سن",
+            "description": "مانده‌های معوق تأمین‌کنندگان بر اساس سن تا تاریخ انتخاب‌شده."
         },
         "receipt_report": {
             "label": "گزارش رسید",
@@ -340,6 +371,10 @@
             "label": "گردش موجودی",
             "description": "تاریخچه تفصیلی گردش موجودی بر اساس کالا و انبار."
         },
+        "stock_adjustment_report": {
+            "label": "گزارش تعدیل موجودی",
+            "description": "ردیف‌های تعدیل موجودی بر اساس انبار، کالا و دلیل، همراه با جهت، قیمت و وضعیت."
+        },
         "low_stock": {
             "label": "موجودی کم",
             "description": "اقلامی که در حد سفارش یا پایین‌تر از آن قرار دارند."
@@ -355,6 +390,10 @@
         "expiry_wise_report": {
             "label": "گزارش بر اساس انقضا",
             "description": "گردش موجودی بر اساس تاریخ انقضای هر بچ."
+        },
+        "variant_wise_report": {
+            "label": "گزارش بر اساس نوع",
+            "description": "موجودی بر اساس رنگ و سایز با مجموع ورودی، خروجی، موجودی و ارزش."
         },
         "zero_on_hand_report": {
             "label": "اقلام با موجودی صفر",
@@ -512,5 +551,13 @@
         "days_90": "۶۱ تا ۹۰ روز",
         "days_90_plus": "بیش از ۹۰ روز",
         "unapplied_credit": "بستانکاری تخصیص‌نیافته"
+    },
+    "chart": {
+        "income_statement_title": "مقایسه درآمد، هزینه و سود",
+        "revenue": "درآمد",
+        "cost_of_goods_sold": "بهای فروش",
+        "gross_profit": "سود ناخالص",
+        "expenses": "مصارف",
+        "net_profit": "سود خالص"
     }
 }

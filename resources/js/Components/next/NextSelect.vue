@@ -1,5 +1,17 @@
 <template>
     <div class="relative w-full">
+      <!-- Same notched outline as NextInput and NextTextarea; the shared rules
+           live in resources/css/next-field.css. A select always shows either a
+           value or a placeholder, so its label has no empty state to float out
+           of and stays up. -->
+      <div
+        class="next-field next-field--floated"
+        :class="{
+          'next-field--open': isOpen,
+          'next-field--error': Boolean(error),
+          'next-field--disabled': isDisabled,
+        }"
+      >
   <v-select
         ref="selectRef"
         :id="id"
@@ -15,17 +27,27 @@
         @close="handleClose"
         :filterable="false"
         :clearable="clearable"
-        :loading="isLoading"
+        :loading="combinedLoading"
         :placeholder="placeholder"
-        :close-on-select="true"
-        :no-options-text="noResultsText"
+        :close-on-select="!isMultiple"
         :append-to-body="shouldAppendToBody"
         :calculate-position="shouldAppendToBody ? calculatePosition : null"
-        class="col-span-3 w-full sm:text-sm"
+        class="next-field-control col-span-3 w-full sm:text-sm"
         :class="[{ 'no-arrow': !showArrow }]"
 
         v-bind="$attrs"
       >
+        <!-- Loading placeholder shown in place of the empty options list -->
+        <template #no-options>
+          <div v-if="combinedLoading" class="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+            <Spinner class="size-4" />
+            <span>{{ t('general.loading') }}</span>
+          </div>
+          <div v-else class="py-3 text-sm text-muted-foreground">
+            {{ t('general.no_results') }}
+          </div>
+        </template>
+
         <!-- Add New Option Button (always visible at bottom when open) -->
         <template #list-footer v-if="showQuickCreateButton">
           <div class="list-footer">
@@ -39,7 +61,23 @@
             </button>
           </div>
         </template>
+
+        <!-- Per-option content (defaults to plain label text when not overridden) -->
+        <template #option="option">
+          <slot name="option" v-bind="option">{{ option[labelKey] }}</slot>
+        </template>
+        <template #selected-option="option">
+          <slot name="selected-option" v-bind="option">{{ option[labelKey] }}</slot>
+        </template>
       </v-select>
+
+        <fieldset aria-hidden="true" class="next-field-outline">
+          <legend v-if="floatingText"><span>{{ floatingText }}<span v-if="isRequired">*</span></span></legend>
+        </fieldset>
+
+        <label v-if="floatingText" :for="id" class="next-field-label text-sm">{{ floatingText }}<span
+          v-if="isRequired" class="next-field-required">*</span></label>
+      </div>
 
       <QuickCreateModal
         v-if="quickCreateConfig"
@@ -50,32 +88,41 @@
         @created="handleQuickCreated"
       />
 
-      <!-- Floating label (does NOT block clicks) -->
-      <FloatingLabel
-        :id="id"
-        :label="floatingText"
-        class="pointer-events-none z-20"
-      />
-
-      <!-- Error Display -->
+      <!-- Error / hint display -->
       <span v-if="error" class="mt-1 block text-red-500 text-sm">
         {{ error }}
       </span>
+      <p v-else-if="hint && showHints" class="mt-1 text-xs text-muted-foreground">{{ hint }}</p>
     </div>
   </template>
 
 
 
   <script setup>
-  import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance, nextTick } from 'vue'
+  import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance, nextTick, useAttrs } from 'vue'
+
+  // Attrs like `multiple`/`disabled` must only land on <v-select> (bound explicitly below via
+  // v-bind="$attrs"), not on the root <div> — Tailwind Forms' `[multiple]` reset rule would
+  // otherwise paint a stray white background/border on the wrapper.
+  defineOptions({ inheritAttrs: false })
   import { useI18n } from 'vue-i18n'
-  import FloatingLabel from '@/Components/next/FloatingLabel.vue'
+  import { usePage } from '@inertiajs/vue3'
+  import { Spinner } from '@/Components/ui/spinner'
   import { useSearchResources } from '@/composables/useSearchResources.js'
   import QuickCreateModal from '@/Components/next/QuickCreateModal.vue'
   import { QUICK_CREATE_EVENT, quickCreateRegistry } from '@/Components/next/quickCreateRegistry'
   import { shouldAutoFocusElement } from '@/lib/autofocus'
 
   const { t } = useI18n()
+
+  // Inline hints follow the per-user appearance.show_field_hints preference.
+  const showHints = computed(() => {
+    try {
+      return usePage().props.user_preferences?.appearance?.show_field_hints !== false
+    } catch (e) {
+      return true
+    }
+  })
 
   /* ---------------- PROPS ---------------- */
 
@@ -87,9 +134,13 @@
     reduce: { type: Function, default: null },
     id: { type: String, default: () => 'sel-' + Math.random().toString(36).slice(2) },
     floatingText: { type: String, default: '' },
+    isRequired: { type: Boolean, default: false },
     error: { type: String, default: '' },
+    hint: { type: String, default: '' },
     placeholder: { type: String, default: '' },
     autofocus: { type: Boolean, default: false },
+    // External loading state (e.g. options still being fetched via a lazy prop reload)
+    loading: { type: Boolean, default: false },
 
     searchable: { type: Boolean, default: false },
     resourceType: { type: String, default: null },
@@ -108,6 +159,15 @@
   })
 
   const emit = defineEmits(['update:modelValue', 'add-new'])
+
+  const attrs = useAttrs()
+  const isMultiple = computed(() => attrs.multiple !== undefined && attrs.multiple !== false)
+  const isDisabled = computed(() => attrs.disabled !== undefined && attrs.disabled !== false)
+
+  // Drives the outline's ring. :focus-within alone is not enough: opening the
+  // dropdown by mouse can leave focus on the toggle rather than the search
+  // field, and with append-to-body the menu is not even inside the wrapper.
+  const isOpen = ref(false)
 
   /* ---------------- I18N / DIRECTION ---------------- */
 
@@ -256,6 +316,7 @@
   const searchableOptions = ref([...props.options])
   const currentSearchTerm = ref('')
   const { searchResources, isLoading } = useSearchResources()
+  const combinedLoading = computed(() => isLoading.value || props.loading)
 
   const resolvedSearchFields = computed(() => {
     const baseFields = Array.isArray(props.searchFields) ? [...props.searchFields] : ['name']
@@ -318,14 +379,46 @@
     }
   }
 
+
+  /**
+   * The picker already declares the type it wants — `:search-options="{ type:
+   * 'supplier' }"` — but that only reached the SEARCH request. The list shown
+   * before anyone types came straight from the shared, unfiltered ledger prop,
+   * so a supplier picker opened on a list of customers and one click booked a
+   * purchase against a customer account.
+   *
+   * Applied only to options that actually carry a `type`: everything else
+   * (items, currencies, warehouses) passes through untouched, so a picker whose
+   * options have no type is not silently emptied.
+   */
+  const applyDeclaredTypeFilter = (options) => {
+    const params = normalizedSearchOptions.value.additionalParams || {}
+    const wanted = params.types ?? params.type
+
+    if (wanted === undefined || wanted === null) return options
+
+    const allowed = Array.isArray(wanted) ? wanted : [wanted]
+
+    if (allowed.length === 0) return options
+
+    return (options || []).filter((option) => {
+      const type = option?.type
+
+      return type === undefined || type === null || allowed.includes(type)
+    })
+  }
+
   const resetSearchableOptions = () => {
-    searchableOptions.value = [...props.options]
+    searchableOptions.value = applyDeclaredTypeFilter([...props.options])
     ensureSelectedOptionInOptions()
   }
 
   watch(() => props.options, (opts) => {
+    // Cache everything — a previously selected option of another type still
+    // has to be resolvable by ensureSelectedOptionInOptions below — but show
+    // only what this picker asked for.
     cacheOptions(opts)
-    searchableOptions.value = [...opts]
+    searchableOptions.value = applyDeclaredTypeFilter([...opts])
     ensureSelectedOptionInOptions()
   }, { immediate: true })
 
@@ -360,12 +453,14 @@
 }
 
 const handleOpen = () => {
+  isOpen.value = true
   if (!currentSearchTerm.value.trim()) {
     resetSearchableOptions()
   }
 }
 
 const handleClose = () => {
+  isOpen.value = false
   currentSearchTerm.value = ''
   nextTick(resetSearchableOptions)
 }
@@ -535,23 +630,39 @@ const onGlobalQuickCreated = (event) => {
     color: hsl(var(--primary-foreground));
   }
 
-  /* match app input look (light + dark via CSS vars) */
+  /* The frame belongs to .next-field-outline now (next-field.css), so the
+     toggle only has to be the right size and hold its content — its border and
+     fill are stripped there. Two borders in the same place is what used to
+     refill the label's gap with a stub. */
   :deep(.vs__dropdown-toggle) {
-    background-color: hsl(var(--background));
-    border: 1px solid hsl(var(--border));
-    border-radius: calc(var(--radius) - 2px);
     height: 2.5rem;      /* match input h-10 */
     min-height: 2.5rem;
-    padding: 0 0.75rem;  /* avoid extra vertical height from padding */
+    padding-block: 0;    /* avoid extra vertical height from padding */
     display: flex;
     align-items: center;
     color: hsl(var(--foreground));
+  }
+
+  /* disabled: keep the input look, just dim it (vue-select defaults to a grey fill) */
+  :deep(.vs--disabled .vs__search),
+  :deep(.vs--disabled .vs__selected),
+  :deep(.vs--disabled .vs__actions),
+  :deep(.vs--disabled .vs__clear),
+  :deep(.vs--disabled .vs__open-indicator) {
+    background-color: transparent !important;
+  }
+
+  :deep(.vs--disabled .vs__dropdown-toggle) {
+    background-color: transparent !important;
+    cursor: not-allowed;
   }
 
   /* Ensure internal content centers vertically and doesn't add extra height */
   :deep(.vs__selected-options) {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
     padding: 0;
     margin: 0;
   }
@@ -571,6 +682,27 @@ const onGlobalQuickCreated = (event) => {
   :deep(.vs__selected),
   :deep(.vs__search) {
     color: hsl(var(--foreground));
+  }
+
+  /* Multi-select tags (chips) — only for multiple selects.
+     Single selects keep vue-select's default transparent selected text.
+     Kept compact on purpose: four role chips at the old size needed more than
+     one row's worth of height and hung outside the control. */
+  :deep(.vs--multiple .vs__selected) {
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 4px);
+    padding: 0 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.375rem;
+  }
+
+  :deep(.vs__deselect) {
+    fill: hsl(var(--muted-foreground));
+  }
+
+  :deep(.vs__deselect:hover) {
+    fill: hsl(var(--foreground));
   }
 
   :deep(.vs__open-indicator),
@@ -615,10 +747,14 @@ const onGlobalQuickCreated = (event) => {
     padding-bottom: 0 !important; /* REMOVE bottom padding to eliminate space */
   }
 
-  /* focus parity with inputs */
-  :deep(.vs--open .vs__dropdown-toggle),
-  :deep(.vs__dropdown-toggle:focus-within) {
-    border-color: rgb(137, 80, 221);
-    box-shadow: 0 0 0 1px rgba(99,102,241,.25);
+  /* Focus is the outline's job now — .next-field:focus-within and
+     .next-field--open both light the same --ring that NextInput uses, so the
+     select no longer lights up a hardcoded purple next to a cyan input. */
+
+  /* suppress the browser's native focus outline on internal elements —
+     our custom border/box-shadow above is the only focus indicator */
+  :deep(.v-select *:focus),
+  :deep(.v-select *:focus-visible) {
+    outline: none;
   }
   </style>

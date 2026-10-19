@@ -2,7 +2,7 @@
 
 namespace App\Models\Administration;
 
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,11 +14,11 @@ use App\Traits\HasSorting;
 use App\Traits\HasCache;
 use App\Traits\HasUserTracking;
 use Symfony\Component\Uid\Ulid;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Currency extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, CompanySpecific, HasCompany, SoftDeletes;
 
 
     /**
@@ -31,6 +31,7 @@ class Currency extends Model
 
     protected $fillable = [
         'name',
+        'local_name',
         'code',
         'symbol',
         'format',
@@ -38,7 +39,7 @@ class Currency extends Model
         'is_active',
         'is_base_currency',
         'flag',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
     ];
@@ -60,16 +61,26 @@ class Currency extends Model
         'id' => 'string',
         'is_active' => 'boolean',
         'is_base_currency' => 'boolean',
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'tenant_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
+    ];
+
+    /**
+     * Computed labels every currency payload should carry so pickers can show
+     * "USD - US Dollar" (localized) without each endpoint opting in.
+     */
+    protected $appends = [
+        'localized_name',
+        'display_name',
     ];
 
     protected static function searchableColumns(): array
     {
         return [
             'name',
+            'local_name',
             'code',
             'symbol',
             'format',
@@ -78,11 +89,33 @@ class Currency extends Model
         ];
     }
 
+    /**
+     * The localized currency name for the active locale, falling back to the
+     * English name when no local name is stored or the UI is in English.
+     */
+    public function getLocalizedNameAttribute(): string
+    {
+        $useLocal = in_array(app()->getLocale(), ['fa', 'ps', 'pa'], true);
+
+        return $useLocal && filled($this->local_name)
+            ? $this->local_name
+            : (string) $this->name;
+    }
+
+    /**
+     * Label for currency pickers: "USD - US Dollar" (or the localized name).
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return trim("{$this->code} - {$this->localized_name}");
+    }
+
     public static function defaultCurrencies(): array
     {
         return [
             'AFN' => [
                 'name' => 'Afghanistan, Afghani',
+                'local_name' => 'افغانی',
                 'code' => 'AFN',
                 'symbol' => '؋',
                 'format' => '؋1,0.00',
@@ -93,6 +126,7 @@ class Currency extends Model
             ],
             'USD' => [
                 'name' => 'US Dollar',
+                'local_name' => 'دالر امریکایی',
                 'code' => 'USD',
                 'symbol' => '$',
                 'format' => '$1,0.00',
@@ -103,6 +137,7 @@ class Currency extends Model
             ],
             'IRR' => [
                 'name' => 'Iranian Rial',
+                'local_name' => 'ریال ایران',
                 'code' => 'IRR',
                 'symbol' => '﷼',
                 'format' => '﷼ 1,0/00',
@@ -113,6 +148,7 @@ class Currency extends Model
             ],
             'INR' => [
                 'name' => 'Indian Rupee',
+                'local_name' => 'روپیه هند',
                 'code' => 'INR',
                 'symbol' => '₹',
                 'format' => '1,0.00₹',
@@ -124,9 +160,9 @@ class Currency extends Model
         ];
     }
 
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Company::class);
     }
 
     public function rateUpdates(): HasMany
@@ -139,6 +175,7 @@ class Currency extends Model
         return  [
             'AFN' => [
                 'name' => 'Afghanistan, Afghani',
+                'local_name' => 'افغانی',
                 'symbol' => '؋',
                 'format' => '؋1,0.00',
                 'exchange_rate' => 0.00,
@@ -146,6 +183,7 @@ class Currency extends Model
             ],
             'AED' => [
                 'name' => 'UAE Dirham',
+                'local_name' => 'درهم امارات متحدهٔ عربی',
                 'symbol' => 'دإ‏',
                 'format' => 'دإ‏ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -153,6 +191,7 @@ class Currency extends Model
             ],
             'ALL' => [
                 'name' => 'Albania, Lek',
+                'local_name' => 'لک آلبانی',
                 'symbol' => 'Lek',
                 'format' => '1,0.00Lek',
                 'exchange_rate' => 0.00,
@@ -160,6 +199,7 @@ class Currency extends Model
             ],
             'AMD' => [
                 'name' => 'Armenian Dram',
+                'local_name' => 'درام ارمنستان',
                 'symbol' => '&#1423;',
                 'format' => '1,0.00 &#1423;',
                 'exchange_rate' => 0.00,
@@ -167,6 +207,7 @@ class Currency extends Model
             ],
             'ANG' => [
                 'name' => 'Netherlands Antillian Guilder',
+                'local_name' => 'گیلدر آنتیل هلند',
                 'symbol' => 'ƒ',
                 'format' => 'ƒ1,0.00',
                 'exchange_rate' => 0.00,
@@ -174,6 +215,7 @@ class Currency extends Model
             ],
             'AOA' => [
                 'name' => 'Angola, Kwanza',
+                'local_name' => 'کوانزای آنگولا',
                 'symbol' => 'Kz',
                 'format' => 'Kz1,0.00',
                 'exchange_rate' => 0.00,
@@ -181,6 +223,7 @@ class Currency extends Model
             ],
             'ARS' => [
                 'name' => 'Argentine Peso',
+                'local_name' => 'پزوی آرژانتین',
                 'symbol' => '$',
                 'format' => '$ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -188,6 +231,7 @@ class Currency extends Model
             ],
             'AUD' => [
                 'name' => 'Australian Dollar',
+                'local_name' => 'دلار استرالیا',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -195,6 +239,7 @@ class Currency extends Model
             ],
             'AWG' => [
                 'name' => 'Aruban Guilder',
+                'local_name' => 'فلورین آروبا',
                 'symbol' => 'ƒ',
                 'format' => 'ƒ1,0.00',
                 'exchange_rate' => 0.00,
@@ -202,6 +247,7 @@ class Currency extends Model
             ],
             'AZN' => [
                 'name' => 'Azerbaijanian Manat',
+                'local_name' => 'منات جمهوری آذربایجان',
                 'symbol' => '₼',
                 'format' => '1 0,00 ₼',
                 'exchange_rate' => 0.00,
@@ -209,6 +255,7 @@ class Currency extends Model
             ],
             'BAM' => [
                 'name' => 'Bosnia and Herzegovina, Convertible Marks',
+                'local_name' => 'مارک تبدیل‌پذیر بوسنی و هرزگوین',
                 'symbol' => 'КМ',
                 'format' => '1,0.00 КМ',
                 'exchange_rate' => 0.00,
@@ -216,6 +263,7 @@ class Currency extends Model
             ],
             'BBD' => [
                 'name' => 'Barbados Dollar',
+                'local_name' => 'دلار باربادوس',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -223,6 +271,7 @@ class Currency extends Model
             ],
             'BDT' => [
                 'name' => 'Bangladesh, Taka',
+                'local_name' => 'تاکای بنگلادش',
                 'symbol' => '৳',
                 'format' => '৳ 1,0.',
                 'exchange_rate' => 0.00,
@@ -230,6 +279,7 @@ class Currency extends Model
             ],
             'BGN' => [
                 'name' => 'Bulgarian Lev',
+                'local_name' => 'لف بلغارستان',
                 'symbol' => 'лв.',
                 'format' => '1 0,00 лв.',
                 'exchange_rate' => 0.00,
@@ -237,6 +287,7 @@ class Currency extends Model
             ],
             'BHD' => [
                 'name' => 'Bahraini Dinar',
+                'local_name' => 'دینار بحرین',
                 'symbol' => '.د.',
                 'format' => '.د. 1,0.000',
                 'exchange_rate' => 0.00,
@@ -244,6 +295,7 @@ class Currency extends Model
             ],
             'BIF' => [
                 'name' => 'Burundi Franc',
+                'local_name' => 'فرانک بوروندی',
                 'symbol' => 'FBu',
                 'format' => '1,0.FBu',
                 'exchange_rate' => 0.00,
@@ -251,6 +303,7 @@ class Currency extends Model
             ],
             'BMD' => [
                 'name' => 'Bermudian Dollar',
+                'local_name' => 'دلار برمودا',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -258,6 +311,7 @@ class Currency extends Model
             ],
             'BND' => [
                 'name' => 'Brunei Dollar',
+                'local_name' => 'دلار برونئی',
                 'symbol' => '$',
                 'format' => '$1,0.',
                 'exchange_rate' => 0.00,
@@ -265,6 +319,7 @@ class Currency extends Model
             ],
             'BOB' => [
                 'name' => 'Bolivia, Boliviano',
+                'local_name' => 'بولیویانوی بولیوی',
                 'symbol' => 'Bs',
                 'format' => 'Bs 1,0.00',
                 'exchange_rate' => 0.00,
@@ -272,6 +327,7 @@ class Currency extends Model
             ],
             'BRL' => [
                 'name' => 'Brazilian Real',
+                'local_name' => 'رئال برزیل',
                 'symbol' => 'R$',
                 'format' => 'R$ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -279,6 +335,7 @@ class Currency extends Model
             ],
             'BSD' => [
                 'name' => 'Bahamian Dollar',
+                'local_name' => 'دلار باهاما',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -286,6 +343,7 @@ class Currency extends Model
             ],
             'BTN' => [
                 'name' => 'Bhutan, Ngultrum',
+                'local_name' => 'انگولتروم بوتان',
                 'symbol' => 'Nu.',
                 'format' => 'Nu. 1,0.0',
                 'exchange_rate' => 0.00,
@@ -293,6 +351,7 @@ class Currency extends Model
             ],
             'BWP' => [
                 'name' => 'Botswana, Pula',
+                'local_name' => 'پولای بوتسوانا',
                 'symbol' => 'P',
                 'format' => 'P1,0.00',
                 'exchange_rate' => 0.00,
@@ -300,6 +359,7 @@ class Currency extends Model
             ],
             'BYR' => [
                 'name' => 'Belarussian Ruble',
+                'local_name' => 'روبل بلاروسی (۲۰۱۶–۲۰۰۰)',
                 'symbol' => 'р.',
                 'format' => '1 0,00 р.',
                 'exchange_rate' => 0.00,
@@ -307,6 +367,7 @@ class Currency extends Model
             ],
             'BZD' => [
                 'name' => 'Belize Dollar',
+                'local_name' => 'دلار بلیز',
                 'symbol' => 'BZ$',
                 'format' => 'BZ$1,0.00',
                 'exchange_rate' => 0.00,
@@ -314,6 +375,7 @@ class Currency extends Model
             ],
             'CAD' => [
                 'name' => 'Canadian Dollar',
+                'local_name' => 'دلار کانادا',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -321,6 +383,7 @@ class Currency extends Model
             ],
             'CDF' => [
                 'name' => 'Franc Congolais',
+                'local_name' => 'فرانک کنگو',
                 'symbol' => 'FC',
                 'format' => '1,0.00FC',
                 'exchange_rate' => 0.00,
@@ -328,6 +391,7 @@ class Currency extends Model
             ],
             'CHF' => [
                 'name' => 'Swiss Franc',
+                'local_name' => 'فرانک سوئیس',
                 'symbol' => 'CHF',
                 'format' => '1\'0.00 CHF',
                 'exchange_rate' => 0.00,
@@ -335,6 +399,7 @@ class Currency extends Model
             ],
             'CLP' => [
                 'name' => 'Chilean Peso',
+                'local_name' => 'پزوی شیلی',
                 'symbol' => '$',
                 'format' => '$ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -342,6 +407,7 @@ class Currency extends Model
             ],
             'CNY' => [
                 'name' => 'China Yuan Renminbi',
+                'local_name' => 'یوآن چین',
                 'symbol' => '¥',
                 'format' => '¥1,0.00',
                 'exchange_rate' => 0.00,
@@ -349,6 +415,7 @@ class Currency extends Model
             ],
             'COP' => [
                 'name' => 'Colombian Peso',
+                'local_name' => 'پزوی کلمبیا',
                 'symbol' => '$',
                 'format' => '$ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -356,6 +423,7 @@ class Currency extends Model
             ],
             'CRC' => [
                 'name' => 'Costa Rican Colon',
+                'local_name' => 'کولون کاستاریکا',
                 'symbol' => '₡',
                 'format' => '₡1,0.00',
                 'exchange_rate' => 0.00,
@@ -363,6 +431,7 @@ class Currency extends Model
             ],
             'CUC' => [
                 'name' => 'Cuban Convertible Peso',
+                'local_name' => 'پزوی تبدیل‌پذیر کوبا',
                 'symbol' => 'CUC',
                 'format' => 'CUC1,0.00',
                 'exchange_rate' => 0.00,
@@ -370,6 +439,7 @@ class Currency extends Model
             ],
             'CUP' => [
                 'name' => 'Cuban Peso',
+                'local_name' => 'پزوی کوبا',
                 'symbol' => '$MN',
                 'format' => '$MN1,0.00',
                 'exchange_rate' => 0.00,
@@ -377,6 +447,7 @@ class Currency extends Model
             ],
             'CVE' => [
                 'name' => 'Cape Verde Escudo',
+                'local_name' => 'اسکودوی کیپ‌ورد',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -384,6 +455,7 @@ class Currency extends Model
             ],
             'CZK' => [
                 'name' => 'Czech Koruna',
+                'local_name' => 'کورونای جمهوری چک',
                 'symbol' => 'Kč',
                 'format' => '1 0,00 Kč',
                 'exchange_rate' => 0.00,
@@ -391,6 +463,7 @@ class Currency extends Model
             ],
             'DJF' => [
                 'name' => 'Djibouti Franc',
+                'local_name' => 'فرانک جیبوتی',
                 'symbol' => 'Fdj',
                 'format' => '1,0.Fdj',
                 'exchange_rate' => 0.00,
@@ -398,6 +471,7 @@ class Currency extends Model
             ],
             'DKK' => [
                 'name' => 'Danish Krone',
+                'local_name' => 'کرون دانمارک',
                 'symbol' => 'kr.',
                 'format' => '1 0,00 kr.',
                 'exchange_rate' => 0.00,
@@ -405,6 +479,7 @@ class Currency extends Model
             ],
             'DOP' => [
                 'name' => 'Dominican Peso',
+                'local_name' => 'پزوی جمهوری دومینیکن',
                 'symbol' => 'RD$',
                 'format' => 'RD$1,0.00',
                 'exchange_rate' => 0.00,
@@ -412,6 +487,7 @@ class Currency extends Model
             ],
             'DZD' => [
                 'name' => 'Algerian Dinar',
+                'local_name' => 'دینار الجزایر',
                 'symbol' => 'د.ج‏',
                 'format' => 'د.ج‏ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -419,6 +495,7 @@ class Currency extends Model
             ],
             'EGP' => [
                 'name' => 'Egyptian Pound',
+                'local_name' => 'پوند مصر',
                 'symbol' => 'ج.م',
                 'format' => 'ج.م 1,0.00',
                 'exchange_rate' => 0.00,
@@ -426,6 +503,7 @@ class Currency extends Model
             ],
             'ERN' => [
                 'name' => 'Eritrea, Nakfa',
+                'local_name' => 'ناکفای اریتره',
                 'symbol' => 'Nfk',
                 'format' => '1,0.00Nfk',
                 'exchange_rate' => 0.00,
@@ -433,6 +511,7 @@ class Currency extends Model
             ],
             'ETB' => [
                 'name' => 'Ethiopian Birr',
+                'local_name' => 'بیر اتیوپی',
                 'symbol' => 'ETB',
                 'format' => 'ETB1,0.00',
                 'exchange_rate' => 0.00,
@@ -440,6 +519,7 @@ class Currency extends Model
             ],
             'EUR' => [
                 'name' => 'Euro',
+                'local_name' => 'یورو',
                 'symbol' => '€',
                 'format' => '1.0,00 €',
                 'exchange_rate' => 0.00,
@@ -447,6 +527,7 @@ class Currency extends Model
             ],
             'FJD' => [
                 'name' => 'Fiji Dollar',
+                'local_name' => 'دلار فیجی',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -454,6 +535,7 @@ class Currency extends Model
             ],
             'FKP' => [
                 'name' => 'Falkland Islands Pound',
+                'local_name' => 'پوند جزایر فالکلند',
                 'symbol' => '£',
                 'format' => '£1,0.00',
                 'exchange_rate' => 0.00,
@@ -461,6 +543,7 @@ class Currency extends Model
             ],
             'GBP' => [
                 'name' => 'Pound Sterling',
+                'local_name' => 'پوند بریتانیا',
                 'symbol' => '£',
                 'format' => '£1,0.00',
                 'exchange_rate' => 0.00,
@@ -468,6 +551,7 @@ class Currency extends Model
             ],
             'GEL' => [
                 'name' => 'Georgia, Lari',
+                'local_name' => 'لاری گرجستان',
                 'symbol' => 'Lari',
                 'format' => '1 0,00 Lari',
                 'exchange_rate' => 0.00,
@@ -475,6 +559,7 @@ class Currency extends Model
             ],
             'GHS' => [
                 'name' => 'Ghana Cedi',
+                'local_name' => 'سدی غنا',
                 'symbol' => '₵',
                 'format' => '₵1,0.00',
                 'exchange_rate' => 0.00,
@@ -482,6 +567,7 @@ class Currency extends Model
             ],
             'GIP' => [
                 'name' => 'Gibraltar Pound',
+                'local_name' => 'پوند جبل‌الطارق',
                 'symbol' => '£',
                 'format' => '£1,0.00',
                 'exchange_rate' => 0.00,
@@ -489,6 +575,7 @@ class Currency extends Model
             ],
             'GMD' => [
                 'name' => 'Gambia, Dalasi',
+                'local_name' => 'دالاسی گامبیا',
                 'symbol' => 'D',
                 'format' => '1,0.00D',
                 'exchange_rate' => 0.00,
@@ -496,6 +583,7 @@ class Currency extends Model
             ],
             'GTQ' => [
                 'name' => 'Guatemala, Quetzal',
+                'local_name' => 'کتزال گواتمالا',
                 'symbol' => 'Q',
                 'format' => 'Q1,0.00',
                 'exchange_rate' => 0.00,
@@ -503,6 +591,7 @@ class Currency extends Model
             ],
             'GYD' => [
                 'name' => 'Guyana Dollar',
+                'local_name' => 'دلار گویانا',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -510,6 +599,7 @@ class Currency extends Model
             ],
             'HKD' => [
                 'name' => 'Hong Kong Dollar',
+                'local_name' => 'دلار هنگ‌کنگ',
                 'symbol' => 'HK$',
                 'format' => 'HK$1,0.00',
                 'exchange_rate' => 0.00,
@@ -517,6 +607,7 @@ class Currency extends Model
             ],
             'HNL' => [
                 'name' => 'Honduras, Lempira',
+                'local_name' => 'لمپیرای هندوراس',
                 'symbol' => 'L.',
                 'format' => 'L. 1,0.00',
                 'exchange_rate' => 0.00,
@@ -524,6 +615,7 @@ class Currency extends Model
             ],
             'HRK' => [
                 'name' => 'Croatian Kuna',
+                'local_name' => 'کونای کرواسی',
                 'symbol' => 'kn',
                 'format' => '1,0.00 kn',
                 'exchange_rate' => 0.00,
@@ -531,6 +623,7 @@ class Currency extends Model
             ],
             'HTG' => [
                 'name' => 'Haiti, Gourde',
+                'local_name' => 'گورد هائیتی',
                 'symbol' => 'G',
                 'format' => 'G1,0.00',
                 'exchange_rate' => 0.00,
@@ -538,6 +631,7 @@ class Currency extends Model
             ],
             'HUF' => [
                 'name' => 'Hungary, Forint',
+                'local_name' => 'فورینت مجارستان',
                 'symbol' => 'Ft',
                 'format' => '1 0,00 Ft',
                 'exchange_rate' => 0.00,
@@ -545,6 +639,7 @@ class Currency extends Model
             ],
             'IDR' => [
                 'name' => 'Indonesia, Rupiah',
+                'local_name' => 'روپیهٔ اندونزی',
                 'symbol' => 'Rp',
                 'format' => 'Rp1,0.',
                 'exchange_rate' => 0.00,
@@ -552,6 +647,7 @@ class Currency extends Model
             ],
             'ILS' => [
                 'name' => 'New Israeli Shekel',
+                'local_name' => 'شقل جدید اسرائیل',
                 'symbol' => '₪',
                 'format' => '₪ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -559,6 +655,7 @@ class Currency extends Model
             ],
             'INR' => [
                 'name' => 'Indian Rupee',
+                'local_name' => 'روپیه هند',
                 'symbol' => '₹',
                 'format' => '1,0.00₹',
                 'exchange_rate' => 0.00,
@@ -566,6 +663,7 @@ class Currency extends Model
             ],
             'IQD' => [
                 'name' => 'Iraqi Dinar',
+                'local_name' => 'دینار عراق',
                 'symbol' => 'د.ع.‏',
                 'format' => 'د.ع.‏ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -573,6 +671,7 @@ class Currency extends Model
             ],
             'IRR' => [
                 'name' => 'Iranian Rial',
+                'local_name' => 'ریال ایران',
                 'symbol' => '﷼',
                 'format' => '﷼ 1,0/00',
                 'exchange_rate' => 0.00,
@@ -580,6 +679,7 @@ class Currency extends Model
             ],
             'ISK' => [
                 'name' => 'Iceland Krona',
+                'local_name' => 'کرونای ایسلند',
                 'symbol' => 'kr.',
                 'format' => '1,0. kr.',
                 'exchange_rate' => 0.00,
@@ -587,6 +687,7 @@ class Currency extends Model
             ],
             'JMD' => [
                 'name' => 'Jamaican Dollar',
+                'local_name' => 'دلار جامائیکا',
                 'symbol' => 'J$',
                 'format' => 'J$1,0.00',
                 'exchange_rate' => 0.00,
@@ -594,6 +695,7 @@ class Currency extends Model
             ],
             'JOD' => [
                 'name' => 'Jordanian Dinar',
+                'local_name' => 'دینار اردن',
                 'symbol' => 'د.ا.‏',
                 'format' => 'د.ا.‏ 1,0.000',
                 'exchange_rate' => 0.00,
@@ -601,6 +703,7 @@ class Currency extends Model
             ],
             'JPY' => [
                 'name' => 'Japan, Yen',
+                'local_name' => 'ین ژاپن',
                 'symbol' => '¥',
                 'format' => '¥1,0.',
                 'exchange_rate' => 0.00,
@@ -608,6 +711,7 @@ class Currency extends Model
             ],
             'KES' => [
                 'name' => 'Kenyan Shilling',
+                'local_name' => 'شیلینگ کنیا',
                 'symbol' => 'S',
                 'format' => 'S1,0.00',
                 'exchange_rate' => 0.00,
@@ -615,6 +719,7 @@ class Currency extends Model
             ],
             'KGS' => [
                 'name' => 'Kyrgyzstan, Som',
+                'local_name' => 'سوم قرقیزستان',
                 'symbol' => 'сом',
                 'format' => '1 0-00 сом',
                 'exchange_rate' => 0.00,
@@ -622,6 +727,7 @@ class Currency extends Model
             ],
             'KHR' => [
                 'name' => 'Cambodia, Riel',
+                'local_name' => 'ری‌یل کامبوج',
                 'symbol' => '៛',
                 'format' => '1,0.៛',
                 'exchange_rate' => 0.00,
@@ -629,6 +735,7 @@ class Currency extends Model
             ],
             'KMF' => [
                 'name' => 'Comoro Franc',
+                'local_name' => 'فرانک کومورو',
                 'symbol' => 'CF',
                 'format' => '1,0.00CF',
                 'exchange_rate' => 0.00,
@@ -636,6 +743,7 @@ class Currency extends Model
             ],
             'KPW' => [
                 'name' => 'North Korean Won',
+                'local_name' => 'وون کرهٔ شمالی',
                 'symbol' => '₩',
                 'format' => '₩1,0.',
                 'exchange_rate' => 0.00,
@@ -643,6 +751,7 @@ class Currency extends Model
             ],
             'KRW' => [
                 'name' => 'South Korea, Won',
+                'local_name' => 'وون کرهٔ جنوبی',
                 'symbol' => '₩',
                 'format' => '₩1,0.',
                 'exchange_rate' => 0.00,
@@ -650,6 +759,7 @@ class Currency extends Model
             ],
             'KWD' => [
                 'name' => 'Kuwaiti Dinar',
+                'local_name' => 'دینار کویت',
                 'symbol' => 'دينار‌‌‏',
                 'format' => 'دينار‌‌‏ 1,0.000',
                 'exchange_rate' => 0.00,
@@ -657,6 +767,7 @@ class Currency extends Model
             ],
             'KYD' => [
                 'name' => 'Cayman Islands Dollar',
+                'local_name' => 'دلار جزایر کِیمن',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -664,6 +775,7 @@ class Currency extends Model
             ],
             'KZT' => [
                 'name' => 'Kazakhstan, Tenge',
+                'local_name' => 'تنگهٔ قزاقستان',
                 'symbol' => '₸',
                 'format' => '₸1 0-00',
                 'exchange_rate' => 0.00,
@@ -671,6 +783,7 @@ class Currency extends Model
             ],
             'LAK' => [
                 'name' => 'Laos, Kip',
+                'local_name' => 'کیپ لائوس',
                 'symbol' => '₭',
                 'format' => '1,0.₭',
                 'exchange_rate' => 0.00,
@@ -678,6 +791,7 @@ class Currency extends Model
             ],
             'LBP' => [
                 'name' => 'Lebanese Pound',
+                'local_name' => 'لیرهٔ لبنان',
                 'symbol' => 'ل.ل.‏',
                 'format' => 'ل.ل.‏ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -685,6 +799,7 @@ class Currency extends Model
             ],
             'LKR' => [
                 'name' => 'Sri Lanka Rupee',
+                'local_name' => 'روپیهٔ سری‌لانکا',
                 'symbol' => '₨',
                 'format' => '₨ 1,0.',
                 'exchange_rate' => 0.00,
@@ -692,6 +807,7 @@ class Currency extends Model
             ],
             'LRD' => [
                 'name' => 'Liberian Dollar',
+                'local_name' => 'دلار لیبریا',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -699,6 +815,7 @@ class Currency extends Model
             ],
             'LSL' => [
                 'name' => 'Lesotho, Loti',
+                'local_name' => 'لوتی لسوتو',
                 'symbol' => 'M',
                 'format' => '1,0.00M',
                 'exchange_rate' => 0.00,
@@ -706,6 +823,7 @@ class Currency extends Model
             ],
             'LYD' => [
                 'name' => 'Libyan Dinar',
+                'local_name' => 'دینار لیبی',
                 'symbol' => 'د.ل.‏',
                 'format' => 'د.ل.‏1,0.000',
                 'exchange_rate' => 0.00,
@@ -713,6 +831,7 @@ class Currency extends Model
             ],
             'MAD' => [
                 'name' => 'Moroccan Dirham',
+                'local_name' => 'درهم مراکش',
                 'symbol' => 'د.م.‏',
                 'format' => 'د.م.‏ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -720,6 +839,7 @@ class Currency extends Model
             ],
             'MDL' => [
                 'name' => 'Moldovan Leu',
+                'local_name' => 'لئوی مولداوی',
                 'symbol' => 'lei',
                 'format' => '1,0.00 lei',
                 'exchange_rate' => 0.00,
@@ -727,6 +847,7 @@ class Currency extends Model
             ],
             'MGA' => [
                 'name' => 'Malagasy Ariary',
+                'local_name' => 'آریاری مالاگاسی',
                 'symbol' => 'Ar',
                 'format' => 'Ar1,0.',
                 'exchange_rate' => 0.00,
@@ -734,6 +855,7 @@ class Currency extends Model
             ],
             'MKD' => [
                 'name' => 'Macedonia, Denar',
+                'local_name' => 'دینار مقدونیه',
                 'symbol' => 'ден.',
                 'format' => '1,0.00 ден.',
                 'exchange_rate' => 0.00,
@@ -741,6 +863,7 @@ class Currency extends Model
             ],
             'MMK' => [
                 'name' => 'Myanmar, Kyat',
+                'local_name' => 'کیات میانمار',
                 'symbol' => 'K',
                 'format' => 'K1,0.00',
                 'exchange_rate' => 0.00,
@@ -748,6 +871,7 @@ class Currency extends Model
             ],
             'MNT' => [
                 'name' => 'Mongolia, Tugrik',
+                'local_name' => 'توگریک مغولستان',
                 'symbol' => '₮',
                 'format' => '₮1 0,00',
                 'exchange_rate' => 0.00,
@@ -755,6 +879,7 @@ class Currency extends Model
             ],
             'MOP' => [
                 'name' => 'Macao, Pataca',
+                'local_name' => 'پاتاکای ماکائو',
                 'symbol' => 'MOP$',
                 'format' => 'MOP$1,0.00',
                 'exchange_rate' => 0.00,
@@ -762,6 +887,7 @@ class Currency extends Model
             ],
             'MRO' => [
                 'name' => 'Mauritania, Ouguiya',
+                'local_name' => 'اوگوئیای موریتانی (۱۹۷۳ تا ۲۰۱۷)',
                 'symbol' => 'UM',
                 'format' => '1,0.00UM',
                 'exchange_rate' => 0.00,
@@ -769,6 +895,7 @@ class Currency extends Model
             ],
             'MTL' => [
                 'name' => 'Maltese Lira',
+                'local_name' => 'لیرهٔ مالت',
                 'symbol' => '₤',
                 'format' => '₤1,0.00',
                 'exchange_rate' => 0.00,
@@ -776,6 +903,7 @@ class Currency extends Model
             ],
             'MUR' => [
                 'name' => 'Mauritius Rupee',
+                'local_name' => 'روپیهٔ موریس',
                 'symbol' => '₨',
                 'format' => '₨1,0.00',
                 'exchange_rate' => 0.00,
@@ -783,6 +911,7 @@ class Currency extends Model
             ],
             'MVR' => [
                 'name' => 'Maldives, Rufiyaa',
+                'local_name' => 'روپیهٔ مالدیو',
                 'symbol' => 'MVR',
                 'format' => '1,0.0 MVR',
                 'exchange_rate' => 0.00,
@@ -790,6 +919,7 @@ class Currency extends Model
             ],
             'MWK' => [
                 'name' => 'Malawi, Kwacha',
+                'local_name' => 'کواچای مالاوی',
                 'symbol' => 'MK',
                 'format' => 'MK1,0.00',
                 'exchange_rate' => 0.00,
@@ -797,6 +927,7 @@ class Currency extends Model
             ],
             'MXN' => [
                 'name' => 'Mexican Peso',
+                'local_name' => 'پزوی مکزیک',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -804,6 +935,7 @@ class Currency extends Model
             ],
             'MYR' => [
                 'name' => 'Malaysian Ringgit',
+                'local_name' => 'رینگیت مالزی',
                 'symbol' => 'RM',
                 'format' => 'RM1,0.00',
                 'exchange_rate' => 0.00,
@@ -811,6 +943,7 @@ class Currency extends Model
             ],
             'MZN' => [
                 'name' => 'Mozambique Metical',
+                'local_name' => 'متیکال موزامبیک',
                 'symbol' => 'MT',
                 'format' => 'MT1,0.',
                 'exchange_rate' => 0.00,
@@ -818,6 +951,7 @@ class Currency extends Model
             ],
             'NAD' => [
                 'name' => 'Namibian Dollar',
+                'local_name' => 'دلار نامیبیا',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -825,6 +959,7 @@ class Currency extends Model
             ],
             'NGN' => [
                 'name' => 'Nigeria, Naira',
+                'local_name' => 'نایرای نیجریه',
                 'symbol' => '₦',
                 'format' => '₦1,0.00',
                 'exchange_rate' => 0.00,
@@ -832,6 +967,7 @@ class Currency extends Model
             ],
             'NIO' => [
                 'name' => 'Nicaragua, Cordoba Oro',
+                'local_name' => 'کوردوبای نیکاراگوئه',
                 'symbol' => 'C$',
                 'format' => 'C$ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -839,6 +975,7 @@ class Currency extends Model
             ],
             'NOK' => [
                 'name' => 'Norwegian Krone',
+                'local_name' => 'کرون نروژ',
                 'symbol' => 'kr',
                 'format' => '1.0,00 kr',
                 'exchange_rate' => 0.00,
@@ -846,6 +983,7 @@ class Currency extends Model
             ],
             'NPR' => [
                 'name' => 'Nepalese Rupee',
+                'local_name' => 'روپیهٔ نپال',
                 'symbol' => '₨',
                 'format' => '₨1,0.00',
                 'exchange_rate' => 0.00,
@@ -853,6 +991,7 @@ class Currency extends Model
             ],
             'NZD' => [
                 'name' => 'New Zealand Dollar',
+                'local_name' => 'دلار زلاند نو',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -860,6 +999,7 @@ class Currency extends Model
             ],
             'OMR' => [
                 'name' => 'Rial Omani',
+                'local_name' => 'ریال عمان',
                 'symbol' => '﷼',
                 'format' => '﷼ 1,0.000',
                 'exchange_rate' => 0.00,
@@ -867,6 +1007,7 @@ class Currency extends Model
             ],
             'PAB' => [
                 'name' => 'Panama, Balboa',
+                'local_name' => 'بالبوای پاناما',
                 'symbol' => 'B/.',
                 'format' => 'B/. 1,0.00',
                 'exchange_rate' => 0.00,
@@ -874,6 +1015,7 @@ class Currency extends Model
             ],
             'PEN' => [
                 'name' => 'Peru, Nuevo Sol',
+                'local_name' => 'سول پرو',
                 'symbol' => 'S/.',
                 'format' => 'S/. 1,0.00',
                 'exchange_rate' => 0.00,
@@ -881,6 +1023,7 @@ class Currency extends Model
             ],
             'PGK' => [
                 'name' => 'Papua New Guinea, Kina',
+                'local_name' => 'کینای پاپوا گینهٔ نو',
                 'symbol' => 'K',
                 'format' => 'K1,0.00',
                 'exchange_rate' => 0.00,
@@ -888,6 +1031,7 @@ class Currency extends Model
             ],
             'PHP' => [
                 'name' => 'Philippine Peso',
+                'local_name' => 'پزوی فیلیپین',
                 'symbol' => '₱',
                 'format' => '₱1,0.00',
                 'exchange_rate' => 0.00,
@@ -895,6 +1039,7 @@ class Currency extends Model
             ],
             'PKR' => [
                 'name' => 'Pakistan Rupee',
+                'local_name' => 'روپیهٔ پاکستان',
                 'symbol' => '₨',
                 'format' => '₨1,0.00',
                 'exchange_rate' => 0.00,
@@ -902,6 +1047,7 @@ class Currency extends Model
             ],
             'PLN' => [
                 'name' => 'Poland, Zloty',
+                'local_name' => 'زواتی لهستان',
                 'symbol' => 'zł',
                 'format' => '1 0,00 zł',
                 'exchange_rate' => 0.00,
@@ -909,6 +1055,7 @@ class Currency extends Model
             ],
             'PYG' => [
                 'name' => 'Paraguay, Guarani',
+                'local_name' => 'گوارانی پاراگوئه',
                 'symbol' => '₲',
                 'format' => '₲ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -916,6 +1063,7 @@ class Currency extends Model
             ],
             'QAR' => [
                 'name' => 'Qatari Rial',
+                'local_name' => 'ریال قطر',
                 'symbol' => '﷼',
                 'format' => '﷼ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -923,6 +1071,7 @@ class Currency extends Model
             ],
             'RON' => [
                 'name' => 'Romania, New Leu',
+                'local_name' => 'لئوی رومانی',
                 'symbol' => 'lei',
                 'format' => '1,0.00 lei',
                 'exchange_rate' => 0.00,
@@ -930,6 +1079,7 @@ class Currency extends Model
             ],
             'RSD' => [
                 'name' => 'Serbian Dinar',
+                'local_name' => 'دینار صربستان',
                 'symbol' => 'Дин.',
                 'format' => '1,0.00 Дин.',
                 'exchange_rate' => 0.00,
@@ -937,6 +1087,7 @@ class Currency extends Model
             ],
             'RUB' => [
                 'name' => 'Russian Ruble',
+                'local_name' => 'روبل روسیه',
                 'symbol' => '₽',
                 'format' => '1 0,00 ₽',
                 'exchange_rate' => 0.00,
@@ -944,6 +1095,7 @@ class Currency extends Model
             ],
             'RWF' => [
                 'name' => 'Rwanda Franc',
+                'local_name' => 'فرانک رواندا',
                 'symbol' => 'RWF',
                 'format' => 'RWF 1 0,00',
                 'exchange_rate' => 0.00,
@@ -951,6 +1103,7 @@ class Currency extends Model
             ],
             'SAR' => [
                 'name' => 'Saudi Riyal',
+                'local_name' => 'ریال سعودی',
                 'symbol' => '﷼',
                 'format' => '﷼ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -958,6 +1111,7 @@ class Currency extends Model
             ],
             'SBD' => [
                 'name' => 'Solomon Islands Dollar',
+                'local_name' => 'دلار جزایر سلیمان',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -965,6 +1119,7 @@ class Currency extends Model
             ],
             'SCR' => [
                 'name' => 'Seychelles Rupee',
+                'local_name' => 'روپیهٔ سیشل',
                 'symbol' => '₨',
                 'format' => '₨1,0.00',
                 'exchange_rate' => 0.00,
@@ -972,6 +1127,7 @@ class Currency extends Model
             ],
             'SDD' => [
                 'name' => 'Sudanese Dinar',
+                'local_name' => 'دینار سودان (۱۹۹۲ تا ۲۰۰۷)',
                 'symbol' => 'LSd',
                 'format' => '1,0.00LSd',
                 'exchange_rate' => 0.00,
@@ -979,6 +1135,7 @@ class Currency extends Model
             ],
             'SEK' => [
                 'name' => 'Swedish Krona',
+                'local_name' => 'کرون سوئد',
                 'symbol' => 'kr',
                 'format' => '1 0,00 kr',
                 'exchange_rate' => 0.00,
@@ -986,6 +1143,7 @@ class Currency extends Model
             ],
             'SGD' => [
                 'name' => 'Singapore Dollar',
+                'local_name' => 'دلار سنگاپور',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -993,6 +1151,7 @@ class Currency extends Model
             ],
             'SHP' => [
                 'name' => 'Saint Helena Pound',
+                'local_name' => 'پوند سنت هلن',
                 'symbol' => '£',
                 'format' => '£1,0.00',
                 'exchange_rate' => 0.00,
@@ -1000,6 +1159,7 @@ class Currency extends Model
             ],
             'SLL' => [
                 'name' => 'Sierra Leone, Leone',
+                'local_name' => 'لئون سیرالئون',
                 'symbol' => 'Le',
                 'format' => 'Le1,0.00',
                 'exchange_rate' => 0.00,
@@ -1007,6 +1167,7 @@ class Currency extends Model
             ],
             'SOS' => [
                 'name' => 'Somali Shilling',
+                'local_name' => 'شیلینگ سومالی',
                 'symbol' => 'S',
                 'format' => 'S1,0.00',
                 'exchange_rate' => 0.00,
@@ -1014,6 +1175,7 @@ class Currency extends Model
             ],
             'SRD' => [
                 'name' => 'Surinam Dollar',
+                'local_name' => 'دلار سورینام',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -1021,6 +1183,7 @@ class Currency extends Model
             ],
             'STD' => [
                 'name' => 'Sao Tome and Principe, Dobra',
+                'local_name' => 'دوبرای سائوتومه و پرنسیپ (۱۹۷۷ تا ۲۰۱۷)',
                 'symbol' => 'Db',
                 'format' => 'Db1,0.00',
                 'exchange_rate' => 0.00,
@@ -1028,6 +1191,7 @@ class Currency extends Model
             ],
             'SVC' => [
                 'name' => 'El Salvador Colon',
+                'local_name' => 'کولون السالوادور',
                 'symbol' => '₡',
                 'format' => '₡1,0.00',
                 'exchange_rate' => 0.00,
@@ -1035,6 +1199,7 @@ class Currency extends Model
             ],
             'SYP' => [
                 'name' => 'Syrian Pound',
+                'local_name' => 'لیرهٔ سوریه',
                 'symbol' => '£',
                 'format' => '£ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -1042,6 +1207,7 @@ class Currency extends Model
             ],
             'SZL' => [
                 'name' => 'Swaziland, Lilangeni',
+                'local_name' => 'لیلانگنی سوازیلند',
                 'symbol' => 'E',
                 'format' => 'E1,0.00',
                 'exchange_rate' => 0.00,
@@ -1049,6 +1215,7 @@ class Currency extends Model
             ],
             'THB' => [
                 'name' => 'Thailand, Baht',
+                'local_name' => 'بات تایلند',
                 'symbol' => '฿',
                 'format' => '฿1,0.00',
                 'exchange_rate' => 0.00,
@@ -1056,6 +1223,7 @@ class Currency extends Model
             ],
             'TJS' => [
                 'name' => 'Tajikistan, Somoni',
+                'local_name' => 'سامانی تاجیکستان',
                 'symbol' => 'TJS',
                 'format' => '1 0;00 TJS',
                 'exchange_rate' => 0.00,
@@ -1063,6 +1231,7 @@ class Currency extends Model
             ],
             'TMT' => [
                 'name' => 'Turkmenistani New Manat',
+                'local_name' => 'منات ترکمنستان',
                 'symbol' => 'm',
                 'format' => '1 0,m',
                 'exchange_rate' => 0.00,
@@ -1070,6 +1239,7 @@ class Currency extends Model
             ],
             'TND' => [
                 'name' => 'Tunisian Dinar',
+                'local_name' => 'دینار تونس',
                 'symbol' => 'د.ت.‏',
                 'format' => 'د.ت.‏ 1,0.000',
                 'exchange_rate' => 0.00,
@@ -1077,6 +1247,7 @@ class Currency extends Model
             ],
             'TOP' => [
                 'name' => 'Tonga, Paanga',
+                'local_name' => 'پاآنگای تونگا',
                 'symbol' => 'T$',
                 'format' => 'T$1,0.00',
                 'exchange_rate' => 0.00,
@@ -1084,6 +1255,7 @@ class Currency extends Model
             ],
             'TRY' => [
                 'name' => 'Turkish Lira',
+                'local_name' => 'لیرهٔ ترکیه',
                 'symbol' => 'TL',
                 'format' => '₺1,0.00',
                 'exchange_rate' => 0.00,
@@ -1091,6 +1263,7 @@ class Currency extends Model
             ],
             'TTD' => [
                 'name' => 'Trinidad and Tobago Dollar',
+                'local_name' => 'دلار ترینیداد و توباگو',
                 'symbol' => 'TT$',
                 'format' => 'TT$1,0.00',
                 'exchange_rate' => 0.00,
@@ -1098,6 +1271,7 @@ class Currency extends Model
             ],
             'TWD' => [
                 'name' => 'New Taiwan Dollar',
+                'local_name' => 'دلار جدید تایوان',
                 'symbol' => 'NT$',
                 'format' => 'NT$1,0.00',
                 'exchange_rate' => 0.00,
@@ -1105,6 +1279,7 @@ class Currency extends Model
             ],
             'TZS' => [
                 'name' => 'Tanzanian Shilling',
+                'local_name' => 'شیلینگ تانزانیا',
                 'symbol' => 'TSh',
                 'format' => 'TSh1,0.00',
                 'exchange_rate' => 0.00,
@@ -1112,6 +1287,7 @@ class Currency extends Model
             ],
             'UAH' => [
                 'name' => 'Ukraine, Hryvnia',
+                'local_name' => 'هریونیای اوکراین',
                 'symbol' => '₴',
                 'format' => '1 0,00₴',
                 'exchange_rate' => 0.00,
@@ -1119,6 +1295,7 @@ class Currency extends Model
             ],
             'UGX' => [
                 'name' => 'Uganda Shilling',
+                'local_name' => 'شیلینگ اوگاندا',
                 'symbol' => 'USh',
                 'format' => 'USh1,0.00',
                 'exchange_rate' => 0.00,
@@ -1126,6 +1303,7 @@ class Currency extends Model
             ],
             'USD' => [
                 'name' => 'US Dollar',
+                'local_name' => 'دالر امریکایی',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -1133,6 +1311,7 @@ class Currency extends Model
             ],
             'UYU' => [
                 'name' => 'Peso Uruguayo',
+                'local_name' => 'پزوی اوروگوئه',
                 'symbol' => '$U',
                 'format' => '$U 1,0.00',
                 'exchange_rate' => 0.00,
@@ -1140,6 +1319,7 @@ class Currency extends Model
             ],
             'UZS' => [
                 'name' => 'Uzbekistan Sum',
+                'local_name' => 'سوم ازبکستان',
                 'symbol' => 'сўм',
                 'format' => '1 0,00 сўм',
                 'exchange_rate' => 0.00,
@@ -1147,6 +1327,7 @@ class Currency extends Model
             ],
             'VEF' => [
                 'name' => 'Venezuela Bolivares Fuertes',
+                'local_name' => 'بولیوار ونزوئلا (۲۰۰۸ تا ۲۰۱۸)',
                 'symbol' => 'Bs. F.',
                 'format' => 'Bs. F. 1,0.00',
                 'exchange_rate' => 0.00,
@@ -1154,6 +1335,7 @@ class Currency extends Model
             ],
             'VND' => [
                 'name' => 'Viet Nam, Dong',
+                'local_name' => 'دانگ ویتنام',
                 'symbol' => '₫',
                 'format' => '1,0.0 ₫',
                 'exchange_rate' => 0.00,
@@ -1161,6 +1343,7 @@ class Currency extends Model
             ],
             'VUV' => [
                 'name' => 'Vanuatu, Vatu',
+                'local_name' => 'واتوی وانوواتو',
                 'symbol' => 'VT',
                 'format' => '1,0.VT',
                 'exchange_rate' => 0.00,
@@ -1168,6 +1351,7 @@ class Currency extends Model
             ],
             'WST' => [
                 'name' => 'Samoa, Tala',
+                'local_name' => 'تالای ساموا',
                 'symbol' => 'WS$',
                 'format' => 'WS$1,0.00',
                 'exchange_rate' => 0.00,
@@ -1175,6 +1359,7 @@ class Currency extends Model
             ],
             'XAF' => [
                 'name' => 'Franc CFA (XAF)',
+                'local_name' => 'فرانک CFA مرکز افریقا',
                 'symbol' => 'F.CFA',
                 'format' => '1,0.00 F.CFA',
                 'exchange_rate' => 0.00,
@@ -1182,6 +1367,7 @@ class Currency extends Model
             ],
             'XCD' => [
                 'name' => 'East Caribbean Dollar',
+                'local_name' => 'دلار شرق کارائیب',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
@@ -1189,6 +1375,7 @@ class Currency extends Model
             ],
             'XOF' => [
                 'name' => 'Franc CFA (XOF)',
+                'local_name' => 'فرانک CFA غرب افریقا',
                 'symbol' => 'F.CFA',
                 'format' => '1,0.00 F.CFA',
                 'exchange_rate' => 0.00,
@@ -1196,6 +1383,7 @@ class Currency extends Model
             ],
             'XPF' => [
                 'name' => 'CFP Franc',
+                'local_name' => 'فرانک اقیانوسیه',
                 'symbol' => 'F',
                 'format' => '1,0.00F',
                 'exchange_rate' => 0.00,
@@ -1203,6 +1391,7 @@ class Currency extends Model
             ],
             'YER' => [
                 'name' => 'Yemeni Rial',
+                'local_name' => 'ریال یمن',
                 'symbol' => '﷼',
                 'format' => '﷼ 1,0.00',
                 'exchange_rate' => 0.00,
@@ -1210,6 +1399,7 @@ class Currency extends Model
             ],
             'ZAR' => [
                 'name' => 'South Africa, Rand',
+                'local_name' => 'راند افریقای جنوبی',
                 'symbol' => 'R',
                 'format' => 'R 1,0.00',
                 'exchange_rate' => 0.00,
@@ -1217,6 +1407,7 @@ class Currency extends Model
             ],
             'ZMW' => [
                 'name' => 'Zambia Kwacha',
+                'local_name' => 'کواچای زامبیا',
                 'symbol' => 'ZK',
                 'format' => 'ZK1,0.00',
                 'exchange_rate' => 0.00,
@@ -1228,12 +1419,22 @@ class Currency extends Model
 
     public static function currencySelectionOptions(): array
     {
+        $useLocal = in_array(app()->getLocale(), ['fa', 'ps', 'pa'], true);
+
         return collect(static::currencyList())
-            ->map(fn (array $currency, string $code) => [
-                'id' => $code,
-                'name' => "{$code} - {$currency['name']}",
-                'code' => $code,
-            ])
+            ->map(function (array $currency, string $code) use ($useLocal) {
+                $name = $useLocal && filled($currency['local_name'] ?? null)
+                    ? $currency['local_name']
+                    : $currency['name'];
+                $label = "{$code} - {$name}";
+
+                return [
+                    'id' => $code,
+                    'name' => $label,
+                    'display_name' => $label,
+                    'code' => $code,
+                ];
+            })
             ->values()
             ->all();
     }
@@ -1244,6 +1445,8 @@ class Currency extends Model
 
         return [
             'name' => $currency['name'] ?? null,
+            'local_name' => $currency['local_name']
+                ?? (static::defaultCurrencies()[$code]['local_name'] ?? null),
             'code' => $code,
             'symbol' => $currency['symbol'] ?? null,
             'format' => $currency['format'] ?? null,

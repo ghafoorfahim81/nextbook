@@ -11,7 +11,7 @@
         "purchase": "خرید",
         "sale": "فروش",
         "ledger": "دفتر حسابات",
-        "hr": "منابع بشری",
+        "cash_transactions": "تراکنش‌های نقدی",
         "receipt": "رسید",
         "payment": "پرداخت",
         "transfer": "انتقال حساب",
@@ -23,10 +23,12 @@
         "system": "سیستم",
         "deleted_records": "رکوردهای حذف شده",
         "trash": "سطل زباله",
+        "hr": "منابع بشری",
         "attendance": "حاضری",
         "leave": "رخصتی",
         "payroll": "معاشات",
-        "recruitment": "استخدام"
+        "recruitment": "استخدام",
+        "contra_settlement": "تهاتر"
     },
     "expense": {
         "expense": "مصارف",
@@ -53,7 +55,10 @@
         "fast_opening": "افتتاحیه سریع",
         "barcode_print": "چاپ بارکد",
         "item_transfer": "انتقال جنس",
-        "pricing": "بررسی قیمت‌ها"
+        "stock_adjustment": "تعدیل موجودی",
+        "pricing": "بررسی قیمت‌ها",
+        "landed_cost": "مصرف جنس",
+        "landed_costs": "مصارف اجناس"
     },
     "account": {
         "chart_of_account": "چارت حساب",
@@ -67,6 +72,8 @@
     },
     "purchase": {
         "purchase": "خرید",
+        "purchase_order": "سفارش خرید",
+        "purchase_quotation": "پیش‌فاکتور خرید",
         "purchase_return": "برگشت خرید"
     },
     "sale": {
@@ -76,7 +83,9 @@
         "edit_sale": "ویرایش فروش",
         "sale_created_successfully": "فروش با موفقیت ایجاد شد",
         "sale_updated_successfully": "فروش با موفقیت بروزرسانی شد",
-        "sale_return": "برگشت فروش"
+        "sale_return": "برگشت فروش",
+        "sale_order": "سفارش فروش",
+        "sale_quotation": "پیش‌فاکتور فروش"
     },
     "ledger": {
         "customer": "مشتری",
@@ -128,5 +137,10 @@
         "opening": "بست‌های خالی",
         "application": "درخواست‌ها",
         "interview": "مصاحبه‌ها"
+    },
+    "system": {
+        "trash": "سطل زباله",
+        "deleted_records": "رکوردهای حذف‌شده",
+        "activity_logs": "فعالیت‌های کاربران"
     }
 }

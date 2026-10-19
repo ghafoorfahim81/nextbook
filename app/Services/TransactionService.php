@@ -2,13 +2,19 @@
 
 namespace App\Services;
 
+use App\Enums\StockMovementType;
+use App\Enums\TransactionStatus;
 use App\Exceptions\Accounting\InvalidPostingException;
+use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Currency;
+use App\Models\Inventory\StockMovement;
 use App\Models\Transaction\Transaction;
 use App\Support\Decimal;
+use App\Support\TransactionStateMachine;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Exception;
 
 /**
@@ -42,8 +48,10 @@ class TransactionService
 
     private $dateConversionService;
 
-    public function __construct(DateConversionService $dateConversionService)
-    {
+    public function __construct(
+        DateConversionService $dateConversionService,
+        private StockService $stockService,
+    ) {
         $this->dateConversionService = $dateConversionService;
     }
 
@@ -58,19 +66,45 @@ class TransactionService
         return DB::transaction(function () use ($header, $lines) {
 
             $this->validateHeader($header);
-            $this->validateLines($lines);
+
+            $status = TransactionStatus::tryFrom($header['status'] ?? TransactionStatus::POSTED->value)
+                ?? TransactionStatus::POSTED;
+
+            // A draft may legitimately carry no lines yet. The receipt and
+            // payment forms save one deliberately: the voucher and the
+            // invoices it will relieve are parked on posting_payload, and the
+            // journal is built only when the draft is posted — claiming an
+            // open invoice before the money is real would close one nobody
+            // has paid. Requiring lines here made saving any draft receipt or
+            // payment a 500.
+            //
+            // Only the EMPTY case is exempt. A draft that does carry lines is
+            // held to the same balancing rules as a posted entry, so a
+            // malformed one is caught when it is saved rather than days later
+            // when someone tries to post it.
+            $isLinelessDraft = $status === TransactionStatus::DRAFT && $lines === [];
+
+            if (! $isLinelessDraft) {
+                $this->validateLines($lines);
+            }
 
             $branchId = $this->resolveBranchId($header);
-            $baseCurrencyId = $this->resolveBaseCurrencyId($branchId);
+            // Currencies are company-level, so the functional currency is
+            // looked up by company rather than by the branch posting the entry.
+            $companyId = $this->resolveCompanyId($header, $branchId);
+            $baseCurrencyId = $this->resolveBaseCurrencyId($companyId);
 
             // Normalise and validate everything BEFORE a single row is written,
             // so a rejected entry never leaves a half-posted voucher behind.
-            $prepared = $this->prepareLines($lines, $header);
-            $this->assertInvariants(
-                $prepared,
-                $baseCurrencyId,
-                (bool) ($header['cross_currency'] ?? false)
-            );
+            $prepared = $isLinelessDraft ? [] : $this->prepareLines($lines, $header);
+
+            if (! $isLinelessDraft) {
+                $this->assertInvariants(
+                    $prepared,
+                    $baseCurrencyId,
+                    (bool) ($header['cross_currency'] ?? false)
+                );
+            }
 
             $transaction = Transaction::create([
                 'currency_id'       => $header['currency_id'],
@@ -82,13 +116,31 @@ class TransactionService
                 'reference_type'    => $header['reference_type'] ?? null,
                 'reference_id'      => $header['reference_id'] ?? null,
                 'remark'            => $header['remark'] ?? null,
-                'status'            => $header['status'] ?? 'posted',
+                'status'            => $status->value,
+                'reversal_of_id'    => $header['reversal_of_id'] ?? null,
+                'posted_at'         => $status === TransactionStatus::POSTED ? now() : null,
+                'posted_by'         => $status === TransactionStatus::POSTED ? Auth::id() : null,
+                // A draft keeps its lines in the payload instead of the ledger,
+                // so nothing reaches transaction_lines until it is posted.
+                'posting_payload'   => $status === TransactionStatus::DRAFT
+                    ? array_merge($header['posting_payload'] ?? [], ['lines' => $lines])
+                    : ($header['posting_payload'] ?? null),
                 'branch_id'         => $branchId,
+                'company_id'        => $companyId,
                 'created_by'        => Auth::id(),
             ]);
 
+            if ($status === TransactionStatus::DRAFT) {
+                return $transaction;
+            }
+
             foreach ($prepared as $line) {
                 $transaction->lines()->create([
+                    // Taken from the voucher, not from the request context: a
+                    // line always belongs to the books its voucher was posted
+                    // in, including when posting runs from a job or a command
+                    // where there is no acting company at all.
+                    'company_id'       => $transaction->company_id,
                     'account_id'       => $line['account_id'],
                     'ledger_id'        => $line['ledger_id'],
                     'journal_class_id' => $line['journal_class_id'],
@@ -101,11 +153,77 @@ class TransactionService
                     'remark'           => $line['remark'],
                     'remark_fa'        => $line['remark_fa'],
                     'remark_ps'        => $line['remark_ps'],
-                    'created_by'       => Auth::id(),
+                    // No created_by/branch_id here: transaction_lines has
+                    // neither column. Who posted the entry, and which branch it
+                    // belongs to, are carried once on the voucher header.
                 ]);
             }
 
             return $transaction;
+        });
+    }
+
+    /**
+     * Promote a draft voucher to posted.
+     *
+     * The lines come from the draft's stored posting_payload unless the caller
+     * supplies a fresh set, and they go through the same normalisation and
+     * invariant checks as post() — a draft is not exempt from balancing.
+     */
+    public function postDraft(Transaction $draft, array $lines = []): Transaction
+    {
+        return DB::transaction(function () use ($draft, $lines) {
+            $from = TransactionStatus::tryFrom((string) $draft->status);
+
+            if ($from !== TransactionStatus::DRAFT) {
+                throw InvalidStatusTransitionException::for($from ?? TransactionStatus::POSTED, TransactionStatus::POSTED);
+            }
+
+            if (! TransactionStateMachine::canTransition($from, TransactionStatus::POSTED)) {
+                throw InvalidStatusTransitionException::for($from, TransactionStatus::POSTED);
+            }
+
+            $lines = $lines ?: (array) data_get($draft->posting_payload, 'lines', []);
+            $this->validateLines($lines);
+
+            $baseCurrencyId = $draft->base_currency_id ?? $this->resolveBaseCurrencyId($draft->company_id);
+
+            $prepared = $this->prepareLines($lines, [
+                'currency_id' => $draft->currency_id,
+                'rate'        => $draft->rate,
+            ]);
+
+            $this->assertInvariants($prepared, $baseCurrencyId, (bool) $draft->is_cross_currency);
+
+            foreach ($prepared as $line) {
+                $draft->lines()->create([
+                    'company_id'       => $draft->company_id,
+                    'account_id'       => $line['account_id'],
+                    'ledger_id'        => $line['ledger_id'],
+                    'journal_class_id' => $line['journal_class_id'],
+                    'currency_id'      => $line['currency_id'],
+                    'rate'             => $line['rate'],
+                    'debit'            => $line['debit'],
+                    'credit'           => $line['credit'],
+                    'base_debit'       => $line['base_debit'],
+                    'base_credit'      => $line['base_credit'],
+                    'remark'           => $line['remark'],
+                    'remark_fa'        => $line['remark_fa'],
+                    'remark_ps'        => $line['remark_ps'],
+                    // No created_by/branch_id here: transaction_lines has
+                    // neither column. Who posted the entry, and which branch it
+                    // belongs to, are carried once on the voucher header.
+                ]);
+            }
+
+            $draft->update([
+                'status'     => TransactionStatus::POSTED->value,
+                'posted_at'  => now(),
+                'posted_by'  => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+
+            return $draft->refresh();
         });
     }
 
@@ -426,13 +544,24 @@ class TransactionService
     // REVERSAL (AUDIT-SAFE)
     // ======================================================
 
-    public function reverse(Transaction $original, ?string $reason = null): Transaction
-    {
-        return DB::transaction(function () use ($original, $reason) {
+    public function reverse(
+        Transaction $original,
+        ?string $reason = null,
+        ?string $number = null,
+        ?string $referenceType = null
+    ): Transaction {
+        return DB::transaction(function () use ($original, $reason, $number, $referenceType) {
+            $from = TransactionStatus::tryFrom((string) $original->status);
 
-            if ($original->status !== 'posted') {
-                throw new Exception('Only posted transactions can be reversed');
+            if ($from !== TransactionStatus::POSTED || ! TransactionStateMachine::canTransition($from, TransactionStatus::REVERSED)) {
+                throw InvalidStatusTransitionException::for($from ?? TransactionStatus::DRAFT, TransactionStatus::REVERSED);
             }
+
+            $original->loadMissing('lines');
+
+            // The reversal reads back in the operator's language, naming the
+            // document it undoes rather than just saying "Reversal".
+            $reversalRemark = $this->getReversalRemark($original, $number, $referenceType);
 
             // Each line keeps its OWN currency and rate. Re-valuing a reversal
             // at today's rate would invent an FX difference that belongs to the
@@ -447,9 +576,9 @@ class TransactionService
                 'credit'           => $line->debit,
                 'base_debit'       => $line->base_credit,
                 'base_credit'      => $line->base_debit,
-                'remark'           => 'Reversal',
-                'remark_fa'        => 'Reversal',
-                'remark_ps'        => 'Reversal',
+                'remark'           => $reversalRemark['remark'],
+                'remark_fa'        => $reversalRemark['remark_fa'] ?? null,
+                'remark_ps'        => $reversalRemark['remark_ps'] ?? null,
             ])->all();
 
             $reversal = $this->post(
@@ -457,19 +586,236 @@ class TransactionService
                     'currency_id'    => $original->currency_id,
                     'rate'           => $original->rate,
                     'date'           => now()->toDateString(),
+                    'voucher_number' => 'Reversal of ' . $original->voucher_number,
                     'reference_type' => 'reversal',
                     'reference_id'   => $original->id,
                     'remark'         => $reason ?? 'Reversal of transaction ' . $original->id,
-                    'status'         => 'posted',
+                    'status'         => TransactionStatus::POSTED->value,
+                    'reversal_of_id' => $original->id,
                     'branch_id'      => $original->branch_id,
                 ],
                 lines: $lines,
             );
 
-            $original->update(['status' => 'reversed']);
+            $this->voidStockMovementsFor($original);
+
+            $original->update([
+                'status'          => TransactionStatus::REVERSED->value,
+                'reversed_at'     => now(),
+                'reversal_reason' => $reason,
+                'updated_by'      => Auth::id(),
+            ]);
 
             return $reversal;
         });
+    }
+
+    /**
+     * Undo the stock side of a reversed voucher.
+     *
+     * Reversing the ledger alone would leave the goods where the original
+     * document put them, so each movement is posted back in the opposite
+     * direction at its own recorded cost and the originals are voided.
+     */
+    private function voidStockMovementsFor(Transaction $original): void
+    {
+        $movements = StockMovement::query()
+            ->where('reference_type', $original->reference_type)
+            ->where('reference_id', $original->reference_id)
+            // A movement that is already voided has been compensated once. A
+            // document whose module undoes its own stock (an item transfer
+            // moves goods between two of its own warehouses, so the generic
+            // rules below do not fit) reaches here with nothing left to do,
+            // and re-compensating would double the correction.
+            ->whereNotIn('status', [\App\Enums\StockStatus::VOIDED->value, \App\Enums\StockStatus::CANCELLED->value])
+            ->get();
+
+        foreach ($movements as $movement) {
+            // Undoing a receipt has to take that receipt's cost back out of the
+            // average it was blended into; undoing an issue has nothing to take
+            // out, because an issue never moved the average.
+            $undoesAReceipt = $movement->movement_type === StockMovementType::IN;
+
+            try {
+                $this->stockService->post([
+                    'branch_id' => $movement->branch_id,
+                    'item_id' => $movement->item_id,
+                    // The compensating movement has to land in the exact bucket the
+                    // original touched, or the restore silently misses it and opens
+                    // a second, empty-looking bucket for the same item instead.
+                    'variant_id' => $movement->variant_id,
+                    'warehouse_id' => $movement->warehouse_id,
+                    'unit_measure_id' => $movement->unit_measure_id,
+                    'movement_type' => $movement->movement_type === StockMovementType::IN
+                        ? StockMovementType::OUT->value
+                        : StockMovementType::IN->value,
+                    'source' => $movement->source,
+                    'reference_type' => Transaction::class,
+                    'reference_id' => $movement->reference_id,
+                    'quantity' => (float) $movement->quantity,
+                    'unit_cost' => $movement->unit_cost,
+                    'unit_cost_override' => (float) $movement->unit_cost,
+                    'batch' => $movement->batch,
+                    'expire_date' => $movement->expire_date,
+                    'date' => now()->toDateString(),
+                    'status' => \App\Enums\StockStatus::VOIDED->value,
+                    // This restores stock the business already owned — not a new
+                    // receipt at a market price — so it must not shift avg_cost.
+                    'skip_average_recost' => true,
+                    // ...but a cancelled receipt's cost has to come back OUT of the
+                    // average it was blended into when it was posted.
+                    'unwind_average_cost' => $undoesAReceipt,
+                    // Undoing a receipt takes the goods off the shelf again, and the
+                    // ones to take are the ones this document brought in — at the
+                    // price it paid. Left to the plain FIFO queue the compensation
+                    // would eat the front of the queue instead, emptying layers that
+                    // had nothing to do with the document being reversed.
+                    'give_back_of' => $undoesAReceipt
+                        ? ['type' => $original->reference_type, 'id' => $original->reference_id]
+                        : null,
+                ]);
+            } catch (ValidationException $e) {
+                // Undoing a receipt takes goods back off the shelf, and they
+                // may already have been sold. "Not enough stock" is true but
+                // unhelpful here — the operator is reversing a document, not
+                // issuing one, and needs to be told what to do instead.
+                if (! $undoesAReceipt) {
+                    throw $e;
+                }
+
+                throw ValidationException::withMessages([
+                    'stock' => __('general.cannot_reverse_stock_already_gone'),
+                ]);
+            }
+
+            // Undoing an ISSUE puts the goods back, so the layers it emptied
+            // have to be filled again. The compensating movement above restores
+            // the balance but writes a voided row, which is no use as a layer —
+            // without this the live layers sank below the real quantity on the
+            // shelf and eventually reached zero with stock still in the
+            // warehouse, leaving FIFO nothing legitimate to consume.
+            if (! $undoesAReceipt) {
+                $this->stockService->restoreConsumedLayers($movement);
+            }
+        }
+
+        foreach ($movements as $movement) {
+            $movement->update(['status' => \App\Enums\StockStatus::VOIDED->value]);
+        }
+
+        // Both averages are re-derived here rather than unwound arithmetically,
+        // and only once the compensating movements and the voided originals are
+        // all on record, so each replay sees exactly the layers that remain live.
+        //
+        // The variant keeps an average blended only from its own receipts, and
+        // nothing had been unwinding it: a reversed purchase left the variant
+        // priced at a cost the business never paid.
+        //
+        // The item needs the same treatment for a different reason.
+        // unwindAverage() can take a cancelled RECEIPT back out, but it cannot
+        // repair a cancelled ISSUE: every receipt booked after that issue
+        // blended against a shelf the issue had already emptied. Opening 10 at
+        // 50, selling 5, buying 5 at 55 leaves a running 52.50; undo the sale
+        // and the truth is (10 x 50 + 5 x 55) / 15 = 51.6667, which no undo of
+        // the sale alone can reach — only weighing the history again does.
+        foreach ($movements->pluck('variant_id')->filter()->unique() as $variantId) {
+            $this->stockService->recalculateVariantAverage($variantId);
+        }
+
+        foreach ($movements->pluck('item_id')->filter()->unique() as $itemId) {
+            $this->stockService->recalculateItemAverage($itemId);
+        }
+    }
+
+    /**
+     * Localised remark naming the document a reversal undoes.
+     */
+    private function getReversalRemark(Transaction $original, ?string $number = null, ?string $referenceType = null): array
+    {
+        $number = $number ?? ($original->number ?? $original->id);
+        $referenceType = $referenceType ?? $original->reference_type;
+
+        $map = [
+            \App\Models\AccountTransfer\AccountTransfer::class => [
+                'Reversal of account transfer #',
+                'ابطال انتقال حساب #',
+                'د حساب لیږد بیرته راګرځول #',
+            ],
+            \App\Models\JournalEntry\JournalEntry::class => [
+                'Reversal of journal entry #',
+                'ابطال ژورنال #',
+                'د ژورنال داخله بیرته راګرځول #',
+            ],
+            \App\Models\Purchase\Purchase::class => [
+                'Reversal of purchase #',
+                'ابطال خریداری #',
+                'د پيرودنې بیرته راګرځول #',
+            ],
+            \App\Models\Sale\Sale::class => [
+                'Reversal of sale #',
+                'ابطال فروش #',
+                'د خرڅلاو بیرته راګرځول #',
+            ],
+            \App\Models\Sale\SaleReturn::class => [
+                'Reversal of sale return #',
+                'ابطال برگشت فروش #',
+                'د خرڅلاو بیرته راستنیدو بیرته راګرځول #',
+            ],
+            \App\Models\Purchase\PurchaseReturn::class => [
+                'Reversal of purchase return #',
+                'ابطال برگشت خرید #',
+                'د پیرودنې بیرته راستنیدو بیرته راګرځول #',
+            ],
+            \App\Models\Payment\Payment::class => [
+                'Reversal of payment #',
+                'ابطال پرداخت #',
+                'د تادیې بیرته راګرځول #',
+            ],
+            \App\Models\Receipt\Receipt::class => [
+                'Reversal of receipt #',
+                'ابطال رسید #',
+                'د رسید بیرته راګرځول #',
+            ],
+            \App\Models\Inventory\StockAdjustment::class => [
+                'Reversal of stock adjustment #',
+                'ابطال تعدیل موجودی #',
+                'د موجودۍ تعدیل بیرته راګرځول #',
+            ],
+            \App\Models\Expense\Expense::class => [
+                'Reversal of expense #',
+                'ابطال هزینه #',
+                'د هزینه بیرته راګرځول #',
+            ],
+            \App\Models\ItemTransfer\ItemTransfer::class => [
+                // No '#': an item transfer has no number, so the reference
+                // passed in is the route it took, not a document code.
+                'Reversal of item transfer ',
+                'ابطال انتقال جنس ',
+                'د جنس د لیږد بیرته راګرځول ',
+            ],
+            \App\Models\Owner\Drawing::class => [
+                'Reversal of drawing #',
+                'ابطال برداشت #',
+                'د اخیستنې بیرته راګرځول #',
+            ],
+            \App\Models\Accounting\ContraSettlement::class => [
+                'Reversal of set-off #',
+                'ابطال تهاتر #',
+                'د تهاتر بیرته راګرځول #',
+            ],
+        ];
+
+        [$en, $fa, $ps] = $map[$referenceType] ?? [
+            'Reversal of transaction #',
+            'ابطال تراکنش #',
+            'د تراکنش بیرته راګرځول #',
+        ];
+
+        return [
+            'remark'    => $en . $number,
+            'remark_fa' => $fa . $number,
+            'remark_ps' => $ps . $number,
+        ];
     }
 
     // ======================================================
@@ -484,23 +830,48 @@ class TransactionService
     }
 
     /**
-     * The branch's functional currency.
+     * The books this voucher is posted in.
      *
-     * Currencies are per-branch (unique on branch_id + code), so each branch
-     * owns its own AFN row — a global lookup would cross-link branches.
+     * Derived from the branch rather than taken from the header when the caller
+     * does not say, so the voucher and the branch it is stamped with can never
+     * disagree about the company — which the composite foreign key would
+     * reject anyway.
      */
-    protected function resolveBaseCurrencyId(?string $branchId): ?string
+    protected function resolveCompanyId(array $header, ?string $branchId): ?string
     {
-        if ($branchId === null) {
+        if (! empty($header['company_id'])) {
+            return (string) $header['company_id'];
+        }
+
+        if ($branchId) {
+            $companyId = Branch::withoutGlobalScopes()->whereKey($branchId)->value('company_id');
+
+            if ($companyId) {
+                return (string) $companyId;
+            }
+        }
+
+        return Auth::user()?->company_id;
+    }
+
+    /**
+     * The company's functional currency.
+     *
+     * Currencies are per-company (unique on company_id + code), so each company
+     * owns its own AFN row — a global lookup would cross-link companies.
+     */
+    protected function resolveBaseCurrencyId(?string $companyId): ?string
+    {
+        if ($companyId === null) {
             return null;
         }
 
         return Currency::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('is_base_currency', true)
             ->value('id')
             ?? Currency::withoutGlobalScopes()
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('code', 'AFN')
                 ->value('id');
     }

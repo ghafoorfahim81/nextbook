@@ -24,13 +24,13 @@ class DepartmentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', $this->uniqueInBranch('departments')],
-            'code' => ['required', 'string', $this->uniqueInBranch('departments', column: 'code')],
+            'name' => ['required', 'string', $this->uniqueInCompany('departments')],
+            'code' => ['required', 'string', $this->uniqueInCompany('departments', column: 'code')],
             'remark' => ['nullable', 'string'],
             'parent_id' => [
                 'nullable',
                 Rule::exists('departments', 'id')->where(fn ($query) => $query->where(
-                    'branch_id',
+                    'company_id',
                     $this->activeBranchId()
                 )),
             ],

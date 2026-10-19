@@ -13,6 +13,7 @@ use App\Models\Transaction\Transaction;
 use App\Services\TransactionService;
 use App\Support\BranchContext;
 use App\Support\Decimal;
+use App\Support\DocumentType;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -80,7 +81,7 @@ class SettlementService
     ): Collection {
         $ledger = $this->resolveLedger($ledgerId);
         $claimColumn = $this->claimColumn($direction);
-        $accountId = $this->partyAccountId($ledger, $ledger->branch_id);
+        $accountId = $this->partyAccountId($ledger, $ledger->company_id);
 
         // When a voucher is being EDITED, its own applications must not count
         // as settled — otherwise the documents it paid look closed, the form
@@ -118,9 +119,19 @@ class SettlementService
             ->where('tl.ledger_id', $ledgerId)
             ->where('tl.account_id', $accountId)
             ->whereNull('tl.deleted_at')
-            // A reversed voucher's claim is gone. Its reversal posts an opposite
-            // line which is not a claim on this side, so it drops out too.
+            // A reversed voucher's claim is gone.
             ->where('t.status', 'posted')
+            // A reversal voucher is not a claim of its own. It exists to undo
+            // another voucher, and the line it mirrors is already out of this
+            // list — the original is marked reversed and filtered above. Left
+            // in, the mirror of a CREDIT (undoing a sale return) reads as a
+            // fresh debt and the receipt form offers cash against it: the
+            // customer appeared to owe the sale in full and the reversal on
+            // top of it.
+            ->where(function ($query) {
+                $query->whereNull('t.reference_type')
+                    ->orWhere('t.reference_type', '!=', 'reversal');
+            })
             ->where("tl.{$claimColumn}", '>', 0)
             // A line that SETTLED something is not itself a claim. Once money
             // can move both ways, a receipt's AR credit sits in the same column
@@ -168,6 +179,85 @@ class SettlementService
                 'target_rate' => Decimal::rate($row->target_rate),
             ];
         })->values();
+    }
+
+    /**
+     * Every still-outstanding claim in a branch, tagged with the party it
+     * belongs to. This is what the aged receivables/payables reports bucket.
+     *
+     * openItems() asks "what is still open against THIS ledger". An ageing
+     * report asks it of every customer or supplier at once, so the control
+     * account is resolved from the ledger type rather than from one ledger,
+     * and one query answers the whole report instead of one per party.
+     *
+     * Remainders come back in base currency: an ageing report totals a single
+     * column of money, so a USD invoice and an AFN invoice have to already be
+     * expressed in the same unit before they are added together. Each line's
+     * base value was fixed at its own booking rate when it posted.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function openItemsByParty(
+        LedgerType $ledgerType,
+        ?string $branchId = null,
+        string $direction = self::DIRECTION_IN
+    ): Collection {
+        $claimColumn = $this->claimColumn($direction);
+        $baseColumn = $direction === self::DIRECTION_OUT ? 'base_credit' : 'base_debit';
+
+        $slug = match ($ledgerType) {
+            LedgerType::SUPPLIER => 'account-payable',
+            LedgerType::EMPLOYEE => 'payroll-liabilities',
+            LedgerType::CUSTOMER => 'account-receivable',
+        };
+
+        // Settled amounts are netted in base too, so a payment made at a
+        // different rate relieves exactly what it was worth on the day.
+        $settled = 'COALESCE((SELECT SUM(s.base_relieved) FROM settlements s'
+            . ' WHERE s.target_line_id = tl.id AND s.deleted_at IS NULL), 0)';
+
+        $rows = DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) {
+                $join->on('t.id', '=', 'tl.transaction_id')->whereNull('t.deleted_at');
+            })
+            ->join('ledgers as l', 'l.id', '=', 'tl.ledger_id')
+            ->join('accounts as a', 'a.id', '=', 'tl.account_id')
+            ->selectRaw(implode(', ', [
+                'tl.ledger_id as party_id',
+                'l.name as party_name',
+                't.date',
+                "tl.{$baseColumn} - {$settled} as remaining_amount",
+            ]))
+            ->where('a.slug', $slug)
+            ->where('l.type', $ledgerType->value)
+            ->whereNull('tl.deleted_at')
+            ->whereNull('l.deleted_at')
+            ->where('t.status', 'posted')
+            // A reversal voucher is not a claim — same rule as openItems(),
+            // and an ageing report that counted one would age a debt that the
+            // reversal was undoing rather than creating.
+            ->where(function ($query) {
+                $query->whereNull('t.reference_type')
+                    ->orWhere('t.reference_type', '!=', 'reversal');
+            })
+            ->where("tl.{$claimColumn}", '>', 0)
+            // A line that settled something is not itself a claim — same rule
+            // as openItems(), for the same reason.
+            ->whereRaw(
+                'NOT EXISTS (SELECT 1 FROM settlements sx'
+                . ' WHERE sx.settling_line_id = tl.id AND sx.deleted_at IS NULL)'
+            )
+            ->whereRaw("tl.{$baseColumn} - {$settled} > 0")
+            ->when($branchId, fn ($query) => $query->where('t.branch_id', $branchId))
+            ->orderBy('t.date')
+            ->get();
+
+        return collect($rows)->map(fn ($row) => [
+            'party_id' => (string) $row->party_id,
+            'party_name' => $row->party_name,
+            'date' => $row->date,
+            'remaining_amount' => (float) $row->remaining_amount,
+        ])->values();
     }
 
     // ======================================================
@@ -351,6 +441,91 @@ class SettlementService
             'forex_kind' => $row->forex_amount < 0 ? 'loss' : ((float) $row->forex_amount > 0 ? 'gain' : 'none'),
             'is_cross_currency' => (bool) $row->is_cross_currency,
         ])->values();
+    }
+
+    /**
+     * How much of a document's own claim is still open, in its currency.
+     *
+     * Used by returns to decide how much of their credit relieves the document
+     * they return against; the rest is not a claim on that document and goes
+     * to the party's advance account.
+     */
+    public function openOnDocument(string $ledgerId, string $direction, string $transactionId): string
+    {
+        return $this->openItems($ledgerId, null, $direction)
+            ->where('transaction_id', $transactionId)
+            ->reduce(fn (string $carry, array $item) => Decimal::add($carry, $item['remaining_amount']), '0');
+    }
+
+    /**
+     * Settle a return against the document it returns.
+     *
+     * The return voucher carries a line on the party's control account on the
+     * opposite side of the claim (a credit to receivables for a sale return, a
+     * debit to payables for a purchase return). That line relieves the original
+     * document's open claim, oldest line first, exactly as a receipt would —
+     * so the document's paid status, the open-items list and the aged reports
+     * all see the return. Same currency and rate as the document, so there is
+     * never an exchange difference to post.
+     */
+    public function settleReturnAgainstDocument(
+        Transaction $returnTransaction,
+        string $ledgerId,
+        string $direction,
+        string $documentTransactionId,
+    ): void {
+        $ledger = $this->resolveLedger($ledgerId);
+        $controlAccountId = $this->partyAccountId($ledger, (string) $returnTransaction->company_id);
+        $reliefColumn = $direction === self::DIRECTION_IN ? 'credit' : 'debit';
+
+        $settlingLine = $returnTransaction->lines()
+            ->where('account_id', $controlAccountId)
+            ->where('ledger_id', $ledgerId)
+            ->where($reliefColumn, '>', 0)
+            ->first();
+
+        if (! $settlingLine) {
+            return;
+        }
+
+        $available = Decimal::amount($settlingLine->{$reliefColumn});
+
+        $targets = $this->openItems($ledgerId, (string) $settlingLine->currency_id, $direction)
+            ->where('transaction_id', $documentTransactionId)
+            ->values();
+
+        foreach ($targets as $item) {
+            if (! Decimal::isPositive($available)) {
+                break;
+            }
+
+            $apply = Decimal::cmp($available, $item['remaining_amount']) < 0 ? $available : $item['remaining_amount'];
+
+            Settlement::create([
+                'transaction_id' => $returnTransaction->id,
+                'settling_line_id' => $settlingLine->id,
+                'target_line_id' => $item['target_line_id'],
+                'ledger_id' => $ledgerId,
+                'currency_id' => $item['currency_id'],
+                'amount_applied' => $apply,
+                'target_rate' => $item['target_rate'],
+                'settlement_rate' => $item['target_rate'],
+                'base_relieved' => Decimal::toBase($apply, $item['target_rate']),
+                'forex_amount' => '0',
+                'is_cross_currency' => false,
+                'branch_id' => $returnTransaction->branch_id,
+                'company_id' => $returnTransaction->company_id,
+                'created_by' => Auth::id(),
+            ]);
+
+            $available = Decimal::sub($available, $apply);
+        }
+    }
+
+    /** The party's advance account (customer-advances / supplier-advances). */
+    public function advanceAccountFor(string $ledgerId, string $companyId): string
+    {
+        return $this->advanceAccountId($this->resolveLedger($ledgerId), $companyId);
     }
 
     /**
@@ -590,6 +765,7 @@ class SettlementService
                 ledger: $composed['ledger'],
                 direction: $composed['direction'],
                 branchId: $composed['branch_id'],
+                companyId: $composed['company_id'],
                 groups: $composed['groups'],
                 postedForex: $composed['forex'],
             );
@@ -614,7 +790,10 @@ class SettlementService
         $direction = ($voucher["direction"] ?? null) === self::DIRECTION_OUT
             ? self::DIRECTION_OUT
             : self::DIRECTION_IN;
-        $branchId = (string) ($voucher['branch_id'] ?? $ledger->branch_id);
+        $branchId = (string) ($voucher['branch_id'] ?? BranchContext::branchId());
+        // The books the lines post to. A ledger is company-level now, so
+        // the company comes from the party rather than from the branch.
+        $companyId = (string) ($voucher['company_id'] ?? $ledger->company_id);
 
         $cashAmount = Decimal::amount($voucher['cash_amount']);
         $cashRate = Decimal::rate($voucher['cash_rate']);
@@ -662,7 +841,7 @@ class SettlementService
         $lines = $this->buildLines(
             ledger: $ledger,
             direction: $direction,
-            branchId: $branchId,
+            companyId: $companyId,
             groups: $groups,
             cashAccountId: (string) $voucher['cash_account_id'],
             cashCurrencyId: $cashCurrencyId,
@@ -676,6 +855,7 @@ class SettlementService
             'ledger' => $ledger,
             'direction' => $direction,
             'branch_id' => $branchId,
+            'company_id' => $companyId,
             'cash_currency_id' => $cashCurrencyId,
             'cash_rate' => $cashRate,
             'cash_amount' => $cashAmount,
@@ -936,7 +1116,7 @@ class SettlementService
     private function buildLines(
         Ledger $ledger,
         string $direction,
-        string $branchId,
+        string $companyId,
         array $groups,
         string $cashAccountId,
         string $cashCurrencyId,
@@ -962,7 +1142,7 @@ class SettlementService
             'remark_ps' => $remarks['ps'],
         ]];
 
-        $partyAccountId = $this->partyAccountId($ledger, $branchId);
+        $partyAccountId = $this->partyAccountId($ledger, $companyId);
 
         foreach ($groups as $currencyId => $group) {
             // Group by rate, not by document. Two invoices booked at 60 relieve
@@ -992,7 +1172,7 @@ class SettlementService
             // Overpayments are common here and rejecting them just pushes the
             // problem onto the user. Park the excess where it is visible.
             $lines[] = [
-                'account_id' => $this->advanceAccountId($ledger, $branchId),
+                'account_id' => $this->advanceAccountId($ledger, $companyId),
                 'ledger_id' => $ledger->id,
                 'currency_id' => $cashCurrencyId,
                 'rate' => $cashRate,
@@ -1010,7 +1190,7 @@ class SettlementService
             // moved at — every AFN voucher, and any foreign one where the rate
             // has not shifted — there is no line here at all, and the entry is
             // byte-identical to what the system posted before settlement existed.
-            $lines[] = $this->forexLine($forex, $branchId, $remarks);
+            $lines[] = $this->forexLine($forex, $companyId, $remarks);
         }
 
         return ['lines' => $lines, 'forex' => $forex];
@@ -1049,16 +1229,16 @@ class SettlementService
      * @param  array<string, string>  $remarks
      * @return array<string, mixed>
      */
-    private function forexLine(string $forex, string $branchId, array $remarks): array
+    private function forexLine(string $forex, string $companyId, array $remarks): array
     {
         $isGain = Decimal::isPositive($forex);
         $slug = $isGain ? 'fx-gain' : 'fx-loss';
         $amount = Decimal::abs($forex);
 
-        $baseCurrency = $this->baseCurrency($branchId);
+        $baseCurrency = $this->baseCurrency($companyId);
 
         return [
-            'account_id' => $this->requireAccount($slug, $branchId),
+            'account_id' => $this->requireAccount($slug, $companyId),
             'currency_id' => $baseCurrency->id,
             'rate' => '1',
             // Debits exceed credits => more base came in than the claim was
@@ -1080,6 +1260,7 @@ class SettlementService
         Ledger $ledger,
         string $direction,
         string $branchId,
+        string $companyId,
         array $groups,
         string $postedForex
     ): void {
@@ -1088,7 +1269,7 @@ class SettlementService
         }
 
         $transaction->load('lines');
-        $partyAccountId = $this->partyAccountId($ledger, $branchId);
+        $partyAccountId = $this->partyAccountId($ledger, $companyId);
         $cashIn = $direction !== self::DIRECTION_OUT;
 
         // Keyed by currency AND rate: one voucher can now relieve dollars at 60
@@ -1132,6 +1313,7 @@ class SettlementService
                     'forex_amount' => $forex,
                     'is_cross_currency' => $group['is_cross_currency'],
                     'branch_id' => $branchId,
+                    'company_id' => $companyId,
                     'created_by' => Auth::id(),
                 ];
             }
@@ -1232,9 +1414,9 @@ class SettlementService
         return $direction === self::DIRECTION_OUT ? 'credit' : 'debit';
     }
 
-    private function partyAccountId(Ledger $ledger, string $branchId): string
+    private function partyAccountId(Ledger $ledger, string $companyId): string
     {
-        return $this->requireAccount($this->partyAccountSlug($ledger), $branchId);
+        return $this->requireAccount($this->partyAccountSlug($ledger), $companyId);
     }
 
     /**
@@ -1245,12 +1427,12 @@ class SettlementService
      * beyond what they were owed — unusual, and legible as such, which is
      * better than inventing a fifth account for it.
      */
-    private function advanceAccountId(Ledger $ledger, string $branchId): string
+    private function advanceAccountId(Ledger $ledger, string $companyId): string
     {
         $slug = $this->advanceAccountSlug($ledger);
 
-        return BranchContext::glAccount($slug, $branchId)
-            ?? $this->createAdvanceAccount($slug, $branchId);
+        return BranchContext::glAccount($slug, $companyId)
+            ?? $this->createAdvanceAccount($slug, $companyId);
     }
 
     /**
@@ -1272,14 +1454,14 @@ class SettlementService
      * Dari and Pashto and a name lookup breaks the moment a user switches
      * language.
      */
-    private function requireAccount(string $slug, string $branchId): string
+    private function requireAccount(string $slug, string $companyId): string
     {
-        $accountId = BranchContext::glAccount($slug, $branchId);
+        $accountId = BranchContext::glAccount($slug, $companyId);
 
         if (! $accountId) {
             throw SettlementException::make(
                 'This branch has no account for that slug. Run branch provisioning.',
-                [['slug' => $slug, 'branch_id' => $branchId]]
+                [['slug' => $slug, 'company_id' => $companyId]]
             );
         }
 
@@ -1290,7 +1472,7 @@ class SettlementService
      * Advances are created on demand rather than required up front, so a branch
      * provisioned before this feature existed can still take an overpayment.
      */
-    private function createAdvanceAccount(string $slug, string $branchId): string
+    private function createAdvanceAccount(string $slug, string $companyId): string
     {
         $definition = collect(Account::defaultAccounts())->firstWhere('slug', $slug);
 
@@ -1299,7 +1481,7 @@ class SettlementService
         }
 
         $typeId = AccountType::withoutGlobalScopes()
-            ->where('branch_id', $branchId)
+            ->where('company_id', $companyId)
             ->where('slug', $definition['account_type_slug'])
             ->value('id');
 
@@ -1316,28 +1498,28 @@ class SettlementService
             'number' => $definition['number'],
             'account_type_id' => $typeId,
             'parent_id' => Account::withoutGlobalScopes()
-                ->where('branch_id', $branchId)
+                ->where('company_id', $companyId)
                 ->where('slug', $definition['parent_slug'] ?? null)
                 ->value('id'),
             'slug' => $slug,
-            'branch_id' => $branchId,
+            'company_id' => $companyId,
             'remark' => $definition['remark'] ?? null,
             'is_main' => true,
             'is_active' => true,
             'created_by' => Auth::id(),
         ]);
 
-        BranchContext::flush($branchId);
+        BranchContext::flush($companyId);
 
         return $account->id;
     }
 
-    private function baseCurrency(string $branchId): Currency
+    private function baseCurrency(string $companyId): Currency
     {
-        $currency = BranchContext::homeCurrency($branchId);
+        $currency = BranchContext::homeCurrency($companyId);
 
         if (! $currency) {
-            throw SettlementException::make('This branch has no base currency.', [['branch_id' => $branchId]]);
+            throw SettlementException::make('This company has no base currency.', [['company_id' => $companyId]]);
         }
 
         return $currency;
@@ -1361,11 +1543,10 @@ class SettlementService
      */
     private function documentType(?string $referenceType, ?string $transactionId, array $openingTransactionIds = []): string
     {
-        if ($transactionId !== null && isset($openingTransactionIds[$transactionId])) {
-            return 'Opening Balance';
-        }
-
-        return $referenceType ? class_basename($referenceType) : 'Journal';
+        return DocumentType::label(
+            $referenceType,
+            isOpening: $transactionId !== null && isset($openingTransactionIds[$transactionId]),
+        );
     }
 
     /**

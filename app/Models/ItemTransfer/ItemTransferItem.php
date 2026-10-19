@@ -3,7 +3,9 @@
 namespace App\Models\ItemTransfer;
 
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -15,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransferItem extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasDependencyCheck, SoftDeletes, HasBranch;
+    use HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, BranchSpecific, HasDependencyCheck, SoftDeletes, HasCompany, HasBranch;
 
     protected $table = 'item_transfer_items';
 
@@ -23,8 +25,10 @@ class ItemTransferItem extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'item_transfer_id',
         'item_id',
+        'variant_id',
         'batch',
         'expire_date',
         'quantity',
@@ -38,6 +42,7 @@ class ItemTransferItem extends Model
         return [
             'item_transfer_id' => 'string',
             'item_id' => 'string',
+            'variant_id' => 'string',
             'batch' => 'string',
             'expire_date' => 'date',
             'quantity' => 'decimal:4',
@@ -68,6 +73,11 @@ class ItemTransferItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Inventory\Item::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Inventory\ItemVariant::class, 'variant_id');
     }
 
     public function unitMeasure(): BelongsTo

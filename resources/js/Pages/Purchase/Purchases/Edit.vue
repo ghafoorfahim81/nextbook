@@ -1,26 +1,31 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { useFormGuard } from '@/composables/useFormGuard'
+import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
+import { firstServerError } from '@/composables/useDocumentAction'
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
-import DiscountSummary from '@/Components/next/DiscountSummary.vue';
-import TaxSummary from '@/Components/next/TaxSummary.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import NextDate from '@/Components/next/NextDatePicker.vue';
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantOnHand } from '@/composables/useVariantLine'
+import VariantCell from '@/Components/inventory/VariantCell.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps';
 import { toDocumentCurrency } from '@/utils/currency';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -36,14 +41,23 @@ const props = defineProps({
     user_preferences: { type: Object, required: true },
     bankAccounts: { type: Array, required: true },
     stockLocked: { type: Boolean, default: false },
+    sizes: { type: [Array, Object], required: false, default: () => ([]) },
 });
 
-useLazyProps(props, ['ledgers', 'accounts']);
+
+const { loading: lazyLoading } = useLazyProps(props, ['ledgers', 'accounts']);
 
 const purchaseRecord = props.purchase?.data ?? props.purchase ?? {};
 const userPreferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? {});
-const general_fields = computed(() => userPreferences.value?.purchase?.general_fields ?? {});
-const item_columns = computed(() => userPreferences.value?.purchase?.item_columns ?? {});
+// Single reactive copy of the purchase preferences so the panel and form stay in sync live.
+const purchasePrefs = reactive(JSON.parse(JSON.stringify(userPreferences.value?.purchase ?? {})));
+if (!purchasePrefs.general_fields || typeof purchasePrefs.general_fields !== 'object') purchasePrefs.general_fields = {};
+if (!purchasePrefs.item_columns || typeof purchasePrefs.item_columns !== 'object') purchasePrefs.item_columns = {};
+if (purchasePrefs.item_columns.reserved_in === undefined) purchasePrefs.item_columns.reserved_in = true;
+const showAttachmentsField = computed(() => purchasePrefs.show_attachments === true);
+const general_fields = computed(() => purchasePrefs.general_fields);
+const item_columns = computed(() => purchasePrefs.item_columns);
+const showPreferencesPanel = ref(false);
 const itemManagement = computed(() => userPreferences.value?.item_management ?? {});
 const spec_text = computed(() => itemManagement.value?.spec_text ?? 'batch');
 const MIN_PURCHASE_ROWS = 6;
@@ -51,6 +65,15 @@ const MIN_PURCHASE_ROWS = 6;
 const toNum = (value, fallback = 0) => {
     const number = Number(value);
     return Number.isNaN(number) ? fallback : number;
+};
+
+const decimalPlaces = computed(() => Number(userPreferences.value?.appearance?.decimal_places ?? 2));
+
+// Money formatter for footer cards: "1,234.00 AFN"
+const fmtMoney = (value) => {
+    const code = form.selected_currency?.code ?? '';
+    const amount = toNum(value, 0).toFixed(decimalPlaces.value);
+    return code ? `${amount} ${code}` : amount;
 };
 
 const findById = (items, id) => (items || []).find((item) => item?.id === id) || null;
@@ -67,10 +90,16 @@ const buildEmptyRow = () => ({
     quantity: '',
     unit_measure_id: '',
     batch: '',
+    variant_id: null,
+    selected_variant: null,
+    item_variants: [],
     expire_date: '',
     unit_price: '',
     base_unit_price: '',
     on_hand: '',
+    reserved_out: '',
+    reserved_in: '',
+    available: '',
     available_measures: [],
     selected_measure: '',
     item_discount: '',
@@ -127,6 +156,9 @@ const initialRows = (purchaseRecord?.items || []).map((item) => {
         quantity: item.quantity,
         unit_measure_id: item.unit_measure_id,
         batch: item.batch || '',
+        variant_id: item.variant_id || null,
+        selected_variant: item.variant || null,
+        item_variants: selectedItem?.item_variants || [],
         expire_date: item.expire_date || '',
         unit_price: item.unit_price,
         base_unit_price: Number.isFinite(baseUnitPrice) ? baseUnitPrice : toNum(item.unit_price, 0),
@@ -174,7 +206,16 @@ const form = useForm({
     selected_warehouse: findById(props.warehouses?.data, purchaseRecord.warehouse_id) || purchaseRecord.warehouse || '',
     item_list: purchaseRecord.item_list || [],
     items: initialRows.length ? [...initialRows] : Array.from({ length: MIN_PURCHASE_ROWS }, buildEmptyRow),
+    attachments: [],
 });
+
+const existingAttachments = ref(purchaseRecord.attachments || []);
+const removeExistingAttachment = (id) => {
+    router.delete(route('attachments.destroy', id), {
+        preserveScroll: true,
+        onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id); },
+    });
+};
 
 const hydratedExistingRows = ref(false);
 const itemOptions = ref([]);
@@ -253,6 +294,9 @@ const hydrateExistingItems = () => {
         row.available_measures = availableMeasures;
         row.selected_measure = selectedMeasure;
         row.on_hand = selectedItem?.on_hand ?? row.on_hand ?? '';
+        row.reserved_out = selectedItem?.reserved_out ?? row.reserved_out ?? '';
+        row.reserved_in = selectedItem?.reserved_in ?? row.reserved_in ?? '';
+        row.available = selectedItem?.available ?? row.available ?? '';
         row.base_unit_price = Number.isFinite(baseUnitPrice) ? baseUnitPrice : toNum(row.unit_price, 0);
     });
 
@@ -294,8 +338,6 @@ watch(() => form.selected_purchase_type, (newType) => {
     }
 });
 
-const disabled = ref(false);
-
 const createLoading = computed(() => form.processing && submitAction.value === 'update');
 const createAndNewLoading = computed(() => false);
 
@@ -335,12 +377,18 @@ const notifySound = (type) => {
     sound.play().catch((error) => console.error('Error playing sound:', error));
 };
 
-const buildRowKey = (row) => [
-    (row.item_id || row.selected_item?.id || '').toString(),
-    (row.batch || '').toString().trim().toLowerCase(),
-    (row.expire_date || '').toString().trim(),
-    (row?.selected_measure?.id || '').toString(),
-].join('|');
+const buildRowKey = (row) => {
+    const measureId = row?.selected_measure?.id
+        || (typeof row?.selected_measure === 'object' ? (row?.selected_measure?.name || row?.selected_measure?.unit) : row?.selected_measure)
+        || '';
+    return [
+        (row.item_id || row.selected_item?.id || '').toString(),
+        (row.variant_id || row.selected_variant?.id || '').toString(),
+        (row.batch || '').toString().trim().toLowerCase(),
+        (row.expire_date || '').toString().trim(),
+        measureId.toString(),
+    ].join('|');
+};
 
 const isDuplicateRow = (index) => {
     const row = form.items[index];
@@ -357,25 +405,41 @@ const isDuplicateRow = (index) => {
 
 const resetRow = (index) => {
     form.items[index] = buildEmptyRow();
-    disabled.value = false;
 };
+
+const duplicateToast = ref(null);
+
+const hasDuplicateRows = computed(() => {
+    const seen = new Set();
+    for (const row of form.items) {
+        if (!row?.selected_item || !row?.selected_measure) continue;
+        const key = buildRowKey(row);
+        if (seen.has(key)) return true;
+        seen.add(key);
+    }
+    return false;
+});
+
+watch(hasDuplicateRows, (hasDuplicates) => {
+    if (!hasDuplicates && duplicateToast.value) {
+        duplicateToast.value.dismiss();
+        duplicateToast.value = null;
+    }
+});
 
 const notifyIfDuplicate = (index) => {
     if (isDuplicateRow(index)) {
         const item = form.items[index];
-        const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch';
-        const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry';
-        disabled.value = true;
-        toast({
+        const batchText = item.batch ? t('general.batch_value', { batch: item.batch }) : t('general.no_batch');
+        const expiryText = item.expire_date ? t('general.expiry_value', { expiry: item.expire_date }) : t('general.no_expiry');
+        duplicateToast.value = toast({
             title: t('purchase.duplicate_item_detected'),
-            description: `Same item with ${batchText} and ${expiryText} already exists.`,
+            description: t('general.duplicate_item_detected_description', { batchText, expiryText }),
             variant: 'destructive',
             class: 'bg-pink-600 text-white',
             duration: Infinity,
-            action: h(ToastAction, { altText: 'Unselect', onClick: () => resetRow(index) }, { default: () => 'Unselect' }),
+            action: h(ToastAction, { altText: t('general.unselect'), onClick: () => resetRow(index) }, { default: () => t('general.unselect') }),
         });
-    } else {
-        disabled.value = false;
     }
 };
 
@@ -393,13 +457,21 @@ const handleItemChange = (index, selectedItem) => {
     row.item_id = selectedItem.id;
     row.unit_measure_id = selectedItem.unit_measure_id;
     row.on_hand = selectedItem.on_hand;
+    row.reserved_out = selectedItem.reserved_out;
+    row.reserved_in = selectedItem.reserved_in;
+    row.available = selectedItem.available;
     row.batch = '';
     row.expire_date = '';
     row.quantity = '';
     row.item_discount = '';
     row.free = '';
     row.tax = '';
-    row.base_unit_price = selectedItem.purchase_price ?? selectedItem.avg_cost ?? 0;
+    row.item_variants = selectedItem.item_variants || [];
+    row.selected_variant = pickDefaultVariant(row.item_variants);
+    row.variant_id = row.selected_variant?.id || null;
+    // On hand belongs to the variant being bought, not to the parent item.
+    row.on_hand = resolveVariantOnHand(row) ?? selectedItem.on_hand;
+    row.base_unit_price = resolveVariantUnitPrice(selectedItem, row.selected_variant, 'purchase');
 
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1;
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
@@ -410,6 +482,20 @@ const handleItemChange = (index, selectedItem) => {
         form.items.push(buildEmptyRow());
     }
 
+    notifyIfDuplicate(index);
+};
+
+const handleVariantChange = (index, variant) => {
+    const row = form.items[index];
+    if (!row) return;
+    row.selected_variant = variant ?? null;
+    row.variant_id = variant?.id || null;
+    // Switching variant moves the price AND the on-hand figure with it.
+    repriceRow(row, variant, 'purchase')
+    row.on_hand = resolveVariantOnHand(row) ?? row.selected_item?.on_hand ?? 0;
+    const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
+    row.unit_price = toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate)
     notifyIfDuplicate(index);
 };
 
@@ -451,6 +537,18 @@ const onhand = (index) => {
     const converted = (adjustedOnHandBase * baseUnit) / selectedUnit;
 
     return Number.isFinite(converted) ? Number(converted.toFixed(2)) : 0;
+};
+
+const reservedIn = (index) => {
+    const item = form.items[index];
+    if (!item || !item.selected_item) return 0;
+    return Number(item.selected_batch?.reserved_in ?? item.selected_item?.reserved_in ?? item.reserved_in) || 0;
+};
+
+const reservedOut = (index) => {
+    const item = form.items[index];
+    if (!item || !item.selected_item) return 0;
+    return Number(item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out) || 0;
 };
 
 const rowTotal = (index) => {
@@ -497,15 +595,21 @@ const billDiscountPercent = computed(() => {
 const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDiscount.value);
 
 const transactionSummary = computed(() => {
-    const type = form.selected_purchase_type?.id || form.purchase_type;
+    const purchaseType = form.selected_purchase_type?.id;
+    let cashReceived = 0;
+    if (purchaseType === 'cash') {
+        cashReceived = goodsTotal.value; // transaction total
+    } else if (purchaseType === 'credit') {
+        cashReceived = paid; // on loan = 0, default
+    } 
+    else {
+        cashReceived = 0;
+    }
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0);
     const nature = form?.selected_ledger?.statement?.balance_nature;
     const hasSelectedItem = Array.isArray(form.items) && form.items.some((row) => !!row.selected_item);
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value;
-    const paid = type === 'cash'
-        ? netAmount
-        : (type === 'credit' ? toNum(form.payment.amount, 0) : 0);
-    const payableDelta = netAmount - paid;
+    const payableDelta = netAmount - cashReceived;
     const signedOldBalance = nature === 'dr' ? -oldBalance : oldBalance;
     const signedBalance = hasSelectedItem ? signedOldBalance + payableDelta : signedOldBalance;
 
@@ -514,7 +618,7 @@ const transactionSummary = computed(() => {
         billDiscountPercent: billDiscountPercent.value,
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
-        cashReceived: paid,
+        cashReceived: cashReceived,
         balance: Math.abs(signedBalance),
         grandTotal: netAmount,
         oldBalance,
@@ -537,8 +641,36 @@ const handleSubmit = () => {
         return;
     }
 
+    // Validate each added row up-front so missing values surface as inline
+    // field errors instead of a confusing server error.
+    form.clearErrors();
+    let hasRowError = false;
+    form.items.forEach((item, index) => {
+        if (!(item.selected_item && item.item_id)) return;
+        const price = item.unit_price;
+        if (price === '' || price === null || price === undefined || isNaN(Number(price))) {
+            form.setError(`item_list.${index}.unit_price`, t('purchase.unit_price_required'));
+            hasRowError = true;
+        }
+        if (!(item.selected_measure?.id || item.unit_measure_id)) {
+            form.setError(`item_list.${index}.unit_measure_id`, t('purchase.unit_measure_required'));
+            hasRowError = true;
+        }
+    });
+    if (hasRowError) {
+        notifySound('error');
+        toast({
+            title: t('general.error'),
+            description: t('purchase.complete_item_rows'),
+            variant: 'destructive',
+            class: 'bg-pink-600 text-white',
+        });
+        return;
+    }
+
     form.item_list = selectedItems.map((item) => ({
         item_id: item.item_id,
+        variant_id: item.variant_id || item.selected_variant?.id || null,
         quantity: item.quantity,
         unit_price: item.unit_price,
         free: item.free || 0,
@@ -569,11 +701,11 @@ const handleSubmit = () => {
                 class: 'bg-green-600 text-white',
             });
         },
-        onError: () => {
+        onError: (errors) => {
             notifySound('error');
             toast({
                 title: t('purchase.error_updating_purchase_variant'),
-                description: t('purchase.error_updating_purchase_description'),
+                description: firstServerError(errors) ?? t('purchase.error_updating_purchase_description'),
                 variant: 'destructive',
                 class: 'bg-pink-600 text-white',
             });
@@ -614,11 +746,26 @@ onUnmounted(() => {
         sidebar.setOpen(previousSidebarOpen.value);
     }
 });
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
-        <FormPageToolbar back-route="purchases.index" module="purchase" />
-        <form @submit.prevent="handleSubmitAction">
+        <FormPageToolbar
+            back-route="purchases.index"
+            module="purchase"
+            :show-preferences="true"
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel module="purchase"
+            v-model:open="showPreferencesPanel"
+            pref-group="purchase"
+            :prefs="purchasePrefs"
+            :title="t('preferences.tabs.purchase')"
+        />
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction">
             <div
                 v-if="stockLocked"
                 class="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200"
@@ -633,6 +780,7 @@ onUnmounted(() => {
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="ledgers?.data || []"
                         v-model="form.selected_ledger"
                         @update:modelValue="(value) => handleSelectChange('supplier_id', value)"
@@ -640,6 +788,7 @@ onUnmounted(() => {
                         value-key="id"
                         :reduce="(ledger) => ledger"
                         :floating-text="t('ledger.supplier.supplier')"
+                        is-required
                         :error="form.errors?.supplier_id"
                         :searchable="true"
                         resource-type="ledgers"
@@ -647,9 +796,10 @@ onUnmounted(() => {
                         :search-options="{ type: 'supplier' }"
                     />
                     <NextInput
+                        is-required
                         v-if="general_fields.number"
                         v-model="form.number"
-                        placeholder="Number"
+                        :placeholder="t('general.number')"
                         :error="form.errors?.number"
                         type="number"
                         :label="t('general.bill_number')"
@@ -665,7 +815,7 @@ onUnmounted(() => {
                         <NextSelect
                             :options="currencies.data"
                             v-model="form.selected_currency"
-                            label-key="code"
+                            label-key="display_name"
                             value-key="id"
                             :clearable="false"
                             @update:modelValue="(value) => handleSelectChange('currency_id', value)"
@@ -678,7 +828,7 @@ onUnmounted(() => {
                         />
                         <NextInput
                             v-model="form.rate"
-                            placeholder="Rate"
+                            :placeholder="t('general.rate')"
                             :error="form.errors?.rate"
                             type="number"
                             step="any"
@@ -687,33 +837,6 @@ onUnmounted(() => {
                         />
                     </div>
 
-                    <div class="grid grid-cols-1 gap-2" v-if="general_fields.type">
-                        <NextSelect
-                            :options="salePurchaseTypes"
-                            v-model="form.selected_purchase_type"
-                            :clearable="false"
-                            @update:modelValue="(value) => handleSelectChange('purchase_type', value)"
-                            label-key="name"
-                            value-key="id"
-                            :reduce="(salePurchaseType) => salePurchaseType"
-                            :floating-text="t('general.payment_type')"
-                            :error="form.errors?.purchase_type"
-                        />
-                    </div>
-                    <NextSelect
-                        v-if="form.purchase_type === 'cash'"
-                        :options="bankAccounts"
-                        v-model="form.selected_bank_account"
-                        @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
-                        label-key="name"
-                        :searchable="true"
-                        :floating-text="t('general.bank_account')"
-                        :error="form.errors?.bank_account_id"
-                        resource-type="accounts"
-                        :search-fields="['name', 'number', 'slug']"
-                        value-key="id"
-                        :reduce="(bankAccount) => bankAccount"
-                    />
                     <NextSelect
                         v-if="general_fields.warehouse"
                         :options="warehouses.data"
@@ -724,6 +847,7 @@ onUnmounted(() => {
                         value-key="id"
                         :reduce="(warehouse) => warehouse"
                         :floating-text="t('admin.warehouse.warehouse')"
+                        is-required
                         :error="form.errors?.warehouse_id"
                         resource-type="warehouses"
                         :search-fields="['name', 'code', 'address']"
@@ -740,16 +864,18 @@ onUnmounted(() => {
 
             <div class="rounded-xl border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate">
-                    <thead :class="form.purchase_type === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
+                    <thead :class="form.purchase_type === 'cash' ? 'bg-card sticky top-0 z-10' : ''">
                         <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
-                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-36">{{ t('item.variant') }}</th>
                             <th class="px-1 py-1 w-32" v-if="item_columns.batch">{{ t(spec_text) }}</th>
                             <th class="px-1 py-1 w-36" v-if="item_columns.expiry">{{ t('general.expire_date') }}</th>
-                            <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.on_hand') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="item_columns.measure">{{ t('general.unit') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="item_columns.reserved_in">{{ t('general.reserved_in') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="item_columns.measure">{{ t('general.unit') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-24">{{ t('general.price') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.discount">{{ t('general.discount') }}</th>
                             <th class="px-1 py-1 w-16" v-if="item_columns.free">{{ t('general.free') }}</th>
                             <th class="px-1 py-1 w-16" v-if="item_columns.tax">{{ t('general.tax') }}</th>
@@ -780,6 +906,16 @@ onUnmounted(() => {
                                     @update:modelValue="(value) => handleItemChange(index, value)"
                                 />
                             </td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                                <VariantCell
+                                    v-model="item.selected_variant"
+                                    :item-variants="item.item_variants"
+                                    :disabled="!item.selected_item"
+                                    :id="`purchase_edit_variant_${index}`"
+                                    :error="form.errors?.[`item_list.${index}.variant_id`]"
+                                    @update:modelValue="(value) => handleVariantChange(index, value)"
+                                />
+                            </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
                                 <NextInput
                                     v-model="item.batch"
@@ -791,6 +927,7 @@ onUnmounted(() => {
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.expiry">
                                 <NextDate
                                     v-model="item.expire_date"
+                                    :lock-future-dates="false"
                                     popover="top-left"
                                     :error="form.errors?.[`item_list.${index}.expire_date`]"
                                 />
@@ -807,6 +944,9 @@ onUnmounted(() => {
                             </td>
                             <td class="text-center" v-if="item_columns.on_hand">
                                 <span :title="String(onhand(index))">{{ Number(onhand(index) || 0) }}</span>
+                            </td>
+                            <td class="text-center" v-if="item_columns.reserved_in">
+                                <span class="text-sky-600" :title="t('general.reserved_out') + ': ' + reservedOut(index)">{{ reservedIn(index) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.measure">
                                 <NextSelect
@@ -879,10 +1019,12 @@ onUnmounted(() => {
                         <tr class="bg-violet-500/10 hover:bg-violet-500/30 transition-colors">
                             <td></td>
                             <td class="text-center">{{ totalRows }}</td>
+                            <td></td>
                             <td v-if="item_columns.batch"></td>
                             <td v-if="item_columns.expiry"></td>
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="item_columns.on_hand"></td>
+                            <td v-if="item_columns.reserved_in"></td>
                             <td v-if="item_columns.measure"></td>
                             <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
                             <td class="text-center" v-if="item_columns.discount">{{ totalItemDiscount || 0 }}</td>
@@ -896,28 +1038,92 @@ onUnmounted(() => {
             </div>
 
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
-                <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
-                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4">
-                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{ t('general.bill_discount') }}</div>
-                    <DiscountField
-                        v-model="form.discount"
-                        v-model:discount-type="form.discount_type"
-                        :error="form.errors?.discount"
-                    />
+                <!-- Discount Summary -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.discount_summary') }}</div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted-foreground">{{ t('general.total_item_discount') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(totalItemDiscount) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted-foreground">{{ t('general.bill_disc') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(billDiscountCurrency) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between font-semibold pt-1">
+                            <span class="text-sm">{{ t('general.total_discount') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(totalDiscount) }}</span>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Adjustments -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.adjustments') }}</div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-muted-foreground">{{ t('general.total_item_tax') }}</span>
+                        <span class="tabular-nums text-sm">{{ fmtMoney(totalTax) }}</span>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{{ t('general.bill_discount') }} (%)</div>
+                        <DiscountField
+                            v-model="form.discount"
+                            v-model:discount-type="form.discount_type"
+                            label=" "
+                            :error="form.errors?.discount"
+                        />
+                    </div>
+                </div>
+
+                <!-- Payment -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm space-y-4">
+                    <div class="text-sm font-semibold text-violet-500">{{ t('general.payment') }}</div>
+                    <div v-if="general_fields.type">
+                        <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{{ t('general.payment_type') }}</div>
+                        <NextSelect
+                            :options="salePurchaseTypes"
+                            v-model="form.selected_purchase_type"
+                            :clearable="false"
+                            @update:modelValue="(value) => handleSelectChange('purchase_type', value)"
+                            label-key="name"
+                            value-key="id"
+                            :reduce="(salePurchaseType) => salePurchaseType"
+                            :error="form.errors?.purchase_type"
+                        />
+                    </div>
+                    <div v-if="form.purchase_type === 'cash'">
+                        <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{{ t('general.bank_account') }}</div>
+                        <NextSelect
+                            :options="bankAccounts"
+                            v-model="form.selected_bank_account"
+                            @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                            label-key="name"
+                            :searchable="true"
+                            :error="form.errors?.bank_account_id"
+                            resource-type="accounts"
+                            :search-fields="['name', 'number', 'slug']"
+                            value-key="id"
+                            :reduce="(bankAccount) => bankAccount"
+                        />
+                    </div>
+                </div>
+
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
             </div>
 
-            <SubmitButtons
+            <div v-if="showAttachmentsField" class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+            </div>
+
+            <SubmitButtons module="purchase"
                 :create-label="t('general.update')"
                 :create-and-new-label="t('general.update')"
                 :cancel-label="t('general.cancel')"
                 :creating-label="t('general.updating', { name: t('purchase.purchase') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
-                :disabled="disabled || stockLocked"
+                :disabled="hasDuplicateRows || stockLocked"
                 :show-create-and-new="false"
                 @cancel="() => $inertia.visit(route('purchases.index'))"
             />

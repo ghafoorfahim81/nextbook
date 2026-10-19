@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Support\BranchContext;
+
 use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Enums\StockMovementType;
@@ -68,13 +70,22 @@ class LandedCostService
         $landedCost->purchases()->detach();
 
         if (! empty($purchaseIds)) {
-            $landedCost->purchases()->attach(collect($purchaseIds)->mapWithKeys(function (string $purchaseId): array {
-                return [
-                    $purchaseId => [
-                        'id' => (string) Str::ulid(),
-                    ],
-                ];
-            })->all());
+            // The pivot carries the company so both of its composite foreign
+            // keys can share one column, which is what makes a landed cost of
+            // one company unattachable to another company's purchase. An
+            // `attach` writes raw, so no model hook fills it in.
+            $companyId = $landedCost->company_id;
+
+            $landedCost->purchases()->attach(collect($purchaseIds)->mapWithKeys(
+                function (string $purchaseId) use ($companyId): array {
+                    return [
+                        $purchaseId => [
+                            'id' => (string) Str::ulid(),
+                            'company_id' => $companyId,
+                        ],
+                    ];
+                }
+            )->all());
         }
 
         $landedCost->update([
@@ -271,9 +282,11 @@ class LandedCostService
                 'status' => LandedCostStatus::Posted->value,
             ]);
 
-            $transaction->update([
-                'status' => TransactionStatus::POSTED->value,
-            ]);
+            // postDraft(), not a status flip: a draft keeps its lines only in
+            // posting_payload, so flipping the status alone left a "posted"
+            // voucher with no lines — the cost reached the item layers but the
+            // GL never debited inventory or credited the cash account.
+            $this->transactionService->postDraft($transaction);
 
             return [
                 'landed_cost' => $landedCost->fresh(['purchases.items.item', 'items.item', 'transaction']),
@@ -479,7 +492,7 @@ class LandedCostService
 
     private function resolveInventoryStockAccountId(): string
     {
-        return data_get(Cache::get('gl_accounts'), 'inventory-stock')
+        return data_get(BranchContext::glAccounts(), 'inventory-stock')
             ?? Account::withoutGlobalScopes()->where('slug', 'inventory-stock')->value('id')
             ?? throw ValidationException::withMessages([
                 'items' => __('general.landed_cost_inventory_stock_account_could_not_be_resolved'),
@@ -623,6 +636,9 @@ class LandedCostService
 
         $item->avg_cost = round($avgCost, 4);
         $item->save();
+
+        // Each variant carries its own average too, replayed the same way.
+        app(StockService::class)->recalculateVariantAverageCosts($itemId);
     }
 
     private function assertAllocationMatchesTotalCost(float $totalCost, float $allocatedTotal): void

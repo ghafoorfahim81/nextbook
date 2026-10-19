@@ -46,6 +46,7 @@ export const quickCreateRegistry = {
     endpointType: 'categories',
     fields: [
       { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'local_name', labelKey: 'admin.shared.local_name', type: 'text' },
       { key: 'parent_id', labelKey: 'admin.shared.parent', type: 'select' },
       { key: 'remark', labelKey: 'general.remarks', type: 'textarea' },
     ],
@@ -110,7 +111,6 @@ export const quickCreateRegistry = {
       { key: 'sale_price', labelKey: 'item.sale_price', type: 'number', required: true },
       { key: 'brand_id', labelKey: 'admin.brand.brand', type: 'select' },
       { key: 'category_id', labelKey: 'admin.category.category', type: 'select' },
-      { key: 'size_id', labelKey: 'item.size', type: 'select' },
     ],
   },
 
@@ -124,7 +124,6 @@ export const quickCreateRegistry = {
       { key: 'sale_price', labelKey: 'item.sale_price', type: 'number', required: true },
       { key: 'brand_id', labelKey: 'admin.brand.brand', type: 'select' },
       { key: 'category_id', labelKey: 'admin.category.category', type: 'select' },
-      { key: 'size_id', labelKey: 'item.size', type: 'select' },
     ],
   },
 

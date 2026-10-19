@@ -3,8 +3,8 @@
 namespace App\Models\Accounting;
 
 use App\Enums\FinancialPeriodStatus;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class FinancialPeriod extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, HasCompany, SoftDeletes;
 
     protected $table = 'financial_periods';
     protected $keyType = 'string';
@@ -27,7 +27,7 @@ class FinancialPeriod extends Model
         'status',
         'closed_at',
         'closed_by',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
     ];
@@ -39,7 +39,7 @@ class FinancialPeriod extends Model
             'end_date' => 'date',
             'status' => FinancialPeriodStatus::class,
             'closed_at' => 'datetime',
-            'branch_id' => 'string',
+            'company_id' => 'string',
             'closed_by' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',

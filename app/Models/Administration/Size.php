@@ -2,7 +2,7 @@
 
 namespace App\Models\Administration;
 
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 class Size extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasUserTracking, HasCache, BranchSpecific, HasBranch, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, HasUserTracking, HasCache, CompanySpecific, HasCompany, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'sizes';
     protected $primaryKey = 'id';
@@ -29,7 +29,7 @@ class Size extends Model
         'code',
         'is_active',
         'is_main',
-        'branch_id',
+        'company_id',
         'created_by',
         'updated_by',
     ];
@@ -38,7 +38,7 @@ class Size extends Model
         'id' => 'string',
         'is_active' => 'boolean',
         'is_main' => 'boolean',
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
     ];
@@ -53,12 +53,7 @@ class Size extends Model
      */
     protected function getRelationships(): array
     {
-        return [
-            'items' => [
-                'model' => 'items',
-                'message' => 'This size is used in items'
-            ]
-        ];
+        return [];
     }
 
     public static function defaultSizes(): array
@@ -85,11 +80,4 @@ class Size extends Model
         ];
     }
 
-    /**
-     * Relationship to items that use this size
-     */
-    public function items()
-    {
-        return $this->hasMany(\App\Models\Inventory\Item::class, 'size_id');
-    }
 }

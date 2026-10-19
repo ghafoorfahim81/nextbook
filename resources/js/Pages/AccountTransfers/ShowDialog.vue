@@ -1,14 +1,18 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
+import { useDocumentAction } from '@/composables/useDocumentAction'
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
 import { Calendar, DollarSign, FileText, ArrowLeftRight, Banknote, User } from 'lucide-vue-next'
+import { router } from '@inertiajs/vue3'
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 
 const { t } = useI18n()
+const { submit, processing } = useDocumentAction()
 
 const props = defineProps({
     open: Boolean,
@@ -18,6 +22,8 @@ const emit = defineEmits(['update:open'])
 
 const transfer = ref(null)
 const loading = ref(false)
+const postDialogOpen = ref(false)
+const reverseDialogOpen = ref(false)
 
 watch(() => props.open, async (isOpen) => {
     if (isOpen && props.transferId) {
@@ -31,9 +37,49 @@ watch(() => props.open, async (isOpen) => {
     }
 })
 
+const statusClass = computed(() => {
+    switch (transfer.value?.status) {
+        case 'draft':    return 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700'
+        case 'posted':   return 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+        case 'reversed': return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
+        default:         return 'bg-muted text-muted-foreground border border-border'
+    }
+})
+
+const statusLabel = computed(() => {
+    switch (transfer.value?.status) {
+        case 'draft':    return t('general.status_draft')
+        case 'posted':   return t('general.status_posted')
+        case 'reversed': return t('general.status_reversed')
+        default:         return transfer.value?.status ?? ''
+    }
+})
+
 function closeDialog() {
     emit('update:open', false)
     transfer.value = null
+}
+
+function postTransfer() {
+    if (!props.transferId) return
+    submit(route('account-transfers.post', props.transferId), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            postDialogOpen.value = false
+            closeDialog()
+        },
+    })
+}
+
+function reverseTransfer(reason) {
+    if (!props.transferId) return
+    submit(route('account-transfers.reverse', props.transferId), { reason }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            reverseDialogOpen.value = false
+            closeDialog()
+        },
+    })
 }
 </script>
 
@@ -50,7 +96,33 @@ function closeDialog() {
                 <DialogDescription class="text-xs text-muted-foreground" v-if="transfer?.remark">
                     {{ transfer.remark }}
                 </DialogDescription>
+                <div v-if="transfer" class="flex items-center gap-2 pt-2">
+                    <span :class="['rounded-full px-2.5 py-0.5 text-xs font-medium', statusClass]">{{ statusLabel }}</span>
+                    <Button v-if="transfer.status === 'draft'" size="sm" class="bg-green-600 text-white hover:bg-green-700" @click="postDialogOpen = true">
+                        {{ t('general.post') }}
+                    </Button>
+                    <Button v-if="transfer.status === 'posted'" size="sm" variant="destructive" @click="reverseDialogOpen = true">
+                        {{ t('general.reverse') }}
+                    </Button>
+                </div>
             </DialogHeader>
+
+            <TransactionActionDialog
+            :processing="processing"
+                v-model:open="postDialogOpen"
+                type="post"
+                :title="t('general.post') + ' ' + t('general.account_transfer')"
+                :description="t('general.post_document_desc')"
+                @confirm="postTransfer"
+            />
+            <TransactionActionDialog
+            :processing="processing"
+                v-model:open="reverseDialogOpen"
+                type="reverse"
+                :title="t('general.reverse') + ' ' + t('general.account_transfer')"
+                :description="t('general.reverse_description')"
+                @confirm="reverseTransfer"
+            />
 
             <div v-if="loading" class="py-6 text-center text-muted-foreground">
                 {{ t('general.loading') }}...
@@ -109,27 +181,19 @@ function closeDialog() {
                         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.from_account') }}</div>
                         <div v-if="transfer.from_account" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.account') }}</div>
-                            <div class="font-medium">
-                                {{ transfer.from_account?.name || '-' }}
-                            </div>
+                            <div class="font-medium">{{ transfer.from_account?.name || '-' }}</div>
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
-                            <div class="font-medium">
-                                {{ transfer.currency?.symbol || '' }} {{ transfer.amount }}
-                            </div>
+                            <div class="font-medium">{{ transfer.currency?.symbol || '' }} {{ transfer.amount }}</div>
                         </div>
                         <div v-else class="text-sm text-muted-foreground">-</div>
                     </div>
                     <div class="border border-border rounded-lg p-4 bg-card">
-                        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.to_account') }}  </div>
+                        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.to_account') }}</div>
                         <div v-if="transfer.to_account" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.account') }}</div>
-                            <div class="font-medium">
-                                {{ transfer.to_account?.name || '-' }}
-                            </div>
+                            <div class="font-medium">{{ transfer.to_account?.name || '-' }}</div>
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
-                            <div class="font-medium">
-                                {{ transfer.currency?.symbol || '' }} {{ transfer.amount }}
-                            </div>
+                            <div class="font-medium">{{ transfer.currency?.symbol || '' }} {{ transfer.amount }}</div>
                         </div>
                         <div v-else class="text-sm text-muted-foreground">-</div>
                     </div>
@@ -144,6 +208,3 @@ function closeDialog() {
         </DialogContent>
     </Dialog>
 </template>
-
-
-

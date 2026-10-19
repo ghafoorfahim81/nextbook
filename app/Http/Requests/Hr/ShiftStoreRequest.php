@@ -22,7 +22,7 @@ class ShiftStoreRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:100'],
-            'code' => ['required', 'string', 'max:50', $this->uniqueInBranch('shifts', $id)],
+            'code' => ['required', 'string', 'max:50', $this->uniqueInCompany('shifts', $id)],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i'],
             'crosses_midnight' => ['nullable', 'boolean'],

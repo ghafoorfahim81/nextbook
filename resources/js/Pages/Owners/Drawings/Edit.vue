@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { computed, ref, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
@@ -9,7 +10,9 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 
 const { t } = useI18n()
 
@@ -35,6 +38,7 @@ const initialBankAccount = computed(() => {
 const todayValue = () => new Date().toLocaleDateString('en-CA')
 
 const form = useForm({
+  number: currentDrawing.value?.number || '',
   owner_id: currentDrawing.value?.owner_id || '',
   bank_account_id: currentDrawing.value?.bank_account_id || '',
   currency_id: currentDrawing.value?.currency_id || '',
@@ -45,7 +49,15 @@ const form = useForm({
   selectedOwner: currentDrawing.value?.owner || null,
   selected_bank_account: initialBankAccount.value,
   selected_currency: currentDrawing.value?.currency || null,
+  attachments: [],
 })
+const existingAttachments = ref(currentDrawing.value?.attachments || [])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 
 const submitAction = ref(null)
 const updateLoading = computed(() => form.processing && submitAction.value === 'update')
@@ -109,6 +121,7 @@ const handleSubmit = () => {
 
   form
     .transform((data) => ({
+      number: data.number || null,
       owner_id: data.owner_id,
       bank_account_id: data.bank_account_id,
       currency_id: data.currency_id,
@@ -116,6 +129,7 @@ const handleSubmit = () => {
       amount: data.amount,
       date: data.date,
       narration: data.narration,
+      attachments: data.attachments,
     }))
     .patch(route('drawings.update', currentDrawing.value.id), {
       preserveScroll: true,
@@ -141,18 +155,28 @@ function handleSelectChange(field, value) {
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('sidebar.owners.drawing') })">
-    <FormPageToolbar back-route="drawings.index" module="owner" />
-    <form @submit.prevent="handleSubmit">
+    <FormPageToolbar confirm-module="drawing" back-route="drawings.index" module="owner" />
+    <form ref="saveFormRef" @submit.prevent="handleSubmit">
       <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative bg-card">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
           {{ t('general.edit', { name: t('sidebar.owners.drawing') }) }}
         </div>
 
         <div class="grid grid-cols-1 gap-4 pt-3 md:grid-cols-2 xl:grid-cols-3">
+          <NextInput
+            v-model="form.number"
+            :label="t('general.number')"
+            :error="form.errors?.number"
+          />
+
           <NextSelect
             :options="owners"
             v-model="form.selectedOwner"
@@ -161,6 +185,7 @@ function handleSelectChange(field, value) {
             value-key="id"
             :reduce="(owner) => owner"
             :floating-text="t('owner.owner')"
+            is-required
             :error="form.errors?.owner_id"
             :searchable="true"
             resource-type="owners"
@@ -175,6 +200,7 @@ function handleSelectChange(field, value) {
             value-key="id"
             :reduce="(account) => account"
             :floating-text="t('general.bank_account')"
+            is-required
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
@@ -192,17 +218,18 @@ function handleSelectChange(field, value) {
             <NextSelect
             :options="currencies"
             v-model="form.selected_currency"
-            label-key="code"
+            label-key="display_name"
             value-key="id"
             @update:modelValue="(value) => handleSelectChange('currency_id', value)"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
+            is-required
             :error="form.errors?.currency_id"
             :searchable="true"
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
              />
-            <NextInput placeholder="Rate" :disabled="form.selected_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+            <NextInput is-required :placeholder="t('general.rate')" :disabled="form.selected_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
             
           </div>
 
@@ -214,6 +241,7 @@ function handleSelectChange(field, value) {
           </div>
 
           <NextInput
+            is-required
             v-model="form.amount"
             type="number"
             step="any"
@@ -228,6 +256,10 @@ function handleSelectChange(field, value) {
             rows="2"
             class="md:col-span-2 xl:col-span-3"
           />
+
+          <div class="md:col-span-2 xl:col-span-3">
+            <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+          </div>
         </div>
       </div>
 
@@ -262,7 +294,7 @@ function handleSelectChange(field, value) {
         </div>
       </div>
 
-      <SubmitButtons
+      <SubmitButtons module="drawing"
         :create-label="t('general.update')"
         :create-and-new-label="t('general.update')"
         :cancel-label="t('general.cancel')"

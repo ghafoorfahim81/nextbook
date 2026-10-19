@@ -1,7 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import Checkbox from '@/Components/Checkbox.vue';
+import { Checkbox } from '@/Components/ui/checkbox';
+import { Check, Minus } from 'lucide-vue-next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
 
@@ -176,6 +177,19 @@ const someVisibleSelected = (group) => {
     return ids.some((id) => props.modelValue.includes(id));
 };
 
+/**
+ * Radix drives the box from this value alone, so a half-selected group can say
+ * so instead of the native input's `indeterminate` side-effect, which the
+ * browser clears on its own the moment the box is clicked.
+ */
+const groupCheckedState = (group) => {
+    if (allVisibleSelected(group)) {
+        return true;
+    }
+
+    return someVisibleSelected(group) ? 'indeterminate' : false;
+};
+
 const toggleGroup = (group, checked) => {
     const ids = visiblePermissionIds(group);
     const current = Array.isArray(props.modelValue) ? [...props.modelValue] : [];
@@ -245,10 +259,13 @@ const clearAllPermissions = () => {
                             <div class="flex items-center gap-2">
                                 <Checkbox
                                     :id="`resource-${group.resource}`"
-                                    :checked="allVisibleSelected(group)"
-                                    :indeterminate="someVisibleSelected(group) && !allVisibleSelected(group)"
-                                    @update:checked="(checked) => toggleGroup(group, Boolean(checked))"
-                                />
+                                    :checked="groupCheckedState(group)"
+                                    class="data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground"
+                                    @update:checked="(checked) => toggleGroup(group, checked === true)"
+                                >
+                                    <Minus v-if="groupCheckedState(group) === 'indeterminate'" class="h-4 w-4" />
+                                    <Check v-else class="h-4 w-4" />
+                                </Checkbox>
                                 <label :for="`resource-${group.resource}`" class="text-xs font-medium text-primary text-muted-foreground cursor-pointer">
                                     {{ t('general.select_all') }}
                                 </label>
@@ -264,10 +281,9 @@ const clearAllPermissions = () => {
                         >
                             <Checkbox
                                 :id="`permission-${permission.id}`"
-                                :name="`permissions[]`"
-                                :value="permission.id"
                                 :checked="modelValue.includes(permission.id)"
-                                @update:checked="(checked) => togglePermission(permission.id, Boolean(checked))"
+                                class="mt-0.5"
+                                @update:checked="(checked) => togglePermission(permission.id, checked === true)"
                             />
                             <label
                                 :for="`permission-${permission.id}`"

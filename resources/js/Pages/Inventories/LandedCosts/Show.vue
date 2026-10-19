@@ -1,5 +1,6 @@
 <script setup>
-import AppLayout from '@/Layouts/Layout.vue';
+import AppLayout from '@/Layouts/Layout.vue'
+import AttachmentList from '@/Components/AttachmentList.vue';
 import { computed, ref, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -464,6 +465,9 @@ const postLandedCost = async () => {
             </tfoot>
           </table>
         </div>
+      </div>
+      <div class="mt-4">
+        <AttachmentList :items="record.attachments || []" :label="t('general.attachments')" />
       </div>
     </div>
   </AppLayout>

@@ -76,7 +76,63 @@ return [
             \App\Models\Hr\JobOpening::class,
             \App\Models\Hr\JobApplication::class,
             \App\Models\Hr\Interview::class,
+
+            // Documents and master data that had no log at all. Each request is
+            // written as a single entry (see BatchActivityLog), so covering them
+            // no longer multiplies rows; where a controller also logs the
+            // action explicitly, the two merge into one entry.
+            \App\Models\Administration\Category::class,
+            \App\Models\Administration\CustomerGroup::class,
+            \App\Models\Administration\PaymentTerm::class,
+            \App\Models\Administration\LandedCostCategory::class,
+            \App\Models\Administration\CurrencyRateUpdate::class,
+            \App\Models\Inventory\DiscountRule::class,
+            \App\Models\Inventory\LandedCost::class,
+            \App\Models\Inventory\StockAdjustment::class,
+            \App\Models\ItemTransfer\ItemTransfer::class,
+            \App\Models\JournalEntry\JournalEntry::class,
+            \App\Models\Accounting\ContraSettlement::class,
+            \App\Models\Expense\Expense::class,
+            \App\Models\Owner\Owner::class,
+            \App\Models\Owner\Drawing::class,
+            \App\Models\Payment\Payment::class,
+            \App\Models\Receipt\Receipt::class,
+            \App\Models\Purchase\Purchase::class,
+            \App\Models\Purchase\PurchaseOrder::class,
+            \App\Models\Purchase\PurchaseQuotation::class,
+            \App\Models\Purchase\PurchaseReturn::class,
+            \App\Models\Sale\Sale::class,
+            \App\Models\Sale\SaleOrder::class,
+            \App\Models\Sale\SaleQuotation::class,
+            \App\Models\Sale\SaleReturn::class,
+            \App\Models\Sale\InvoiceFormat::class,
         ],
+
+        /*
+        | Rows that only mean something as part of their document: the lines of
+        | a sale, an item's variants, a journal's debit/credit lines. They are
+        | logged only inside a request, where they are attached to the
+        | document's entry as related records — never as entries of their own.
+        */
+        'detail_models' => [
+            \App\Models\Inventory\ItemVariant::class,
+            \App\Models\Inventory\LandedCostItem::class,
+            \App\Models\Inventory\StockAdjustmentItem::class,
+            \App\Models\ItemTransfer\ItemTransferItem::class,
+            \App\Models\Transaction\TransactionLine::class,
+            \App\Models\Expense\ExpenseDetail::class,
+            \App\Models\Purchase\PurchaseItem::class,
+            \App\Models\Purchase\PurchaseOrderItem::class,
+            \App\Models\Purchase\PurchaseQuotationItem::class,
+            \App\Models\Purchase\PurchaseReturnItem::class,
+            \App\Models\Sale\SaleItem::class,
+            \App\Models\Sale\SaleOrderItem::class,
+            \App\Models\Sale\SaleQuotationItem::class,
+            \App\Models\Sale\SaleReturnItem::class,
+            \App\Models\Hr\SalaryStructureLine::class,
+            \App\Models\Hr\TaxBracket::class,
+        ],
+
         'except_attributes' => [
             'created_at',
             'updated_at',
@@ -86,5 +142,50 @@ return [
             'two_factor_secret',
             'two_factor_recovery_codes',
         ],
+    ],
+
+    /*
+    | The child data that makes up each record's form, captured before and
+    | after an edit so its old values are kept. Most updates replace these
+    | rows with query-builder deletes and re-inserts, which fire no model
+    | events — without the snapshot an edited opening balance or a changed
+    | sale line left no trace of what it was before. Dots walk nested
+    | relations (an account's opening → its transaction → the lines).
+    */
+    'snapshot_relations' => [
+        \App\Models\Account\Account::class => ['opening.transaction.lines'],
+        \App\Models\Ledger\Ledger::class => ['openings.transaction.lines'],
+        \App\Models\Inventory\Item::class => ['variants', 'openings'],
+        \App\Models\Sale\Sale::class => ['items', 'transaction.lines'],
+        \App\Models\Sale\SaleReturn::class => ['items', 'transaction.lines'],
+        \App\Models\Sale\SaleOrder::class => ['items'],
+        \App\Models\Sale\SaleQuotation::class => ['items'],
+        \App\Models\Purchase\Purchase::class => ['items', 'transaction.lines'],
+        \App\Models\Purchase\PurchaseReturn::class => ['items', 'transaction.lines'],
+        \App\Models\Purchase\PurchaseOrder::class => ['items'],
+        \App\Models\Purchase\PurchaseQuotation::class => ['items'],
+        \App\Models\Expense\Expense::class => ['details', 'transaction.lines'],
+        \App\Models\Receipt\Receipt::class => ['transaction.lines', 'settlements'],
+        \App\Models\Payment\Payment::class => ['transaction.lines', 'settlements'],
+        \App\Models\JournalEntry\JournalEntry::class => ['transaction.lines'],
+        \App\Models\AccountTransfer\AccountTransfer::class => ['transaction.lines'],
+        \App\Models\Owner\Owner::class => ['transaction.lines'],
+        \App\Models\Owner\Drawing::class => ['transaction.lines'],
+        \App\Models\Inventory\LandedCost::class => ['items', 'categoryAllocations'],
+        \App\Models\Inventory\StockAdjustment::class => ['items'],
+        \App\Models\ItemTransfer\ItemTransfer::class => ['items'],
+    ],
+
+    /*
+    | Route resources whose name does not singularise to their module, used to
+    | pick which saved record heads a request's log entry.
+    */
+    'route_modules' => [
+        'chart-of-accounts' => 'account',
+        'item-fast-entry' => 'item',
+        'item-fast-opening' => 'item',
+        'customers' => 'ledger',
+        'suppliers' => 'ledger',
+        'discount-rules' => 'discount_rule',
     ],
 ];

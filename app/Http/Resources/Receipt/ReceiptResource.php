@@ -2,12 +2,14 @@
 
 namespace App\Http\Resources\Receipt;
 
+use App\Enums\TransactionStatus;
 use App\Enums\PaymentMode;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Http\Resources\AttachmentResource;
 use App\Http\Resources\Accounting\SettlementResource;
 class ReceiptResource extends JsonResource
 {
@@ -18,11 +20,15 @@ class ReceiptResource extends JsonResource
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
         $locale = app()->getLocale();
+        $firstLine = $this->transaction?->lines?->where('debit', '>', 0)->first();
         return [
             'id' => $this->id,
             'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'ledger_id' => $this->ledger_id,
+            'status' => $this->status ?? $this->transaction?->status,
+            'status_label' => TransactionStatus::tryFrom((string) ($this->status ?? $this->transaction?->status))?->getLabel()
+                ?? (string) ($this->status ?? $this->transaction?->status),
             'payment_mode' => $this->payment_mode instanceof PaymentMode
                 ? $this->payment_mode->value
                 : $this->payment_mode,
@@ -54,6 +60,7 @@ class ReceiptResource extends JsonResource
             'is_cross_currency' => (bool) ($this->transaction?->is_cross_currency ?? false),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }

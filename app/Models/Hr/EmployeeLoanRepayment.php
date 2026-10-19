@@ -6,7 +6,9 @@ use App\Enums\LoanRepaymentSource;
 use App\Models\Administration\Currency;
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,13 +18,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EmployeeLoanRepayment extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'employee_loan_id', 'payroll_line_id', 'salary_payment_id',
         'date', 'amount', 'currency_id', 'rate', 'source',
         'transaction_id', 'remark', 'created_by', 'updated_by',

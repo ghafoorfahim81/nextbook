@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -7,12 +8,14 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n();
 const page = usePage()
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
@@ -23,14 +26,16 @@ const props = defineProps({
     currencies: { type: Array, required: true },
     homeCurrency: { type: Object, required: true },
     journalClasses: { type: Array, required: true },
+    latestNumber: { type: String, default: '' },
 });
 
 const form = useForm({
     date: '',
-    number: '',
+    number: props.latestNumber ?? '',
     currency_id: '',
     rate: 1,
     remarks: '',
+    attachments: [],
     lines: [
         {
             account_id: '',
@@ -39,7 +44,7 @@ const form = useForm({
             credit: '',
             remark: '',
             ledger_id: '',
-            selected_ledger:null, 
+            selected_ledger:null,
             journal_class_id: '',
             selected_journal_class:null,
         },
@@ -77,7 +82,7 @@ const defaultJournalLines = () => ([
         credit: '',
         remark: '',
         ledger_id: '',
-        selected_ledger:null, 
+        selected_ledger:null,
         journal_class_id: '',
         selected_journal_class:null,
     },
@@ -115,8 +120,6 @@ const handleSubmitAction = (createAndNew = false) => {
     handleSubmit(isCreateAndNew);
 };
 
-const fileInput = ref(null);
-const attachmentPreview = ref(null);
 
 // Set default currency
 watch(() => props.currencies, (currencies) => {
@@ -168,30 +171,6 @@ const removeLine = (index) => {
     }
 };
 
-// Handle file upload
-const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        form.attachment = file;
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                attachmentPreview.value = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            attachmentPreview.value = null;
-        }
-    }
-};
-
-const removeAttachment = () => {
-    form.attachment = null;
-    attachmentPreview.value = null;
-    if (fileInput.value) {
-        fileInput.value.value = '';
-    }
-};
 
 const normalize = () => {
     return form.lines.filter(d =>
@@ -226,9 +205,9 @@ const handleSubmit = (createAndNew = false) => {
     formData.append('rate', form.rate);
     formData.append('remarks', form.remarks || '');
 
-    if (form.attachment) {
-        formData.append('attachment', form.attachment);
-    }
+    form.attachments.forEach((file, index) => {
+        formData.append(`attachments[${index}]`, file);
+    });
 
     validDetails.forEach((detail, index) => {
         formData.append(`lines[${index}][account_id]`, detail.account_id);
@@ -254,7 +233,7 @@ const handleSubmit = (createAndNew = false) => {
             if (createAndNew) {
                 form.reset();
                 form.lines = defaultJournalLines();
-                attachmentPreview.value = null;
+                form.attachments = [];
                 applyCreateDefaults();
             }
         },
@@ -305,12 +284,16 @@ onUnmounted(() => {
         sidebar.setOpen(prevSidebarOpen.value);
     }
 });
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
-    <AppLayout :title="t('general.create', { name: t('expense.expense') })" :sidebar-collapsed="true">
-        <FormPageToolbar back-route="journal-entries.index" module="journal_entry" />
-        <form @submit.prevent="handleSubmitAction(false)">
+    <AppLayout :title="t('general.create', { name: t('journal_entry.journal_entry') })">
+        <FormPageToolbar confirm-module="journal_entry" back-route="journal-entries.index" module="journal_entry" />
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
@@ -334,14 +317,18 @@ onUnmounted(() => {
                             :options="currencies.data || currencies"
                             v-model="form.selected_currency"
                             @update:modelValue="handleCurrencyChange"
-                            label-key="code"
+                            label-key="display_name"
                             value-key="id"
                             :reduce="cur => cur"
                             :floating-text="t('admin.currency.currency')"
+                            is-required
                             :error="form.errors?.currency_id"
                             :searchable="true"
+                            resource-type="currencies"
+                            :search-fields="['name', 'code', 'symbol']"
                         />
                         <NextInput
+                            is-required
                             v-model="form.rate"
                             type="number"
                             step="any"
@@ -357,41 +344,9 @@ onUnmounted(() => {
                         rows="2"
                     />
 
-                <!-- Attachment -->
+                <!-- Attachments -->
                 <div class="mt-4">
-                    <label class="block text-sm font-medium mb-2">{{ t('general.attachment') }}</label>
-                    <div class="flex items-center gap-4">
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            @change="handleFileChange"
-                            class="hidden"
-                            accept="image/*,.pdf,.doc,.docx"
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            @click="() => fileInput?.click()"
-                        >
-                            <Upload class="w-4 h-4 mr-2" />
-                            {{ t('general.upload_file') }}
-                        </Button>
-                        <span v-if="form.attachment" class="text-sm text-muted-foreground">
-                            {{ form.attachment.name }}
-                            <button
-                                type="button"
-                                @click="removeAttachment"
-                                class="ml-2 text-red-500 hover:text-red-700"
-                            >
-                                <Trash2 class="w-4 h-4 inline" />
-                            </button>
-                        </span>
-                    </div>
-                    <img
-                        v-if="attachmentPreview"
-                        :src="attachmentPreview"
-                        class="mt-2 max-h-32 rounded border"
-                    />
+                    <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
                 </div>
                 </div>
 
@@ -407,9 +362,9 @@ onUnmounted(() => {
                     <thead class="bg-muted/50">
                         <tr class="text-sm text-muted-foreground rtl:text-right ltr:text-left">
                             <th class="px-4 py-2 w-12">#</th>
-                            <th class="px-4 py-2 ">{{ t('account.account') }} *</th>
-                            <th class="px-4 py-2 ">{{ t('general.debit') }} *</th>
-                            <th class="px-4 py-2 ">{{ t('general.credit') }} *</th>
+                            <th class="px-4 py-2 ">{{ t('account.account') }} <span class="text-red-500">*</span></th>
+                            <th class="px-4 py-2 ">{{ t('general.debit') }} <span class="text-red-500">*</span></th>
+                            <th class="px-4 py-2 ">{{ t('general.credit') }} <span class="text-red-500">*</span></th>
                             <th class="px-4 py-2 ">{{ t('general.remark') }} </th>
                             <th class="px-4 py-2 ">{{ t('general.ledger') }} </th>
                             <th class="px-4 py-2 ">{{ t('sidebar.journal_entry.journal_class') }} </th>
@@ -486,7 +441,7 @@ onUnmounted(() => {
                                     :reduce="journalClass => journalClass"
                                     :error="form.errors?.[`line.${index}.journal_class_id`]"
                                     :searchable="true"
-                                    resource-type="journal_classes" 
+                                    resource-type="journal_classes"
                                     :search-fields="['name', 'code', 'description']"
                                 />
                             </td>
@@ -529,15 +484,15 @@ onUnmounted(() => {
             </div>
 
             <!-- Action Buttons -->
-            <SubmitButtons
+            <SubmitButtons module="journal_entry"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :cancel-label="t('general.cancel')"
-                :creating-label="t('general.creating', { name: t('expense.expense') })"
+                :creating-label="t('general.creating', { name: t('journal_entry.journal_entry') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
                 @create-and-new="handleSubmitAction(true)"
-                @cancel="() => $inertia.visit(route('expenses.index'))"
+                @cancel="() => $inertia.visit(route('journal-entries.index'))"
             />
         </form>
     </AppLayout>

@@ -19,6 +19,12 @@ class AttendanceDeviceFactory extends Factory
             'device_type' => AttendanceDeviceType::ZkTeco->value,
             'is_active' => true,
             'branch_id' => Branch::factory(),
+            // Read off the branch rather than built separately: a document's
+            // company and its branch's company have to agree, and the composite
+            // foreign key enforces that.
+            'company_id' => fn (array $attributes) => Branch::withoutGlobalScopes()
+                ->whereKey($attributes['branch_id'])
+                ->value('company_id'),
         ];
     }
 }

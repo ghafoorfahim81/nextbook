@@ -20,7 +20,7 @@ class BranchResource extends JsonResource
             'parent_id' => $this->parent_id,
             'parent' => $this->parent ? array_merge($this->parent->toArray(), ['name' => $this->parent->name]) : null,
             'location' => $this->location,
-            'sub_domain' => $this->sub_domain,
+            'company_id' => $this->company_id,
             'remark' => $this->remark,
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),

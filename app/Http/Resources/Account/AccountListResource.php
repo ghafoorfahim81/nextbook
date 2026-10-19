@@ -14,15 +14,26 @@ class AccountListResource extends JsonResource
      */
     public function toArray(Request $request): array
     { 
+        $locale = app()->getLocale();
         return [
             'id' => $this->id, 
             'english_name' => $this->name, 
             'local_name' => $this->local_name,
-            'number' => $this->number, 
-            'balance' => $this->statement['balance'], 
-            'account_type' => $this->accountType,   
-            'parent'    => $this->whenLoaded('parent', fn() => new AccountResource($this->parent)),  
-            'remark' => $this->remark,  
+            'name' => $locale === 'en' ? $this->name : $this->local_name,
+            'number' => $this->number,
+            'is_main' => (bool) $this->is_main,
+            'balance' => $this->statement['balance'],
+            'balance_amount' => $this->statement['balance_amount'],
+            'balance_nature' => $this->statement['balance_nature'],
+            'balance_with_nature' => $this->statement['balance_with_nature'],
+            'total_debit' => $this->statement['total_debit'],
+            'total_credit' => $this->statement['total_credit'],
+            'net_balance' => $this->statement['net_balance'],
+            'account_type' => $this->accountType,
+            'parent'    => $this->whenLoaded('parent', fn() => new AccountResource($this->parent)),
+            'remark' => $this->remark,
+            'activity_count' => isset($this->activity_count) ? (int) $this->activity_count : 0,
+            'last_activity_at' => $this->last_activity_at ?? null,
         ];
     }
 }

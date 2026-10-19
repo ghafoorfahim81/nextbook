@@ -3,9 +3,12 @@ import AppLayout from '@/Layouts/Layout.vue';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router, usePage } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import { Button } from '@/Components/ui/button';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
-import { ArrowLeft, SquarePen } from 'lucide-vue-next';
+import TimeSeriesChart from '@/Components/charts/TimeSeriesChart.vue';
+import { ArrowLeft, SquarePen, Power, PowerOff, Loader2 } from 'lucide-vue-next';
+import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue';
 import { useAuth } from '@/composables/useAuth';
 
 const { t } = useI18n();
@@ -29,6 +32,42 @@ const openings = computed(() => props.opening ? [props.opening?.data ?? props.op
 
 const activeMainTab = ref('general');
 
+const isActive = computed(() => accountData.value.is_active !== false);
+
+const confirmToggleOpen = ref(false);
+const togglingActive = ref(false);
+
+const requestToggleActive = () => {
+    if (!accountData.value.id || togglingActive.value) return;
+    confirmToggleOpen.value = true;
+};
+
+const performToggleActive = () => {
+    confirmToggleOpen.value = false;
+
+    const activating = !isActive.value;
+    togglingActive.value = true;
+    router.patch(route('chart-of-accounts.toggle-active', accountData.value.id), {}, {
+        preserveScroll: true,
+        // Skip the full-screen BookLoader — the button shows its own spinner.
+        headers: { 'X-DataTable-Refresh': '1' },
+        onSuccess: () => {
+            const flashError = page.props.flash?.error;
+            if (flashError) {
+                toast.error(t('general.status_change_blocked_title'), { description: flashError, class: 'bg-pink-600 text-white' });
+                return;
+            }
+            toast.success(t('general.success'), {
+                description: activating
+                    ? t('account.account_activated')
+                    : t('account.account_deactivated'),
+                class: 'bg-green-600',
+            });
+        },
+        onFinish: () => { togglingActive.value = false; },
+    });
+};
+
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
     return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -50,6 +89,7 @@ const transactionRows = computed(() => {
                 transaction_number: txn?.voucher_number,
                 description: line?.remark || txn?.remark || '-',
                 currency: txn?.currency?.code || '',
+                status: txn?.status || '',
                 remark: line?.remark ?? txn?.remark ?? '',
             };
         });
@@ -65,6 +105,9 @@ const transactionTableRows = computed(() =>
         date: row.date,
         reference_number: row.transaction_number,
         description: row.description || row.remark || '-',
+        status: row.status,
+        // Amounts stay in the currency they were posted in; `rate` is its own
+        // column, so multiplying here would report the base value twice over.
         debit: Number(row.type === 'debit' ? row.amount : 0),
         credit: Number(row.type === 'credit' ? row.amount : 0),
         currency: row.currency || '',
@@ -78,6 +121,7 @@ const transactionColumns = computed(() => [
     { key: 'description', label: t('general.description') },
     { key: 'currency', label: t('admin.currency.currency') },
     { key: 'rate', label: t('general.rate'), type: 'money', align: 'right' },
+    { key: 'status', label: t('general.status') },
     { key: 'credit', label: t('general.credit'), type: 'money', align: 'right' },
     { key: 'debit', label: t('general.debit'), type: 'money', align: 'right' },
 ]);
@@ -124,6 +168,33 @@ const convertedTotalDisplay = computed(() => (convertedTotal.value
     ? balanceDisplay({ balance: convertedTotal.value.amount, balance_nature: convertedTotal.value.balance_nature })
     : ''));
 
+const debitCreditSeries = computed(() => [
+    { key: 'debit', label: t('general.debit') },
+    { key: 'credit', label: t('general.credit') },
+]);
+
+// Daily totals across every currency the account moved in, same amounts the
+// transactions table shows (no cross-currency conversion).
+const debitCreditPoints = computed(() => {
+    const byDate = new Map();
+    transactionTableRows.value.forEach((row) => {
+        const date = row.date || '';
+        if (!byDate.has(date)) byDate.set(date, { date, values: { debit: 0, credit: 0 } });
+        const entry = byDate.get(date);
+        entry.values.debit += Number(row.debit || 0);
+        entry.values.credit += Number(row.credit || 0);
+    });
+    return Array.from(byDate.values()).sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+});
+
+const debitCreditSubtitle = computed(() => {
+    const points = debitCreditPoints.value;
+    if (!points.length) return '';
+    return points.length > 1
+        ? `${points[0].date} – ${points[points.length - 1].date}`
+        : points[0].date;
+});
+
 const exportUrl = computed(() =>
     accountData.value?.id
         ? route('chart-of-accounts.export-transactions', { chart_of_account: accountData.value.id })
@@ -135,21 +206,45 @@ const exportUrl = computed(() =>
     <AppLayout :title="`${t('account.account')} - ${accountData.local_name || accountData.name || ''}`">
         <div class="space-y-4">
             <!-- Back + edit -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="outline" size="sm" @click="router.visit(route('chart-of-accounts.index'))">
-                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {{ t('general.back') }}
-                </Button>
+            <div class="flex flex-wrap items-center justify-between gap-3"> 
                 <Button
-                    v-if="can('accounts.update') && accountData.id"
-                    variant="default"
-                    size="sm"
-                    class="gap-1.5 bg-primary text-primary-foreground"
-                    @click="router.visit(route('chart-of-accounts.edit', accountData.id))"
-                >
-                    <SquarePen class="h-4 w-4" />
-                    {{ t('datatable.edit') }}
-                </Button>
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 bg-background border-primary/60 hover:bg-primary/40 hover:text-balck"
+                @click="router.visit(route('chart-of-accounts.index'))"
+            >
+                <ArrowLeft class="h-4 w-4 rtl:rotate-180 text-primary" />
+                {{ t('general.back') }}
+            </Button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <Button
+                        v-if="can('accounts.update') && accountData.id"
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        :disabled="togglingActive"
+                        class="h-8 gap-1.5"
+                        :class="isActive
+                            ? 'border-amber-500/50 text-amber-600 hover:bg-amber-500/10 dark:text-amber-400'
+                            : 'border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400'"
+                        @click="requestToggleActive"
+                    >
+                        <Loader2 v-if="togglingActive" class="h-4 w-4 animate-spin" />
+                        <component :is="isActive ? PowerOff : Power" v-else class="h-4 w-4" />
+                        {{ isActive ? t('account.deactivate') : t('account.activate') }}
+                    </Button>
+                    <Button
+                        v-if="can('accounts.update') && accountData.id"
+                        variant="default"
+                        size="sm"
+                        class="gap-1.5 bg-primary text-primary-foreground"
+                        @click="router.visit(route('chart-of-accounts.edit', accountData.id))"
+                    >
+                        <SquarePen class="h-4 w-4" />
+                        {{ t('datatable.edit') }}
+                    </Button>
+                </div>
             </div>
 
             <!-- Tabs -->
@@ -167,8 +262,8 @@ const exportUrl = computed(() =>
             </div>
 
             <!-- General tab -->
-            <div v-if="activeMainTab === 'general'" class="space-y-4">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div v-if="activeMainTab === 'general'" class="space-y-3">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-2">
                     <!-- Avatar + summary -->
                     <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4 flex flex-col items-center gap-4">
                         <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-blue-500 flex items-center justify-center text-white text-xl font-bold">
@@ -177,7 +272,17 @@ const exportUrl = computed(() =>
                         <div class="text-center">
                             <div class="text-base font-semibold text-primary">{{ accountData.local_name }}</div>
                             <div class="text-xs text-muted-foreground mt-1">{{ accountData.number }}</div>
-                            <div class="mt-2 text-xs text-muted-foreground/80">{{ t('account.account') }}</div>
+                            <div class="mt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground/80">
+                                <span>{{ t('account.account') }}</span>
+                                <span
+                                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                    :class="isActive
+                                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                        : 'bg-muted text-muted-foreground'"
+                                >
+                                    {{ isActive ? t('general.active') : t('general.inactive') }}
+                                </span>
+                            </div>
                         </div>
                         <div class="w-full bg-background border border-border rounded-xl overflow-hidden mt-4 divide-y divide-border">
                             <div v-for="section in currencySections" :key="section.currency_id" class="flex flex-col divide-y divide-border">
@@ -233,11 +338,28 @@ const exportUrl = computed(() =>
                             <div><div class="text-xs text-muted-foreground">{{ t('account.account_type') }}</div><div class="font-medium">{{ accountData.account_type?.name || '' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.branch') }}</div><div class="font-medium">{{ accountData.branch?.name || '' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('account.parent') }}</div><div class="font-medium">{{ accountData.parent?.name || '' }}</div></div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.status') }}</div>
+                                <div class="font-medium" :class="isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'">
+                                    {{ isActive ? t('general.active') : t('general.inactive') }}
+                                </div>
+                            </div>
                             <div class="md:col-span-2"><div class="text-xs text-muted-foreground">{{ t('general.remark') }}</div><div class="font-medium">{{ accountData.remark }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.created_by') }}</div><div class="font-medium">{{ accountData.created_by?.name || '' }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.updated_by') }}</div><div class="font-medium">{{ accountData.updated_by?.name || '' }}</div></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Debit vs credit chart -->
+                <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4">
+                    <TimeSeriesChart
+                        :title="t('general.debit_vs_credit')"
+                        :subtitle="debitCreditSubtitle || t('general.posted_totals_over_time')"
+                        :series="debitCreditSeries"
+                        :points="debitCreditPoints"
+                        :format-value="formatAmount"
+                    />
                 </div>
 
                 <!-- Transactions table -->
@@ -284,5 +406,15 @@ const exportUrl = computed(() =>
                 </table>
             </div>
         </div>
+
+        <ConfirmDeleteDialog
+            :open="confirmToggleOpen"
+            :title="isActive ? t('account.deactivate_confirm_title') : t('account.activate_confirm_title')"
+            :description="isActive ? t('account.deactivate_confirm_desc') : t('account.activate_confirm_desc')"
+            :cancel-text="t('general.cancel')"
+            :continue-text="isActive ? t('account.deactivate') : t('account.activate')"
+            @update:open="value => (confirmToggleOpen = value)"
+            @confirm="performToggleActive"
+        />
     </AppLayout>
 </template>

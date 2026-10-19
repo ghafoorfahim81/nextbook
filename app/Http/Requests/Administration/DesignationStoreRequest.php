@@ -26,12 +26,12 @@ class DesignationStoreRequest extends FormRequest
         $id = $this->designationId();
 
         return [
-            'name' => ['required', 'string', 'max:150', $this->uniqueInBranch('designations', $id)],
-            'code' => ['nullable', 'string', 'max:50', $this->uniqueInBranch('designations', $id)],
+            'name' => ['required', 'string', 'max:150', $this->uniqueInCompany('designations', $id)],
+            'code' => ['nullable', 'string', 'max:50', $this->uniqueInCompany('designations', $id)],
             'department_id' => [
                 'nullable',
                 Rule::exists('departments', 'id')->where(fn ($query) => $query
-                    ->where('branch_id', $this->activeBranchId())
+                    ->where('company_id', $this->activeCompanyId())
                     ->whereNull('deleted_at')),
             ],
             'grade_level' => ['nullable', 'integer', 'min:0', 'max:100'],

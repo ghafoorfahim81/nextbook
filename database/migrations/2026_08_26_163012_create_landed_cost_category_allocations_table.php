@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('landed_cost_category_allocations', function (Blueprint $table): void {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('landed_cost_id')->index();
             $table->ulid('landed_cost_category_id')->index();
             $table->decimal('amount', 12, 2)->default(0);

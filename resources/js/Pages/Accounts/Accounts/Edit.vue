@@ -1,14 +1,16 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useForm, router, usePage } from '@inertiajs/vue3';
-import { useI18n } from 'vue-i18n'; 
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import { useLazyProps } from '@/composables/useLazyProps'
 import { computed } from 'vue';
+import { useSaveShortcut } from '@/composables/useSaveShortcut';
 const { t } = useI18n();
 
 const page = usePage();
@@ -17,7 +19,16 @@ const account = computed(() => page.props.account?.data || {})
 const accountTypes = computed(() => page.props.accountTypes?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const homeCurrency = computed(() => page.props.homeCurrency || {})
-useLazyProps(page.props, ['accounts']) 
+const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
+
+const transactionTypeOptions = computed(() => [
+    { id: 'debit', name: t('general.debit') },
+    { id: 'credit', name: t('general.credit') },
+])
+
+// Which side the existing opening sits on for this account.
+const openingLine = (account.value?.opening?.lines || []).find((line) => line.account_id === account.value.id)
+const openingType = openingLine && Number(openingLine.credit) > 0 ? 'credit' : 'debit'
 
 const form = useForm({
     ...account.value,
@@ -25,14 +36,15 @@ const form = useForm({
     account_type_id: account.value.account_type_id,
     parent_id: account.value.parent_id,
     selected_parent_account: account.value.parent,
-    selected_account_type: account.value.account_type,
+    // Taken from the typed list so it carries allows_opening.
+    selected_account_type: accountTypes.value.find((type) => type.id === account.value.account_type_id) || account.value.account_type,
     currency_id: account.value.currency_id,
     selected_currency: account.value?.opening?.currency,
     currency_id: account.value?.opening?.currency_id,
     rate: account.value?.opening?.rate??null,
     amount: account.value?.opening?.amount??0,
+    transaction_type: openingType,
 });
-
 
 const handleUpdate = () => {
     form.patch(route('chart-of-accounts.update', form.id), {
@@ -45,27 +57,50 @@ const handleUpdate = () => {
     });
 }
 
-
 const handleCancel = () => {
     router.visit(route('chart-of-accounts.index'));
 };
 
 const handleSelectChange = (field, value) => {
+    if(field === 'account_type_id') {
+        form.selected_parent_account = null;
+        form.parent_id = null;
+        form[field] = value.id;
+    }
     if(field === 'currency_id') {
         form.rate = value?.exchange_rate??0;
         form.currency_id = value?.id;
     }
     else{
-        form[field] = value.id;
+        if(value){
+            form[field] = value.id;
+        }
+        else{
+            form[field] = null;
+        }
     }
-
 };
+
+// Filtered parent accounts based on selected account type
+const filteredParentAccounts = computed(() => {
+    if (!form.selected_account_type || !form.selected_account_type.id) {
+        return [];
+    }
+    // Exclude the account itself from being its own parent
+    return accounts.value.filter(
+        acc => acc.account_type_id === form.selected_account_type.id && acc.id !== form.id
+    );
+});
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form });
 </script>
 
 <template>
     <AppLayout :title="t('account.chart_of_accounts')">
-        <FormPageToolbar back-route="chart-of-accounts.index" module="chart_of_accounts" />
-        <form @submit.prevent="handleUpdate">
+        <FormPageToolbar confirm-module="account" back-route="chart-of-accounts.index" module="chart_of_accounts" />
+        <form ref="saveFormRef" @submit.prevent="handleUpdate()">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.update', { name: t('account.account') }) }}
@@ -73,6 +108,7 @@ const handleSelectChange = (field, value) => {
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput
+                        is-required
                         :label="t('general.english_name')"
                         v-model="form.name"
                         :error="form.errors?.name"
@@ -85,6 +121,7 @@ const handleSelectChange = (field, value) => {
                         :placeholder="t('general.enter', { text: t('account.local_name') })"
                     />
                     <NextInput
+                        is-required
                         :label="t('general.number')"
                         v-model="form.number"
                         :error="form.errors?.number"
@@ -100,16 +137,19 @@ const handleSelectChange = (field, value) => {
                         id="account_type"
                         :reduce="accountType => accountType"
                         :floating-text="t('account.account_type')"
+                        is-required
                         :searchable="true"
                         resource-type="account-types"
                         :search-fields="['name']"
                         :error="form.errors.account_type_id"
-                    /> 
+                    />
                     <NextSelect
-                        :options="accounts"
+                        :loading="lazyLoading"
+                        :options="filteredParentAccounts"
                         v-model="form.selected_parent_account"
                         label-key="name"
                         value-key="id"
+                        :floating-text="t('account.parent_account')"
                         @update:modelValue="(value) => handleSelectChange('parent_id', value)"
                         id="parent_account"
                         :reduce="account => account"
@@ -122,15 +162,15 @@ const handleSelectChange = (field, value) => {
                         class="md:col-span-3"
                     />
                 </div>
-                <div class="md:col-span-3 mt-4" v-if="form?.selected_account_type?.slug=='cash-or-bank'">
+                <div class="md:col-span-3 mt-4" v-if="form?.selected_account_type?.allows_opening">
                     <div class="pt-2">
                         <span class="font-bold">{{ t('item.opening') }}  </span>
                         <div class="mt-3">
-                            <div class="grid grid-cols-3 gap-2">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
                                 <NextSelect
                                 :options="currencies"
                                 v-model="form.selected_currency"
-                                label-key="code"
+                                label-key="display_name"
                                 value-key="id"
                                 @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                 :reduce="currency => currency"
@@ -140,8 +180,19 @@ const handleSelectChange = (field, value) => {
                                 resource-type="currencies"
                                 :search-fields="['name', 'code', 'symbol']"
                                  />
-                                <NextInput placeholder="Rate" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
-                                <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+                                <NextInput :placeholder="t('general.rate')" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                                <NextSelect
+                                :options="transactionTypeOptions"
+                                v-model="form.transaction_type"
+                                label-key="name"
+                                value-key="id"
+                                :reduce="(o) => o?.id"
+                                :clearable="false"
+                                :quick-create="false"
+                                :floating-text="t('general.type')"
+                                :error="form.errors?.transaction_type"
+                                />
+                                <NextInput :placeholder="t('general.amount')" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                             </div>
                         </div>
                     </div>

@@ -8,6 +8,7 @@ use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use App\Support\DocumentType;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -140,11 +141,11 @@ class LedgerStatementService
         return $this->baseQuery($ledger)
             ->distinct()
             ->orderBy('c.code')
-            ->get(['c.id as id', 'c.code as code', 'c.name as name', 'c.symbol as symbol'])
+            ->get(['c.id as id', 'c.code as code', 'c.name as name', 'c.local_name as local_name', 'c.symbol as symbol'])
             ->map(fn ($row) => [
                 'id' => $row->id,
                 'code' => $row->code,
-                'name' => $row->name,
+                'name' => app()->getLocale() === 'en' ? $row->name : ($row->local_name ?? $row->name),
                 'symbol' => $row->symbol,
             ])
             ->all();
@@ -174,7 +175,9 @@ class LedgerStatementService
         return DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($ledger) {
                 $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $ledger->branch_id)
+                    // A ledger is company master data: one record and one
+                    // balance across every branch the party deals with.
+                    ->where('t.company_id', '=', $ledger->company_id)
                     ->whereIn('t.status', [
                         TransactionStatus::POSTED->value,
                         TransactionStatus::REVERSED->value,
@@ -482,19 +485,10 @@ class LedgerStatementService
         ];
     }
 
+    /** Named and translated in one place, so every screen agrees. */
     private function referenceLabel(?string $referenceType): string
     {
-        if (! $referenceType) {
-            return '-';
-        }
-
-        // reference_type is written inconsistently across the codebase: some
-        // writers store a FQCN, others a bare slug. Normalise both.
-        if (str_contains($referenceType, '\\')) {
-            return str(class_basename($referenceType))->headline()->toString();
-        }
-
-        return str($referenceType)->headline()->toString();
+        return $referenceType ? DocumentType::label($referenceType) : '-';
     }
 
     private function formatBalance(mixed $value): string

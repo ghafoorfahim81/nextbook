@@ -4,12 +4,17 @@
     "save": "Save Changes",
     "saved": "Preferences Saved",
     "saved_description": "Your preferences have been updated successfully",
+    "save_error": "Could not save preferences",
+    "autosave": {
+        "pending": "Unsaved changes…",
+        "saved": "All changes saved"
+    },
     "reset": "Reset",
     "reset_success": "Preferences reset to defaults",
     "confirm_reset": "Are you sure you want to reset these preferences to defaults?",
     "import": "Import",
     "export": "Export",
-        "import_success": "Preferences imported successfully",
+    "import_success": "Preferences imported successfully",
     "import_error": "Failed to import preferences. Please check the file format.",
     "preferences_saved": "Preferences saved successfully",
     "preferences_reset": "Preferences reset to defaults",
@@ -18,9 +23,11 @@
     "tabs": {
         "appearance": "Appearance",
         "item_management": "Item Management",
+        "stock_adjustment": "Stock Adjustment",
         "sale": "Sale",
         "purchase": "Purchase",
         "receipt_payment": "Receipt & Payment",
+        "transaction": "Transaction",
         "tax_currency": "Tax & Currency",
         "notifications": "Notifications",
         "security": "Security",
@@ -169,6 +176,10 @@
         "color_palette": "Color palette",
         "color_mode": "Color mode",
         "accent_color": "Accent color",
+        "surface_style": "Surface style",
+        "surface_solid": "Solid",
+        "surface_glass": "Liquid glass",
+        "surface_style_hint": "Liquid glass makes panels, menus and the sidebar translucent over a soft background.",
         "light": "Light",
         "dark": "Dark",
         "system": "System",
@@ -201,6 +212,8 @@
         "olive": "Olive",
         "decimal_places": "Decimal Places",
         "sidebar_menus": "Sidebar Menus",
+        "sidebar_menus_select_all": "Select all",
+        "sidebar_menus_deselect_all": "Deselect all",
         "sidebar_font_size": "Sidebar Font Size",
         "heading_font_size": "Heading Font Size",
         "table_header_font_size": "Table Header Font Size",
@@ -213,7 +226,8 @@
         "records_per_page": "Records Per Page",
         "balance_nature_format": "Balance Nature Format",
         "without_nature": "Without Nature(+/-)",
-        "with_nature": "With Nature(Debit/Credit)"
+        "with_nature": "With Nature(Debit/Credit)",
+        "show_field_hints": "Show field hints"
     },
     "item_management": {
         "description": "Configure visible fields in item forms",
@@ -223,8 +237,6 @@
         "code": "Code",
         "generic_name": "Generic Name",
         "packing": "Packing",
-        "colors": "Colors",
-        "size": "Size",
         "brand": "Brand",
         "minimum_stock": "Minimum Stock",
         "maximum_stock": "Maximum Stock",
@@ -255,8 +267,7 @@
         "discount": "Discount",
         "tax": "Tax",
         "free": "Free",
-        "colors": "Colors",
-        "size": "Size",
+        "variant": "Variant",
         "brand": "Brand",
         "minimum_stock": "Minimum Stock",
         "maximum_stock": "Maximum Stock",
@@ -266,7 +277,8 @@
         "item_type": "Item Type",
         "sku": "Stock keeping unit",
         "is_batch_tracked": "Batch Tracked",
-        "is_expiry_tracked": "Expiry Tracked"
+        "is_expiry_tracked": "Expiry Tracked",
+        "accounts": "Accounting fields (asset, income, cost)"
     },
     "sale": {
         "description": "Configure sale transaction preferences",
@@ -304,7 +316,10 @@
         "tax_percentage": "Tax Percentage",
         "auto_calculate_tax": "Auto Calculate Tax",
         "show_ledger_transactions": "Show Ledger Latest Transactions",
-        "show_item_transactions": "Show Item Latest Transactions"
+        "show_item_transactions": "Show Item Latest Transactions",
+        "show_attachments": "Show Attachments Field",
+        "enforce_sale_stock_reservation": "Block selling stock reserved by drafts",
+        "enforce_sale_stock_reservation_help": "When enabled, stock reserved by unposted draft sales is treated as unavailable and a sale cannot be posted if another draft already holds the stock. When disabled, reservations are shown for information only and do not block posting."
     },
     "purchase": {
         "description": "Configure purchase transaction preferences",
@@ -324,7 +339,44 @@
         "reminder_days": "Reminder Days",
         "late_fee_percentage": "Late Fee %",
         "show_ledger_transactions": "Show Ledger Latest Transactions",
-        "show_item_transactions": "Show Item Latest Transactions"
+        "show_item_transactions": "Show Item Latest Transactions",
+        "show_attachments": "Show Attachments Field"
+    },
+    "transaction": {
+        "description": "Control whether each document posts accounting and stock entries immediately or is saved as a draft.",
+        "post_immediately": "Post Immediately",
+        "post_immediately_help": "Uncheck to save as Draft for review before posting",
+        "select_all": "Select all – Post Immediately",
+        "deselect_all": "Deselect all – Save as Draft",
+        "modules": {
+            "sale": "Sale",
+            "sale_order": "Sale Order",
+            "purchase": "Purchase",
+            "expense": "Expense",
+            "journal_entry": "Journal Entry",
+            "receipt": "Receipt",
+            "payment": "Payment",
+            "account_transfer": "Account Transfer",
+            "item_transfer": "Item Transfer",
+            "stock_adjustment": "Stock Adjustment",
+            "drawing": "Drawing",
+            "ledger": "Ledger",
+            "account": "Account",
+            "owner": "Owner"
+        },
+        "confirm_before_save_help": "Show a confirmation dialog before saving in these modules."
+    },
+    "stock_adjustment": {
+        "title": "Stock Adjustment",
+        "description": "Configure stock adjustment reference numbering, cost entry and offset accounts.",
+        "reference_prefix": "Reference Prefix",
+        "allow_in_cost_override": "Allow user-entered cost for stock-in adjustments",
+        "reason_accounts": "Reason → Offset Account Mapping",
+        "reason_accounts_help": "Choose which expense account each adjustment reason posts against.",
+        "accounts": {
+            "shrinkage": "9040 Shrinkage & Wastage",
+            "adjustments": "9050 Inventory Adjustments"
+        }
     },
     "receipt_payment": {
         "description": "Configure receipt and payment preferences",
@@ -348,7 +400,7 @@
         "spec_text": "Specification Text"
     },
     "notifications": {
-                "description": "Configure notification preferences",
+        "description": "Configure notification preferences",
         "email_notifications": "Email Notifications",
         "email_notifications_desc": "Receive important updates via email",
         "low_balance_alert": "Low Balance Alert",
@@ -372,7 +424,42 @@
         "daily_summary_report": "Daily Summary Report",
         "daily_summary_report_desc": "Receive daily transaction summary",
         "weekly_financial_summary": "Weekly Financial Summary",
-        "weekly_financial_summary_desc": "Receive weekly financial overview"
+        "weekly_financial_summary_desc": "Receive weekly financial overview",
+        "sound": {
+            "title": "Sounds",
+            "description": "Choose which sound plays for notifications, warnings, successful saves and sign-in, or upload your own",
+            "categories": {
+                "notification": "Notification Sound",
+                "notification_desc": "Plays when a new notification arrives",
+                "warning": "Warning Sound",
+                "warning_desc": "Plays for warning alerts",
+                "login": "Sign-in Sound",
+                "login_desc": "Plays after you sign in successfully",
+                "success": "Success Sound",
+                "success_desc": "Plays when something you saved goes through"
+            },
+            "choose_sound": "Choose a sound",
+            "preview": "Preview",
+            "upload": "Upload",
+            "uploading": "Uploading...",
+            "remove_custom": "Remove upload",
+            "custom_option": "Custom (your upload)",
+            "upload_error": "Couldn't upload that sound. Use an MP3, WAV or OGG file under 2 MB.",
+            "options": {
+                "notification1": "Chime",
+                "notification2": "Ping",
+                "notification3": "Bell",
+                "warning1": "Alert",
+                "windowsxp_warning2": "Classic Warning",
+                "login1": "Welcome",
+                "login2": "Greeting",
+                "glass-breaking-warning": "Shattered Glass",
+                "filling-your-inbox-success": "Inbox Chime",
+                "freesound_community-success-1-6297": "Bright Success",
+                "universfield-level-up-success-03-199576": "Level Up",
+                "universfield-success-notification-037-485898": "Gentle Success"
+            }
+        }
     },
     "security": {
         "description": "Configure security and access preferences",
@@ -411,7 +498,7 @@
         "saturday": "Saturday"
     },
     "display": {
-            "description": "Configure display and UI preferences",
+        "description": "Configure display and UI preferences",
         "theme": "Color mode",
         "light": "Light",
         "dark": "Dark",

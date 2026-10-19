@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import { useToggleStatus } from '@/composables/useToggleStatus';
 import CreateEditModal from '@/Pages/Administration/Categories/CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
 const props = defineProps({
@@ -13,11 +14,12 @@ const editingCategory = ref(null)
 const { t } = useI18n()
 const columns = computed(() => [
     { key: 'name', label: t('general.name'),sortable: true },
+    { key: 'local_name', label: t('admin.shared.local_name'), sortable: true },
     {
         key: 'parent.name',
         label: t('admin.category.parent'),
         sortable: true,
-        render: (row) => row.parent?.name,
+        render: (row) => row.parent?.localized_name ?? row.parent?.name,
     },
     {
         key: 'is_active',
@@ -48,8 +50,18 @@ const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('categories.destroy', id, {
         title: t('general.delete', { name: t('admin.category.category') }),
-        description: t('general.delete_description', { name: t('admin.category.category') }),
+        name: t('admin.category.category'),
         successMessage: t('general.delete_success', { name: t('admin.category.category') }),
+    })
+}
+
+// Deactivating is how a record that other rows depend on gets retired —
+// the delete guard refuses those, and they must stop appearing in pickers.
+const { toggleStatus } = useToggleStatus()
+const toggleItemStatus = (item) => {
+    toggleStatus('categories.toggle-status', item.id, {
+        isActive: item.is_active !== false,
+        name: item.name || t('admin.category.category'),
     })
 }
 
@@ -73,6 +85,8 @@ const deleteItem = (id) => {
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
+            @toggle-status="toggleItemStatus"
+            :has-status-toggle="true"
             @add="isDialogOpen = true"
             :title="t('admin.category.categories')"
             :url="`categories.index`"

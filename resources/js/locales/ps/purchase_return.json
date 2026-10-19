@@ -1,0 +1,23 @@
+{
+    "purchase_return": "د پیرودنې بیرته راستنیدل",
+    "purchase_returns": "د پیرودنې بیرته راستنیدنې",
+    "purchase_return_details": "د پیرودنې بیرته راستنیدو توضیحات",
+    "create_return": "بیرته راستنیدل جوړول",
+    "select_purchase": "پیرودنه غوره کړئ",
+    "search_purchase_placeholder": "د پیرودنې شمېره یا عرضه کوونکي په اساس لټون",
+    "returnable_items": "د بیرته راستنیدو وړ توکي",
+    "original_quantity": "اصلي مقدار",
+    "returned_quantity": "مخکې راستانه شوی",
+    "remaining_quantity": "پاتې",
+    "quantity_to_return": "د راستنیدو مقدار",
+    "total_debit_to_supplier": "عرضه کوونکي ته ټول پور",
+    "reason": "دلیل",
+    "post_purchase_return": "د پیرودنې بیرته راستنیدل ثبت کول",
+    "reverse_purchase_return": "د پیرودنې بیرته راستنیدل بیرته راګرځول",
+    "post_purchase_return_description": "دا به د محاسبې او موجودۍ ننوتلې ثبت کړي. ثبت شوي اسناد نشي سمول یا حذف کیدای.",
+    "reverse_purchase_return_description": "دا یو مقابل تراکنش او مقابل موجودۍ حرکت جوړوي، بیا دا بیرته راستنیدل بیرته راګرځول شوی په توګه نښه کوي.",
+    "no_item_warning": "توکی نشته",
+    "no_item_warning_description": "مهرباني وکړئ لږترلږه یو توکی د صفر څخه زیات د راستنیدو مقدار سره غوره کړئ",
+    "linked_purchase": "پیرودنه",
+    "no_purchase_selected": "یو ثبت شوی پیرودنه غوره کړئ ترڅو د هغې د بیرته راستنیدو وړ توکي بارول شي"
+}

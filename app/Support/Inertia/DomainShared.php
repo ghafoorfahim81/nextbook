@@ -29,17 +29,19 @@ final class DomainShared
                 CacheKey::forCompanyBranchLocale($request, 'accounts'),
                 $cacheDuration,
                 fn() => AccountResource::collection(
-                    // accountType comes back on every row (AccountResource exposes it,
-                    // and the receipt/payment forms filter on its slug), so load it
-                    // once rather than per account.
-                    Account::query()->with('accountType')->orderBy('id')->limit(1000)->get()
+                    Account::query()
+                        ->with(['accountType', 'branch'])
+                        ->withStatementTotals()
+                        ->orderBy('id')
+                        ->limit(1000)
+                        ->get()
                 )
             )),
             'accountTypes' => Inertia::lazy(fn() => Cache::remember(
                 CacheKey::forCompanyBranchLocale($request, 'account_types'),
                 $cacheDuration,
                 fn() => AccountTypeResource::collection(
-                    AccountType::query()->orderBy('id')->limit(10)->get()
+                    AccountType::query()->orderBy('slug','asc')->limit(10)->get()
                 )
             )),
             'ledgers' => Inertia::lazy(fn() => Cache::remember(
@@ -52,12 +54,13 @@ final class DomainShared
                             'name',
                             'code',
                             'type',
+                            'counterpart_ledger_id',
                             'email',
                             'phone_no',
                             'address',
                             'currency_id',
                             'is_active',
-                            'branch_id',
+                            'company_id',
                         ])
                         ->withStatementTotals()
                         ->where('is_active', true)

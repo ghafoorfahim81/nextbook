@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "laravel-serve",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "127.0.0.1:8000", "-t", "public", "C:/Users/Fahim-Pc/AppData/Local/Temp/claude/E--nextbook/f78cdc51-a625-4236-9423-1d20e28e0e21/scratchpad/server-router.php"],
+      "port": 8000
+    }
+  ]
+}

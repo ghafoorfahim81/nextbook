@@ -49,15 +49,19 @@ class HrReminderService
                     $result = $this->notifications->notifyUser(
                         user: $user,
                         type: 'contract_expiring',
-                        title: __('hr.notifications.contract_expiring_title'),
-                        message: __('hr.notifications.contract_expiring_body', [
+                        title: 'hr.notifications.contract_expiring_title',
+                        message: 'hr.notifications.contract_expiring_body',
+                        params: [
                             'employee' => $contract->employee?->full_name ?? '',
                             'number' => $contract->contract_number,
                             'date' => $this->dates->toDisplay($contract->end_date),
-                        ]),
+                        ],
                         data: [
                             'employee_id' => $contract->employee_id,
+                            'employee' => $contract->employee?->full_name ?? '',
                             'contract_id' => $contract->id,
+                            'number' => $contract->contract_number,
+                            'date' => $this->dates->toDisplay($contract->end_date),
                             'branch_id' => $branchId,
                             'days_until_expiry' => $contract->daysUntilExpiry($asOf),
                         ],
@@ -103,15 +107,19 @@ class HrReminderService
                     $result = $this->notifications->notifyUser(
                         user: $user,
                         type: 'document_expiring',
-                        title: __('hr.notifications.document_expiring_title'),
-                        message: __('hr.notifications.document_expiring_body', [
+                        title: 'hr.notifications.document_expiring_title',
+                        message: 'hr.notifications.document_expiring_body',
+                        params: [
                             'employee' => $document->employee?->full_name ?? '',
                             'type' => $document->document_type?->getLabel() ?? '',
                             'date' => $this->dates->toDisplay($document->expiry_date),
-                        ]),
+                        ],
                         data: [
                             'employee_id' => $document->employee_id,
+                            'employee' => $document->employee?->full_name ?? '',
                             'document_id' => $document->id,
+                            'document_type' => $document->document_type?->getLabel() ?? '',
+                            'date' => $this->dates->toDisplay($document->expiry_date),
                             'branch_id' => $branchId,
                             'days_until_expiry' => $document->daysUntilExpiry($asOf),
                         ],

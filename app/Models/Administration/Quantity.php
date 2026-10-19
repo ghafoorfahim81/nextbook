@@ -2,7 +2,7 @@
 
 namespace App\Models\Administration;
 
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
-use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 class Quantity extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, CompanySpecific, HasCompany, HasDependencyCheck, SoftDeletes;
 
 
     /**
@@ -41,7 +41,7 @@ class Quantity extends Model
         'unit',
         'symbol',
         'slug',
-        'branch_id',
+        'company_id',
         'is_main',
         'is_active',
         'created_by',
@@ -57,7 +57,7 @@ class Quantity extends Model
 
     protected $casts = [
         'id' => 'string',
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'slug' => 'string',
         'is_main' => 'boolean',
         'is_active' => 'boolean',
@@ -115,9 +115,9 @@ class Quantity extends Model
             ],
         ];
     }
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Company::class);
     }
 
     public function measures(): HasMany

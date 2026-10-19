@@ -78,7 +78,7 @@ class BranchController extends Controller
 
         // Check for dependencies before deletion
         if (!$branch->canBeDeleted()) {
-            $message = $branch->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            $message = $branch->getDependencyMessage() ?? __('messages.dependency.cannot_delete_generic');
             return redirect()->route('branches.index')->with('error', $message);
         }
 

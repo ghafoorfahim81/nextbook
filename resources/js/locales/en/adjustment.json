@@ -1,1 +1,41 @@
-﻿{}
+{
+  "stock_adjustment": "Stock Adjustment",
+  "stock_adjustments": "Stock Adjustments",
+  "adjustment_details": "Adjustment Details",
+  "adjustment_items": "Adjustment Items",
+  "reference": "Reference",
+  "type": "Type",
+  "reason": "Reason",
+  "warehouse": "Warehouse",
+  "notes": "Notes",
+  "unit_cost": "Unit Cost",
+  "total_cost": "Total Cost",
+  "stock_decreases": "Stock decreases",
+  "stock_increases": "Stock increases",
+  "cost_from_costing_method": "Cost is calculated automatically from the costing method (FIFO/LIFO/Average)",
+  "quantity_exceeds_on_hand": "Quantity exceeds the on-hand stock for one or more items.",
+  "only_draft_can_be_edited": "Only draft adjustments can be edited.",
+  "only_draft_can_be_deleted": "Only draft adjustments can be deleted.",
+  "posted_successfully": "Stock adjustment posted successfully.",
+  "reversed_successfully": "Stock adjustment reversed successfully.",
+  "direction": {
+    "in": "In",
+    "out": "Out"
+  },
+  "reasons": {
+    "damage": "Damage / Breakage",
+    "expiry": "Expiry",
+    "theft": "Theft / Shrinkage",
+    "loss": "Loss / Missing",
+    "count_down": "Stock Count Correction (down)",
+    "internal_use": "Internal Use / Consumption",
+    "sample": "Sample / Promotion / Giveaway",
+    "wastage": "Wastage / Scrap",
+    "quality_rejection": "Quality Rejection",
+    "count_up": "Stock Count Correction (up)",
+    "found": "Found / Recovered",
+    "opening_stock": "Opening Stock Entry",
+    "production_output": "Production / Assembly Output",
+    "surplus": "Surplus / Overage"
+  }
+}

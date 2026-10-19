@@ -3,7 +3,9 @@
 namespace App\Models\Inventory;
 
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -16,13 +18,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LandedCostItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, SoftDeletes;
 
     protected $table = 'landed_cost_items';
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'landed_cost_id',
         'purchase_item_id',
         'item_id',

@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
@@ -10,6 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Input } from "@/Components/ui/input";
 import { useLazyProps } from '@/composables/useLazyProps'
+import { useSaveShortcut } from '@/composables/useSaveShortcut'
 const { t } = useI18n();
 const { toast } = useToast();
 
@@ -23,7 +25,7 @@ const props = defineProps({
     branches: {type: Object, required: true},
 });
 
-useLazyProps(props, ['roles'])
+const { loading: lazyLoading } = useLazyProps(props, ['roles'])
 
 console.log(props.branches);
 const form = useForm({
@@ -101,12 +103,16 @@ const handleSubmit = (createAndNew = false) => {
 const goBack = () => {
     $inertia.visit(route('users.index'));
 };
+
+useFormGuard(form)
+
+const saveFormRef = useSaveShortcut({ form })
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('user_mangements.user') })">
         <FormPageToolbar back-route="users.index" module="user_management" />
-        <form @submit.prevent="handleSubmitAction(false)">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border p-4 shadow-sm   border-gray-200 relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('user_mangements.user') }) }}
@@ -114,12 +120,14 @@ const goBack = () => {
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <!-- Basic Information -->
                     <NextInput
+                        is-required
                         :label="t('general.name')"
                         :placeholder="t('general.enter', { text: t('general.name') })"
                         v-model="form.name"
                         :error="form.errors?.name"
                     />
                     <NextInput
+                        is-required
                         :label="t('general.email')"
                         type="email"
                         :placeholder="t('general.enter', { text: t('general.email') })"
@@ -127,6 +135,7 @@ const goBack = () => {
                         :error="form.errors?.email"
                     />
                     <NextInput
+                        is-required
                         :label="t('auth.password')"
                         type="password"
                         :placeholder="t('general.enter', { text: t('auth.password') })"
@@ -144,6 +153,7 @@ const goBack = () => {
                     <!-- Roles -->
                     <NextSelect
                         v-model="form.roles"
+                        :loading="lazyLoading"
                         :options="roles"
                         label-key="name"
                         value-key="id"

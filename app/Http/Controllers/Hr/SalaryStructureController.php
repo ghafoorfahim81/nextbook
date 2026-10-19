@@ -43,8 +43,8 @@ class SalaryStructureController extends Controller
         $structures = SalaryStructure::query()
             ->with([
                 'employee:id,full_name,code,branch_id',
-                'designation:id,name,branch_id',
-                'department:id,name,branch_id',
+                'designation:id,name,company_id',
+                'department:id,name,company_id',
                 'currency:id,code',
                 'createdBy:id,name',
             ])
@@ -81,7 +81,7 @@ class SalaryStructureController extends Controller
         $salaryStructure->load([
             'employee:id,full_name,code,branch_id',
             'currency:id,code',
-            'lines.component:id,name,code,component_type,branch_id',
+            'lines.component:id,name,code,component_type,company_id',
         ]);
 
         return inertia('Hr/SalaryStructures/Edit', [
@@ -97,10 +97,10 @@ class SalaryStructureController extends Controller
     {
         $salaryStructure->load([
             'employee:id,full_name,code,branch_id',
-            'designation:id,name,branch_id',
-            'department:id,name,branch_id',
+            'designation:id,name,company_id',
+            'department:id,name,company_id',
             'currency:id,code',
-            'lines.component:id,name,code,component_type,branch_id',
+            'lines.component:id,name,code,component_type,company_id',
             'createdBy:id,name',
         ]);
 
@@ -206,7 +206,7 @@ class SalaryStructureController extends Controller
                 'amount' => $line['amount'] ?? $component?->amount,
                 'percentage' => $line['percentage'] ?? $component?->percentage,
                 'sequence' => $line['sequence'] ?? $index + 1,
-                'branch_id' => $structure->branch_id,
+                'company_id' => $structure->company_id,
             ]);
         }
     }
@@ -216,7 +216,7 @@ class SalaryStructureController extends Controller
         return [
             'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
             'designations' => Designation::query()->orderBy('name')->get(['id', 'name']),
-            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
+            'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name', 'local_name']),
             'payFrequencies' => array_map(
                 fn (PayFrequency $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                 PayFrequency::cases()

@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,12 +16,13 @@ use Illuminate\Support\Facades\Storage;
 
 class Attachment extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasBranch, BranchSpecific, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, HasCompany, HasBranch, CompanySpecific, BranchSpecific, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
         'attachable_type',
         'attachable_id',
         'disk',

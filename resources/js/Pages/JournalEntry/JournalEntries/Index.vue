@@ -1,10 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
-import JournalEntryShowDialog from '@/Pages/JournalEntry/JournalEntries/ShowDialog.vue'
 import { router } from '@inertiajs/vue3'
 const { t } = useI18n();
 
@@ -15,8 +14,6 @@ const props = defineProps({
 })
 
 const { deleteResource } = useDeleteResource()
-const showDialog = ref(false)
-const selectedJournalEntryId = ref(null)
 
 const editItem = (item) => {
     router.visit(route('journal-entries.edit', item.id));
@@ -28,8 +25,7 @@ const deleteItem = (id) => {
     })
 }
 const showItem = (id) => {
-    selectedJournalEntryId.value = id
-    showDialog.value = true
+    router.visit(route('journal-entries.show', id))
 }
 
 const columns = computed(() => ([
@@ -37,7 +33,7 @@ const columns = computed(() => ([
     { key: 'remark', label: t('general.remark'), sortable: true },
     { key: 'amount', label: t('general.amount'), sortable: true },
     { key: 'date', label: t('general.date'), sortable: true },
-    { key: 'status', label: t('general.status'), sortable: true },
+    { key: 'status_label', label: t('general.status') },
     { key: 'actions', label: t('general.actions') },
 ]))
 
@@ -47,6 +43,18 @@ const filterFields = computed(() => ([
         label: t('admin.currency.currency'),
         type: 'select',
         options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+    },
+    {
+        key: 'transaction.lines.journal_class_id',
+        label: t('sidebar.journal_entry.journal_class'),
+        type: 'select',
+        options: (props.filterOptions?.journalClasses || []).map((c) => ({ id: c.id, name: c.name })),
+    },
+    {
+        key: 'transaction.lines.ledger_id',
+        label: t('general.ledger'),
+        type: 'select',
+        options: (props.filterOptions?.ledgers || []).map((l) => ({ id: l.id, name: l.name })),
     },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {
@@ -77,11 +85,6 @@ const filterFields = computed(() => ([
             :addAction="'redirect'"
             :addRoute="'journal-entries.create'"
             exportRoute="journal-entries.export"
-        />
-        <JournalEntryShowDialog
-            :open="showDialog"
-            :journal-entry-id="selectedJournalEntryId"
-            @update:open="showDialog = $event"
         />
     </AppLayout>
 </template>

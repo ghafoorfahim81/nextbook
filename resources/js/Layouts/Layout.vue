@@ -88,7 +88,10 @@ import {
     SlidersHorizontal,
     Tag,
     Trash2,
+    Settings2,
     History,
+    Rocket,
+    ChartNoAxesCombined
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -101,9 +104,12 @@ import { usePage, Link, router } from '@inertiajs/vue3'
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 // @ts-ignore - Vue SFC default export shim
 import Sonner from '@/Components/ui/sonner/Sonner.vue'
+// @ts-ignore - Vue SFC default export shim
+import PageLoadingOverlay from '@/Components/next/PageLoadingOverlay.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon, Home } from 'lucide-vue-next'
 // @ts-ignore - Vue SFC default export shim
 import NotificationDropdown from '@/Components/notifications/NotificationDropdown.vue'
+import ManualWelcomeDialog from '@/Components/Onboarding/ManualWelcomeDialog.vue'
 import GlobalSearch from '@/Components/GlobalSearch.vue'
 import QuickLinks from '@/Components/next/QuickLinks.vue'
 const { t } = useI18n()
@@ -209,7 +215,10 @@ const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
 const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 
 // Allow parent pages to control initial sidebar state
-const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean }>(), { sidebarCollapsed: false })
+const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean; flush?: boolean }>(), {
+    sidebarCollapsed: false,
+    flush: false,
+})
 
 const { can, isSuperAdmin } = useAuth()
 
@@ -400,11 +409,16 @@ function openFlyout(key: string) {
     flyoutOpenKey.value = key
 }
 
+// The flyout stays open for as long as the pointer is over the icon or the
+// panel. Leaving either only starts a short grace period, long enough to cross
+// the gap between them; entering either one cancels it.
+const FLYOUT_CLOSE_DELAY_MS = 250
+
 function scheduleCloseFlyout(key: string) {
     clearFlyoutCloseTimer()
     flyoutCloseTimer = window.setTimeout(() => {
         if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
-    }, 2000)
+    }, FLYOUT_CLOSE_DELAY_MS)
 }
 
 function closeFlyout() {
@@ -484,7 +498,7 @@ const navMain = computed(() => [
         key: 'dashboard',
         title: t('sidebar.main.dashboard'),
         url: '/dashboard',
-        icon: HousePlug,
+        icon: ChartNoAxesCombined,
     },
     {
         key: 'account',
@@ -507,11 +521,13 @@ const navMain = computed(() => [
         icon: Database,
         items: [
             { title: t('sidebar.inventory.item'), url: '/items', permission: 'items.view_any' },
+            { title: t('discount_rule.discount_rules'), url: '/discount-rules', permission: 'discount_rules.view_any' },
             { title: t('sidebar.inventory.landed_costs'), url: '/landed-costs', permission: 'landed_costs.view_any' },
             { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry', permission: ['items.view_any', 'items.create'] },
             { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening', permission: ['items.view_any', 'items.create'] },
             { title: t('sidebar.inventory.barcode_print'), url: '/item-barcode-print', permission: 'items.view_any' },
             { title: t('sidebar.inventory.item_transfer'), url: '/item-transfers', permission: 'item_transfers.view_any' },
+            { title: t('sidebar.inventory.stock_adjustment'), url: '/stock-adjustments', permission: 'stock_adjustment.view_any' },
             { title: t('sidebar.inventory.pricing'), url: '/item-pricing', permission: 'items.view_any' },
         ],
     },
@@ -616,7 +632,9 @@ const navMain = computed(() => [
         icon: ShoppingBasket,
         items: [
             { title: t('sidebar.purchase.purchase'), url: '/purchases', permission: 'purchases.view_any' },
-            // { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
+            { title: t('sidebar.purchase.purchase_order'), url: '/purchase-orders', permission: 'purchase_orders.view_any' },
+            { title: t('sidebar.purchase.purchase_quotation'), url: '/purchase-quotations', permission: 'purchase_quotations.view_any' },
+            { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns', permission: 'purchase_returns.view_any' },
         ],
     },
     {
@@ -626,23 +644,22 @@ const navMain = computed(() => [
         icon: ShoppingCart,
         items: [
             { title: t('sidebar.sale.sale'), url: '/sales', permission: 'sales.view_any' },
-            // { title: t('sidebar.sale.sale_return'), url: '/sale-returns' },
+            { title: t('sidebar.sale.sale_order'), url: '/sale-orders', permission: 'sale_orders.view_any' },
+            { title: t('sidebar.sale.sale_quotation'), url: '/sale-quotations', permission: 'sale_quotations.view_any' },
+            { title: t('sidebar.sale.sale_return'), url: '/sale-returns', permission: 'sale_returns.view_any' },
         ],
     },
 
     {
-        key: 'receipt',
-        title: t('sidebar.main.receipt'),
-        url: '/receipts',
+        key: 'cash_transactions',
+        title: t('sidebar.main.cash_transactions'),
+        url: '#',
         icon: ReceiptIcon,
-        permission: 'receipts.view_any',
-    },
-    {
-        key: 'payment',
-        title: t('sidebar.main.payment'),
-        url: '/payments',
-        icon: CreditCard,
-        permission: 'payments.view_any',
+        items: [
+            { title: t('sidebar.main.receipt'), url: '/receipts', permission: 'receipts.view_any' },
+            { title: t('sidebar.main.payment'), url: '/payments', permission: 'payments.view_any' },
+            { title: t('sidebar.main.contra_settlement'), url: '/contra-settlements', permission: 'contra_settlements.view_any' },
+        ],
     },
 
     {
@@ -654,12 +671,6 @@ const navMain = computed(() => [
             { title: t('sidebar.user_management.user'), url: '/users', permission: 'users.view_any' },
             { title: t('sidebar.user_management.role'), url: '/roles', permission: 'roles.view_any' },
         ],
-    },
-    {
-        key: 'preferences',
-        title: t('sidebar.main.preferences'),
-        url: '/preferences',
-        icon: Cog,
     },
     {
         key: 'administration',
@@ -683,20 +694,19 @@ const navMain = computed(() => [
     },
 
     {
-        key: 'trash',
-        title: t('sidebar.main.trash'),
-        url: '/deleted-records',
-        icon: Trash2,
-        permission: 'deleted_records.view_any',
-    },
-    {
         key: 'reports',
         title: t('sidebar.main.reports'),
-        url: '#',
+        url: '/reports',
         icon: FileChartLine,
+    },
+    {
+        key: 'system',
+        title: t('sidebar.main.system'),
+        url: '#',
+        icon: Settings2,
         items: [
-            { title: t('sidebar.reports.report'), url: '/reports' },
-            { title: t('sidebar.reports.activity_logs'), url: '/activity-logs', icon: History },
+            { title: t('sidebar.system.trash'), url: '/deleted-records', icon: Trash2, permission: 'deleted_records.view_any' },
+            { title: t('sidebar.system.activity_logs'), url: '/activity-logs', icon: History, permission: 'activity_logs.view_any' },
         ],
     },
 ])
@@ -707,7 +717,17 @@ const selectedSidebarMenus = computed<Set<string> | null>(() => {
         return null
     }
 
-    return new Set(menus)
+    const normalized = new Set(menus)
+    // Legacy: 'receipt' / 'payment' were merged into the 'cash_transactions' group.
+    if (normalized.has('receipt') || normalized.has('payment')) {
+        normalized.add('cash_transactions')
+    }
+    // Legacy: the standalone 'trash' menu moved into the 'system' group.
+    if (normalized.has('trash')) {
+        normalized.add('system')
+    }
+
+    return normalized
 })
 
 const filteredNavMain = computed(() => {
@@ -862,6 +882,8 @@ function logout() {
         :theme="sonnerTheme"
         :position="isRTL ? 'bottom-left' : 'bottom-right'"
     />
+    <PageLoadingOverlay />
+    <ManualWelcomeDialog />
     <SidebarProvider v-model:open="sidebarOpen" :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
@@ -876,11 +898,11 @@ function logout() {
                                     <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                                         <component :is="activeTeam.logo" class="size-4" />
                                     </div>
-                                    <div class="grid flex-1 text-left text-sm leading-tight">
+                                    <div class="grid flex-1 text-start text-sm leading-tight">
                                         <span class="truncate font-semibold">{{ activeTeam.name }}</span>
                                         <span class="truncate text-xs">{{ activeTeam.plan }}</span>
                                     </div>
-                                    <ChevronsUpDown class="ml-auto" />
+                                    <ChevronsUpDown class="ms-auto" />
                                 </SidebarMenuButton> -->
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
@@ -965,8 +987,12 @@ function logout() {
 
                             <template v-else>
                                 <!-- Collapsed (icon-only) sidebar: show submenus as a flyout on hover/click -->
+                                <!-- Not modal: a modal menu disables pointer events on
+                                     everything behind it, so the icon could no longer
+                                     report the pointer coming back to it. -->
                                 <DropdownMenu
                                     v-if="isSidebarCollapsed"
+                                    :modal="false"
                                     :open="flyoutOpenKey === getFlyoutKey(item)"
                                     @update:open="(v) => setFlyoutOpen(getFlyoutKey(item), v)"
                                 >
@@ -974,6 +1000,7 @@ function logout() {
                                         <SidebarMenuButton
                                             :tooltip="item.title"
                                             :isActive="shouldExpandParent(item.items)"
+                                            class="cursor-pointer"
                                             @mouseenter="openFlyout(getFlyoutKey(item))"
                                             @mouseleave="scheduleCloseFlyout(getFlyoutKey(item))"
                                         >
@@ -986,22 +1013,31 @@ function logout() {
                                         align="start"
                                         :side-offset="8"
                                         class="min-w-48 rounded-lg"
-                                        @mouseenter="openFlyout(getFlyoutKey(item))"
-                                        @mouseleave="closeFlyout()"
                                     >
-                                        <DropdownMenuLabel class="text-xs text-muted-foreground">
-                                            {{ item.title }}
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                            v-for="subItem in item.items"
-                                            :key="subItem.title"
-                                            as-child
+                                        <!-- Hover listeners live on this div, not on
+                                             DropdownMenuContent: that component's root is a
+                                             portal with no element of its own, so listeners
+                                             placed on it were silently dropped and only the
+                                             icon's close timer ever ran. -->
+                                        <div
+                                            @mouseenter="openFlyout(getFlyoutKey(item))"
+                                            @mouseleave="scheduleCloseFlyout(getFlyoutKey(item))"
                                         >
-                                            <Link :href="subItem.url" prefetch cache-for="1m" class="w-full">
-                                                <span>{{ subItem.title }}</span>
-                                            </Link>
-                                        </DropdownMenuItem>
+                                            <DropdownMenuLabel class="text-sm font-medium">
+                                                {{ item.title }}
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                v-for="subItem in item.items"
+                                                :key="subItem.title"
+                                                as-child
+                                                class="cursor-pointer"
+                                            >
+                                                <Link :href="subItem.url" prefetch cache-for="1m" class="w-full text-sm text-muted-foreground" @click="closeFlyout()">
+                                                    <span>{{ subItem.title }}</span>
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        </div>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
 
@@ -1020,14 +1056,18 @@ function logout() {
                                                 :isActive="shouldExpandParent(item.items)"
                                             >
                                                 <component :is="item.icon" />
-                                                <span
-                                                    class="hover:text-primary focus:text-primary focus:outline-none focus:ring-ring"
-                                                >
+                                                <!-- No hover:text-primary here. The button already paints
+                                                     an active group with bg-primary, so a primary-coloured
+                                                     label on hover was the same colour as its own
+                                                     background — the name of whichever module you were in
+                                                     vanished the moment you pointed at it. The button's
+                                                     own hover colours handle both states. -->
+                                                <span class="font-medium">
                                                     {{ item.title }}
                                                 </span>
                                                 <component
                                                     :is="chevronIcon"
-                                                    :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'"
+                                                    class="ms-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
                                                 />
                                             </SidebarMenuButton>
                                         </CollapsibleTrigger>
@@ -1040,7 +1080,7 @@ function logout() {
                                                     <SidebarMenuSubButton
                                                         :isActive="isMenuItemActive(subItem.url)"
                                                         as-child
-                                                        class="hover:text-primary focus:text-primary focus:outline-none focus:ring-ring data-[active=true]:bg-transparent data-[active=true]:text-primary"
+                                                        class="hover:text-primary focus:text-primary focus:outline-none focus:ring-ring data-[active=true]:bg-transparent data-[active=true]:font-medium data-[active=true]:text-primary"
                                                     >
                                                         <Link :href="subItem.url" prefetch cache-for="1m">
                                                             <span>{{ subItem.title }}</span>
@@ -1111,23 +1151,23 @@ function logout() {
                                             {{ user?.name?.charAt(0) || 'NB' }}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div class="grid flex-1 text-left text-sm leading-tight">
+                                    <div class="grid flex-1 text-start text-sm leading-tight">
                                         <span class="truncate font-semibold">{{ data.user.name }}</span>
                                         <span class="truncate text-xs">{{ data.user.email }}</span>
                                     </div>
-                                    <ChevronsUpDown class="ml-auto size-4" />
+                                    <ChevronsUpDown class="ms-auto size-4" />
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent class="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" side="bottom" align="end" :side-offset="4">
                                 <DropdownMenuLabel class="p-0 font-normal">
-                                    <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                                    <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                         <Avatar class="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
                                             <AvatarImage :src="profilePhotoUrl" :alt="data.user.name" />
                                             <AvatarFallback class="rounded-lg">
                                                 {{ user?.name?.charAt(0) || 'NB' }}
                                             </AvatarFallback>
                                         </Avatar>
-                                        <div class="grid flex-1 text-left text-sm leading-tight">
+                                        <div class="grid flex-1 text-start text-sm leading-tight">
                                             <span class="truncate font-semibold">{{ data.user.name }}</span>
                                                 <span class="truncate text-xs">{{ data.user.email }}</span>
                                         </div>
@@ -1139,9 +1179,21 @@ function logout() {
                                         <Sparkles class="text-primary hover:text-white" />
                                         {{ t('layout.upgrade_to_pro') }}
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem as-child>
+                                        <Link :href="route('whats-new')" class="flex w-full items-center">
+                                            <Rocket class="text-primary hover:text-white" />
+                                            {{ t('layout.whats_new') }}
+                                        </Link>
+                                    </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
+                                    <DropdownMenuItem as-child>
+                                        <Link :href="route('preferences.index')" class="flex w-full items-center">
+                                            <Cog class="text-primary hover:text-white" />
+                                            {{ t('layout.preferences') }}
+                                        </Link>
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem as-child>
                                         <Link href="/profile" class="flex w-full items-center">
                                             <BadgeCheck class="text-primary hover:text-white" />
@@ -1158,6 +1210,12 @@ function logout() {
                                             {{ t('layout.notifications') }}
                                         </Link>
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem as-child>
+                                        <Link :href="route('user-manual')" class="flex w-full items-center">
+                                            <BookOpen class="text-primary hover:text-white" />
+                                            {{ t('layout.user_manual') }}
+                                        </Link>
+                                    </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem @click="logout" class="cursor-pointer">
@@ -1172,7 +1230,7 @@ function logout() {
             <SidebarRail />
         </Sidebar>
         <SidebarInset class="flex h-svh min-h-0 flex-col overflow-hidden">
-            <header class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-[hsl(var(--app-chrome-background))] text-[hsl(var(--app-chrome-foreground))] px-3 py-2 transition-[width,height] ease-linear sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <header class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b bg-[hsl(var(--app-chrome-background))] text-[hsl(var(--app-chrome-foreground))] px-3 py-2 transition-[width,height] ease-linear lg:h-16 lg:flex-nowrap sm:px-4 lg:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:lg:h-12">
                 <!-- Left: Sidebar trigger -->
                 <div class="flex shrink-0 items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
@@ -1181,7 +1239,7 @@ function logout() {
                 </div>
 
                 <!-- Center: connection status + global search side by side (no overlap) -->
-                <div class="flex min-w-0 flex-1 items-center justify-center gap-2 px-2 sm:gap-3">
+                <div class="flex min-w-0 flex-1 items-center justify-center gap-2 px-1 sm:gap-3 md:order-last md:basis-full md:flex-none lg:order-none lg:basis-auto lg:flex-1 lg:px-2">
                     <div
                         v-show="connectionState !== 'online'"
                         class="hidden shrink-0 items-center md:inline-flex rtl:flex-row-reverse"
@@ -1209,7 +1267,7 @@ function logout() {
                         </label> -->
 
                         <Select v-model="selectedBranchId" :dir="selectDir" @update:modelValue="switchBranch">
-                            <SelectTrigger class="h-7 w-[110px] text-xs border-input md:w-[130px]">
+                            <SelectTrigger class="h-7 w-auto min-w-[110px] max-w-[240px] text-xs border-input [&>span]:!overflow-visible">
                                 <SelectValue :placeholder="t('layout.branch')" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1239,7 +1297,11 @@ function logout() {
                 </div>
 <!--                </div>-->
             </header>
-            <div class="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 pt-4 min-w-0">
+            <div
+                data-scroll-region
+                class="flex min-h-0 min-w-0 flex-1 flex-col"
+                :class="flush ? 'overflow-hidden' : 'gap-4 overflow-y-auto p-4 pt-4'"
+            >
                 <slot/>
             </div>
             <footer class="border-t border-border/60 bg-[hsl(var(--app-chrome-background))] px-4 py-2 text-center text-[11px] text-[hsl(var(--app-chrome-foreground))]">

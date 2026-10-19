@@ -5,7 +5,7 @@ namespace App\Models\Account;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
-use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -17,13 +17,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
-use App\Models\Administration\Branch;
-use App\Traits\BranchSpecific;
+use App\Models\Administration\Company;
+use App\Traits\CompanySpecific;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, HasCompany, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -39,7 +41,7 @@ class Account extends Model
         'number',
         'account_type_id',
         'parent_id',
-        'branch_id',
+        'company_id',
         'slug',
         'is_active',
         'is_main',
@@ -59,7 +61,7 @@ class Account extends Model
         'local_name' => 'string',
         'account_type_id' => 'string',
         'parent_id' => 'string',
-        'branch_id' => 'string',
+        'company_id' => 'string',
         'slug' => 'string',
         'is_active' => 'boolean',
         'is_main' => 'boolean',
@@ -94,17 +96,25 @@ class Account extends Model
         return Attribute::make(
             get: function () {
 
-                $totals = $this->transactionLines()
-                    ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
-                    ->where('transactions.status', 'posted')
-                    ->selectRaw('
-                        SUM(transaction_lines.base_debit)  AS total_debit,
-                        SUM(transaction_lines.base_credit) AS total_credit
-                    ')
-                    ->first();
+                // Prefer totals precomputed by scopeWithStatementTotals() so lists
+                // don't trigger one aggregate query per account.
+                if (array_key_exists('statement_total_debit', $this->attributes)
+                    && array_key_exists('statement_total_credit', $this->attributes)) {
+                    $totalDebit  = (float) $this->attributes['statement_total_debit'];
+                    $totalCredit = (float) $this->attributes['statement_total_credit'];
+                } else {
+                    $totals = $this->transactionLines()
+                        ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+                        ->whereIn('transactions.status', ['posted', 'reversed'])
+                        ->selectRaw('
+                            SUM(transaction_lines.base_debit)  AS total_debit,
+                            SUM(transaction_lines.base_credit) AS total_credit
+                        ')
+                        ->first();
 
-                $totalDebit  = (float) ($totals->total_debit ?? 0);
-                $totalCredit = (float) ($totals->total_credit ?? 0);
+                    $totalDebit  = (float) ($totals->total_debit ?? 0);
+                    $totalCredit = (float) ($totals->total_credit ?? 0);
+                }
 
                 $netBalance = $totalDebit>0 ? $totalDebit - $totalCredit : $totalCredit - $totalDebit;
                 $balanceAmount = abs($netBalance);
@@ -140,6 +150,34 @@ class Account extends Model
                 ];
             }
         );
+    }
+
+    /**
+     * Precompute the statement totals used by the statement accessor as two
+     * correlated subqueries, so a whole list of accounts is resolved in a
+     * single SQL query instead of one aggregate query per account.
+     */
+    public function scopeWithStatementTotals(Builder $query): Builder
+    {
+        if (is_null($query->getQuery()->columns)) {
+            $query->select($query->qualifyColumn('*'));
+        }
+
+        $lineTotals = DB::table('transaction_lines')
+            ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+            ->whereColumn('transaction_lines.account_id', 'accounts.id')
+            ->whereIn('transactions.status', ['posted', 'reversed'])
+            ->whereNull('transaction_lines.deleted_at');
+
+        return $query
+            ->selectSub(
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.base_debit), 0)'),
+                'statement_total_debit'
+            )
+            ->selectSub(
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.base_credit), 0)'),
+                'statement_total_credit'
+            );
     }
 
     /**
@@ -222,9 +260,9 @@ class Account extends Model
         return $this->belongsTo(AccountType::class);
     }
 
-    public function branch(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Company::class);
     }
 
     public function transactionLines()
@@ -314,6 +352,17 @@ class Account extends Model
             ];
         }
 
+        // An opening balance is a posted amount against opening-balance equity;
+        // deleting the account would silently take it off the books.
+        if ($this->opening()->exists()) {
+            $dependencies[] = [
+                'relation' => 'opening',
+                'count' => 1,
+                'model' => 'opening_balances',
+                'message' => 'This account has an opening balance',
+            ];
+        }
+
         return $dependencies;
     }
 
@@ -350,7 +399,7 @@ class Account extends Model
             [
                 'name' => 'Cash in Hand',
                 'local_name' => 'نقد در صندوق',
-                'number' => '1010',
+                'number' => '1010', 
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cash-or-bank')->first()->id,
                 'account_type_slug' => 'cash-or-bank',
                 'slug' => 'cash-in-hand',
@@ -1209,6 +1258,28 @@ class Account extends Model
                 'is_main' => true,
             ],
 
+            // STOCK ADJUSTMENT OFFSETS
+            [
+                'name' => 'Inventory Shrinkage & Wastage',
+                'local_name' => 'ضایعات و کسری انبار',
+                'number' => '9040',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'inventory-shrinkage-and-wastage',
+                'remark' => 'Real economic losses from damage, expiry, theft, loss, wastage',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Inventory Adjustments',
+                'local_name' => 'تعدیلات موجودی',
+                'number' => '9050',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'inventory-adjustments',
+                'remark' => 'Neutral record corrections from counts, found stock, surplus',
+                'is_main' => true,
+            ],
+
             // MISC
             // [
             //     'name' => 'Exchange Gain or Loss',
@@ -1403,6 +1474,40 @@ class Account extends Model
                 'account_type_slug' => 'expense',
                 'slug' => 'staff-benefits-expense',
                 'remark' => 'Non-salary staff benefits',
+                'is_main' => true,
+            ],
+
+            // Freight and handling paid to move goods between the company's own
+            // warehouses. It is a period cost, not part of what the stock is
+            // worth: an internal move must not re-price inventory, so it posts
+            // here rather than being capitalised the way a landed cost is.
+            [
+                'name' => 'Item Transfer Expense',
+                'local_name' => 'هزینه انتقال جنس',
+                'parent_slug' => 'other-expenses',
+                'number' => '9801',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'item-transfer-expense',
+                'remark' => 'Cost of moving goods between own warehouses',
+                'is_main' => true,
+            ],
+            // Where a set-off passes through. Offsetting what a party owes us
+            // against what we owe them is two settlements, not one: the
+            // customer's invoices are relieved and the supplier's bills are
+            // paid, and each needs its own voucher so each side gets its own
+            // settlement rows. This account is what the two vouchers hand
+            // between them, and it is always left at zero — which is exactly
+            // what makes a set-off auditable: a non-zero balance here means one
+            // half of an offset went missing.
+            [
+                'name' => 'Set-off Clearing',
+                'local_name' => 'تهاتر',
+                'number' => '3070',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'contra-clearing',
+                'remark' => 'Passes between the two halves of a set-off; always nets to zero',
                 'is_main' => true,
             ],
         ];

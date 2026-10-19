@@ -48,7 +48,7 @@ class SettlementServiceTest extends TestCase
     private function usd(float $rate = 60): Currency
     {
         return Currency::query()->firstOrCreate(
-            ['branch_id' => $this->ctx['branch']->id, 'code' => 'USD'],
+            ['company_id' => $this->ctx['company']->id, 'code' => 'USD'],
             [
                 'name' => 'US Dollar',
                 'symbol' => '$',
@@ -608,7 +608,7 @@ class SettlementServiceTest extends TestCase
         $usd = $this->usd();
 
         $eur = Currency::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'name' => 'Euro',
             'code' => 'EUR',
             'symbol' => '€',
@@ -833,6 +833,7 @@ class SettlementServiceTest extends TestCase
             'base_relieved' => 1,
             'forex_amount' => 0,
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

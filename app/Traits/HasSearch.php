@@ -39,7 +39,7 @@ trait HasSearch
                         $relationship = substr($column, 0, $lastDot);
                         $relatedColumn = substr($column, $lastDot + 1);
                         $query->orWhereHas($relationship, function ($q) use ($relatedColumn, $searchTerm): void {
-                            $q->where($relatedColumn, 'like', "%{$searchTerm}%");
+                            $q->where($relatedColumn, 'iLike', "%{$searchTerm}%");
                         });
                     } else {
                         // Direct column search

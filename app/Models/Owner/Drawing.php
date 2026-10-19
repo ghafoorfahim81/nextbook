@@ -4,7 +4,10 @@ namespace App\Models\Owner;
 
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -18,12 +21,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 class Drawing extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
+        'company_id',
+        'number',
         'owner_id',
         'date',
         'narration',
@@ -34,6 +39,7 @@ class Drawing extends Model
 
     protected $casts = [
         'id' => 'string',
+        'number' => 'string',
         'owner_id' => 'string',
         'date' => 'date',
         'created_by' => 'string',
@@ -51,10 +57,40 @@ class Drawing extends Model
 
     protected array $allowedFilters = [
         'owner_id',
+        'transaction.currency_id',
+        'bank_account_id',
+        'drawing_account_id',
         'date',
         'branch_id',
         'created_by',
     ];
+
+    /**
+     * A drawing posts two lines: the bank/cash account is credited and the
+     * owner's drawing account is debited. Match on the relevant side so the
+     * two account filters don't collide.
+     */
+    protected function dynamicFilterHandlers(): array
+    {
+        return [
+            'bank_account_id' => function ($query, $value) {
+                $query->whereHas('transaction.lines', function ($lineQuery) use ($value) {
+                    $lineQuery->where('credit', '>', 0);
+                    is_array($value)
+                        ? $lineQuery->whereIn('account_id', $value)
+                        : $lineQuery->where('account_id', $value);
+                });
+            },
+            'drawing_account_id' => function ($query, $value) {
+                $query->whereHas('transaction.lines', function ($lineQuery) use ($value) {
+                    $lineQuery->where('debit', '>', 0);
+                    is_array($value)
+                        ? $lineQuery->whereIn('account_id', $value)
+                        : $lineQuery->where('account_id', $value);
+                });
+            },
+        ];
+    }
 
     public function owner(): BelongsTo
     {

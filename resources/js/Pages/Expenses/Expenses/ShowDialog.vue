@@ -1,16 +1,19 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
-import { Badge } from '@/Components/ui/badge';
 import { Separator } from '@/Components/ui/separator';
 import { useI18n } from 'vue-i18n';
+import { useDocumentAction } from '@/composables/useDocumentAction'
+import { router } from '@inertiajs/vue3';
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 
 const { t } = useI18n();
+const { submit, processing } = useDocumentAction()
 
 const props = defineProps({
     open: Boolean,
@@ -18,6 +21,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:open']);
+const postDialogOpen = ref(false);
+const reverseDialogOpen = ref(false);
 
 const total = computed(() => {
     if (!props.expense?.details) return 0;
@@ -27,20 +32,93 @@ const total = computed(() => {
 const baseTotal = computed(() => {
     return total.value * (props.expense?.rate || 1);
 });
+
+const statusClass = computed(() => {
+    switch (props.expense?.status) {
+        case 'draft':     return 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700'
+        case 'posted':    return 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+        case 'reversed':  return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
+        default:          return 'bg-muted text-muted-foreground border border-border'
+    }
+})
+
+const statusLabel = computed(() => {
+    switch (props.expense?.status) {
+        case 'draft':    return t('general.status_draft')
+        case 'posted':   return t('general.status_posted')
+        case 'reversed': return t('general.status_reversed')
+        default:         return props.expense?.status ?? ''
+    }
+})
+
+const postExpense = () => {
+    if (!props.expense?.id) return;
+    submit(route('expenses.post', props.expense.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            postDialogOpen.value = false;
+            emit('update:open', false);
+        },
+    });
+};
+
+const reverseExpense = (reason) => {
+    if (!props.expense?.id) return;
+    submit(route('expenses.reverse', props.expense.id), { reason }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            reverseDialogOpen.value = false;
+            emit('update:open', false);
+        },
+    });
+};
 </script>
 
 <template>
     <Dialog :open="open" @update:open="emit('update:open', $event)">
         <DialogContent class="max-w-2xl">
             <DialogHeader>
-                <DialogTitle class="text-xl font-semibold text-violet-600">
-                    {{ t('expense.expense_details') }}
-                </DialogTitle>
+                <div class="flex items-center justify-between gap-3">
+                    <DialogTitle class="text-xl font-semibold text-violet-600">
+                        {{ t('expense.expense_details') }}<span v-if="expense?.number"> #{{ expense.number }}</span>
+                    </DialogTitle>
+                    <span v-if="expense" :class="['rounded-full px-2.5 py-0.5 text-xs font-medium', statusClass]">
+                        {{ statusLabel }}
+                    </span>
+                </div>
             </DialogHeader>
 
             <div v-if="expense" class="space-y-6">
+                <div class="flex justify-end gap-2">
+                    <button v-if="expense.status === 'draft'" class="rounded-md bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-700" @click="postDialogOpen = true">
+                        {{ t('general.post') }}
+                    </button>
+                    <button v-if="expense.status === 'posted'" class="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700" @click="reverseDialogOpen = true">
+                        {{ t('general.reverse') }}
+                    </button>
+                </div>
+                <TransactionActionDialog
+            :processing="processing"
+                    v-model:open="postDialogOpen"
+                    type="post"
+                    :title="t('general.post') + ' ' + t('expense.expense')"
+                    :description="t('general.post_document_desc')"
+                    @confirm="postExpense"
+                />
+                <TransactionActionDialog
+            :processing="processing"
+                    v-model:open="reverseDialogOpen"
+                    type="reverse"
+                    :title="t('general.reverse') + ' ' + t('expense.expense')"
+                    :description="t('general.reverse_description')"
+                    @confirm="reverseExpense"
+                />
                 <!-- General Info -->
                 <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div v-if="expense.number">
+                        <span class="text-muted-foreground">{{ t('general.number') }}:</span>
+                        <span class="ml-2 font-medium">{{ expense.number }}</span>
+                    </div>
                     <div>
                         <span class="text-muted-foreground">{{ t('general.date') }}:</span>
                         <span class="ml-2 font-medium">{{ expense.date }}</span>
@@ -83,7 +161,7 @@ const baseTotal = computed(() => {
                                 <tr>
                                     <th class="px-4 py-2 text-left rtl:text-right">#</th>
                                     <th class="px-4 py-2 text-left rtl:text-right">{{ t('expense.title') }}</th>
-                                    <th class="px-4 py-2 text-right">{{ t('general.amount') }}</th> 
+                                    <th class="px-4 py-2 text-right">{{ t('general.amount') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -92,7 +170,7 @@ const baseTotal = computed(() => {
                                     <td class="px-4 py-2">{{ detail.title }}</td>
                                     <td class="px-4 py-2 text-right">
                                         {{ expense.currency?.symbol }} {{ Number(detail.amount).toLocaleString() }}
-                                    </td> 
+                                    </td>
                                 </tr>
                             </tbody>
                             <tfoot class="bg-violet-500/10 font-semibold">
@@ -117,7 +195,7 @@ const baseTotal = computed(() => {
 
                 <!-- Attachment -->
                 <div v-if="expense.attachment_url">
-                    <span class="text-muted-foreground text-sm">{{ t('general.attachment') }}:</span>
+                    <span class="text-muted-foreground text-sm">{{ t('general.attachments') }}:</span>
                     <a
                         :href="expense.attachment_url"
                         target="_blank"
@@ -132,23 +210,21 @@ const baseTotal = computed(() => {
                 <div>
                     <h4 class="font-semibold mb-3 text-violet-600 dark:text-violet-300">{{ t('expense.accounting_entries') }}</h4>
                     <div class="grid grid-cols-2 gap-4 text-sm">
-                        <!-- Credit (CR) box (should be green/bright on both modes) -->
                         <div class="p-3 rounded-lg
                             bg-green-100 border border-green-300
                             dark:bg-green-900/[.94] dark:border-green-700 text-green-900 dark:text-green-100
                             flex flex-col items-start min-h-[88px]">
-                            <Badge variant="success" class="bg-green-600 mb-2" style="direction: ltr;">DR</Badge>
+                            <span class="inline-flex items-center rounded-full bg-green-600 px-2 py-0.5 text-xs font-medium text-white mb-2" style="direction: ltr;">DR</span>
                             <p class="font-medium break-words">{{ expense.expense_account?.name }}</p>
                             <p class="text-muted-foreground">
                                 {{ expense.currency?.symbol }} {{ total.toLocaleString() }}
                             </p>
                         </div>
-                        <!-- Debit (DR) box (should be red/bright on both modes) -->
                         <div class="p-3 rounded-lg
                             bg-red-100 border border-red-300
                             dark:bg-red-900/[.93] dark:border-red-700 text-red-900 dark:text-red-100
                             flex flex-col items-start min-h-[88px]">
-                            <Badge variant="destructive" class="mb-2" style="direction: ltr;">CR</Badge>
+                            <span class="inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white mb-2" style="direction: ltr;">CR</span>
                             <p class="font-medium break-words">{{ expense.bank_account?.name }}</p>
                             <p class="text-muted-foreground">
                                 {{ expense.currency?.symbol }} {{ total.toLocaleString() }}
@@ -160,4 +236,3 @@ const baseTotal = computed(() => {
         </DialogContent>
     </Dialog>
 </template>
-

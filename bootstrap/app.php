@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetActiveBranch;
+use App\Http\Middleware\SetActiveCompany;
 use App\Http\Middleware\SetLocale;
 use Inertia\Inertia;
 return Application::configure(basePath: dirname(__DIR__))
@@ -19,22 +20,34 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             // Must run before Inertia shared props so `locale` and `direction` are correct.
             SetLocale::class,
+            // Resolves the company from the user's membership. Must precede
+            // SetActiveBranch, which validates its branch against it.
+            SetActiveCompany::class,
             // Used by HandleInertiaRequests to compute branch-scoped data.
             SetActiveBranch::class,
             HandleInertiaRequests::class,
+            // One activity log entry per request, not one per saved row.
+            \App\Http\Middleware\BatchActivityLog::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthorizationException $e, $request) {
+            // Laravel fills in its own untranslated English default when a
+            // policy denies without a reason; show ours in the user's language.
+            $message = $e->getMessage();
+            if ($message === '' || $message === 'This action is unauthorized.') {
+                $message = __('messages.errors.unauthorized');
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => $e->getMessage() ?: 'This action is unauthorized.',
+                    'message' => $message,
                 ], 403);
             }
 
             return Inertia::render('Errors/Forbidden', [
                 'status' => 403,
-                'message' => $e->getMessage() ?: 'This action is unauthorized.',
+                'message' => $message,
             ])->toResponse($request)->setStatusCode(403);
         });
     })->create();

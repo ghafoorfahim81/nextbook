@@ -1,4 +1,4 @@
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 const hasData = (value) => {
@@ -14,19 +14,26 @@ const hasData = (value) => {
   return Boolean(value)
 }
 
+// `source` may be a getter (e.g. () => page.props) so a later fetchLazyProps()
+// checks the props of the current visit, not the ones seen at setup.
 export const useLazyProps = (source, keys) => {
+  const loading = ref(false)
+
   const fetchLazyProps = () => {
-    const only = keys.filter((key) => !hasData(source?.[key]))
+    const props = typeof source === 'function' ? source() : source
+    const only = keys.filter((key) => !hasData(props?.[key]))
     if (!only.length) return
+    loading.value = true
     router.reload({
       only,
       preserveState: true,
       preserveScroll: true,
       replace: true,
+      onFinish: () => { loading.value = false },
     })
   }
 
   onMounted(fetchLazyProps)
 
-  return { fetchLazyProps }
+  return { fetchLazyProps, loading }
 }

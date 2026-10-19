@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Preferences;
 
-use App\Support\Preferences\InvoiceThemeOptions;
+use App\Support\Preferences\SoundOptions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,6 +22,8 @@ use Illuminate\Validation\Rule;
             'appearance.theme' => 'sometimes|in:system,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,violet-900,purple,fuchsia,pink,rose,slate,gray,zinc,neutral,stone,taupe,mauve,mist,olive',
             'appearance.color_palette' => 'sometimes|in:system,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,violet-900,purple,fuchsia,pink,rose,slate,gray,zinc,neutral,stone,taupe,mauve,mist,olive',
             'appearance.accent_color' => 'sometimes|in:system,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose,slate,gray,zinc,neutral,stone,taupe,mauve,mist,olive',
+            // Container material: opaque tokens, or the translucent glass style.
+            'appearance.surface_style' => 'sometimes|in:solid,glass',
             'appearance.decimal_places' => 'sometimes|integer|in:0,2,3',
             'appearance.records_per_page' => 'sometimes|integer|min:1|max:100',
             'appearance.sidebar_font_size' => 'sometimes|integer|min:10|max:24',
@@ -35,6 +37,7 @@ use Illuminate\Validation\Rule;
             'appearance.textarea_font_size' => 'sometimes|integer|min:10|max:24',
             'appearance.sidebar_menus' => 'sometimes|array',
             'appearance.balance_nature_format' => 'sometimes|in:without_nature,with_nature',
+            'appearance.show_field_hints' => 'sometimes|boolean',
 
             // Item Management
             'item_management' => 'sometimes|array',
@@ -49,7 +52,6 @@ use Illuminate\Validation\Rule;
             'sale.item_columns' => 'sometimes|array',
             'sale.item_columns.*' => 'sometimes|boolean',
             'sale.invoice_prefix' => 'sometimes|string|max:20',
-            'sale.invoice_theme' => ['sometimes', 'nullable', 'string', 'max:50'],
             'sale.start_number' => 'sometimes|integer|min:1',
             'sale.terms' => 'sometimes|nullable|string|max:1000',
             'sale.due_days' => 'sometimes|integer|min:0|max:365',
@@ -60,6 +62,9 @@ use Illuminate\Validation\Rule;
             'sale.auto_calculate_tax' => 'sometimes|boolean',
             'sale.show_ledger_transactions' => 'sometimes|boolean',
             'sale.show_item_transactions' => 'sometimes|boolean',
+            'sale.show_attachments' => 'sometimes|boolean',
+            'sale.enforce_sale_stock_reservation' => 'sometimes|boolean',
+            'sale.item_columns.reserved_out' => 'sometimes|boolean',
 
             // Sale Order
             'sale_order' => 'sometimes|array',
@@ -99,6 +104,7 @@ use Illuminate\Validation\Rule;
             'purchase.late_fee_percentage' => 'sometimes|numeric|min:0|max:100',
             'purchase.show_ledger_transactions' => 'sometimes|boolean',
             'purchase.show_item_transactions' => 'sometimes|boolean',
+            'purchase.show_attachments' => 'sometimes|boolean',
 
             // Purchase Order
             'purchase_order' => 'sometimes|array',
@@ -130,6 +136,41 @@ use Illuminate\Validation\Rule;
             'receipt_payment.require_approval' => 'sometimes|boolean',
             'receipt_payment.lock_after_days' => 'sometimes|integer|min:0|max:365',
 
+            // Transaction Posting
+            'transaction' => 'sometimes|array',
+            'transaction.sale_post_immediately' => 'sometimes|boolean',
+            'transaction.sale_order_post_immediately' => 'sometimes|boolean',
+            'transaction.purchase_post_immediately' => 'sometimes|boolean',
+            'transaction.expense_post_immediately' => 'sometimes|boolean',
+            'transaction.journal_entry_post_immediately' => 'sometimes|boolean',
+            'transaction.receipt_post_immediately' => 'sometimes|boolean',
+            'transaction.payment_post_immediately' => 'sometimes|boolean',
+            'transaction.account_transfer_post_immediately' => 'sometimes|boolean',
+            'transaction.item_transfer_post_immediately' => 'sometimes|boolean',
+            'transaction.drawing_post_immediately' => 'sometimes|boolean',
+            'transaction.stock_adjustment_post_immediately' => 'sometimes|boolean',
+            'transaction.purchase_order_post_immediately' => 'sometimes|boolean',
+            'transaction.purchase_return_post_immediately' => 'sometimes|boolean',
+            'transaction.purchase_quotation_post_immediately' => 'sometimes|boolean',
+            'transaction.sale_return_post_immediately' => 'sometimes|boolean',
+            'transaction.sale_quotation_post_immediately' => 'sometimes|boolean',
+
+            // Stock Adjustment
+            'stock_adjustment' => 'sometimes|array',
+            'stock_adjustment.reference_prefix' => 'sometimes|string|max:20',
+            'stock_adjustment.start_number' => 'sometimes|integer|min:1',
+            'stock_adjustment.default_warehouse_id' => 'sometimes|nullable|string|exists:warehouses,id',
+            'stock_adjustment.allow_in_cost_override' => 'sometimes|boolean',
+            'stock_adjustment.reason_accounts' => 'sometimes|array',
+            'stock_adjustment.reason_accounts.*' => [
+                'sometimes',
+                Rule::in(['inventory-shrinkage-and-wastage', 'inventory-adjustments']),
+            ],
+
+            // Per-module "confirm before save" toggles
+            'confirmations' => 'sometimes|array',
+            'confirmations.*' => 'sometimes|boolean',
+
             // Tax & Currency Preferences
             'tax_currency' => 'sometimes|array',
             'tax_currency.tax_plus' => 'sometimes|boolean',
@@ -150,6 +191,24 @@ use Illuminate\Validation\Rule;
             'notifications.new_transaction_alert' => 'sometimes|boolean',
             'notifications.daily_summary_report' => 'sometimes|boolean',
             'notifications.weekly_financial_summary' => 'sometimes|boolean',
+            // HR keys existed in DEFAULT_PREFERENCES but were never validated,
+            // so they were silently dropped on save and could not be turned off.
+            'notifications.contract_expiry_alert' => 'sometimes|boolean',
+            'notifications.document_expiry_alert' => 'sometimes|boolean',
+            'notifications.probation_ending_alert' => 'sometimes|boolean',
+            'notifications.leave_request_alert' => 'sometimes|boolean',
+            'notifications.leave_status_alert' => 'sometimes|boolean',
+
+            // Notification/warning/login sound preferences
+            'notifications.sound' => 'sometimes|array',
+            'notifications.sound.notification_enabled' => 'sometimes|boolean',
+            'notifications.sound.notification_choice' => ['sometimes', Rule::in([...SoundOptions::ids('notification'), 'custom'])],
+            'notifications.sound.warning_enabled' => 'sometimes|boolean',
+            'notifications.sound.warning_choice' => ['sometimes', Rule::in([...SoundOptions::ids('warning'), 'custom'])],
+            'notifications.sound.success_enabled' => 'sometimes|boolean',
+            'notifications.sound.success_choice' => ['sometimes', Rule::in([...SoundOptions::ids('success'), 'custom'])],
+            'notifications.sound.login_enabled' => 'sometimes|boolean',
+            'notifications.sound.login_choice' => ['sometimes', Rule::in([...SoundOptions::ids('login'), 'custom'])],
 
             // Security Preferences
             'security' => 'sometimes|array',

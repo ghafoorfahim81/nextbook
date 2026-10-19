@@ -17,6 +17,7 @@ const editingItem = ref(null);
 
 const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
+    { key: 'local_name', label: t('admin.shared.local_name'), sortable: true },
     { key: 'remark', label: t('general.remark') },
     {
         key: 'created_by.name',
@@ -35,7 +36,7 @@ const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('landed-cost-categories.destroy', id, {
         title: t('general.delete', { name: t('admin.landed_cost_category.landed_cost_category') }),
-        description: t('general.delete_description', { name: t('admin.landed_cost_category.landed_cost_category') }),
+        name: t('admin.landed_cost_category.landed_cost_category'),
         successMessage: t('general.delete_success', { name: t('admin.landed_cost_category.landed_cost_category') }),
     });
 };

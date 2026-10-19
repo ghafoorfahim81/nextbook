@@ -14,6 +14,7 @@ return new class extends Migration
 
         Schema::create('employee_contracts', function (Blueprint $table) {
             $table->ulid('id')->primary();
+            $table->ulid('company_id')->index();
             $table->ulid('employee_id')->index();
             $table->string('contract_number')->index();
             $table->enum('contract_type', ContractType::values())

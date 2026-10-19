@@ -39,7 +39,6 @@ class StockServiceTest extends TestCase
             'status' => StockStatus::POSTED->value,
             'batch' => null,
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'fifo-test',
@@ -83,7 +82,13 @@ class StockServiceTest extends TestCase
         $this->assertEquals(4.0, (float) $balance->quantity);
     }
 
-    public function test_weighted_average_out_uses_balance_average_cost_when_method_is_not_fifo(): void
+    /**
+     * Rewritten: this test predates the LIFO branch, when anything that was not
+     * FIFO fell through to weighted average and was expected to cost at 15
+     * (the blend of 10 and 20). LIFO now has its own branch, so the newest
+     * layer is what an issue consumes, and its cost is what the movement keeps.
+     */
+    public function test_lifo_costs_the_issue_at_the_newest_layer(): void
     {
         $this->ctx = $this->bootstrapErpContext(CostingMethod::LIFO->value);
         $service = app(StockService::class);
@@ -95,7 +100,6 @@ class StockServiceTest extends TestCase
             'status' => StockStatus::POSTED->value,
             'batch' => null,
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'avg-test',
@@ -128,7 +132,8 @@ class StockServiceTest extends TestCase
             ->latest()
             ->firstOrFail();
 
-        $this->assertEquals(15.0, round((float) $out->unit_cost, 2));
+        // Newest layer in, first layer out: 20, not the 15 blend.
+        $this->assertEquals(20.0, round((float) $out->unit_cost, 2));
     }
 
     public function test_in_movement_keeps_entered_quantity_while_balance_uses_item_unit_quantity(): void
@@ -136,7 +141,7 @@ class StockServiceTest extends TestCase
         $service = app(StockService::class);
 
         $boxMeasure = UnitMeasure::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'quantity_id' => $this->ctx['quantity']->id,
             'name' => 'Box',
             'unit' => '6',
@@ -155,7 +160,6 @@ class StockServiceTest extends TestCase
             'batch' => null,
             'date' => '2026-03-01',
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'measure-conversion-test',
@@ -169,7 +173,10 @@ class StockServiceTest extends TestCase
         $this->assertEquals(60.0, (float) $movement->unit_cost);
         $this->assertEquals(12.0, (float) $movement->qty_remaining);
         $this->assertEquals(12.0, (float) $balance->quantity);
-        $this->assertEquals(10.0, (float) $balance->average_cost);
+        // The average lives on the item, not on the balance row: stock_balances
+        // has no average_cost column, so the old assertion here was reading a
+        // null and comparing it to 10. 2 boxes of 6 at 60/box = 10 per piece.
+        $this->assertEquals(10.0, (float) $this->ctx['item']->fresh()->avg_cost);
     }
 
     public function test_fifo_out_movement_unit_cost_is_saved_in_selected_unit_measure(): void
@@ -177,7 +184,7 @@ class StockServiceTest extends TestCase
         $service = app(StockService::class);
 
         $boxMeasure = UnitMeasure::factory()->create([
-            'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'quantity_id' => $this->ctx['quantity']->id,
             'name' => 'Box',
             'unit' => '6',
@@ -191,7 +198,6 @@ class StockServiceTest extends TestCase
             'status' => StockStatus::POSTED->value,
             'batch' => null,
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'out-measure-cost-test',
@@ -206,13 +212,17 @@ class StockServiceTest extends TestCase
             'date' => '2026-03-01',
         ]));
 
-        $outMovement = $service->post(array_merge($base, [
+        // A FIFO issue returns one allocation per layer consumed, not the
+        // movement itself — each names the OUT row it created.
+        $allocation = $service->post(array_merge($base, [
             'movement_type' => StockMovementType::OUT->value,
             'unit_measure_id' => $boxMeasure->id,
             'quantity' => 1,
             'unit_cost' => 0,
             'date' => '2026-03-02',
         ]))[0];
+
+        $outMovement = StockMovement::query()->findOrFail($allocation['out_movement_id']);
 
         $this->assertSame($boxMeasure->id, $outMovement->unit_measure_id);
         $this->assertEquals(1.0, (float) $outMovement->quantity);
@@ -237,7 +247,6 @@ class StockServiceTest extends TestCase
             'batch' => null,
             'date' => '2026-03-01',
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'batch-test',
@@ -258,7 +267,6 @@ class StockServiceTest extends TestCase
             'unit_measure_id' => $this->ctx['unit_measure']->id,
             'source' => StockSourceType::PURCHASE->value,
             'status' => StockStatus::POSTED->value,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'batch-auto-test',
@@ -330,7 +338,6 @@ class StockServiceTest extends TestCase
             'status' => StockStatus::POSTED->value,
             'batch' => null,
             'expire_date' => null,
-            'size_id' => $this->ctx['size']->id,
             'warehouse_id' => $this->ctx['warehouse']->id,
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'race-test',

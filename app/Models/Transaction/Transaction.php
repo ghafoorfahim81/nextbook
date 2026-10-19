@@ -15,11 +15,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use App\Traits\CompanySpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCompany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
 class Transaction extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasUlids, HasUserAuditable, SoftDeletes, BranchSpecific, HasBranch;
+    use HasFactory, HasSearch, HasSorting, HasUlids, HasUserAuditable, SoftDeletes, CompanySpecific, BranchSpecific, HasCompany, HasBranch;
 
     /**
      * The attributes that are mass assignable.
@@ -29,6 +33,7 @@ class Transaction extends Model
     protected $keyType = 'string';
     public $incrementing = false;
     protected $fillable = [
+        'company_id',
         'voucher_number',
         'status',
         'currency_id',
@@ -39,6 +44,12 @@ class Transaction extends Model
         'is_cross_currency',
         'date',
         'remark',
+        'posted_at',
+        'posted_by',
+        'reversal_of_id',
+        'reversed_at',
+        'reversal_reason',
+        'posting_payload',
         'created_by',
         'updated_by',
         'branch_id',
@@ -62,8 +73,13 @@ class Transaction extends Model
             'rate' => 'float',
             'is_cross_currency' => 'boolean',
             'date' => 'date',
+            'posted_at' => 'datetime',
+            'reversed_at' => 'datetime',
+            'posting_payload' => 'array',
             'created_by' => 'string',
             'updated_by' => 'string',
+            'posted_by' => 'string',
+            'reversal_of_id' => 'string',
             'branch_id' => 'string',
         ];
     }
@@ -91,6 +107,16 @@ class Transaction extends Model
     public function reference()
     {
         return $this->morphTo();
+    }
+
+    public function originalTransaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class, 'reversal_of_id');
+    }
+
+    public function reversalTransaction(): HasOne
+    {
+        return $this->hasOne(Transaction::class, 'reversal_of_id');
     }
 
     // Helper methods for common types

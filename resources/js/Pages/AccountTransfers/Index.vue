@@ -1,10 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeleteResource } from '@/composables/useDeleteResource'
-import ShowDialog from '@/Pages/AccountTransfers/ShowDialog.vue'
 import { router } from '@inertiajs/vue3'
 const { t } = useI18n()
 
@@ -15,8 +14,6 @@ const props = defineProps({
 })
 
 const { deleteResource } = useDeleteResource()
-const showDialog = ref(false)
-const selectedId = ref(null)
 
 const editItem = (item) => {
   router.visit(route('account-transfers.edit', item.id));
@@ -28,8 +25,7 @@ const deleteItem = (id) => {
   })
 }
 const showItem = (id) => {
-  selectedId.value = id
-  showDialog.value = true
+  router.visit(route('account-transfers.show', id))
 }
 
 const columns = computed(() => ([
@@ -38,6 +34,7 @@ const columns = computed(() => ([
   { key: 'to_account_name', label: t('general.to_account') },
   { key: 'amount', label: t('general.amount'), sortable: true },
   { key: 'currency_code', label: t('admin.currency.currency') },
+  { key: 'status_label', label: t('general.status') },
   { key: 'date', label: t('general.date'), sortable: true },
   {
     key: 'created_by.name',
@@ -57,19 +54,19 @@ const filterFields = computed(() => ([
     key: 'from_account_id',
     label: t('general.from_account'),
     type: 'select',
-    options: (props.filterOptions?.accounts || []).map((a) => ({ id: a.id, name: a.name })),
+    options: (props.filterOptions?.accounts?.data || []).map((a) => ({ id: a.id, name: a.name })),
   },
   {
     key: 'to_account_id',
     label: t('general.to_account'),
     type: 'select',
-    options: (props.filterOptions?.accounts || []).map((a) => ({ id: a.id, name: a.name })),
+    options: (props.filterOptions?.accounts?.data || []).map((a) => ({ id: a.id, name: a.name })),
   },
   {
     key: 'transaction.currency_id',
     label: t('admin.currency.currency'),
     type: 'select',
-    options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+    options: (props.filterOptions?.currencies?.data || []).map((c) => ({ id: c.id, name: c.code })),
   },
   { key: 'date', label: t('general.date'), type: 'daterange' },
   { key: 'amount', label: t('general.amount'), type: 'numberrange' },
@@ -101,11 +98,6 @@ const filterFields = computed(() => ([
       :addAction="'redirect'"
       :addRoute="'account-transfers.create'"
       exportRoute="account-transfers.export"
-    />
-    <ShowDialog
-      :open="showDialog"
-      :transfer-id="selectedId"
-      @update:open="showDialog = $event"
     />
   </AppLayout>
 

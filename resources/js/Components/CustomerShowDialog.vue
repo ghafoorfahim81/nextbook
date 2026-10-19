@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/button'
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue'
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
 import { Printer, UserStar } from 'lucide-vue-next'
+import { printDocument } from '@/composables/usePrintDocument'
 
 const { t } = useI18n()
 
@@ -38,7 +39,7 @@ const formatAmount = (value) => {
 
 const openPrint = (routeName, id) => {
   if (!routeName || !id) return
-  window.open(route(routeName, id), '_blank')
+  printDocument(route(routeName, id))
 }
 
 const loadCustomer = async (id) => {

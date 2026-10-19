@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
-import { ArrowLeft, SquarePen, Printer } from 'lucide-vue-next';
+import { ArrowLeft, SquarePen, Printer, Hash, Mail, Phone, MessageCircle } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus';
@@ -14,6 +14,8 @@ import PhotoUpload from '@/Components/next/PhotoUpload.vue';
 import LedgerStatement from '@/Components/ledger/LedgerStatement.vue';
 import LedgerCurrencyBalances from '@/Components/ledger/LedgerCurrencyBalances.vue';
 import LedgerOpenItems from '@/Components/ledger/LedgerOpenItems.vue';
+import CombinedPositionCard from '@/Components/ledger/CombinedPositionCard.vue';
+import { printDocument } from '@/composables/usePrintDocument';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
@@ -27,6 +29,12 @@ const props = defineProps({
     openItems: { type: Array, required: false, default: () => [] },
     settlementHistory: { type: Object, required: false, default: () => ({}) },
     settlementBalances: { type: Object, required: false, default: () => ({ currencies: [], base_total: '0' }) },
+    // Both sides of a party who also trades the other way. Null when this
+    // account is not paired with another, which is the ordinary case.
+    combinedPosition: { type: Object, required: false, default: null },
+    // Set-offs touching this party. They move the balance without a sale,
+    // a purchase or any cash, so no other tab would ever show them.
+    contraSettlements: { type: Array, required: false, default: () => [] },
 });
 
 const { t } = useI18n();
@@ -34,10 +42,7 @@ const { can } = useAuth();
 
 const supplierData = computed(() => props.supplier?.data ?? props.supplier ?? {});
 const statement = computed(() => supplierData.value.statement ?? {});
-const openings = computed(() => {
-    if (Array.isArray(supplierData.value.openings)) return supplierData.value.openings;
-    return supplierData.value.opening ? [supplierData.value.opening] : [];
-});
+const openings = computed(() => supplierData.value.opening ? [supplierData.value.opening] : []);
 
 const purchaseRows = computed(() => props.purchases?.data ?? props.purchases ?? []);
 const receiptRows = computed(() => props.receipts?.data ?? props.receipts ?? []);
@@ -60,7 +65,7 @@ const exportUrl = (list) => route('suppliers.export', {
 
 const openPrint = (routeName, id) => {
     if (!routeName || !id) return;
-    window.open(route(routeName, id), '_blank');
+    printDocument(route(routeName, id));
 };
 
 const openTransaction = (routeName, id) => {
@@ -146,6 +151,28 @@ const supplierPurchaseColumns = computed(() => [
     { key: 'date', label: t('general.date') },
     { key: 'type', label: t('general.type') },
     { key: 'amount', label: t('general.amount'), type: 'money', align: 'right' },
+    { key: 'status', label: t('general.status') },
+    { key: 'description', label: t('general.description') },
+]);
+
+const supplierContraTableRows = computed(() => (props.contraSettlements || []).map((row) => ({
+    id: row.id,
+    number: row.number,
+    date: row.date,
+    counterparty: row.counterparty || '-',
+    amount: row.amount,
+    currency: row.currency_code || '',
+    status: row.status_label || row.status || '-',
+    description: row.narration || '-',
+    showRoute: 'contra-settlements.show',
+})));
+
+const supplierContraColumns = computed(() => [
+    { key: 'number', label: t('general.number') },
+    { key: 'date', label: t('general.date') },
+    { key: 'counterparty', label: t('contra.same_person_other_account') },
+    { key: 'amount', label: t('contra.offset_amount'), type: 'money', align: 'right' },
+    { key: 'currency', label: t('admin.currency.currency') },
     { key: 'status', label: t('general.status') },
     { key: 'description', label: t('general.description') },
 ]);
@@ -239,6 +266,12 @@ const supplierMovementColumns = computed(() => [
 
             <!-- GENERAL TAB -->
             <div v-if="activeMainTab === 'general'" class="space-y-4">
+                <CombinedPositionCard
+                    :position="combinedPosition"
+                    :counterpart="supplierData.counterpart"
+                    role="supplier"
+                    :ledger-id="supplierData.id"
+                />
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:items-start">
                     <!-- Left column: profile, contact and statement cards -->
                     <div class="space-y-4 lg:self-start">
@@ -260,6 +293,38 @@ const supplierMovementColumns = computed(() => [
                                 <div class="text-lg font-semibold text-primary">{{ supplierData.name }}</div>
                                 <div class="mt-1 text-xs text-muted-foreground/70">{{ t('ledger.supplier.supplier') }}</div>
                             </div>
+                        </div>
+
+                        <!-- Contact card -->
+                        <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
+                            <div class="flex items-center gap-3 px-4 py-2.5">
+                                <Hash class="h-4 w-4 shrink-0 text-violet-500" />
+                                <span class="text-sm font-medium text-foreground">{{ supplierData.code || '-' }}</span>
+                            </div>
+                            <a
+                                :href="supplierData.phone_no ? `tel:${supplierData.phone_no}` : undefined"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
+                                <Phone class="h-4 w-4 shrink-0 text-emerald-500" />
+                                <span class="text-sm text-foreground">{{ supplierData.phone_no || '-' }}</span>
+                            </a>
+                            <a
+                                v-if="supplierData.whatsapp_number"
+                                :href="`https://wa.me/${String(supplierData.whatsapp_number).replace(/[^0-9]/g, '')}`"
+                                target="_blank"
+                                rel="noopener"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
+                                <MessageCircle class="h-4 w-4 shrink-0 text-green-500" />
+                                <span class="text-sm text-foreground">{{ supplierData.whatsapp_number }}</span>
+                            </a>
+                            <a
+                                :href="supplierData.email ? `mailto:${supplierData.email}` : undefined"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
+                                <Mail class="h-4 w-4 shrink-0 text-blue-500" />
+                                <span class="truncate text-sm text-foreground">{{ supplierData.email || '-' }}</span>
+                            </a>
                         </div>
 
                         <!-- Per-currency balances: a party's currencies never net
@@ -454,6 +519,17 @@ const supplierMovementColumns = computed(() => [
                         >
                             {{ t('payment.payments') }}
                         </button>
+                        <button
+                            v-if="contraSettlements.length"
+                            type="button"
+                            class="px-3 py-1.5 text-sm rounded-full transition-colors"
+                            :class="activeTxnTab === 'contra'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'"
+                            @click="activeTxnTab = 'contra'"
+                        >
+                            {{ t('contra.contra_settlements') }}
+                        </button>
                     </div>
 
                     <LedgerListTable
@@ -498,6 +574,17 @@ const supplierMovementColumns = computed(() => [
                             </Button>
                         </template>
                     </LedgerListTable>
+                    <LedgerListTable
+                        v-else-if="activeTxnTab === 'contra'"
+                        :title="t('contra.contra_settlements')"
+                        :rows="supplierContraTableRows"
+                        :columns="supplierContraColumns"
+                        :empty-message="t('general.no_data_found')"
+                        :row-number-label="t('report.columns.no')"
+                        default-sort-key="date"
+                        default-sort-direction="desc"
+                        @row-click="openTransaction($event.showRoute, $event.id)"
+                    />
                     <LedgerListTable
                         v-else
                         :title="t('payment.payments')"

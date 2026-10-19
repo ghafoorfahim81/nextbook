@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Administration;
 
+use App\Models\Administration\Company;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Brand;
@@ -33,7 +34,7 @@ class BrandFactory extends Factory
             'address' => fake()->optional()->address(),
             'city' => fake()->city(),
             'country' => fake()->country(),
-            'branch_id' => Branch::factory(),
+            'company_id' => Company::factory(),
         ];
     }
 }

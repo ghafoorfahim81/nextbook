@@ -21,21 +21,22 @@ return new class extends Migration
             $table->double('value')->nullable();
             $table->ulid('quantity_id')->index();
             $table->boolean('is_main')->default(false);
-            $table->ulid('branch_id')->index();
+            $table->ulid('company_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->unique(['company_id', 'id']);
             $table->timestamps();
             $table->softDeletes();
-            $table->unique(['branch_id', 'name', 'deleted_at']);
+            $table->unique(['company_id', 'name', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();
 
         Schema::table('unit_measures', function (Blueprint $table) {
-            $table->foreign('branch_id')
+            $table->foreign('company_id')
                 ->references('id')
-                ->on('branches')
+                ->on('companies')
                 ->onDelete('CASCADE');
 
             $table->foreign('quantity_id')->references('id')->on('quantities');
