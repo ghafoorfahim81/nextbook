@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    /** branch id => company id, memoised per instance. */
+    private array $companyIds = [];
+
     /** Statuses that make up the books: a reversed original and its posted mirror net to zero. */
     private const LEDGER_STATUSES = [
         TransactionStatus::POSTED->value,
@@ -266,7 +269,7 @@ class DashboardService
 
         $lowStockItems = DB::table('items as i')
             ->leftJoinSub($stockTotalsSubquery, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $branchId)
+            ->where('i.company_id', $this->companyOf($branchId))
             ->whereNull('i.deleted_at')
             ->whereNotNull('i.minimum_stock')
             ->where('i.minimum_stock', '>', 0)
@@ -275,7 +278,7 @@ class DashboardService
 
         $outOfStockItems = DB::table('items as i')
             ->leftJoinSub($stockTotalsSubquery, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $branchId)
+            ->where('i.company_id', $this->companyOf($branchId))
             ->whereNull('i.deleted_at')
             ->whereRaw('COALESCE(stock_totals.quantity, 0) <= 0')
             ->count();
@@ -451,7 +454,7 @@ class DashboardService
 
         $lowStockItems = DB::table('items as i')
             ->leftJoinSub($stockTotalsSubquery, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
-            ->where('i.branch_id', $branchId)
+            ->where('i.company_id', $this->companyOf($branchId))
             ->whereNull('i.deleted_at')
             ->whereNotNull('i.minimum_stock')
             ->where('i.minimum_stock', '>', 0)
@@ -528,7 +531,7 @@ class DashboardService
                 'label' => 'Items below reorder level',
                 'count' => DB::table('items as i')
                     ->leftJoinSub($stockTotalsSubquery, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
-                    ->where('i.branch_id', $branchId)
+                    ->where('i.company_id', $this->companyOf($branchId))
                     ->whereNull('i.deleted_at')
                     ->whereNotNull('i.minimum_stock')
                     ->where('i.minimum_stock', '>', 0)
@@ -606,7 +609,7 @@ class DashboardService
             })
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -648,7 +651,7 @@ class DashboardService
         $row = $this->postedTransactionLines($branchId, forBalances: true)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -678,7 +681,7 @@ class DashboardService
         $row = $this->postedTransactionLines($branchId, forBalances: true)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -718,7 +721,7 @@ class DashboardService
             ->fromSub($this->supplierPayableBalances($branchId), 'supplier_balances')
             ->join('ledgers as l', function ($join) use ($branchId) {
                 $join->on('l.id', '=', 'supplier_balances.ledger_id')
-                    ->where('l.branch_id', '=', $branchId)
+                    ->where('l.company_id', '=', $this->companyOf($branchId))
                     ->where('l.type', '=', 'supplier')
                     ->whereNull('l.deleted_at');
             })
@@ -743,7 +746,7 @@ class DashboardService
         $rows = DB::table('sales as s')
             ->join('ledgers as l', function ($join) use ($branchId) {
                 $join->on('l.id', '=', 's.customer_id')
-                    ->where('l.branch_id', '=', $branchId)
+                    ->where('l.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('l.deleted_at');
             })
             ->join('transactions as t', function ($join) use ($branchId) {
@@ -758,7 +761,7 @@ class DashboardService
             })
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -791,7 +794,7 @@ class DashboardService
         $rows = DB::table('purchases as p')
             ->join('ledgers as l', function ($join) use ($branchId) {
                 $join->on('l.id', '=', 'p.supplier_id')
-                    ->where('l.branch_id', '=', $branchId)
+                    ->where('l.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('l.deleted_at');
             })
             ->join('transactions as t', function ($join) use ($branchId) {
@@ -806,7 +809,7 @@ class DashboardService
             })
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -857,7 +860,7 @@ class DashboardService
             })
             ->join('items as i', function ($join) use ($branchId) {
                 $join->on('i.id', '=', 'si.item_id')
-                    ->where('i.branch_id', '=', $branchId)
+                    ->where('i.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('i.deleted_at');
             })
             ->where('si.branch_id', $branchId)
@@ -900,7 +903,7 @@ class DashboardService
             })
             ->join('items as i', function ($join) use ($branchId) {
                 $join->on('i.id', '=', 'pi.item_id')
-                    ->where('i.branch_id', '=', $branchId)
+                    ->where('i.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('i.deleted_at');
             })
             ->where('pi.branch_id', $branchId)
@@ -934,7 +937,7 @@ class DashboardService
         $row = $this->postedTransactionLines($branchId)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -959,7 +962,7 @@ class DashboardService
         return $this->postedTransactionLines($branchId)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -982,7 +985,7 @@ class DashboardService
         $row = $this->postedTransactionLines($branchId)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -1006,7 +1009,7 @@ class DashboardService
         $row = $this->postedTransactionLines($branchId, forBalances: true)
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -1033,7 +1036,7 @@ class DashboardService
             })
             ->join('ledgers as l', function ($join) use ($branchId, $ledgerType) {
                 $join->on('l.id', '=', 'tl.ledger_id')
-                    ->where('l.branch_id', '=', $branchId)
+                    ->where('l.company_id', '=', $this->companyOf($branchId))
                     ->where('l.type', '=', $ledgerType)
                     ->whereNull('l.deleted_at');
             })
@@ -1045,8 +1048,10 @@ class DashboardService
 
     protected function supplierPayableBalances(string $branchId)
     {
-        $supplierReferenceType = addslashes(Ledger::class);
-        $resolvedLedgerId = "COALESCE(tl.ledger_id, CASE WHEN t.reference_type = '{$supplierReferenceType}' THEN t.reference_id END)";
+        // Quoted by the driver: addslashes doubled the namespace backslashes,
+        // which PostgreSQL keeps literally, so the class name never matched.
+        $supplierReferenceType = DB::getPdo()->quote(Ledger::class);
+        $resolvedLedgerId = "COALESCE(tl.ledger_id, CASE WHEN t.reference_type = {$supplierReferenceType} THEN t.reference_id END)";
 
         return DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($branchId) {
@@ -1057,7 +1062,7 @@ class DashboardService
             })
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -1142,7 +1147,7 @@ class DashboardService
             })
             ->join('accounts as a', function ($join) use ($branchId) {
                 $join->on('a.id', '=', 'tl.account_id')
-                    ->where('a.branch_id', '=', $branchId)
+                    ->where('a.company_id', '=', $this->companyOf($branchId))
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -1190,5 +1195,17 @@ class DashboardService
     protected function trimNumber(mixed $value): string
     {
         return rtrim(rtrim(number_format((float) ($value ?? 0), 2, '.', ''), '0'), '.');
+    }
+
+    /**
+     * The company a branch belongs to, for joins against company master data
+     * (accounts, items, ledgers). The documents stay filtered by branch; what
+     * they point at is shared by every branch of the company.
+     */
+    protected function companyOf(string $branchId): ?string
+    {
+        return $this->companyIds[$branchId] ??= Branch::withoutGlobalScopes()
+            ->whereKey($branchId)
+            ->value('company_id');
     }
 }

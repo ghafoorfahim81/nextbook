@@ -76,6 +76,7 @@ class FinancialReportsIntegrationTest extends TestCase
 
         $filters = [
             'branch_id' => $this->ctx['branch']->id,
+            'company_id' => $this->ctx['company']->id,
             'date_from' => '2026-03-01',
             'date_to' => '2026-03-31',
             'ledger_id' => null,

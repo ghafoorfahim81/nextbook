@@ -69,7 +69,10 @@ foreach (['app', 'database/seeders', 'database/factories', 'tests'] as $root) {
                 || preg_match('/\$branchId\s*=.*\bcompany\b/', $line)
                 // 'company_id' => <branch lookup> is the same derivation,
                 // written inline into a row.
-                || preg_match("/'company_id'\s*=>.*Branch::.*value\('company_id'\)/", $line);
+                || preg_match("/'company_id'\s*=>.*Branch::.*value\('company_id'\)/", $line)
+                // companyOf($branchId) is the memoised form of that lookup in
+                // DashboardService and NotificationService.
+                || preg_match('/companyOf\(\$branchId\)/', $line);
 
             if (! $derives
                 && (($hasCompanyCol && $hasBranchVal && ! $hasBranchCol)
