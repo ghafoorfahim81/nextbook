@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Step 10 of the multi-company plan: make Postgres itself refuse to hand one
@@ -47,35 +46,78 @@ use Illuminate\Support\Facades\Schema;
  *
  * ## Scope
  *
- * Nine tables, chosen as the ones that hold money and stock. They are the rows
- * that must never cross a company boundary, and they exercise every shape the
- * remaining tables have: a document header, its lines, a sub-ledger, a chart of
- * accounts, master data, and two stock tables. Widening to the rest is a
- * repetition of this file, not a new design.
+ * Every table carrying a `company_id`, discovered from the schema rather than
+ * listed by hand. A list would have to be remembered: a table added by a later
+ * migration would reach the application without a policy, and the only symptom
+ * would be the absence of one. Deriving it means a new company-scoped table is
+ * protected by having the column, and a table that must *not* be protected has
+ * to say so in EXCLUDED_TABLES, where the reason can be written down.
  *
- * `companies`, `branches` and `users` are deliberately left out: sign-in and
- * branch switching read them before any company has been established, and a
- * policy there would lock everyone out of the application.
+ * Two kinds of exception, both below:
+ *
+ *  - EXCLUDED_TABLES — read before a company exists, so a policy would lock
+ *    everyone out.
+ *  - SHARED_REFERENCE_TABLES — seeded once with no company and shared by all of
+ *    them, so a plain equality policy would hide every row from everyone.
  */
 return new class extends Migration
 {
     /**
-     * The tables the policies are installed on.
+     * Tables that carry a company but must not be filtered by one.
      *
-     * Every one of these carries a `company_id` that is the company the row
-     * belongs to, not one derived from a parent — `transaction_lines` got its
-     * own column in step 6 for exactly this reason.
+     * Each of these is read before the request has established which company it
+     * is acting for, so a policy on them would deny the step that establishes
+     * it and lock everyone out of the application:
+     *
+     *  - `users` — read by the authentication guard, before sign-in resolves a
+     *    company at all. Its own `company_id` is nullable for the same reason:
+     *    a user exists before their company does.
+     *  - `branches` — read by SetActiveBranch, which validates the requested
+     *    branch against the company, and by the branch switcher. Cross-company
+     *    reads here are already prevented at the application level by
+     *    CompanySpecific on the Branch model, with a test holding it in place
+     *    (tests/Feature/Tenancy/CompanyScopeTest.php).
      */
-    private const TABLES = [
-        'transactions',
-        'transaction_lines',
-        'sales',
-        'purchases',
-        'ledgers',
-        'accounts',
-        'items',
-        'stock_movements',
-        'stock_balances',
+    private const EXCLUDED_TABLES = [
+        'users',
+        'branches',
+    ];
+
+    /**
+     * Tables holding reference data every company shares.
+     *
+     * ReferenceDataSeeder writes these once with `company_id` null — the
+     * standard customer groups and payment terms, the same list for everyone —
+     * and the nullable column lets a company add its own alongside. A plain
+     * equality policy would therefore hide the entire shared list from every
+     * company, which is why these get their own rule: read what is shared or
+     * your own, write only your own.
+     */
+    private const SHARED_REFERENCE_TABLES = [
+        'customer_groups',
+        'payment_terms',
+    ];
+
+    /**
+     * The audit trail, which has to accept events it cannot attribute.
+     *
+     * `activity_logs.company_id` is nullable because ActivityLogService falls
+     * back to null when nothing establishes a company — a failed sign-in, or
+     * anything a user does before they have a company, including the creation
+     * of the user themselves. Under a plain equality policy that insert is
+     * refused, which breaks user creation outright.
+     *
+     * So writes may be unattributed, but reads may not see what is not theirs:
+     * an unattributed event can carry another company's email address or failed
+     * login, and a tenant has no business reading it. Those rows stay visible
+     * on the owner connection, which is where an administrator investigating
+     * them looks.
+     *
+     * This is the opposite asymmetry to SHARED_REFERENCE_TABLES, where the
+     * company-less rows are readable by everyone and writable by no one.
+     */
+    private const AUDIT_TRAIL_TABLES = [
+        'activity_logs',
     ];
 
     public function up(): void
@@ -89,15 +131,12 @@ return new class extends Migration
         $this->ensureRoleExists($role);
         $this->grantApplicationPrivileges($role);
 
-        foreach (self::TABLES as $table) {
-            if (! Schema::hasTable($table)) {
-                throw new RuntimeException(
-                    "Cannot enable row level security on '{$table}': the table does not exist. "
-                    . 'This migration must run after the migrations that create it.'
-                );
-            }
-
-            $this->installPolicy($table);
+        foreach ($this->companyTables() as $table) {
+            match (true) {
+                in_array($table, self::SHARED_REFERENCE_TABLES, true) => $this->installSharedReferencePolicies($table),
+                in_array($table, self::AUDIT_TRAIL_TABLES, true) => $this->installAuditTrailPolicies($table),
+                default => $this->installPolicy($table),
+            };
         }
     }
 
@@ -107,18 +146,56 @@ return new class extends Migration
             return;
         }
 
-        foreach (self::TABLES as $table) {
-            if (! Schema::hasTable($table)) {
-                continue;
-            }
+        // Driven off the policies that actually exist rather than off the
+        // discovery above, so a rollback cleans up after a schema that has since
+        // changed — including a table that has lost its company column.
+        $policies = DB::select(
+            'SELECT tablename, policyname FROM pg_policies WHERE schemaname = current_schema()'
+        );
 
-            DB::statement("DROP POLICY IF EXISTS {$table}_company_isolation ON {$table}");
+        $tables = [];
+
+        foreach ($policies as $policy) {
+            DB::statement("DROP POLICY IF EXISTS {$policy->policyname} ON {$policy->tablename}");
+            $tables[$policy->tablename] = true;
+        }
+
+        foreach (array_keys($tables) as $table) {
             DB::statement("ALTER TABLE {$table} DISABLE ROW LEVEL SECURITY");
         }
 
         // The role itself is left in place. Dropping it would break any other
         // environment still connecting with it, and a login role that owns
         // nothing is harmless once the policies are gone.
+    }
+
+    /**
+     * Every table in the schema that carries a company, minus the exclusions.
+     *
+     * Read from the catalogue rather than listed here: a table added by a later
+     * migration is then protected by virtue of having the column, and cannot
+     * arrive without a policy because nobody remembered to add it to a list.
+     *
+     * @return array<int, string>
+     */
+    private function companyTables(): array
+    {
+        $tables = DB::select(
+            "SELECT c.relname AS name
+             FROM pg_class c
+             JOIN pg_namespace n ON n.oid = c.relnamespace
+             JOIN pg_attribute a ON a.attrelid = c.oid
+             WHERE n.nspname = current_schema()
+               AND c.relkind = 'r'
+               AND a.attname = 'company_id'
+               AND a.attnum > 0
+               AND NOT a.attisdropped
+             ORDER BY c.relname"
+        );
+
+        $names = array_map(fn (object $row) => $row->name, $tables);
+
+        return array_values(array_diff($names, self::EXCLUDED_TABLES));
     }
 
     /**
@@ -159,6 +236,70 @@ return new class extends Migration
                 USING (company_id = current_setting('app.company_id', true)::char(26))
                 WITH CHECK (company_id = current_setting('app.company_id', true)::char(26))"
         );
+    }
+
+    /**
+     * Install the rule for a table of shared reference data.
+     *
+     * The shape is "read what is shared or your own, write only your own", and
+     * it needs four policies rather than one because the two halves of a single
+     * `FOR ALL` rule do not line up with that:
+     *
+     *  - A row with no company has to be *visible* to everyone, so SELECT's
+     *    USING must admit NULL.
+     *  - But nobody may *write* one, or a company could edit the list everyone
+     *    else reads. So the write rules exclude NULL on both sides.
+     *
+     * DELETE is why USING has to be split out rather than shared. A DELETE is
+     * checked against USING alone — there is no new row to check — so a single
+     * rule permissive enough for SELECT would also let any company delete the
+     * shared rows out from under every other company.
+     *
+     * Postgres combines permissive policies for the same command with OR, and
+     * these four cover disjoint commands, so each command gets exactly one rule.
+     */
+    private function installSharedReferencePolicies(string $table): void
+    {
+        DB::statement("ALTER TABLE {$table} ENABLE ROW LEVEL SECURITY");
+
+        $own = "company_id = current_setting('app.company_id', true)::char(26)";
+        $sharedOrOwn = "company_id IS NULL OR {$own}";
+
+        foreach (['read', 'insert', 'update', 'delete'] as $suffix) {
+            DB::statement("DROP POLICY IF EXISTS {$table}_company_{$suffix} ON {$table}");
+        }
+
+        DB::statement("CREATE POLICY {$table}_company_read ON {$table} FOR SELECT USING ({$sharedOrOwn})");
+        DB::statement("CREATE POLICY {$table}_company_insert ON {$table} FOR INSERT WITH CHECK ({$own})");
+        DB::statement("CREATE POLICY {$table}_company_update ON {$table} FOR UPDATE USING ({$own}) WITH CHECK ({$own})");
+        DB::statement("CREATE POLICY {$table}_company_delete ON {$table} FOR DELETE USING ({$own})");
+    }
+
+    /**
+     * Install the rule for the audit trail: write what you cannot attribute,
+     * read only what is yours.
+     *
+     * The INSERT side admits a null company because the service genuinely
+     * cannot always name one — see AUDIT_TRAIL_TABLES. The SELECT side does
+     * not, because an unattributed event may describe another company's user.
+     * UPDATE and DELETE stay restricted to the company's own rows; the
+     * retention sweep that removes old entries runs on the owner connection.
+     */
+    private function installAuditTrailPolicies(string $table): void
+    {
+        DB::statement("ALTER TABLE {$table} ENABLE ROW LEVEL SECURITY");
+
+        $own = "company_id = current_setting('app.company_id', true)::char(26)";
+        $ownOrUnattributed = "company_id IS NULL OR {$own}";
+
+        foreach (['read', 'insert', 'update', 'delete'] as $suffix) {
+            DB::statement("DROP POLICY IF EXISTS {$table}_company_{$suffix} ON {$table}");
+        }
+
+        DB::statement("CREATE POLICY {$table}_company_read ON {$table} FOR SELECT USING ({$own})");
+        DB::statement("CREATE POLICY {$table}_company_insert ON {$table} FOR INSERT WITH CHECK ({$ownOrUnattributed})");
+        DB::statement("CREATE POLICY {$table}_company_update ON {$table} FOR UPDATE USING ({$own}) WITH CHECK ({$own})");
+        DB::statement("CREATE POLICY {$table}_company_delete ON {$table} FOR DELETE USING ({$own})");
     }
 
     /**

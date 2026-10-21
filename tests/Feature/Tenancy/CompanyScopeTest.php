@@ -4,6 +4,7 @@ use App\Models\Administration\Branch;
 use App\Models\Administration\Company;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\CompanyDatabaseContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -17,13 +18,25 @@ uses(RefreshDatabase::class);
  * server an id.
  */
 
+/**
+ * Both helpers below build their rows with the connection pointed at the
+ * company they belong to.
+ *
+ * These tests exist to construct a state the application will not: two
+ * companies, and a user of one reaching for the other. Creating either of them
+ * is audited, and the activity log row carries the company of the thing being
+ * created — which the row level security policies accept only from a connection
+ * acting for that company. Each company's fixtures are therefore built the way
+ * that company's own users would build them, which is also what makes the
+ * crossing attempted afterwards a real one.
+ */
 function superAdminIn(Company $company, Branch $branch): User
 {
-    $user = User::factory()->create([
+    $user = CompanyDatabaseContext::runFor($company->id, fn () => User::factory()->create([
         'email' => 'owner-'.fake()->unique()->numberBetween(1000, 9999).'@example.test',
         'company_id' => $company->id,
         'branch_id' => $branch->id,
-    ]);
+    ]));
 
     $role = Role::query()->firstOrCreate(
         ['name' => 'super-admin', 'guard_name' => 'web'],
@@ -39,11 +52,11 @@ function companyWithBranch(string $name): array
 {
     $company = Company::factory()->create(['name_en' => $name]);
 
-    $branch = Branch::factory()->create([
+    $branch = CompanyDatabaseContext::runFor($company->id, fn () => Branch::factory()->create([
         'company_id' => $company->id,
         'name' => $name.' Main',
         'is_main' => true,
-    ]);
+    ]));
 
     return [$company, $branch];
 }
@@ -66,10 +79,13 @@ it('refuses to switch into a branch of another company', function () {
 it('allows switching between branches of the same company', function () {
     [$company, $mainBranch] = companyWithBranch('Ahmad Electronics');
 
-    $herat = Branch::factory()->create([
+    // In this company's context, like companyWithBranch above: creating a
+    // branch is audited, and the policies take an activity log row only from a
+    // connection acting for the company it names.
+    $herat = CompanyDatabaseContext::runFor($company->id, fn () => Branch::factory()->create([
         'company_id' => $company->id,
         'name' => 'Herat',
-    ]);
+    ]));
 
     $user = superAdminIn($company, $mainBranch);
 

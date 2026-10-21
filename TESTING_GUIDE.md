@@ -129,10 +129,14 @@ for fails in the test rather than silently returning nothing in production.
 
 Two consequences worth knowing before you write a test:
 
-- **Fixtures belong to one company.** `bootstrapErpContext()` tells the database
-  which. A test that builds a second company's rows has to wrap them in
-  `CompanyDatabaseContext::runFor($companyId, fn () => ...)`, because the
-  policies accept a row stamped with the company on the connection and no other.
+- **Fixtures belong to one company.** `bootstrapErpContext()` establishes which.
+  A test that builds a second company's rows wraps them in
+  `$this->actingInCompany($companyId, fn () => ...)`, or uses
+  `$this->branchInAnotherCompany()` for the common case. Both move the container
+  bindings and the database connection together — which is the point: the
+  application decides a new row's company from the container, and Postgres
+  checks that decision against the connection, so setting one without the other
+  produces a row the policies then refuse.
 - **DDL needs `$this->asSchemaOwner(fn () => ...)`.** Only DDL — recreating a
   table a migration drops, re-adding a constraint. A test that cannot write a
   *row* has hit the company boundary, not a privilege limit, and reaching for

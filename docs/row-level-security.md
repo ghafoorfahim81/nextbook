@@ -76,22 +76,55 @@ a request* below.
 
 ---
 
-## Scope: nine tables
+## Scope: every table that carries a company
 
-```
-transactions   transaction_lines   sales   purchases
-ledgers        accounts            items   stock_movements   stock_balances
-```
+100 tables, discovered from the schema at migration time rather than listed by
+hand. A list has to be remembered: a table added by a later migration would
+reach the application with no policy on it, and the only symptom would be the
+absence of one. Deriving the set means a new company-scoped table is protected
+by virtue of having the column, and a table that must *not* be protected has to
+say so in `EXCLUDED_TABLES`, where the reason gets written down. The coverage
+test reads the schema the same way, so the two cannot drift.
 
-These hold the money and the stock, and between them they cover every shape the
-remaining tables have: a document header, its lines, a sub-ledger, a chart of
-accounts, master data, and two stock tables. Widening to the rest is a
-repetition of that migration's `TABLES` list, not a new design — but see
-*Before you widen it* below.
+Two tables are excluded, both because they are read before a company exists:
 
-`companies`, `branches` and `users` are deliberately **not** in scope: sign-in
-and branch switching read them before any company has been established, and a
-policy there would lock everyone out.
+- **`users`** — read by the authentication guard, before sign-in resolves a
+  company at all. Its own `company_id` is nullable for the same reason: a user
+  exists before their company does.
+- **`branches`** — read by SetActiveBranch, which validates the requested branch
+  against the company, and by the branch switcher. Cross-company reads here are
+  prevented at the application level by `CompanySpecific` on the Branch model,
+  with `tests/Feature/Tenancy/CompanyScopeTest.php` holding it in place.
+
+`companies` needs no policy: it has no `company_id`, and `CompanySpecific` on
+the model scopes what a request can see.
+
+### Three policy shapes, not one
+
+Most tables get the symmetric rule: read your own, write your own. Two groups
+cannot, and the asymmetries run in opposite directions.
+
+**Shared reference data** — `customer_groups`, `payment_terms`. ReferenceDataSeeder
+writes these once with `company_id` null: the standard customer groups and
+payment terms, the same list for everyone, with the nullable column letting a
+company add its own alongside. A plain equality policy hides the entire shared
+list from every company. So: **read what is shared or your own, write only your
+own.**
+
+That needs four policies rather than one, and `DELETE` is why. A DELETE is
+checked against `USING` alone — there is no new row to check — so a single rule
+permissive enough to *read* the shared rows would be permissive enough to
+*remove* them, letting one company delete the list every other company depends
+on. Splitting the rule per command puts `USING` for SELECT and `USING` for
+DELETE in different policies.
+
+**The audit trail** — `activity_logs`. ActivityLogService falls back to a null
+company when nothing establishes one: a failed sign-in, or anything done before
+the user has a company, including the creation of the user. Refusing those
+inserts breaks user creation outright. So: **write what you cannot attribute,
+read only your own.** An unattributed event can name another company's user, so
+it must not become readable by every tenant; those rows stay visible on the
+owner connection, which is where an administrator investigating them looks.
 
 ---
 
@@ -255,14 +288,14 @@ notice before.
 
 ---
 
-## Before you widen it to the remaining tables
+## Things worth knowing before changing any of this
 
-Four things are worth knowing first.
-
-**`ledgers.company_id` is nullable.** It is the only protected table where that
-is true, and a row with a NULL company would be invisible to everyone — the
-policy compares for equality. No such row exists today in development or in the
-seeders, but the column should be tightened to `NOT NULL` before the data grows.
+**`ledgers.company_id` is nullable**, and so are `customer_groups`,
+`payment_terms` and `activity_logs`. The last three are nullable on purpose and
+have their own policy shapes above. `ledgers` is not: no row with a null company
+exists in development or in the seeders, and the column should be tightened to
+`NOT NULL` before the data grows — a null-company ledger would be invisible to
+everyone.
 
 **Constraint checks ignore the policies.** Postgres applies unique and foreign
 key checks regardless of row security. That is what keeps foreign keys working
@@ -277,17 +310,28 @@ number.
 indexes still apply. Casting the column instead makes the comparison
 unindexable and turns every query on the table into a sequential scan.
 
-**Default privileges are already granted.** A table added by a later migration
-is reachable by `nextbook_app` without a new `GRANT` — which means it arrives
-with *no policy on it*. Extending the boundary is a matter of adding to the
-migration's `TABLES` list and to `PROTECTED_TABLES` in the test, never of
-remembering a grant.
+**The container binding and the connection have to move together.** The
+application reads the acting company from the container — `HasCompany` to stamp
+new rows, ActivityLogService to attribute the audit entry — and Postgres
+compares that answer against `app.company_id`. Setting one without the other
+produces a row whose company disagrees with the connection, which the policies
+then refuse. `SetDatabaseCompanyContext` maintains this in production, and
+`BuildsErpContext::actingInCompany()` is the same invariant for fixtures.
 
-**Run the factory scanner first.** `tools/phase-2/factory_related_company.php
---all` lists every factory default that builds a related company-scoped row
-without saying which company it belongs to. Each one becomes a failing test the
-moment its table gets a policy. Twenty-three are outstanding on tables that
-already have one, harmless only because no test currently reaches the default;
-the fix is the one applied to `ItemFactory` — declare `company_id` first in the
-definition and derive the related row from it, since Laravel expands a
+Note that `HasCompany` prefers the row's own branch over the container, and that
+`active_branch_id` therefore counts as part of the context. Leaving a previous
+company's branch bound while building another company's fixtures stamps the new
+rows with the old company — which is what `actingInCompany()` clears it for.
+
+**Run the factory scanner before extending anything.**
+
+```bash
+php tools/phase-2/factory_related_company.php --all
+```
+
+It lists every factory default that builds a related company-scoped row without
+saying which company it belongs to. Both its lists are at zero now; anything
+that appears is a latent failure waiting for the first test that leans on the
+default. The fix is the one applied to `ItemFactory`: declare `company_id` — or
+the branch it is derived from — before the related key, since Laravel expands a
 definition in order and hands each closure what has already resolved.

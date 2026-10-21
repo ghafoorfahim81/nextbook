@@ -43,20 +43,31 @@ class RowLevelSecurityTest extends TestCase
     use BuildsErpContext;
 
     /**
-     * The tables the migration installs policies on. Kept here as its own list
-     * rather than imported from the migration: if the two drift, that is the
-     * thing worth failing on.
+     * The only tables that carry a company and are allowed to have no policy.
+     *
+     * Stated here as its own list rather than imported from the migration: if
+     * the two drift, that is the thing worth failing on. Adding a table here is
+     * a decision to leave it unprotected, and should need a reason written in
+     * the migration beside it.
      */
-    private const PROTECTED_TABLES = [
-        'transactions',
-        'transaction_lines',
-        'sales',
-        'purchases',
-        'ledgers',
-        'accounts',
-        'items',
-        'stock_movements',
-        'stock_balances',
+    private const UNPROTECTED_TABLES = [
+        'users',
+        'branches',
+    ];
+
+    /**
+     * Tables whose shared, company-less reference rows everyone may read.
+     */
+    private const SHARED_REFERENCE_TABLES = [
+        'customer_groups',
+        'payment_terms',
+    ];
+
+    /**
+     * Tables that accept an event they cannot attribute to a company.
+     */
+    private const AUDIT_TRAIL_TABLES = [
+        'activity_logs',
     ];
 
     /**
@@ -83,17 +94,41 @@ class RowLevelSecurityTest extends TestCase
     }
 
     /**
-     * Every table in scope has row security switched on and a policy attached.
+     * Every table that carries a company has row security on and a policy
+     * attached, except the two that are allowed not to.
      *
-     * Enabling row security without a policy denies everything, and adding a
-     * policy without enabling it denies nothing; both halves have to be present
-     * on every table, so both are asserted per table.
+     * Asserted against the schema rather than a list, so a table added by a
+     * later migration is covered the moment it gets a `company_id` — the whole
+     * point of the migration discovering its own scope. A new table that must
+     * stay unprotected fails here until the decision is written down in both
+     * places.
+     *
+     * Both halves are checked per table: row security without a policy denies
+     * everything, and a policy without row security denies nothing.
      */
-    public function test_every_protected_table_has_row_security_enabled(): void
+    public function test_every_company_table_has_row_security_enabled(): void
     {
         $this->bootstrapErpContext();
 
-        foreach (self::PROTECTED_TABLES as $table) {
+        $tables = DB::table('pg_class as c')
+            ->join('pg_namespace as n', 'n.oid', '=', 'c.relnamespace')
+            ->join('pg_attribute as a', 'a.attrelid', '=', 'c.oid')
+            ->where('n.nspname', 'public')
+            ->where('c.relkind', 'r')
+            ->where('a.attname', 'company_id')
+            ->where('a.attnum', '>', 0)
+            ->where('a.attisdropped', false)
+            ->orderBy('c.relname')
+            ->pluck('c.relname')
+            ->reject(fn (string $table) => in_array($table, self::UNPROTECTED_TABLES, true));
+
+        $this->assertGreaterThan(
+            90,
+            $tables->count(),
+            'Far fewer company tables than expected — the query is probably wrong, not the schema.'
+        );
+
+        foreach ($tables as $table) {
             $enabled = DB::scalar(
                 'SELECT relrowsecurity FROM pg_class WHERE oid = ?::regclass',
                 [$table]
@@ -104,13 +139,85 @@ class RowLevelSecurityTest extends TestCase
                 "Row level security is not enabled on '{$table}'."
             );
 
-            $policy = DB::table('pg_policies')
-                ->where('tablename', $table)
-                ->where('policyname', "{$table}_company_isolation")
-                ->exists();
+            // The two asymmetric shapes split the rule across four policies,
+            // one per command, so there is no single `_isolation` policy to
+            // look for; `_read` is the one every shape has.
+            $splitRule = in_array($table, self::SHARED_REFERENCE_TABLES, true)
+                || in_array($table, self::AUDIT_TRAIL_TABLES, true);
 
-            $this->assertTrue($policy, "'{$table}' has no company isolation policy.");
+            $expected = $splitRule ? "{$table}_company_read" : "{$table}_company_isolation";
+
+            $this->assertTrue(
+                DB::table('pg_policies')->where('tablename', $table)->where('policyname', $expected)->exists(),
+                "'{$table}' has no company policy named '{$expected}'."
+            );
         }
+    }
+
+    /**
+     * Shared reference data is readable by every company, writable by none.
+     *
+     * ReferenceDataSeeder writes the standard customer groups and payment terms
+     * once with no company. Every company has to be able to read that list, and
+     * none of them may change it — including by deleting it, which is why the
+     * rule is four policies rather than one: a DELETE is checked against USING
+     * alone, so a rule permissive enough to read the shared rows would be
+     * permissive enough to remove them.
+     */
+    public function test_shared_reference_rows_are_readable_but_not_writable(): void
+    {
+        $context = $this->bootstrapErpContext();
+
+        $sharedId = (string) Str::ulid();
+
+        // Written as the owner, the way the seeder does it.
+        $this->asSchemaOwner(fn () => DB::table('payment_terms')->insert([
+            'id' => $sharedId,
+            'company_id' => null,
+            'name' => 'Net 90 (shared)',
+            'days' => 90,
+            'type' => 'net',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]));
+
+        $this->asApplicationRole($context['company']->id, function () use ($sharedId) {
+            $this->assertTrue(
+                DB::table('payment_terms')->where('id', $sharedId)->exists(),
+                'A company cannot see the shared payment terms.'
+            );
+
+            $this->assertSame(
+                0,
+                DB::table('payment_terms')->where('id', $sharedId)->delete(),
+                'A company was able to delete a shared payment term.'
+            );
+
+            $this->assertSame(
+                0,
+                DB::table('payment_terms')->where('id', $sharedId)->update(['days' => 1]),
+                'A company was able to change a shared payment term.'
+            );
+
+            $this->assertRejected(
+                fn () => DB::table('payment_terms')->insert([
+                    'id' => (string) Str::ulid(),
+                    'company_id' => null,
+                    'name' => 'Net 120 (smuggled)',
+                    'days' => 120,
+                    'type' => 'net',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]),
+                'A company was able to add a payment term to the shared list.'
+            );
+        });
+
+        $this->assertSame(
+            90,
+            (int) DB::table('payment_terms')->where('id', $sharedId)->value('days'),
+            'The shared payment term was modified.'
+        );
     }
 
     /**
@@ -306,6 +413,47 @@ class RowLevelSecurityTest extends TestCase
         }
 
         $this->fail($message);
+    }
+
+    /**
+     * The audit trail accepts an event it cannot attribute, and shows it to
+     * nobody.
+     *
+     * ActivityLogService falls back to a null company when nothing establishes
+     * one — a failed sign-in, or anything done before the user has a company,
+     * including creating the user. Refusing those inserts breaks user creation
+     * outright, which is what a plain equality policy did. But an unattributed
+     * event can name another company's user, so it must not become readable by
+     * every tenant either: the asymmetry is deliberate and runs the opposite
+     * way to the shared reference tables.
+     */
+    public function test_an_unattributed_audit_event_can_be_written_but_not_read(): void
+    {
+        $context = $this->bootstrapErpContext();
+
+        $this->asApplicationRole($context['company']->id, function () {
+            $id = (string) Str::ulid();
+
+            DB::table('activity_logs')->insert([
+                'id' => $id,
+                'company_id' => null,
+                'event_type' => 'login_failed',
+                'module' => 'auth',
+                'description' => 'Unattributed event',
+                'created_at' => now(),
+            ]);
+
+            $this->assertFalse(
+                DB::table('activity_logs')->where('id', $id)->exists(),
+                'An unattributed audit event was readable by a company.'
+            );
+
+            // Visible to the owner, which is where it is investigated from.
+            $this->assertTrue(
+                $this->asSchemaOwner(fn () => DB::table('activity_logs')->where('id', $id)->exists()),
+                'An unattributed audit event was not written at all.'
+            );
+        });
     }
 
     /**

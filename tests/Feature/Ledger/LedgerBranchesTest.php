@@ -138,7 +138,7 @@ class LedgerBranchesTest extends TestCase
     public function test_a_customer_cannot_be_opened_to_another_companys_branch(): void
     {
         $customer = $this->customer('Guarded Trader');
-        $foreign = Branch::factory()->create(['is_main' => false]);
+        $foreign = $this->branchInAnotherCompany();
 
         $this->put(route('customers.update', $customer), [
             'name' => 'Guarded Trader',

@@ -24,35 +24,53 @@ trait BuildsErpContext
 {
     protected function bootstrapErpContext(string $costingMethod = CostingMethod::FIFO->value): array
     {
-        $user = User::factory()->create([
-            'name' => 'erp-super-admin',
-            'email' => 'erp-admin-'.fake()->unique()->numberBetween(1000, 9999).'@example.test',
-            'preferences' => User::DEFAULT_PREFERENCES,
-        ]);
-
-        // The company is built before the branch and the user is attached to it
-        // immediately: a branch now requires an owning company, and the user's
-        // company has to be the same one or every company-scoped query in the
-        // test would look at a different set of books than the branch does.
-        // `currency_id` is filled in further down, once a currency exists.
+        // The company comes first and nothing is created before it. A branch
+        // requires an owning company, the user's company has to be the same one
+        // or every company-scoped query in the test would look at a different
+        // set of books than the branch does, and — since step 10 — the database
+        // has to be told which company is acting before anything is written in
+        // its name. `currency_id` is filled in further down, once a currency
+        // exists.
         $company = Company::factory()->create([
             'name_en' => 'ERP Test Company',
             'costing_method' => $costingMethod,
             'calendar_type' => CalendarType::GREGORIAN->value,
         ]);
 
-        $user->update(['company_id' => $company->id]);
-
-        // The suite connects as the application role, which the row level
-        // security policies apply to, and those policies reject a write
-        // stamped with any company but the one on the connection. Everything
-        // below this line that touches a protected table — the chart of
-        // accounts, the two ledgers, the item — would be refused without this.
+        // The acting company, bound in the container and set on the connection
+        // in the same breath — which is the invariant SetDatabaseCompanyContext
+        // maintains in production, and for the same reason.
         //
-        // It goes here rather than beside the container bindings further down
-        // because it has to precede the first protected insert, not merely the
-        // first read.
+        // The suite connects as the application role, so the row level security
+        // policies apply and reject a write stamped with any company but the
+        // one on the connection. Everything below this line would be refused
+        // without the second line: not only the chart of accounts, the ledgers
+        // and the item, but the audit log row each of their creations writes.
+        //
+        // And without the first line the two would disagree. ActivityLogService
+        // reads the company from the container, so a test bootstrapping a
+        // second context mid-test — StockServiceTest does, for a LIFO company —
+        // wrote log rows naming the *first* company onto a connection acting
+        // for the second. The bindings used to be set at the end of this
+        // method, which was too late for everything audited in between.
+        app()->instance('active_company_id', $company->id);
+        app()->instance('accessible_company_ids', [$company->id]);
         CompanyDatabaseContext::set($company->id);
+
+        // Created with its company rather than attached afterwards. The old
+        // order built the user first and updated it later, which left two
+        // audited writes attributed to a company that was not yet on the
+        // connection — harmless on the first call, but a test that bootstraps a
+        // second context mid-test (StockServiceTest does, for a LIFO company)
+        // had the first context's company still bound, and the write was
+        // refused. Creating the user in its own company makes the order of
+        // calls stop mattering.
+        $user = User::factory()->create([
+            'name' => 'erp-super-admin',
+            'email' => 'erp-admin-'.fake()->unique()->numberBetween(1000, 9999).'@example.test',
+            'preferences' => User::DEFAULT_PREFERENCES,
+            'company_id' => $company->id,
+        ]);
 
         $branch = Branch::factory()->create([
             'company_id' => $company->id,
@@ -180,6 +198,78 @@ trait BuildsErpContext
             'account_types' => $accountTypes,
             'accounts' => $accounts,
         ];
+    }
+
+    /**
+     * Build fixtures as though another company's own users were building them.
+     *
+     * Three things have to move together, and this is the only place that knows
+     * it:
+     *
+     *  - `active_company_id` / `accessible_company_ids`, which ActivityLogService
+     *    and HasCompany read to decide which company a new row belongs to.
+     *  - the company on the connection, which the row level security policies
+     *    compare that answer against.
+     *  - `active_branch_id`, cleared because this company's branches are not the
+     *    acting one's. Leaving it set is what broke the first attempt at this
+     *    helper: HasCompany prefers the active branch, so rows created in here
+     *    were stamped with the *previous* company and then refused by the
+     *    policies — including the throwaway user BranchFactory builds for
+     *    `created_by`.
+     *
+     * Setting only the connection is not enough, and setting only the bindings
+     * is worse than useless: the two disagreeing is exactly what the policies
+     * exist to catch.
+     *
+     * @template TReturn
+     *
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     */
+    protected function actingInCompany(string $companyId, callable $callback): mixed
+    {
+        $previousCompany = app()->bound('active_company_id') ? app('active_company_id') : null;
+        $previousAccessible = app()->bound('accessible_company_ids') ? app('accessible_company_ids') : [];
+        $previousBranch = app()->bound('active_branch_id') ? app('active_branch_id') : null;
+
+        app()->instance('active_company_id', $companyId);
+        app()->instance('accessible_company_ids', [$companyId]);
+        app()->instance('active_branch_id', null);
+
+        try {
+            return CompanyDatabaseContext::runFor($companyId, $callback);
+        } finally {
+            app()->instance('active_company_id', $previousCompany);
+            app()->instance('accessible_company_ids', $previousAccessible);
+            app()->instance('active_branch_id', $previousBranch);
+        }
+    }
+
+    /**
+     * A branch belonging to a company of its own, built in that company's
+     * context.
+     *
+     * Every test that proves the company boundary holds needs a row on the far
+     * side of it, and `Branch::factory()` alone does not give one that can
+     * exist: creating a branch is audited, and the policies take an activity log
+     * row only from a connection acting for the company it names. Building it
+     * the way that company's own users would is also what makes the crossing
+     * the test then attempts a real one, rather than a write that was never
+     * possible in the first place.
+     *
+     * Anything else needed on the far side goes in the same shape:
+     * `$this->actingInCompany($branch->company_id, fn () => ...)`.
+     */
+    protected function branchInAnotherCompany(array $attributes = []): Branch
+    {
+        $company = Company::factory()->create([
+            'name_en' => 'Other Company '.fake()->unique()->numberBetween(1000, 9999),
+        ]);
+
+        return $this->actingInCompany($company->id, fn (): Branch => Branch::factory()->create(array_merge([
+            'company_id' => $company->id,
+            'is_main' => false,
+        ], $attributes)));
     }
 
     protected function createDefaultAccountTypes(string $companyId): array
