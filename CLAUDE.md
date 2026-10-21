@@ -72,6 +72,7 @@ Tests require a `.env.testing` file pointing to a `nextbook_test` PostgreSQL dat
 - Every authenticated request is scoped to the user's **branch** and **company**
 - `CheckCompany` middleware enforces that a company exists before routing to protected pages
 - Models are scoped by `branch_id` and `company_id` at the controller level (not global scopes), so always include these when querying or creating records
+- Postgres **row level security** backs that up on nine money and stock tables (`transactions`, `transaction_lines`, `sales`, `purchases`, `ledgers`, `accounts`, `items`, `stock_movements`, `stock_balances`). In production the app connects as `nextbook_app`, which the policies filter by the `app.company_id` session variable; migrations and maintenance commands run on the `pgsql` (owner) connection, which is exempt. Anything running outside a request must set the company itself via `CompanyDatabaseContext::runFor()`, or it sees no rows at all. See `docs/row-level-security.md`
 
 ### Database Conventions
 
@@ -123,6 +124,7 @@ Routes are grouped by domain: Administration, Inventory, Accounting (ledgers, su
 ### Testing Patterns
 
 - Uses `BuildsErpContext` trait to bootstrap a company, branch, currency, and admin user for each test
+- **Every test body runs as the `nextbook_app` role**, so the row level security policies are in force. Fixtures for a second company must be wrapped in `CompanyDatabaseContext::runFor()`; DDL needs `$this->asSchemaOwner()`. See `docs/row-level-security.md`
 - Feature tests live under `tests/Feature/` organized by module
 - Factories in `database/factories/` (13+ domain directories) for seeded test data
 - Financial and stock integrity (FIFO) are covered by integration tests in `tests/Integration/`
@@ -139,5 +141,6 @@ Routes are grouped by domain: Administration, Inventory, Accounting (ledgers, su
 | `docs/routes.md` | Route listing and conventions |
 | `docs/enums.md` | PHP enum definitions |
 | `docs/activity-logging.md` | Audit trail implementation details |
+| `docs/row-level-security.md` | Postgres RLS: the two roles, deploying it, extending it |
 | `docs/frontend-components.md` | Vue component library reference |
 | `docs/frontend-composables.md` | Reusable Vue composable reference |

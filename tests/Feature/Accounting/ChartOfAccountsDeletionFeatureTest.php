@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
 use App\Services\TransactionService;
+use App\Support\CompanyDatabaseContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\BuildsErpContext;
 use Tests\TestCase;
@@ -50,6 +51,13 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
         $company = Company::factory()->create([
             'name_en' => 'Account Delete Test Company',
         ]);
+
+        // This test builds its own context instead of calling
+        // bootstrapErpContext, so it has to do what that trait does: tell the
+        // database which company it is acting for. Without it the chart of
+        // accounts built below is refused by the row level security policies,
+        // which only accept a row stamped with the company on the connection.
+        CompanyDatabaseContext::set($company->id);
 
         $branch = Branch::factory()->create([
             'company_id' => $company->id,

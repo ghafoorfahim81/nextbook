@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresCrossCompanyAccess;
 use App\Models\Administration\Company;
 use App\Models\Sale\Sale;
 use Carbon\CarbonImmutable;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SeedDemoData extends Command
 {
+    use RequiresCrossCompanyAccess;
+
     protected $signature = 'nextbook:seed-demo
         {--tenant= : Company id, English/Dari name or abbreviation}
         {--scale=1 : Volume multiplier; 0.1 = 10% of the full data set}
@@ -34,6 +37,10 @@ class SeedDemoData extends Command
 
     public function handle(): int
     {
+        if (! $this->hasCrossCompanyAccess()) {
+            return self::FAILURE;
+        }
+
         ini_set('memory_limit', '-1');
         DB::disableQueryLog();
         // Internal requests need a session, but not one written to the database.

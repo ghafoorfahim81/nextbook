@@ -44,7 +44,13 @@ foreach (['app', 'database/seeders', 'database/factories', 'tests'] as $root) {
                 continue;
             }
 
-            if (preg_match('/\$companyId\s*=[^=]/', $line) || preg_match('/use\s*\([^)]*\$companyId/', $line)) {
+            // Assignment, capture by a closure, or a foreach that binds it —
+            // `foreach (... as $companyId)` is a definition just as much as
+            // `$companyId = ...`, and reading it as a use reported every loop
+            // over companies as a bug.
+            if (preg_match('/\$companyId\s*=[^=]/', $line)
+                || preg_match('/use\s*\([^)]*\$companyId/', $line)
+                || preg_match('/foreach\s*\(.*\bas\s+\$companyId\b/', $line)) {
                 $defined = true;
             }
 

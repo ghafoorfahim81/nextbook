@@ -10,6 +10,7 @@ use App\Jobs\SendNotificationEmailJob;
 use App\Models\Notification;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
+use App\Support\CompanyDatabaseContext;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -593,102 +594,111 @@ class NotificationService
 
     protected function lowBalanceAccounts(string $branchId): Collection
     {
-        $balances = DB::table('transaction_lines as tl')
-            ->join('transactions as t', function ($join) use ($branchId) {
-                $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $branchId)
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
-                    ->whereNull('t.deleted_at');
-            })
-            ->whereNull('tl.deleted_at')
-            ->groupBy('tl.account_id')
-            ->selectRaw('tl.account_id, COALESCE(SUM((COALESCE(tl.base_debit, 0) - COALESCE(tl.base_credit, 0))), 0) as balance');
+        return $this->inCompanyOf($branchId, function () use ($branchId): Collection {
+            $balances = DB::table('transaction_lines as tl')
+                ->join('transactions as t', function ($join) use ($branchId) {
+                    $join->on('t.id', '=', 'tl.transaction_id')
+                        ->where('t.branch_id', '=', $branchId)
+                        ->where('t.status', '=', TransactionStatus::POSTED->value)
+                        ->whereNull('t.deleted_at');
+                })
+                ->whereNull('tl.deleted_at')
+                ->groupBy('tl.account_id')
+                ->selectRaw('tl.account_id, COALESCE(SUM((COALESCE(tl.base_debit, 0) - COALESCE(tl.base_credit, 0))), 0) as balance');
 
-        return DB::table('accounts as a')
-            ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
-            ->leftJoinSub($balances, 'balances', fn ($join) => $join->on('balances.account_id', '=', 'a.id'))
-            ->where('a.company_id', $this->companyOf($branchId))
-            ->whereNull('a.deleted_at')
-            ->where('a.is_active', true)
-            ->where('at.slug', 'cash-or-bank')
-            ->whereRaw('COALESCE(balances.balance, 0) < 0')
-            ->orderBy('a.name')
-            ->get([
-                'a.id',
-                'a.name',
-                DB::raw('COALESCE(balances.balance, 0) as balance'),
-            ]);
+            return DB::table('accounts as a')
+                ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+                ->leftJoinSub($balances, 'balances', fn ($join) => $join->on('balances.account_id', '=', 'a.id'))
+                ->where('a.company_id', $this->companyOf($branchId))
+                ->whereNull('a.deleted_at')
+                ->where('a.is_active', true)
+                ->where('at.slug', 'cash-or-bank')
+                ->whereRaw('COALESCE(balances.balance, 0) < 0')
+                ->orderBy('a.name')
+                ->get([
+                    'a.id',
+                    'a.name',
+                    DB::raw('COALESCE(balances.balance, 0) as balance'),
+                ]);
+        });
     }
 
     protected function lowStockItems(string $branchId): Collection
     {
-        $stockTotals = DB::table('stock_balances')
-            ->whereIn('warehouse_id', Warehouse::idsOfBranch($branchId))
-            ->whereNull('deleted_at')
-            ->groupBy('item_id')
-            ->selectRaw('item_id, COALESCE(SUM(quantity), 0) as current_quantity');
+        return $this->inCompanyOf($branchId, function () use ($branchId): Collection {
+            $stockTotals = DB::table('stock_balances')
+                ->whereIn('warehouse_id', Warehouse::idsOfBranch($branchId))
+                ->whereNull('deleted_at')
+                ->groupBy('item_id')
+                ->selectRaw('item_id, COALESCE(SUM(quantity), 0) as current_quantity');
 
-        return DB::table('items as i')
-            ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
-            ->where('i.company_id', $this->companyOf($branchId))
-            ->whereNull('i.deleted_at')
-            ->whereNotNull('i.minimum_stock')
-            ->whereRaw('COALESCE(stock_totals.current_quantity, 0) <= i.minimum_stock')
-            ->orderBy('i.name')
-            ->get([
-                'i.id',
-                'i.name',
-                'i.minimum_stock',
-                DB::raw('COALESCE(stock_totals.current_quantity, 0) as current_quantity'),
-            ]);
+            return DB::table('items as i')
+                ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
+                ->where('i.company_id', $this->companyOf($branchId))
+                ->whereNull('i.deleted_at')
+                ->whereNotNull('i.minimum_stock')
+                ->whereRaw('COALESCE(stock_totals.current_quantity, 0) <= i.minimum_stock')
+                ->orderBy('i.name')
+                ->get([
+                    'i.id',
+                    'i.name',
+                    'i.minimum_stock',
+                    DB::raw('COALESCE(stock_totals.current_quantity, 0) as current_quantity'),
+                ]);
+        });
     }
 
     protected function expiringBatches(string $branchId): Collection
     {
-        $today = Carbon::today()->toDateString();
-        $cutoff = Carbon::today()->addDays(30)->toDateString();
+        return $this->inCompanyOf($branchId, function () use ($branchId): Collection {
+            $today = Carbon::today()->toDateString();
+            $cutoff = Carbon::today()->addDays(30)->toDateString();
 
-        return DB::table('stock_balances')
-            ->join('items as i', function ($join) {
-                $join->on('i.id', '=', 'stock_balances.item_id')
-                    ->whereNull('i.deleted_at');
-            })
-            ->leftJoin('warehouses as w', function ($join) {
-                $join->on('w.id', '=', 'stock_balances.warehouse_id')
-                    ->whereNull('w.deleted_at');
-            })
-            ->whereIn('stock_balances.warehouse_id', Warehouse::idsOfBranch($branchId))
-            ->whereNull('stock_balances.deleted_at')
-            ->where('stock_balances.quantity', '>', 0)
-            ->whereBetween('stock_balances.expire_date', [$today, $cutoff])
-            ->orderBy('stock_balances.expire_date')
-            ->get([
-                'stock_balances.id',
-                'stock_balances.item_id',
-                'stock_balances.warehouse_id',
-                'stock_balances.batch',
-                'stock_balances.expire_date',
-                'i.name as item_name',
-                'w.name as warehouse_name',
-            ]);
+            return DB::table('stock_balances')
+                ->join('items as i', function ($join) {
+                    $join->on('i.id', '=', 'stock_balances.item_id')
+                        ->whereNull('i.deleted_at');
+                })
+                ->leftJoin('warehouses as w', function ($join) {
+                    $join->on('w.id', '=', 'stock_balances.warehouse_id')
+                        ->whereNull('w.deleted_at');
+                })
+                ->whereIn('stock_balances.warehouse_id', Warehouse::idsOfBranch($branchId))
+                ->whereNull('stock_balances.deleted_at')
+                ->where('stock_balances.quantity', '>', 0)
+                ->whereBetween('stock_balances.expire_date', [$today, $cutoff])
+                ->orderBy('stock_balances.expire_date')
+                ->get([
+                    'stock_balances.id',
+                    'stock_balances.item_id',
+                    'stock_balances.warehouse_id',
+                    'stock_balances.batch',
+                    'stock_balances.expire_date',
+                    'i.name as item_name',
+                    'w.name as warehouse_name',
+                ]);
+        });
     }
 
     protected function saleSettlementStatus(string $branchId): Collection
     {
-        return $this->buildSettlementStatus(
+        // Wrapped at this level rather than inside each of the two queries it
+        // composes: they are only ever reached from here and from the purchase
+        // counterpart below.
+        return $this->inCompanyOf($branchId, fn (): Collection => $this->buildSettlementStatus(
             documents: $this->salesWithOutstandingAmounts($branchId),
             settlements: $this->receiptLedgerAllocations($branchId),
             ledgerKey: 'ledger_id',
-        );
+        ));
     }
 
     protected function purchaseSettlementStatus(string $branchId): Collection
     {
-        return $this->buildSettlementStatus(
+        return $this->inCompanyOf($branchId, fn (): Collection => $this->buildSettlementStatus(
             documents: $this->purchasesWithOutstandingAmounts($branchId),
             settlements: $this->paymentLedgerAllocations($branchId),
             ledgerKey: 'ledger_id',
-        );
+        ));
     }
 
     protected function salesWithOutstandingAmounts(string $branchId): Collection
@@ -915,7 +925,9 @@ class NotificationService
 
     protected function dailySummary(string $branchId, Carbon $date): array
     {
-        return [
+        // Wrapped here rather than in postedReferenceTotal, which this calls
+        // four times: one company setting per summary instead of one per total.
+        return $this->inCompanyOf($branchId, fn (): array => [
             'transactions_count' => DB::table('transactions')
                 ->where('branch_id', $branchId)
                 ->where('status', TransactionStatus::POSTED->value)
@@ -954,34 +966,36 @@ class NotificationService
                 startDate: $date->toDateString(),
                 endDate: $date->toDateString(),
             ),
-        ];
+        ]);
     }
 
     protected function weeklySummary(string $branchId, Carbon $startDate, Carbon $endDate): array
     {
-        $salesTotal = $this->postedReferenceTotal(
-            branchId: $branchId,
-            referenceType: \App\Models\Sale\Sale::class,
-            direction: 'debit',
-            accountTypeSlugs: ['cash-or-bank', 'account-receivable'],
-            startDate: $startDate->toDateString(),
-            endDate: $endDate->toDateString(),
-        );
+        return $this->inCompanyOf($branchId, function () use ($branchId, $startDate, $endDate): array {
+            $salesTotal = $this->postedReferenceTotal(
+                branchId: $branchId,
+                referenceType: \App\Models\Sale\Sale::class,
+                direction: 'debit',
+                accountTypeSlugs: ['cash-or-bank', 'account-receivable'],
+                startDate: $startDate->toDateString(),
+                endDate: $endDate->toDateString(),
+            );
 
-        $purchasesTotal = $this->postedReferenceTotal(
-            branchId: $branchId,
-            referenceType: \App\Models\Purchase\Purchase::class,
-            direction: 'credit',
-            accountTypeSlugs: ['cash-or-bank', 'account-payable'],
-            startDate: $startDate->toDateString(),
-            endDate: $endDate->toDateString(),
-        );
+            $purchasesTotal = $this->postedReferenceTotal(
+                branchId: $branchId,
+                referenceType: \App\Models\Purchase\Purchase::class,
+                direction: 'credit',
+                accountTypeSlugs: ['cash-or-bank', 'account-payable'],
+                startDate: $startDate->toDateString(),
+                endDate: $endDate->toDateString(),
+            );
 
-        return [
-            'sales_total' => $salesTotal,
-            'purchases_total' => $purchasesTotal,
-            'profit' => $this->moneyValue($salesTotal - $purchasesTotal),
-        ];
+            return [
+                'sales_total' => $salesTotal,
+                'purchases_total' => $purchasesTotal,
+                'profit' => $this->moneyValue($salesTotal - $purchasesTotal),
+            ];
+        });
     }
 
     protected function postedReferenceTotal(
@@ -1045,5 +1059,30 @@ class NotificationService
         return $this->companyIds[$branchId] ??= Branch::withoutGlobalScopes()
             ->whereKey($branchId)
             ->value('company_id');
+    }
+
+    /**
+     * Read a branch's data with the database pointed at that branch's company.
+     *
+     * Every check in this service runs from a scheduled job, which has no
+     * request and therefore no active company. The row level security policies
+     * installed in step 10 compare `app.company_id` for equality, so a
+     * connection that never set it sees nothing — a nightly low-stock check
+     * would quietly find no stock anywhere and send no alerts at all.
+     *
+     * The loops above already iterate one branch at a time, and a branch
+     * belongs to exactly one company, so the company is always known here. The
+     * wrapping goes on the read helpers rather than on the loop bodies because
+     * this is where the protected tables are actually touched; `notifyUser`
+     * writes to `notifications`, which has no policy on it.
+     *
+     * @template TReturn
+     *
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     */
+    protected function inCompanyOf(string $branchId, callable $callback): mixed
+    {
+        return CompanyDatabaseContext::runFor($this->companyOf($branchId), $callback);
     }
 }

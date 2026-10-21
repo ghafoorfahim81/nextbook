@@ -26,11 +26,19 @@ class ItemFactory extends Factory
      */
     public function definition(): array
     {
-        $assetAccount = Account::factory();
-        $incomeAccount = Account::factory();
-        $costAccount = Account::factory();
-
         return [
+            // Declared first on purpose. Laravel expands a definition in order
+            // and hands each closure the attributes resolved before it, so the
+            // three posting accounts below can only inherit this company if it
+            // is already known by the time they are built — and that includes
+            // the value a caller passed in, which is merged in before
+            // expansion.
+            //
+            // They used to be plain `Account::factory()` calls, which fall back
+            // to a company of their own: an item in one company pointing at
+            // three accounts in three others. Nothing noticed until the row
+            // level security policies refused the insert.
+            'company_id' => Company::factory(),
             'name' => fake()->unique()->words(2, true),
             'code' => strtoupper(fake()->unique()->bothify('ITM###')),
             'item_type' => ItemType::INVENTORY_MATERIALS->value,
@@ -41,9 +49,9 @@ class ItemFactory extends Factory
             'unit_measure_id' => UnitMeasure::factory(),
             'brand_id' => Brand::factory(),
             'category_id' => Category::factory(),
-            'cost_account_id' => $costAccount,
-            'income_account_id' => $incomeAccount,
-            'asset_account_id' => $assetAccount,
+            'cost_account_id' => fn (array $attributes) => $this->accountIn($attributes['company_id']),
+            'income_account_id' => fn (array $attributes) => $this->accountIn($attributes['company_id']),
+            'asset_account_id' => fn (array $attributes) => $this->accountIn($attributes['company_id']),
             'minimum_stock' => fake()->randomFloat(2, 1, 20),
             'maximum_stock' => fake()->randomFloat(2, 21, 200),
             'margin_percentage' => fake()->randomFloat(2, 0, 50),
@@ -57,7 +65,17 @@ class ItemFactory extends Factory
             'fast_search' => fake()->lexify('FAST-????'),
             'is_batch_tracked' => false,
             'is_expiry_tracked' => false,
-            'company_id' => Company::factory(),
         ];
+    }
+
+    /**
+     * A posting account in the item's own company.
+     *
+     * Returns the key rather than a factory instance: handing back a factory
+     * would let it resolve a company of its own, which is the bug this replaces.
+     */
+    private function accountIn(string $companyId): string
+    {
+        return Account::factory()->create(['company_id' => $companyId])->getKey();
     }
 }

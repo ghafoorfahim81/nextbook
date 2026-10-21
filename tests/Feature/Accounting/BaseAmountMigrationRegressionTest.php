@@ -167,8 +167,18 @@ class BaseAmountMigrationRegressionTest extends TestCase
     {
         $this->seedLedger();
 
-        $this->artisan('transactions:verify-base')
-            ->assertExitCode(0);
+        // As the schema owner, which is how this command is run for real: it
+        // sweeps every company, so RequiresCrossCompanyAccess refuses to let it
+        // run on a connection the policies would filter.
+        //
+        // The trailing ->run() is load-bearing. `artisan()` returns a pending
+        // command that otherwise executes in its own destructor — which fires
+        // after this closure returns and the application role is back, so the
+        // command would run as the very role it refuses to run as.
+        $this->asSchemaOwner(fn () => $this->artisan('transactions:verify-base')
+            ->expectsOutputToContain('All transactions balance in base currency.')
+            ->assertExitCode(0)
+            ->run());
     }
 
     public function test_verify_base_detects_and_repairs_rounding_drift(): void
@@ -185,11 +195,13 @@ class BaseAmountMigrationRegressionTest extends TestCase
             ->where('id', $line->id)
             ->update(['base_debit' => (float) $line->base_debit + 0.01]);
 
-        $this->artisan('transactions:verify-base')->assertExitCode(1);
+        // ->run() for the same reason as above: without it the command would
+        // execute in its destructor, outside the owner role.
+        $this->asSchemaOwner(fn () => $this->artisan('transactions:verify-base')->assertExitCode(1)->run());
 
-        $this->artisan('transactions:verify-base --fix')->assertExitCode(0);
+        $this->asSchemaOwner(fn () => $this->artisan('transactions:verify-base --fix')->assertExitCode(0)->run());
 
-        $this->artisan('transactions:verify-base')->assertExitCode(0);
+        $this->asSchemaOwner(fn () => $this->artisan('transactions:verify-base')->assertExitCode(0)->run());
 
         // The repair must never touch the rate — it is a historical fact.
         $repaired = DB::table('transaction_lines')->where('id', $line->id)->first();

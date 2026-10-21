@@ -106,11 +106,41 @@ DB_PORT=5432
 DB_DATABASE=nextbook_test
 DB_USERNAME=postgres
 DB_PASSWORD=
+DB_APP_USERNAME=nextbook_app
+DB_APP_PASSWORD=nextbook_app_test
 CACHE_STORE=array
 QUEUE_CONNECTION=sync
 SESSION_DRIVER=array
 MAIL_MAILER=array
 ```
+
+`DB_USERNAME` is the role the suite connects and migrates as. It owns the
+schema, so `migrate:fresh` works and the per-test transaction is the owner's.
+
+`DB_APP_USERNAME` / `DB_APP_PASSWORD` describe the role the *application*
+connects as in production. `migrate` creates it from these credentials, so a
+missing `DB_APP_PASSWORD` fails the migration with a message saying so.
+
+**The body of every test runs as that application role.** `Tests\TestCase`
+issues `SET ROLE` right after `parent::setUp()`, so the row level security
+policies from step 10 of the multi-company plan are in force for everything a
+test does — a code path that forgets to establish which company it is acting
+for fails in the test rather than silently returning nothing in production.
+
+Two consequences worth knowing before you write a test:
+
+- **Fixtures belong to one company.** `bootstrapErpContext()` tells the database
+  which. A test that builds a second company's rows has to wrap them in
+  `CompanyDatabaseContext::runFor($companyId, fn () => ...)`, because the
+  policies accept a row stamped with the company on the connection and no other.
+- **DDL needs `$this->asSchemaOwner(fn () => ...)`.** Only DDL — recreating a
+  table a migration drops, re-adding a constraint. A test that cannot write a
+  *row* has hit the company boundary, not a privilege limit, and reaching for
+  this hides the thing worth fixing. Note that a command run inside it needs an
+  explicit `->run()`: `$this->artisan(...)` otherwise executes in its own
+  destructor, after the role has been handed back.
+
+See `docs/row-level-security.md`.
 
 Then run:
 

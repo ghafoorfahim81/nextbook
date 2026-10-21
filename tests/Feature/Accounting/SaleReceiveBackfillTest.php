@@ -42,7 +42,11 @@ class SaleReceiveBackfillTest extends TestCase
             return;
         }
 
-        Schema::create('sale_receives', function (Blueprint $table): void {
+        // DDL, so it needs the role that owns the schema; the suite otherwise
+        // runs as the application role, which has no DDL privileges. In
+        // production this shape was created by a migration, which is the same
+        // role — so this is faithful to how the table really came about.
+        $this->asSchemaOwner(fn () => Schema::create('sale_receives', function (Blueprint $table): void {
             $table->ulid('id')->primary();
             $table->ulid('sale_id');
             $table->ulid('receipt_id');
@@ -58,7 +62,7 @@ class SaleReceiveBackfillTest extends TestCase
             $table->ulid('company_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
-        });
+        }));
     }
 
     private function account(string $slug): string
