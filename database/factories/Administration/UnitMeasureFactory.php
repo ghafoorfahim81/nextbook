@@ -26,8 +26,14 @@ class UnitMeasureFactory extends Factory
             'name' => fake()->unique()->word(),
             'unit' => fake()->randomElement(['1', '10', '100']),
             'symbol' => fake()->unique()->lexify('U??'),
+            // Company before quantity: Laravel expands a definition in order, so
+            // the quantity can only be built in this company if it is already
+            // resolved. A plain `Quantity::factory()` falls back to a company of
+            // its own, so the unit measured something from other books.
             'company_id' => Company::factory(),
-            'quantity_id' => Quantity::factory(),
+            'quantity_id' => fn (array $attributes) => Quantity::factory()
+                ->create(['company_id' => $attributes['company_id']])
+                ->getKey(),
             'value' => fake()->randomFloat(2, 1, 1000),
             'is_main' => false,
             'is_active' => true,

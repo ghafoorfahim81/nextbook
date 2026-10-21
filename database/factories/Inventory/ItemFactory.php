@@ -37,7 +37,8 @@ class ItemFactory extends Factory
             // They used to be plain `Account::factory()` calls, which fall back
             // to a company of their own: an item in one company pointing at
             // three accounts in three others. Nothing noticed until the row
-            // level security policies refused the insert.
+            // level security policies refused the insert. The unit, brand and
+            // category below had the same problem and are derived the same way.
             'company_id' => Company::factory(),
             'name' => fake()->unique()->words(2, true),
             'code' => strtoupper(fake()->unique()->bothify('ITM###')),
@@ -46,9 +47,15 @@ class ItemFactory extends Factory
             'generic_name' => fake()->optional()->word(),
             'packing' => fake()->optional()->word(),
             'barcode' => fake()->optional()->ean13(),
-            'unit_measure_id' => UnitMeasure::factory(),
-            'brand_id' => Brand::factory(),
-            'category_id' => Category::factory(),
+            'unit_measure_id' => fn (array $attributes) => UnitMeasure::factory()
+                ->create(['company_id' => $attributes['company_id']])
+                ->getKey(),
+            'brand_id' => fn (array $attributes) => Brand::factory()
+                ->create(['company_id' => $attributes['company_id']])
+                ->getKey(),
+            'category_id' => fn (array $attributes) => Category::factory()
+                ->create(['company_id' => $attributes['company_id']])
+                ->getKey(),
             'cost_account_id' => fn (array $attributes) => $this->accountIn($attributes['company_id']),
             'income_account_id' => fn (array $attributes) => $this->accountIn($attributes['company_id']),
             'asset_account_id' => fn (array $attributes) => $this->accountIn($attributes['company_id']),

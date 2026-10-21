@@ -23,19 +23,24 @@ class TransactionFactory extends Factory
     public function definition(): array
     {
         return [
-            'currency_id' => Currency::factory(),
-            'rate' => fake()->randomFloat(4, 0.5, 2.0),
-            'date' => fake()->date(),
-            'voucher_number' => fake()->optional()->bothify('VCH-#####'),
-            'reference_type' => null,
-            'reference_id' => null,
-            'status' => TransactionStatus::POSTED->value,
             'branch_id' => Branch::factory(),
             // Read off the branch rather than built separately, so the voucher
             // and its branch always agree on the company.
             'company_id' => fn (array $attributes) => Branch::withoutGlobalScopes()
                 ->whereKey($attributes['branch_id'])
                 ->value('company_id'),
+            // Built in the voucher's company. A plain `Currency::factory()`
+            // falls back to a company of its own, so the voucher was priced in
+            // another company's currency.
+            'currency_id' => fn (array $attributes) => Currency::factory()
+                ->create(['company_id' => $attributes['company_id']])
+                ->getKey(),
+            'rate' => fake()->randomFloat(4, 0.5, 2.0),
+            'date' => fake()->date(),
+            'voucher_number' => fake()->optional()->bothify('VCH-#####'),
+            'reference_type' => null,
+            'reference_id' => null,
+            'status' => TransactionStatus::POSTED->value,
             // The company's functional currency, falling back to the voucher's
             // own when a bare company has no base currency provisioned yet.
             // Listed after company_id because factory closures resolve in order.
