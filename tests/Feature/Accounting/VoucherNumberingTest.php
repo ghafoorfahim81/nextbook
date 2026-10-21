@@ -5,6 +5,8 @@ namespace Tests\Feature\Accounting;
 use App\Models\Payment\Payment;
 use App\Models\Receipt\Receipt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\Support\BuildsErpContext;
 use Tests\TestCase;
 
@@ -125,5 +127,69 @@ class VoucherNumberingTest extends TestCase
         // One series per company and document type: the second branch
         // continues the first one's sequence instead of starting its own.
         $this->assertSame(11, Receipt::nextNumber());
+    }
+
+    /**
+     * Allocating a number inside a transaction holds the series against other
+     * transactions until this one ends.
+     *
+     * Without it, two tills posting at the same moment both read the same
+     * "highest + 1" and the unique index turns the second cashier's perfectly
+     * good sale into an error. The lock makes the second one wait and leave
+     * with the next number instead.
+     *
+     * Proven from a second connection rather than by inspecting queries: what
+     * matters is that the lock is really held and really keyed to this series,
+     * and only another session can tell us that. `pg_try_advisory_xact_lock`
+     * returns false rather than blocking, so a failure here is a failed
+     * assertion and not a hung suite.
+     */
+    public function test_allocating_a_number_locks_the_series(): void
+    {
+        $this->receipt('1');
+
+        DB::transaction(function (): void {
+            Receipt::nextNumber();
+
+            $this->assertFalse(
+                $this->otherSessionCanLock('receipts|'.$this->ctx['company']->id),
+                'The receipt series was not held: a second transaction could have allocated the same number.'
+            );
+
+            // A different document type in the same company is a different
+            // series, so a sale does not wait on a receipt.
+            $this->assertTrue(
+                $this->otherSessionCanLock('sales|'.$this->ctx['company']->id),
+                'Allocating a receipt number blocked an unrelated series.'
+            );
+
+            // And neither does another company's receipt.
+            $this->assertTrue(
+                $this->otherSessionCanLock('receipts|'.(string) Str::ulid()),
+                'Allocating a receipt number blocked another company.'
+            );
+        });
+    }
+
+    /**
+     * Whether a separate connection could take the same advisory lock.
+     *
+     * The lock is released when this throwaway connection is discarded, so
+     * asking the question does not change the answer for anything after it.
+     */
+    private function otherSessionCanLock(string $series): bool
+    {
+        $name = 'numbering_probe';
+
+        config()->set("database.connections.{$name}", config('database.connections.pgsql'));
+
+        try {
+            return (bool) DB::connection($name)->scalar(
+                'SELECT pg_try_advisory_xact_lock(hashtext(?))',
+                [$series]
+            );
+        } finally {
+            DB::purge($name);
+        }
     }
 }

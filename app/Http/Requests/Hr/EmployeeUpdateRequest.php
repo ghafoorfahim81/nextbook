@@ -18,7 +18,19 @@ class EmployeeUpdateRequest extends EmployeeStoreRequest
         $id = $employee instanceof Employee ? $employee->id : $employee;
 
         return array_merge(parent::rules(), [
-            'code' => ['required', 'string', 'max:50', $this->uniqueInCompany('employees', $id)],
+            // Each of these matches its unique index, and the three indexes are
+            // not all at the same level on purpose:
+            //
+            //  - `code` is the branch's own series, so Kabul and Herat may both
+            //    hand out E-001. This rule used to say company, which let a
+            //    code be accepted on create and then refused on the very next
+            //    save of the same record.
+            //  - `national_id` identifies the person, and a person is one
+            //    employee per company however many branches there are.
+            //  - `user_id` follows the same reasoning: one account belongs to
+            //    one person, so two employee records sharing it inside a
+            //    company would be the duplicate `national_id` already forbids.
+            'code' => ['required', 'string', 'max:50', $this->uniqueInBranch('employees', $id)],
             'national_id' => ['nullable', 'string', 'max:50', $this->uniqueInCompany('employees', $id)],
             'user_id' => ['nullable', 'exists:users,id', $this->uniqueInCompany('employees', $id)],
         ]);

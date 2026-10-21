@@ -23,7 +23,15 @@ return new class extends Migration
             $table->string('phone_no')->nullable();
             $table->string('email')->nullable();
             $table->ulid('currency_id')->nullable()->index();
-            $table->ulid('company_id')->nullable()->index();
+            // NOT NULL, unlike the other nullable company columns in this
+            // schema. `customer_groups`, `payment_terms` and `activity_logs`
+            // are nullable on purpose — the first two hold reference data every
+            // company shares, the third records events it cannot attribute —
+            // and each has a row level security policy shaped around that.
+            // A ledger has no such case: it belongs to exactly one company, and
+            // a row with none would be invisible to every one of them, because
+            // the policy compares for equality.
+            $table->ulid('company_id')->index();
             $table->boolean('is_main')->default(false); 
             $table->enum('type', LedgerType::values())->default(LedgerType::CUSTOMER->value);
             $table->ulid('created_by')->index();

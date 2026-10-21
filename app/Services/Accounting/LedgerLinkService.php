@@ -153,7 +153,7 @@ class LedgerLinkService
 
         if ((string) $ledger->company_id !== (string) $counterpart->company_id) {
             throw ValidationException::withMessages([
-                'counterpart_ledger_id' => [__('general.counterpart_must_share_a_branch')],
+                'counterpart_ledger_id' => [__('general.counterpart_must_share_a_company')],
             ]);
         }
     }

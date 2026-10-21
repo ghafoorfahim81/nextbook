@@ -36,6 +36,8 @@ trait HasSequentialNumber
 {
     public static function nextNumber(): int
     {
+        static::lockNumberSeries();
+
         $query = static::query()->withoutGlobalScope('branchSpecific');
 
         if (in_array(SoftDeletes::class, class_uses_recursive(static::class), true)) {
@@ -49,5 +51,60 @@ trait HasSequentialNumber
             ->value('highest_number');
 
         return ((int) $highest) + 1;
+    }
+
+    /**
+     * Hold this series against other transactions until ours ends.
+     *
+     * "Highest + 1" read and written by two transactions at once hands both the
+     * same number. The unique index on `(company_id, number)` stops the
+     * duplicate reaching the table, but it stops it by failing the second save:
+     * a cashier gets an error on a perfectly good sale, at the busiest moment,
+     * which is when two tills are most likely to post together.
+     *
+     * An advisory lock turns that collision into a short wait. The second
+     * transaction blocks here, and by the time it reads MAX the first has
+     * committed — Postgres runs READ COMMITTED, so each statement takes a fresh
+     * snapshot and the just-committed row is visible. It leaves with the next
+     * number instead of an exception.
+     *
+     * `pg_advisory_xact_lock` and not the session-scoped form: the transaction
+     * ending releases it, including when it rolls back. Nothing has to remember
+     * to unlock, and a failed save cannot leave the series wedged.
+     *
+     * The key is the series — this table, in this company — so Kabul posting a
+     * sale never waits on Herat posting a purchase. `hashtext` collisions would
+     * put two unrelated series on one lock, which costs a little needless
+     * waiting and is never wrong.
+     *
+     * Two things this deliberately does not do:
+     *
+     *  - It does nothing outside a transaction. An `xact` lock taken there is
+     *    released as the statement ends, so it would protect nothing; the
+     *    callers that matter — the `store` paths — all run inside
+     *    `DB::transaction`. The ones that do not are the `create` screens
+     *    asking what the next number will look like, and locking there would
+     *    make a page render queue behind whatever posting is in flight.
+     *
+     *    No test covers that branch: the suite runs every test inside a
+     *    transaction of its own, so `transactionLevel()` is never 0 and the
+     *    skip cannot be reached. What is covered is the case that matters —
+     *    see VoucherNumberingTest::test_allocating_a_number_locks_the_series.
+     *  - It does not fall back to a global lock when no company is resolved.
+     *    With no company the key is the table alone, which over-serializes a
+     *    console command or a job across companies. That is slower and still
+     *    correct, and those paths are not contended.
+     */
+    protected static function lockNumberSeries(): void
+    {
+        $connection = static::query()->getConnection();
+
+        if ($connection->getDriverName() !== 'pgsql' || $connection->transactionLevel() === 0) {
+            return;
+        }
+
+        $series = (new static)->getTable().'|'.(static::activeCompanyId() ?? '');
+
+        $connection->statement('SELECT pg_advisory_xact_lock(hashtext(?))', [$series]);
     }
 }
