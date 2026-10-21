@@ -27,6 +27,7 @@ use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
 use App\Support\BranchContext;
+use App\Support\CompanyDatabaseContext;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -62,7 +63,14 @@ class CompanyProvisioningService
     {
         $actorId = $actorId ?? Auth::id() ?? $this->fallbackActorId();
 
-        $created = DB::transaction(function () use ($company, $actorId): array {
+        // The company being provisioned is not the caller's active company: on
+        // first sign-up the user has none yet, and `branches:sync-defaults`
+        // backfills companies the operator does not belong to. Two of the sets
+        // written below — accounts and the cash customer ledger — are under row
+        // level security, and the policies' WITH CHECK rejects a row stamped
+        // with any company but the one on the connection. So the connection is
+        // pointed at the new company for the duration, and put back afterwards.
+        $created = CompanyDatabaseContext::runFor($company->id, fn (): array => DB::transaction(function () use ($company, $actorId): array {
             // Account types first — accounts resolve their type by slug within
             // this company, and the default account list reads account types too.
             $counts = ['account_types' => $this->accountTypes($company, $actorId)];
@@ -85,7 +93,7 @@ class CompanyProvisioningService
             $counts['financial_periods'] = $this->financialPeriod($company, $actorId);
 
             return $counts;
-        });
+        }));
 
         // Posting accounts and the base currency may have just changed.
         BranchContext::flush($company->id);

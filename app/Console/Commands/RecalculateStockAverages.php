@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresCrossCompanyAccess;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\ItemVariant;
 use App\Services\StockService;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\DB;
  */
 class RecalculateStockAverages extends Command
 {
+    use RequiresCrossCompanyAccess;
+
     protected $signature = 'stock:recalculate-averages
         {--item= : Limit to one item id}
         {--dry-run : Report what would change, then roll it back}';
@@ -31,6 +34,10 @@ class RecalculateStockAverages extends Command
 
     public function handle(StockService $stockService): int
     {
+        if (! $this->hasCrossCompanyAccess()) {
+            return self::FAILURE;
+        }
+
         $dryRun = (bool) $this->option('dry-run');
 
         $items = Item::query()

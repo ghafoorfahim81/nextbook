@@ -65,7 +65,9 @@ npm install && npm run build
 | ۷ | حذف `branch_id` از ۵۶ جدولی که لازمش ندارند | ✅ |
 | ۸ | بازنویسی ایندکس‌های یکتا به شکل partial + قید نمبر سند | ✅ |
 | ۹ | جدول واسط مشتری‑شعبه | ✅ |
-| ۱۰ | فعال‌سازی RLS | ⬜ **قدم بعدی** |
+| ۱۰ | فعال‌سازی RLS روی ۹ جدول پرارزش | ✅ |
+| ۱۱ | اجرای کل تست‌ها با نقش اپ | ✅ |
+| ۱۲ | گسترش policy به بقیهٔ جدول‌ها | ⬜ **قدم بعدی** |
 
 ### چه چیزی سبز است
 
@@ -162,6 +164,25 @@ if ($customer->branch_id !== $supplier->branch_id) // ← null !== null، همی
 
 ```bash
 grep -rnE "\$(category|brand|item|account|ledger|customer|supplier|currency|department|designation|shift|holiday|size)\??->branch_id\b" app
+```
+
+### کلاس پنجم: factory که ردیف وابسته را بدون کمپنی می‌سازد
+
+```php
+'cost_account_id' => Account::factory(),   // AccountFactory کمپنی خودش را می‌سازد
+```
+
+خطا نمی‌دهد و SQL معتبر است. نتیجه‌اش آیتمی در کمپنی A است که به اکونتی در
+کمپنی B اشاره می‌کند — `ItemFactory` از روز نوشته‌شدنش به هر آیتم تست سه اکونت
+در سه کمپنی مختلف می‌داد. نه تست، نه اسکنرها، نه کد اپ هیچ‌کدام نمی‌دیدندش؛ فقط
+`WITH CHECK` گام ۱۰ دیدش.
+
+اصلاحش: `company_id` را اول تعریف بگذار و ردیف وابسته را از آن مشتق کن — Laravel
+تعریف را به ترتیب expand می‌کند و به هر closure مقادیر حل‌شدهٔ قبلی را می‌دهد،
+از جمله مقداری که caller پاس داده.
+
+```bash
+php tools/phase-2/factory_related_company.php --all
 ```
 
 ### پنج شکل دیگر که اسکنرهای قبلی نمی‌دیدند
@@ -278,12 +299,36 @@ git diff | grep -nE "branch_id.*company_id|company_id.*branch_id"
 گزارش را به شعبهٔ کمپنی دیگری ببرند. حالا `CompanySpecific` دارد و یک ردیف در
 `tests/Feature/Tenancy/CompanyScopeTest.php` آن را نگه می‌دارد.
 
-### ۴-هـ: گام ۱۰ — RLS (قدم بعدی، هنوز شروع نشده)
+### ۴-هـ: گام ۱۰ — RLS — انجام شد
 
-پیش از شروع باید دانست: کاربر `postgres` که تست‌ها و احتمالاً اپ با آن وصل
-می‌شوند **superuser** است و RLS را دور می‌زند. RLS فقط با یک نقش غیر superuser
-و `FORCE ROW LEVEL SECURITY` اثر دارد، و هر اتصال باید `app.company_id` را تنظیم
-کند (برای PgBouncer در حالت transaction با `SET LOCAL` در هر تراکنش).
+policy روی ۹ جدول پرارزش، با نقش `nextbook_app` که مالک هیچ جدولی نیست و نه
+`SUPERUSER` دارد نه `BYPASSRLS`. صاحب اسکیما جداست و معاف می‌ماند، پس
+migrationهای backfill دست‌نخورده کار می‌کنند — به همین دلیل `ENABLE` کافی بود و
+`FORCE` (که طرح گفته بود) گذاشته **نشد**.
+
+شرح کامل، دستورهای استقرار و شکاف باقی‌مانده:
+[row-level-security.md](row-level-security.md).
+
+### ۴-و: گام ۱۱ — کل سوئیت زیر policy — انجام شد
+
+`Tests\TestCase::setUp()` یک `SET ROLE nextbook_app` می‌زند. ۴۴ شکست بیرون زد و
+هیچ‌کدام باگ policy نبود — جزئیات چهار علت و تلهٔ `PendingCommand` در
+[row-level-security.md](row-level-security.md).
+
+مهم‌ترین یافته یک کلاس باگ **پنجم** برای فهرست بخش ۳ است: **factory‌ای که ردیف
+وابسته را بدون کمپنی می‌سازد.**
+
+```php
+'cost_account_id' => Account::factory(),   // AccountFactory کمپنی خودش را می‌سازد
+```
+
+خطا نمی‌دهد، SQL معتبر است، و نتیجه‌اش آیتمی در کمپنی A است که به اکونتی در
+کمپنی B اشاره می‌کند. از روز نوشتن factory این‌طور بوده و نه تست، نه اسکنرها، نه
+کد اپ هیچ‌کدام نمی‌دیدندش — فقط `WITH CHECK` دید. اسکنر دارد:
+
+```bash
+php tools/phase-2/factory_related_company.php --all
+```
 
 ### چیزهایی که در این مسیر کشف شد و هنوز باز است
 
@@ -313,6 +358,7 @@ git diff | grep -nE "branch_id.*company_id|company_id.*branch_id"
 | `branchcontext_callers.php` | callerهایی که به جستجوی اکونت شعبه می‌دهند |
 | `select_lists.php` | فهرست ستون که از جدول کمپنی‌محور شعبه می‌خواهد (`--fix` دارد) |
 | `scan.php` | خط‌هایی که هنوز یک مدل کمپنی‌محور را شعبه‌محور می‌کنند |
+| `factory_related_company.php` | factoryهایی که ردیف وابسته را بدون کمپنی می‌سازند — کلاس پنجم باگ (`--all` برای همهٔ مدل‌های کمپنی‌محور) |
 
 ### تبدیل انبوه
 

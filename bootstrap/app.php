@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetActiveBranch;
 use App\Http\Middleware\SetActiveCompany;
+use App\Http\Middleware\SetDatabaseCompanyContext;
 use App\Http\Middleware\SetLocale;
 use Inertia\Inertia;
 return Application::configure(basePath: dirname(__DIR__))
@@ -23,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // Resolves the company from the user's membership. Must precede
             // SetActiveBranch, which validates its branch against it.
             SetActiveCompany::class,
+            // Hands that company to Postgres, where the row level security
+            // policies read it. Must run after SetActiveCompany and before
+            // anything that reads a protected table.
+            SetDatabaseCompanyContext::class,
             // Used by HandleInertiaRequests to compute branch-scoped data.
             SetActiveBranch::class,
             HandleInertiaRequests::class,

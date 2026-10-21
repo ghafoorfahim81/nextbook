@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresCrossCompanyAccess;
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Support\Facades\Cache;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Schema;
  */
 class ApplyChanges extends Command
 {
+    use RequiresCrossCompanyAccess;
+
     use ConfirmableTrait;
 
     /**
@@ -151,6 +154,10 @@ class ApplyChanges extends Command
      */
     public function handle()
     {
+        if (! $this->hasCrossCompanyAccess()) {
+            return self::FAILURE;
+        }
+
         $dryRun = (bool) $this->option('dry-run');
 
         $keep = array_unique(array_merge(self::KEEP, (array) $this->option('keep')));

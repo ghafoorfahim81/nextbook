@@ -17,6 +17,7 @@ use App\Models\Inventory\Item;
 use App\Models\Ledger\Ledger;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\CompanyDatabaseContext;
 use Illuminate\Support\Facades\Cache;
 
 trait BuildsErpContext
@@ -41,6 +42,17 @@ trait BuildsErpContext
         ]);
 
         $user->update(['company_id' => $company->id]);
+
+        // The suite connects as the application role, which the row level
+        // security policies apply to, and those policies reject a write
+        // stamped with any company but the one on the connection. Everything
+        // below this line that touches a protected table — the chart of
+        // accounts, the two ledgers, the item — would be refused without this.
+        //
+        // It goes here rather than beside the container bindings further down
+        // because it has to precede the first protected insert, not merely the
+        // first read.
+        CompanyDatabaseContext::set($company->id);
 
         $branch = Branch::factory()->create([
             'company_id' => $company->id,

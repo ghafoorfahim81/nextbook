@@ -30,6 +30,7 @@
             <directory>tests/Feature/Reports</directory>
             <directory>tests/Feature/Notifications</directory>
             <directory>tests/Feature/System</directory>
+            <directory>tests/Feature/Tenancy</directory>
             <directory>tests/Feature/UserManagement</directory>
         </testsuite>
         <testsuite name="Integration">

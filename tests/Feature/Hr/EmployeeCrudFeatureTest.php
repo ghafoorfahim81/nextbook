@@ -6,6 +6,7 @@ use App\Enums\LedgerType;
 use App\Models\Administration\Branch;
 use App\Models\Hr\Employee;
 use App\Models\Ledger\Ledger;
+use App\Support\CompanyDatabaseContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\BuildsErpContext;
 use Tests\TestCase;
@@ -66,8 +67,16 @@ class EmployeeCrudFeatureTest extends TestCase
     {
         Employee::factory()->create(['branch_id' => $this->ctx['branch']->id]);
 
+        // The branch factory gives the branch its own company, so the second
+        // employee belongs to another company entirely. Creating an employee
+        // creates their ledger, which is under row level security — so the
+        // fixture has to be built with the connection pointed at that company,
+        // the way that company's own users would create it.
         $otherBranch = Branch::factory()->create(['is_main' => false]);
-        Employee::factory()->create(['branch_id' => $otherBranch->id]);
+        CompanyDatabaseContext::runFor(
+            $otherBranch->company_id,
+            fn () => Employee::factory()->create(['branch_id' => $otherBranch->id])
+        );
 
         $response = $this->get(route('employees.index'));
 

@@ -121,18 +121,27 @@ class ItemTransferStatusMigrationTest extends TestCase
         return $counts;
     }
 
+    /**
+     * As the schema owner: altering a table is an owner privilege, and the
+     * suite otherwise runs as the application role. Both halves of this test
+     * are DDL that a migration performs in production, so the owner is the
+     * role that really does this work.
+     */
     private function putTheColumnBackTheWayItWas(): void
     {
         $list = implode(', ', array_map(fn (string $s) => "'" . $s . "'", self::LEGACY));
 
-        DB::statement('ALTER TABLE item_transfers DROP CONSTRAINT IF EXISTS item_transfers_status_check');
-        DB::statement("ALTER TABLE item_transfers ALTER COLUMN status SET DEFAULT 'pending'");
-        DB::statement("ALTER TABLE item_transfers ADD CONSTRAINT item_transfers_status_check CHECK (status::text = ANY (ARRAY[{$list}]::text[]))");
+        $this->asSchemaOwner(function () use ($list): void {
+            DB::statement('ALTER TABLE item_transfers DROP CONSTRAINT IF EXISTS item_transfers_status_check');
+            DB::statement("ALTER TABLE item_transfers ALTER COLUMN status SET DEFAULT 'pending'");
+            DB::statement("ALTER TABLE item_transfers ADD CONSTRAINT item_transfers_status_check CHECK (status::text = ANY (ARRAY[{$list}]::text[]))");
+        });
     }
 
     private function runTheMigration(): void
     {
         $migration = require database_path('migrations/2026_09_26_000001_align_item_transfer_status_with_documents.php');
-        $migration->up();
+
+        $this->asSchemaOwner(fn () => $migration->up());
     }
 }

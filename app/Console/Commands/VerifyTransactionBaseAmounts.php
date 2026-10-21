@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresCrossCompanyAccess;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
  */
 class VerifyTransactionBaseAmounts extends Command
 {
+    use RequiresCrossCompanyAccess;
+
     protected $signature = 'transactions:verify-base
                             {--branch= : Restrict to a single branch id — omit to check every branch}
                             {--fix : Absorb the difference into the largest line of each unbalanced transaction}';
@@ -26,6 +29,10 @@ class VerifyTransactionBaseAmounts extends Command
 
     public function handle(): int
     {
+        if (! $this->hasCrossCompanyAccess()) {
+            return self::FAILURE;
+        }
+
         $unbalanced = $this->findUnbalanced();
 
         if ($unbalanced->isEmpty()) {

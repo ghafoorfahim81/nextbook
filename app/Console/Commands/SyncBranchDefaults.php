@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresCrossCompanyAccess;
 use App\Models\Administration\Branch;
 use App\Services\BranchProvisioningService;
 use Illuminate\Console\Command;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class SyncBranchDefaults extends Command
 {
+    use RequiresCrossCompanyAccess;
+
     protected $signature = 'branches:sync-defaults
                             {branch? : Branch id to sync — omit to sync every branch}
                             {--dry-run : Report what is missing without writing anything}';
@@ -17,6 +20,10 @@ class SyncBranchDefaults extends Command
 
     public function handle(BranchProvisioningService $provisioning): int
     {
+        if (! $this->hasCrossCompanyAccess()) {
+            return self::FAILURE;
+        }
+
         $branches = Branch::query()
             ->when($this->argument('branch'), fn ($query, $id) => $query->where('id', $id))
             ->orderBy('created_at')

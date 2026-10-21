@@ -10,8 +10,19 @@ Route::get('/user', function (Request $request) {
 // Public routes (if any)
 // Route::get('/public/search', ...);
 
-// Protected routes that require authentication
-Route::middleware(['auth:sanctum'])->group(function () {
+// Protected routes that require authentication.
+//
+// These are the only authenticated routes in the application that do not pass
+// through the `web` middleware group, so they do not inherit SetActiveCompany
+// and SetDatabaseCompanyContext from it. Both are listed explicitly because the
+// search endpoints query items, ledgers and accounts — all three are under row
+// level security, and without the company on the connection they would return
+// an empty result set rather than an error.
+Route::middleware([
+    'auth:sanctum',
+    App\Http\Middleware\SetActiveCompany::class,
+    App\Http\Middleware\SetDatabaseCompanyContext::class,
+])->group(function () {
     Route::post('/search/items-list', [App\Http\Controllers\SearchController::class, 'searchItemsList'])
         ->name('api.search.items-list');
     Route::post('/search/{resourceType}', [App\Http\Controllers\SearchController::class, 'search']);

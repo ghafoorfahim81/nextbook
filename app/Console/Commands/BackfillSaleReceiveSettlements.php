@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresCrossCompanyAccess;
 use App\Services\Accounting\SaleReceiveBackfill;
 use Illuminate\Console\Command;
 
@@ -14,12 +15,18 @@ use Illuminate\Console\Command;
  */
 class BackfillSaleReceiveSettlements extends Command
 {
+    use RequiresCrossCompanyAccess;
+
     protected $signature = 'settlements:backfill-sale-receives {--dry-run : Report what would happen without writing}';
 
     protected $description = 'Migrate sale_receives allocations into the settlements table';
 
     public function handle(SaleReceiveBackfill $backfill): int
     {
+        if (! $this->hasCrossCompanyAccess()) {
+            return self::FAILURE;
+        }
+
         $dryRun = (bool) $this->option('dry-run');
 
         $result = $backfill->run($dryRun);

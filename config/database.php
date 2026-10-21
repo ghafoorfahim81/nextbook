@@ -2,6 +2,49 @@
 
 use Illuminate\Support\Str;
 
+/*
+|--------------------------------------------------------------------------
+| Postgres: one database, two roles
+|--------------------------------------------------------------------------
+|
+| `pgsql` logs in as the role that owns the schema. It runs migrations and
+| anything that has to see across companies, and Postgres exempts a table's
+| owner from that table's row level security policies — which is exactly what
+| a backfill migration needs.
+|
+| `pgsql_app` logs in as `nextbook_app`, which owns nothing and holds neither
+| SUPERUSER nor BYPASSRLS. Every query it makes is filtered by the policies
+| installed in 2026_10_21_000001_enable_row_level_security, so a missing
+| `where company_id` in application code no longer leaks another company's
+| rows. In production DB_CONNECTION is set to `pgsql_app` and migrations are
+| run explicitly against the owner with `php artisan migrate --database=pgsql`.
+|
+| The two share every other setting on purpose: they are the same database, and
+| a `search_path` or `timezone` that drifted between them would mean the app
+| read different data than the migrations wrote.
+|
+*/
+$pgsql = [
+    'driver' => 'pgsql',
+    'url' => env('DB_URL'),
+    'host' => env('DB_HOST', '127.0.0.1'),
+    'port' => env('DB_PORT', '5432'),
+    'database' => env('DB_DATABASE', 'laravel'),
+    'username' => env('DB_USERNAME', 'root'),
+    'password' => env('DB_PASSWORD', ''),
+    'charset' => env('DB_CHARSET', 'utf8'),
+    'prefix' => '',
+    'prefix_indexes' => true,
+    'search_path' => 'public',
+    'sslmode' => 'prefer',
+    // Laravel writes timestamps as plain strings in the app timezone.
+    // Left to the server default, Postgres read those strings in its
+    // own zone — on a machine set to Los Angeles every timestamptz
+    // (the activity log) came back 7 hours out. Keep the session on
+    // the app's timezone so what is written is what is read.
+    'timezone' => env('DB_TIMEZONE', 'UTC'),
+];
+
 return [
 
     /*
@@ -82,26 +125,14 @@ return [
             ]) : [],
         ],
 
-        'pgsql' => [
-            'driver' => 'pgsql',
-            'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
-            'charset' => env('DB_CHARSET', 'utf8'),
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'search_path' => 'public',
-            'sslmode' => 'prefer',
-            // Laravel writes timestamps as plain strings in the app timezone.
-            // Left to the server default, Postgres read those strings in its
-            // own zone — on a machine set to Los Angeles every timestamptz
-            // (the activity log) came back 7 hours out. Keep the session on
-            // the app's timezone so what is written is what is read.
-            'timezone' => env('DB_TIMEZONE', 'UTC'),
-        ],
+        // Owns the schema; exempt from the row level security policies.
+        'pgsql' => $pgsql,
+
+        // Runs under the policies. See the note above this file's `return`.
+        'pgsql_app' => array_merge($pgsql, [
+            'username' => env('DB_APP_USERNAME', 'nextbook_app'),
+            'password' => env('DB_APP_PASSWORD', env('DB_PASSWORD', '')),
+        ]),
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',

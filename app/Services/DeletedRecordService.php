@@ -9,6 +9,7 @@ use App\Models\AccountTransfer\AccountTransfer;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
+use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\Department;
@@ -70,6 +71,7 @@ use App\Models\Role;
 use App\Models\Transaction\TransactionLine;
 use App\Models\User;
 use App\Services\Hr\SalaryDisbursementService;
+use App\Support\CompanyDatabaseContext;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -434,8 +436,55 @@ class DeletedRecordService
 
     /**
      * Automatically force delete records older than the retention window.
+     *
+     * Runs one company at a time rather than sweeping every company's rows in
+     * one pass. Two reasons, and the second is the one that forced the change:
+     *
+     *  - This runs from a scheduled job, so there is no request and no active
+     *    company. Several of the tables it sweeps — `items`, `ledgers`, `sales`
+     *    among them — are under row level security, and those policies hide
+     *    every row from a connection that has not said which company it is
+     *    acting for. Swept in one pass, the job found nothing to purge and
+     *    reported success: retention silently stopped happening.
+     *
+     *  - Binding the company in the container as well means the models' own
+     *    `CompanySpecific` scope narrows each pass too, so the sweep is scoped
+     *    identically whether or not the connection is one the policies apply
+     *    to. Relying on the policies alone would make the owner connection —
+     *    which the test suite and maintenance runs use — behave differently
+     *    from production.
      */
     public function cleanupExpired(): int
+    {
+        $deleted = 0;
+
+        $previousActive = app()->bound('active_company_id') ? app('active_company_id') : null;
+        $previousAccessible = app()->bound('accessible_company_ids') ? app('accessible_company_ids') : null;
+
+        try {
+            foreach (Company::query()->withTrashed()->pluck('id') as $companyId) {
+                $companyId = (string) $companyId;
+
+                app()->instance('active_company_id', $companyId);
+                app()->instance('accessible_company_ids', [$companyId]);
+
+                $deleted += CompanyDatabaseContext::runFor(
+                    $companyId,
+                    fn (): int => $this->cleanupExpiredForCurrentCompany()
+                );
+            }
+        } finally {
+            app()->instance('active_company_id', $previousActive);
+            app()->instance('accessible_company_ids', $previousAccessible ?? []);
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Sweep the retention window for whichever company is currently bound.
+     */
+    private function cleanupExpiredForCurrentCompany(): int
     {
         $cutoff = now()->subDays(self::RETENTION_DAYS);
         $deleted = 0;
