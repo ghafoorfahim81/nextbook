@@ -35,7 +35,7 @@ class NotificationDeliveryTest extends TestCase
     public function test_new_transaction_alert_does_not_reach_super_admins_of_other_branches(): void
     {
         $ownBranchAdmin = $this->makeSuperAdmin($this->ctx['branch']->id);
-        $otherBranch = Branch::factory()->create(['name' => 'Other Branch', 'is_main' => false]);
+        $otherBranch = $this->branchInAnotherCompany(['name' => 'Other Branch']);
         $otherBranchAdmin = $this->makeSuperAdmin($otherBranch->id);
 
         $transaction = $this->makePostedTransaction($this->ctx['branch']->id);

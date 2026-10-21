@@ -6,6 +6,7 @@ use App\Models\Administration\Company;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\CompanyDatabaseContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use Symfony\Component\Uid\Ulid;
@@ -33,6 +34,33 @@ class UserManagementAuthorizationTest extends TestCase
     }
 
     /** A signed-in user of the same company holding exactly the given permissions. */
+    /**
+     * A user belonging to another company, sitting in this company's branch.
+     *
+     * The shared branch is the point: the only thing separating the two is the
+     * company, so a check that looked at the branch alone would let this user
+     * through.
+     *
+     * Built with the connection pointed at that company, because creating a
+     * user is audited and the activity log row names the user's company — which
+     * the row level security policies accept only from a connection acting for
+     * it. Built any other way the row could not exist at all, and the test
+     * would be proving something about an unreachable state.
+     */
+    private function userInAnotherCompany(): User
+    {
+        $otherCompany = Company::factory()->create([
+            'name_en' => 'Other Tenant',
+            'currency_id' => $this->ctx['currency']->id,
+        ]);
+
+        return CompanyDatabaseContext::runFor($otherCompany->id, fn (): User => User::factory()->create([
+            'preferences' => User::DEFAULT_PREFERENCES,
+            'company_id' => $otherCompany->id,
+            'branch_id' => $this->ctx['branch']->id,
+        ]));
+    }
+
     private function userWith(array $permissions = []): User
     {
         $role = Role::query()->firstOrCreate(
@@ -112,16 +140,7 @@ class UserManagementAuthorizationTest extends TestCase
 
     public function test_an_account_from_another_company_is_out_of_reach(): void
     {
-        $otherCompany = Company::factory()->create([
-            'name_en' => 'Other Tenant',
-            'currency_id' => $this->ctx['currency']->id,
-        ]);
-
-        $outsider = User::factory()->create([
-            'preferences' => User::DEFAULT_PREFERENCES,
-            'company_id' => $otherCompany->id,
-            'branch_id' => $this->ctx['branch']->id,
-        ]);
+        $outsider = $this->userInAnotherCompany();
 
         $actor = $this->userWith(['users.view', 'users.update', 'users.delete']);
 
@@ -133,16 +152,7 @@ class UserManagementAuthorizationTest extends TestCase
 
     public function test_the_user_list_is_limited_to_the_acting_company(): void
     {
-        $otherCompany = Company::factory()->create([
-            'name_en' => 'Other Tenant',
-            'currency_id' => $this->ctx['currency']->id,
-        ]);
-
-        $outsider = User::factory()->create([
-            'preferences' => User::DEFAULT_PREFERENCES,
-            'company_id' => $otherCompany->id,
-            'branch_id' => $this->ctx['branch']->id,
-        ]);
+        $outsider = $this->userInAnotherCompany();
 
         $actor = $this->userWith(['users.view_any']);
 

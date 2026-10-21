@@ -5,7 +5,6 @@ namespace Tests\Feature\Hr;
 use App\Enums\LedgerType;
 use App\Models\Hr\Employee;
 use App\Models\Ledger\Ledger;
-use App\Support\CompanyDatabaseContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\BuildsErpContext;
 use Tests\TestCase;
@@ -66,18 +65,17 @@ class EmployeeLedgerFeatureTest extends TestCase
      */
     public function test_the_ledger_takes_the_employees_company_not_the_acting_company(): void
     {
-        $otherBranch = \App\Models\Administration\Branch::factory()->create(['is_main' => false]);
+        // A branch in a company of its own, so this is an employee in a company
+        // the acting user has nothing to do with.
+        $otherBranch = $this->branchInAnotherCompany();
 
-        // The branch factory gives the branch a company of its own, so this is
-        // an employee in a company the acting user has nothing to do with.
-        //
         // Both the write and the read-back run with the connection pointed at
         // that company, because that is the only way the row can exist: the row
         // level security policies accept a ledger stamped with the company on
         // the connection and no other. If the service ever went back to using
         // the acting company, the insert would be refused outright rather than
         // land in the wrong books — so this still fails, and sooner.
-        $employee = CompanyDatabaseContext::runFor(
+        $employee = $this->actingInCompany(
             $otherBranch->company_id,
             fn () => Employee::factory()->create([
                 'branch_id' => $otherBranch->id,
@@ -85,7 +83,7 @@ class EmployeeLedgerFeatureTest extends TestCase
             ])
         );
 
-        $ledger = CompanyDatabaseContext::runFor(
+        $ledger = $this->actingInCompany(
             $otherBranch->company_id,
             fn () => Ledger::withoutGlobalScopes()->find($employee->ledger_id)
         );
