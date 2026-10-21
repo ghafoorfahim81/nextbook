@@ -13,12 +13,9 @@ class ReceiptFactory extends Factory
     public function definition(): array
     {
         return [
-            'number' => fake()->unique()->numberBetween(1, 999999),
-            'date' => fake()->date(),
-            'ledger_id' => Ledger::factory(),
-            'payment_mode' => PaymentMode::OnAccount->value,
-            'cheque_no' => fake()->optional()->bothify('CHK-#####'),
-            'narration' => fake()->optional()->sentence(),
+            // Branch, then company, then the ledger being received from:
+            // Laravel expands a definition in order and hands each closure what
+            // has already resolved.
             'branch_id' => Branch::factory(),
             // Read off the branch rather than built separately: a document's
             // company and its branch's company have to agree, and the composite
@@ -26,6 +23,16 @@ class ReceiptFactory extends Factory
             'company_id' => fn (array $attributes) => Branch::withoutGlobalScopes()
                 ->whereKey($attributes['branch_id'])
                 ->value('company_id'),
+            // A plain `Ledger::factory()` would fall back to a company of its
+            // own, so the receipt would settle an account in other books.
+            'ledger_id' => fn (array $attributes) => Ledger::factory()
+                ->create(['company_id' => $attributes['company_id']])
+                ->getKey(),
+            'number' => fake()->unique()->numberBetween(1, 999999),
+            'date' => fake()->date(),
+            'payment_mode' => PaymentMode::OnAccount->value,
+            'cheque_no' => fake()->optional()->bothify('CHK-#####'),
+            'narration' => fake()->optional()->sentence(),
             'created_by' => User::factory()->create()->id,
             'updated_by' => null,
         ];

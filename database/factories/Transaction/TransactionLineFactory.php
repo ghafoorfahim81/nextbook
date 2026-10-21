@@ -16,7 +16,17 @@ class TransactionLineFactory extends Factory
     {
         return [
             'transaction_id' => Transaction::factory(),
-            'account_id' => Account::factory(),
+            // Built in the header's company. A plain `Account::factory()` falls
+            // back to a company of its own, so the line posted to an account in
+            // another company's chart — and the line's own company, which
+            // HasCompanyFromParent takes from the header, disagreed with it.
+            //
+            // This works because `transaction_id` is declared first: Laravel
+            // expands a definition in order and hands each closure what has
+            // already resolved.
+            'account_id' => fn (array $attributes) => Account::factory()
+                ->create(['company_id' => $this->header($attributes)?->company_id])
+                ->getKey(),
             'ledger_id' => null,
             'journal_class_id' => null,
             // A line defaults to its header's currency and rate — the
@@ -55,7 +65,15 @@ class TransactionLineFactory extends Factory
     public function withLedger(?string $ledgerId = null): static
     {
         return $this->state(fn () => [
-            'ledger_id' => $ledgerId ?? Ledger::factory(),
+            // The inner closure matters: a state is merged into the definition
+            // and only expanded afterwards, so resolving the header here would
+            // read `transaction_id` while it is still a factory instance. As a
+            // closure it is expanded in the definition's own order — after the
+            // transaction — and the ledger lands in the header's company
+            // instead of one of its own.
+            'ledger_id' => $ledgerId ?? fn (array $attributes) => Ledger::factory()
+                ->create(['company_id' => $this->header($attributes)?->company_id])
+                ->getKey(),
         ]);
     }
 }
