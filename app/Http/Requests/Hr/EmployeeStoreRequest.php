@@ -71,8 +71,12 @@ class EmployeeStoreRequest extends FormRequest
             'photo' => ['nullable', 'image', 'max:5120'],
 
             // One employee record per login, or self-service check-in cannot
-            // tell which employee a user is.
-            'user_id' => ['nullable', 'exists:users,id', $this->uniqueInBranch('employees')],
+            // tell which employee a user is. Across the company and not merely
+            // the branch: an account belongs to one person, and `national_id`
+            // already says a person is one employee per company. Scoped to the
+            // branch, the same account could be attached twice and the check-in
+            // would have two employees to choose between.
+            'user_id' => ['nullable', 'exists:users,id', $this->uniqueInCompany('employees')],
             'department_id' => ['nullable', $this->existsInCompany('departments')],
             'designation_id' => ['nullable', $this->existsInCompany('designations')],
             'reports_to_id' => ['nullable', $this->existsInBranch('employees')],

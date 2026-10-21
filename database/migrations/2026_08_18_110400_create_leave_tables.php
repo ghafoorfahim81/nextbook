@@ -103,7 +103,13 @@ return new class extends Migration
 
         // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
         // because deleted_at is NULL on every live row and NULL != NULL.
-        DB::statement('CREATE UNIQUE INDEX leave_allocations_period_unique ON leave_allocations (branch_id, employee_id, leave_type_id, period_start) WHERE deleted_at IS NULL');
+        //
+        // Keyed on the company, not the branch. The employee already determines
+        // the branch, so naming it again added nothing — except a way around
+        // the rule: move an employee to another branch mid-year and the same
+        // leave type could be allocated to them a second time for the same
+        // period, giving them two entitlements nothing would reconcile.
+        DB::statement('CREATE UNIQUE INDEX leave_allocations_period_unique ON leave_allocations (company_id, employee_id, leave_type_id, period_start) WHERE deleted_at IS NULL');
 
         Schema::create('leave_requests', function (Blueprint $table) {
             $table->ulid('id')->primary();

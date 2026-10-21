@@ -124,9 +124,18 @@ return new class extends Migration
 
         // Partial: unique([..., 'deleted_at']) never fires in PostgreSQL,
         // because deleted_at is NULL on every live row and NULL != NULL.
+        // The three are deliberately not at the same level.
+        //
+        // `code` is the branch's own series — Kabul and Herat may both hand out
+        // E-001 — while the other two identify the person, and a person is one
+        // employee per company however many branches it has. `user_id` sits
+        // with `national_id` rather than with `code` for that reason: an
+        // account belongs to one person, so the same account attached twice
+        // inside a company is the duplicate `national_id` already forbids, and
+        // self-service check-in would have two employees to choose between.
         DB::statement('CREATE UNIQUE INDEX employees_branch_id_code_live_unique ON employees (branch_id, code) WHERE deleted_at IS NULL');
         DB::statement('CREATE UNIQUE INDEX employees_company_id_national_id_live_unique ON employees (company_id, national_id) WHERE deleted_at IS NULL AND national_id IS NOT NULL');
-        DB::statement('CREATE UNIQUE INDEX employees_branch_id_user_id_live_unique ON employees (branch_id, user_id) WHERE deleted_at IS NULL AND user_id IS NOT NULL');
+        DB::statement('CREATE UNIQUE INDEX employees_company_id_user_id_live_unique ON employees (company_id, user_id) WHERE deleted_at IS NULL AND user_id IS NOT NULL');
 
         Schema::enableForeignKeyConstraints();
 
