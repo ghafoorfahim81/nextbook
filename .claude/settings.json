@@ -14,7 +14,27 @@
       "PowerShell",
       "Bash(git push:*)",
       "Bash(rm -rf:*)",
-      "PowerShell($s = \"C:\\\\Users\\\\Fahim-Pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--nextbook\\\\e9b4a4ea-25ed-4cca-9e0e-180a29b8a207\\\\scratchpad\"; php \"$s\\\\patch_lang.php\" resources/lang/ps/general.php \"$s\\\\ps_general_map.php\"; php \"$s\\\\patch_lang.php\" resources/lang/fa/general.php \"$s\\\\fa_general_map.php\"; php -l resources/lang/ps/general.php; php -l resources/lang/fa/general.php; git diff --stat resources/lang)"
+      "PowerShell($s = \"C:\\\\Users\\\\Fahim-Pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--nextbook\\\\e9b4a4ea-25ed-4cca-9e0e-180a29b8a207\\\\scratchpad\"; php \"$s\\\\patch_lang.php\" resources/lang/ps/general.php \"$s\\\\ps_general_map.php\"; php \"$s\\\\patch_lang.php\" resources/lang/fa/general.php \"$s\\\\fa_general_map.php\"; php -l resources/lang/ps/general.php; php -l resources/lang/fa/general.php; git diff --stat resources/lang)",
+
+      "PowerShell(php artisan test:*)",
+      "PowerShell(php artisan route:list:*)",
+      "PowerShell(php artisan config:clear)",
+      "PowerShell(php -l:*)",
+      "PowerShell(php -v)",
+      "PowerShell(php -m:*)",
+
+      "PowerShell(Select-String:*)",
+      "PowerShell(Get-Content:*)",
+      "PowerShell(Get-ChildItem:*)",
+      "PowerShell(Test-Path:*)",
+      "PowerShell(Measure-Object:*)",
+
+      "PowerShell(git status:*)",
+      "PowerShell(git diff:*)",
+      "PowerShell(git log:*)",
+      "PowerShell(git show:*)",
+      "PowerShell(git branch:*)",
+      "PowerShell(git ls-files:*)"
     ],
     "deny": [
       "Bash(php artisan migrate:fresh:*)"
