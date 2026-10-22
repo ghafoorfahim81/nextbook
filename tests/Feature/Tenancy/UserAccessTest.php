@@ -191,3 +191,66 @@ it('shares the branch the request acts in, not the home branch', function () {
     $this->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page->where('auth.user.branch_id', $herat->id));
 });
+
+/**
+ * Step D: a page left open in one company must not save into another after
+ * the session has switched. The page sends the company it was opened in.
+ */
+function twoCompanyUserSwitchedToSecond($test): array
+{
+    [$electronics, $kabul] = accessCompany('Ahmad Electronics');
+    [$construction] = accessCompany('Ahmad Construction');
+
+    $user = accessUser($electronics, $kabul, superAdmin: true);
+    app(UserAccessService::class)->grantCompany($user, $construction->id);
+
+    $test->actingAs($user)->post(route('companies.switch'), ['company_id' => $construction->id]);
+
+    return [$electronics, $construction];
+}
+
+it('refuses a write sent from a page opened in another company', function () {
+    [$electronics] = twoCompanyUserSwitchedToSecond($this);
+
+    $this->withHeader('X-Nextbook-Company', $electronics->id)
+        ->post(route('brands.store'), ['name' => 'Stale Tab Brand'])
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('error', __('general.company_changed_in_another_tab'));
+
+    expect(\Illuminate\Support\Facades\DB::table('brands')->where('name', 'Stale Tab Brand')->exists())->toBeFalse();
+});
+
+it('accepts a write from a page of the company the session is in', function () {
+    [, $construction] = twoCompanyUserSwitchedToSecond($this);
+
+    $this->withHeader('X-Nextbook-Company', $construction->id)
+        ->post(route('brands.store'), ['name' => 'Current Tab Brand'])
+        ->assertSessionHasNoErrors();
+
+    expect(\Illuminate\Support\Facades\DB::table('brands')
+        ->where('name', 'Current Tab Brand')
+        ->value('company_id'))->toBe($construction->id);
+});
+
+it('answers a stale write that expects JSON with a conflict', function () {
+    [$electronics] = twoCompanyUserSwitchedToSecond($this);
+
+    $this->withHeader('X-Nextbook-Company', $electronics->id)
+        ->postJson(route('brands.store'), ['name' => 'Stale Json Brand'])
+        ->assertStatus(409);
+});
+
+it('lets a page of the old company switch company', function () {
+    [$electronics, $construction] = twoCompanyUserSwitchedToSecond($this);
+
+    // The switcher on a tab still showing Electronics, opened before the switch
+    // to Construction: its page company is stale, and switching is exactly
+    // what it should be allowed to do.
+    $this->withHeader('X-Nextbook-Company', $electronics->id)
+        ->post(route('companies.switch'), ['company_id' => $electronics->id])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('home'));
+
+    $this->get(route('dashboard'));
+    expect(app('active_company_id'))->toBe($electronics->id);
+});

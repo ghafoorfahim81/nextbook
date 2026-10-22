@@ -31,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // Used by HandleInertiaRequests to compute branch-scoped data.
             SetActiveBranch::class,
             HandleInertiaRequests::class,
+            // Refuses a write from a page opened in another company (a tab left
+            // open across a company switch). After HandleInertiaRequests, so its
+            // redirect passes back out through Inertia and becomes a 303.
+            \App\Http\Middleware\RejectStaleCompanyContext::class,
             // One activity log entry per request, not one per saved row.
             \App\Http\Middleware\BatchActivityLog::class,
         ]);

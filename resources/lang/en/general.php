@@ -150,6 +150,7 @@ return [
     'contra_amount_must_be_positive' => 'A set-off needs an amount greater than zero.',
     'contra_parties_must_share_a_company' => 'Both accounts must belong to the same company.',
     'no_branch_access_in_company' => 'You have no branch in this company. Ask an administrator for access.',
+    'company_changed_in_another_tab' => 'You switched company in another tab, so nothing was saved. You are now in the current company; check your work and try again.',
     'contra_clearing_account_missing' => 'This branch has no Set-off Clearing account. Run branch provisioning.',
     'contra_needs_a_customer_account' => 'The receivable side must be a customer account.',
     'contra_needs_a_supplier_account' => 'The payable side must be a supplier account.',
