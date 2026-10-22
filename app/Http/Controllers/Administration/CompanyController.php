@@ -41,21 +41,13 @@ class CompanyController extends Controller
         });
     }
 
+    /**
+     * The companies page is the picker now (WorkspaceController::companies):
+     * the list that lived here showed columns the table no longer has.
+     */
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', recordsPerPage());
-        $sortField = $request->input('sortField', 'id');
-        $sortDirection = $request->input('sortDirection', 'desc');
-
-        $companies = Company::with(['createdBy', 'updatedBy'])
-            ->whereKey($this->access->accessibleCompanyIds($request->user()))
-            ->search($request->query('search'))
-            ->orderBy($sortField, $sortDirection)
-            ->paginate($perPage)
-            ->withQueryString();
-        return inertia('Administration/Companies/Index', [
-            'companies' => CompanyResource::collection($companies),
-        ]);
+        return redirect()->route('workspace.companies');
     }
 
     /**

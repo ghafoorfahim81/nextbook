@@ -1,0 +1,16 @@
+{
+    "companies_title": "Your companies",
+    "companies_subtitle": "Each company keeps its own books. Pick the one to work in.",
+    "branches_title": "Your branches",
+    "branches_subtitle": "Branches of {company} you can work in.",
+    "current": "Current",
+    "home": "Home",
+    "main": "Main branch",
+    "switch": "Switch",
+    "settings": "Company settings",
+    "working_here": "You are working here",
+    "new_company": "New company",
+    "new_company_hint": "Separate books, catalog and customers",
+    "branches_count": "{count} branch | {count} branches",
+    "no_branch": "No branch you can use yet"
+}

@@ -91,7 +91,9 @@ import {
     Settings2,
     History,
     Rocket,
-    ChartNoAxesCombined
+    ChartNoAxesCombined,
+    Building2,
+    Store
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -221,7 +223,7 @@ const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean; flush?: boo
     flush: false,
 })
 
-const { can } = useAuth()
+const { can, isSuperAdmin } = useAuth()
 
 // Keep track of sidebar open/collapsed state so we can alter menu behavior.
 // (We can't read sidebar context here because SidebarProvider is a child component.)
@@ -465,13 +467,6 @@ const switcherCompanies = computed<{ id: string, name: string }[]>(() => (page.p
 const switcherBranches = computed<{ id: string, name: string }[]>(() => (page.props.switcher as any)?.branches ?? [])
 const activeCompanyName = computed(() => switcherCompanies.value.find((c) => c.id === activeCompanyId.value)?.name ?? '')
 
-const selectedBranchId = ref<string | null>(activeBranchId.value)
-const selectedCompanyId = ref<string | null>(activeCompanyId.value)
-// Follow the page: after a switch (or a refused one) the selects show where
-// the server actually put the user, not where they clicked.
-watch(activeBranchId, (id) => { selectedBranchId.value = id })
-watch(activeCompanyId, (id) => { selectedCompanyId.value = id })
-
 // A refusal that has nothing to do with the page the user lands on — a save
 // from a tab left open after switching company elsewhere. The server sends
 // them home, which shows no flash of its own, so the layout says why.
@@ -484,29 +479,6 @@ onMounted(() => {
         { immediate: true, flush: 'post' },
     )
 })
-
-function switchBranch() {
-    if (!selectedBranchId.value || selectedBranchId.value === activeBranchId.value) {
-        return
-    }
-
-    router.post('/switch-branch', { branch_id: selectedBranchId.value }, {
-        preserveScroll: true,
-        onError: () => { selectedBranchId.value = activeBranchId.value },
-    })
-}
-
-function switchCompany() {
-    if (!selectedCompanyId.value || selectedCompanyId.value === activeCompanyId.value) {
-        return
-    }
-
-    // The server sends the user home: the page they are on belongs to the
-    // company they are leaving.
-    router.post('/switch-company', { company_id: selectedCompanyId.value }, {
-        onError: () => { selectedCompanyId.value = activeCompanyId.value },
-    })
-}
 
 const navMain = computed(() => [
     {
@@ -1208,6 +1180,23 @@ function logout() {
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
+                                <DropdownMenuGroup v-if="switcherCompanies.length > 1 || isSuperAdmin || switcherBranches.length > 1">
+                                    <DropdownMenuItem v-if="switcherCompanies.length > 1 || isSuperAdmin" as-child>
+                                        <Link :href="route('workspace.companies')" class="flex w-full items-center gap-2">
+                                            <Building2 class="text-primary hover:text-white" />
+                                            <span class="flex-1">{{ t('layout.switch_company') }}</span>
+                                            <span class="max-w-[7rem] truncate text-xs text-muted-foreground">{{ activeCompanyName }}</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem v-if="switcherBranches.length > 1" as-child>
+                                        <Link :href="route('workspace.branches')" class="flex w-full items-center gap-2">
+                                            <Store class="text-primary hover:text-white" />
+                                            <span class="flex-1">{{ t('layout.switch_branch') }}</span>
+                                            <span class="max-w-[7rem] truncate text-xs text-muted-foreground">{{ activeBranchName }}</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                                <DropdownMenuSeparator v-if="switcherCompanies.length > 1 || isSuperAdmin || switcherBranches.length > 1" />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem as-child>
                                         <Link :href="route('preferences.index')" class="flex w-full items-center">
@@ -1282,51 +1271,13 @@ function logout() {
                 <!-- Right: actions -->
                 <div class="flex shrink-0 items-center gap-2 sm:gap-3 sm:pr-4">
 
-                    <!-- Company: only once the user has a second one. -->
-                    <div v-if="switcherCompanies.length > 1" class="hidden items-center gap-2 sm:flex">
-                        <Select v-model="selectedCompanyId" :dir="selectDir" @update:modelValue="switchCompany">
-                            <SelectTrigger
-                                class="h-7 w-auto min-w-[110px] max-w-[240px] text-xs font-medium border-primary/40 [&>span]:!overflow-visible"
-                                :title="t('layout.company')"
-                            >
-                                <SelectValue :placeholder="t('layout.company')" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="company in switcherCompanies"
-                                    :key="company.id"
-                                    :value="company.id"
-                                    class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
-                                >
-                                    {{ company.name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <!-- Branch: a picker once there is a second one to pick, else just its name. -->
-                    <div v-if="switcherBranches.length > 1" class="hidden items-center gap-2 sm:flex">
-                        <Select v-model="selectedBranchId" :dir="selectDir" @update:modelValue="switchBranch">
-                            <SelectTrigger
-                                class="h-7 w-auto min-w-[110px] max-w-[240px] text-xs border-input [&>span]:!overflow-visible"
-                                :title="t('layout.branch')"
-                            >
-                                <SelectValue :placeholder="t('layout.branch')" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="branch in switcherBranches"
-                                    :key="branch.id"
-                                    :value="branch.id"
-                                    class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
-                                >
-                                    {{ branch.name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div v-else class="hidden text-xs text-muted-foreground sm:block">
-                        {{ activeBranchName || '—' }}
+                    <!-- Where you are working. Switching lives in the user menu (phase 5). -->
+                    <div class="hidden min-w-0 items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+                        <template v-if="switcherCompanies.length > 1">
+                            <span class="max-w-[160px] truncate font-medium text-foreground" :title="activeCompanyName">{{ activeCompanyName }}</span>
+                            <span aria-hidden="true">·</span>
+                        </template>
+                        <span class="max-w-[140px] truncate" :title="activeBranchName || ''">{{ activeBranchName || '—' }}</span>
                     </div>
                     <NotificationDropdown />
                     <LanguageSwitcher />

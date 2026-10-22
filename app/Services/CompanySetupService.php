@@ -165,6 +165,10 @@ class CompanySetupService
         (clone $currencies)->where('code', '!=', $code)->update(['is_base_currency' => false]);
         (clone $currencies)->where('code', $code)->update(['is_base_currency' => true, 'exchange_rate' => 1]);
 
+        // The company row names its base currency too (companies.currency_id,
+        // which the company settings page shows).
+        $company->forceFill(['currency_id' => (clone $currencies)->where('code', $code)->value('id')])->save();
+
         return $added;
     }
 }

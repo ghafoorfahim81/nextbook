@@ -48,10 +48,25 @@ class CompanyStoreRequest extends FormRequest
             'base_currency' => ['required', 'string', Rule::in(CompanySetupService::baseCurrencyCodes())],
             // Optional: the sign-up form does not ask. FIFO when left out.
             'costing_method' => ['nullable', 'in:' . implode(',', array_column(CostingMethod::cases(), 'value'))],
+            // The licence belongs to the company, and its branches share it.
+            'license_number' => ['nullable', 'string', 'max:100'],
+            'license_issued_at' => ['nullable', 'date'],
+            'license_expires_at' => ['nullable', 'date', 'after_or_equal:license_issued_at'],
             'email' => ['nullable', 'email', 'max:255'],
             'website' => ['nullable', 'url', 'max:255'],
             'invoice_description' => ['nullable', 'string'],
         ];
+    }
+
+    /**
+     * Readable field names for the messages ("The English name field is
+     * required.", not "The name en field…"), in the user's language.
+     */
+    public function attributes(): array
+    {
+        $names = __('general.company_fields');
+
+        return is_array($names) ? $names : [];
     }
 
     /**
@@ -71,6 +86,14 @@ class CompanyStoreRequest extends FormRequest
         }
 
         $attributes['costing_method'] ??= CostingMethod::FIFO->value;
+
+        // The date picker follows the chosen calendar; stored dates are
+        // Gregorian, as everywhere else.
+        foreach (['license_issued_at', 'license_expires_at'] as $field) {
+            if (! empty($attributes[$field])) {
+                $attributes[$field] = app(\App\Services\DateConversionService::class)->toGregorian((string) $attributes[$field]);
+            }
+        }
 
         return $attributes;
     }

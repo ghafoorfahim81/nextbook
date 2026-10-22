@@ -1,0 +1,16 @@
+{
+    "companies_title": "ستاسو شرکتونه",
+    "companies_subtitle": "هر شرکت خپل جلا کتابونه لري. هغه شرکت وټاکئ چې غواړئ پکې کار وکړئ.",
+    "branches_title": "ستاسو څانګې",
+    "branches_subtitle": "د {company} هغه څانګې چې تاسو پکې کار کولی شئ.",
+    "current": "اوسنی",
+    "home": "ستاسو اصلي",
+    "main": "اصلي څانګه",
+    "switch": "بدلول",
+    "settings": "د شرکت تنظیمات",
+    "working_here": "تاسو اوس دلته کار کوئ",
+    "new_company": "نوی شرکت",
+    "new_company_hint": "جلا کتابونه، کتلاګ او پیرودونکي",
+    "branches_count": "{count} څانګې",
+    "no_branch": "تراوسه تاسو ته کومه څانګه نه ده ټاکل شوې"
+}

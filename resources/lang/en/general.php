@@ -152,6 +152,15 @@ return [
     'no_branch_access_in_company' => 'You have no branch in this company. Ask an administrator for access.',
     'company_changed_in_another_tab' => 'You switched company in another tab, so nothing was saved. You are now in the current company; check your work and try again.',
     'main_branch' => 'Main Branch',
+    // Field names in validation messages on the company set-up form.
+    'company_fields' => [
+        'name_en' => 'English name', 'name_fa' => 'Dari name', 'name_pa' => 'Pashto name',
+        'abbreviation' => 'abbreviation', 'logo' => 'logo', 'business_type' => 'business type',
+        'base_currency' => 'base currency', 'locale' => 'language', 'calendar_type' => 'calendar',
+        'working_style' => 'working style', 'costing_method' => 'costing method', 'phone' => 'phone',
+        'email' => 'email', 'website' => 'website', 'license_number' => 'licence number',
+        'license_issued_at' => 'licence issue date', 'license_expires_at' => 'licence expiry date',
+    ],
     'contra_clearing_account_missing' => 'This branch has no Set-off Clearing account. Run branch provisioning.',
     'contra_needs_a_customer_account' => 'The receivable side must be a customer account.',
     'contra_needs_a_supplier_account' => 'The payable side must be a supplier account.',

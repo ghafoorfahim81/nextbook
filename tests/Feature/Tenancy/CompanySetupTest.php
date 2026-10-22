@@ -169,3 +169,54 @@ it('answers a set-up screen that left out a required field with the errors', fun
 
     expect(Company::query()->count())->toBe(0);
 });
+
+/**
+ * The wizard checks each step with the server before moving on, and the
+ * whole form before the set-up screen opens. A precognitive request validates
+ * and stops: it must never create anything.
+ */
+it('checks one step of the wizard without creating anything', function () {
+    $founder = User::factory()->create(['company_id' => null, 'branch_id' => null]);
+
+    $this->actingAs($founder)
+        ->withHeaders(['Precognition' => 'true', 'Precognition-Validate-Only' => 'name_en,business_type'])
+        ->postJson(route('company.store'), ['base_currency' => 'not a currency'])
+        ->assertUnprocessable()
+        // Only the fields of the step being checked.
+        ->assertJsonValidationErrors(['name_en', 'business_type'])
+        ->assertJsonMissingValidationErrors(['base_currency']);
+
+    expect(Company::query()->count())->toBe(0);
+});
+
+it('passes the whole form through the check before the set-up screen opens', function () {
+    $founder = User::factory()->create(['company_id' => null, 'branch_id' => null]);
+
+    $this->actingAs($founder)
+        ->withHeaders(['Precognition' => 'true'])
+        ->postJson(route('company.store'), setupPayload())
+        ->assertNoContent();
+
+    expect(Company::query()->count())->toBe(0)
+        ->and($founder->refresh()->company_id)->toBeNull();
+});
+
+it('stores the licence, its dates in the Gregorian calendar', function () {
+    superAdminRole();
+    $founder = User::factory()->create(['company_id' => null, 'branch_id' => null]);
+
+    $this->actingAs($founder)
+        ->postJson(route('company.store'), setupPayload([
+            'license_number' => 'AISA-12345',
+            // Picked on a Solar Hijri calendar.
+            'license_issued_at' => '1405-01-01',
+            'license_expires_at' => '1406-01-01',
+        ]))
+        ->assertCreated();
+
+    $company = Company::query()->firstOrFail();
+
+    expect($company->license_number)->toBe('AISA-12345')
+        ->and(\Illuminate\Support\Carbon::parse($company->license_issued_at)->format('Y-m-d'))->toBe('2026-03-21')
+        ->and($company->currency_id)->not->toBeNull();
+});
