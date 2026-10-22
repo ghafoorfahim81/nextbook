@@ -56,6 +56,47 @@ class UserAccessService
         return array_values(array_intersect($ids, $live));
     }
 
+    /**
+     * Whether the user belongs to a company, deleted or not: their home
+     * company, or one granted to them.
+     *
+     * For the admin screens that act on companies themselves — restoring a
+     * deleted company is something its own members may do, and nobody else.
+     * Acting *in* a company goes through canAccessCompany(), which also
+     * requires it to be live.
+     */
+    public function isMemberOf(User $user, ?string $companyId): bool
+    {
+        if (! $companyId) {
+            return false;
+        }
+
+        if ((string) $user->company_id === $companyId) {
+            return true;
+        }
+
+        return UserCompanyAccess::query()
+            ->where('user_id', $user->id)
+            ->where('company_id', $companyId)
+            ->exists();
+    }
+
+    /**
+     * Ids of the users who belong to a company: those whose home it is, and
+     * those granted it. The user list and every user screen are bounded by
+     * this, since users carry no company scope of their own.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<User>
+     */
+    public function membersOf(string $companyId)
+    {
+        return User::query()->where(fn ($query) => $query
+            ->where('company_id', $companyId)
+            ->orWhereIn('id', UserCompanyAccess::query()
+                ->select('user_id')
+                ->where('company_id', $companyId)));
+    }
+
     public function canAccessCompany(User $user, ?string $companyId): bool
     {
         return $companyId !== null
