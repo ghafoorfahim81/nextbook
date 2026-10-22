@@ -62,7 +62,6 @@ class Currency extends Model
         'is_active' => 'boolean',
         'is_base_currency' => 'boolean',
         'company_id' => 'string',
-        'tenant_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
     ];

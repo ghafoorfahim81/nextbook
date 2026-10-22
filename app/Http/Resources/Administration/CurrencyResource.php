@@ -27,7 +27,6 @@ class CurrencyResource extends JsonResource
             'is_base_currency' => $this->is_base_currency,
             'flag' => $this->flag,
             'branch_id' => $this->branch_id,
-            'tenant_id' => $this->tenant_id,
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];

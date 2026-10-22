@@ -45,7 +45,6 @@ class Account extends Model
         'slug',
         'is_active',
         'is_main',
-        'tenant_id',
         'remark',
         'created_by',
         'updated_by',
@@ -65,7 +64,6 @@ class Account extends Model
         'slug' => 'string',
         'is_active' => 'boolean',
         'is_main' => 'boolean',
-        'tenant_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
     ];
