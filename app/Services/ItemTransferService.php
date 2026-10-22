@@ -224,7 +224,6 @@ class ItemTransferService
                     'date'                => $date,
                     'expire_date'         => $item->expire_date ?? null,
                     'variant_id'          => $item->variant_id ?? null,
-                    'branch_id'           => $transfer->branch_id,
                     'reference_type'      => ItemTransfer::class,
                     'reference_id'        => $transfer->id,
                 ];
@@ -327,7 +326,6 @@ class ItemTransferService
                         'expire_date' => $movement->expire_date,
                         'variant_id' => $movement->variant_id,
                         'warehouse_id' => $movement->warehouse_id,
-                        'branch_id' => $transfer->branch_id,
                         'reference_type' => ItemTransfer::class,
                         'reference_id' => $transfer->id,
                     ]);

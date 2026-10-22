@@ -345,7 +345,6 @@ class StockAdjustmentService
                 'date' => $date,
                 'expire_date' => $line['expire_date'] ?? null,
                 'warehouse_id' => $adjustment->warehouse_id,
-                'branch_id' => $adjustment->branch_id,
                 'reference_type' => StockAdjustment::class,
                 'reference_id' => $adjustment->id,
             ];

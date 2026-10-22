@@ -103,7 +103,6 @@ class FastOpeningController extends Controller
                     'warehouse_id'    => $row['warehouse_id'],
                     // Items are shared by the company, so the item has no branch
                     // to offer; the stock lands in the branch doing the entry.
-                    'branch_id'       => BranchContext::branchId(),
                 ]);
 
                 $posted++;

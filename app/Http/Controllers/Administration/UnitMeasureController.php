@@ -65,7 +65,6 @@ class UnitMeasureController extends Controller
                 'name' => $measure['name'],
                 'unit' => $measure['unit'],
                 'symbol' => $measure['symbol'],
-                'branch_id' => Auth::user()->branch_id ?? 1,
                 'created_by' => Auth::id(),
                 'updated_by' => null,
             ];
@@ -108,7 +107,6 @@ class UnitMeasureController extends Controller
                 'name' => $measure['name'],
                 'unit' => $measure['unit'],
                 'symbol' => $measure['symbol'],
-                'branch_id' => Auth::user()->branch_id ?? 1,
                 'quantity_id' => $metric->id,
                 'is_main' => false,
                 'created_by' => Auth::id(),

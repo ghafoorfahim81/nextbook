@@ -92,7 +92,6 @@ class ItemFastEntryController extends Controller
                     'warehouse_id'    => $r['warehouse_id'],
                     // Items are shared by the company; the stock lands in the
                     // branch doing the entry.
-                    'branch_id'       => BranchContext::branchId(),
                 ]);
 
                 $openingValue = round($unitCost * $quantity, 4);

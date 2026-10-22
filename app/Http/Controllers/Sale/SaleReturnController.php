@@ -525,7 +525,6 @@ class SaleReturnController extends Controller
                 'expire_date' => $saleItem->expire_date,
                 'variant_id' => $saleItem->variant_id,
                 'warehouse_id' => $saleItem->warehouse_id,
-                'branch_id' => $saleReturn->branch_id,
                 'reference_type' => SaleReturn::class,
                 'reference_id' => $saleReturn->id,
             ];

@@ -324,7 +324,6 @@ class SaleController extends Controller
                     'expire_date'          => $item['expire_date'] ?? null,
                     'variant_id'           => $item['variant_id'] ?? null,
                     'warehouse_id'         => $validated['warehouse_id'],
-                    'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
                 ];
@@ -822,7 +821,6 @@ class SaleController extends Controller
                     'expire_date'          => $item['expire_date'] ?? null,
                     'variant_id'           => $item['variant_id'] ?? null,
                     'warehouse_id'         => $validated['warehouse_id'],
-                    'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
                 ];
