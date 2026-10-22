@@ -151,7 +151,7 @@ class PurchaseReturnController extends Controller
             'items' => $purchase->items->map(fn (PurchaseItem $item) => [
                 'purchase_item_id' => $item->id,
                 'item_id' => $item->item_id,
-                'item_name' => $item->item?->name,
+                'item_name' => $item->snapshotItemName(),
                 'batch' => $item->batch,
                 'variant_id' => $item->variant_id,
                 'variant_name' => $item->variant?->displayName(),

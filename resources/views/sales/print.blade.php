@@ -336,7 +336,7 @@
                 @endphp
                 <tr>
                     <td class="ltr">{{ $loop->iteration }}</td>
-                    <td style="text-align: right;">{{ $item->item?->name ?? '-' }}</td>
+                    <td style="text-align: right;">{{ $item->snapshotItemName() ?? '-' }}</td>
                     <td class="ltr">{{ number_format((float) $item->quantity, 2) }}</td>
                     <td class="ltr">{{ number_format((float) $item->unit_price, 2) }} {{ $currency }}</td>
                     <td class="ltr">{{ number_format((float) $lineTotal, 2) }} {{ $currency }}</td>

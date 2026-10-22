@@ -15,9 +15,10 @@ use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\CompanySpecific;
 use App\Traits\HasCompanyFromParent;
+use App\Traits\SnapshotsItem;
 class PurchaseItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, HasDependencyCheck, SoftDeletes, HasCompanyFromParent;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, CompanySpecific, HasDependencyCheck, SoftDeletes, HasCompanyFromParent, SnapshotsItem;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing

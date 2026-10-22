@@ -1885,12 +1885,12 @@ class SaleController extends Controller
             $profit    = $subtotal - $lineCost;
 
             return [
-                'item_name'         => $item->item?->name ?? '-',
-                'item_code'         => $item->item?->code ?? '-',
+                'item_name'         => $item->snapshotItemName() ?? '-',
+                'item_code'         => $item->snapshotItemCode() ?? '-',
                 'batch'             => $item->batch ?? '-',
                 'expire_date'       => $item->expire_date?->format('Y-m-d') ?? '-',
                 'quantity'          => $qty,
-                'unit_measure_name' => $item->unitMeasure?->name ?? '-',
+                'unit_measure_name' => $item->snapshotUnitName() ?? '-',
                 'unit_price'        => $price,
                 'discount'          => $discount,
                 'free'              => $free,
