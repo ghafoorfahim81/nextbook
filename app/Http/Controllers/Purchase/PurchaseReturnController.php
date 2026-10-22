@@ -531,7 +531,6 @@ class PurchaseReturnController extends Controller
                 'expire_date' => $purchaseItem->expire_date,
                 'variant_id' => $purchaseItem->variant_id,
                 'warehouse_id' => $purchaseItem->warehouse_id,
-                'branch_id' => $purchaseReturn->branch_id,
                 'reference_type' => PurchaseReturn::class,
                 'reference_id' => $purchaseReturn->id,
             ];

@@ -173,7 +173,6 @@ class ItemController extends Controller
                 ->each(function ($o) use ($item, $validated, $transactionService, $syncedVariants) {
                     // create stock
                     $stockService = app(\App\Services\StockService::class);
-                    $branchId = auth()->user()->branch_id ?? app('active_branch_id');
                     $stock = $stockService->post([
                         'item_id'         => $item->id,
                         'variant_id'      => $this->openingVariantId($syncedVariants, $o['variant_index'] ?? null),
@@ -187,7 +186,6 @@ class ItemController extends Controller
                         'date'            => Carbon::now()->toDateString(),
                         'expire_date'     => $o['expire_date'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
-                        'branch_id'       => $branchId,
                     ]);
                 });
                 // Create opening transactions

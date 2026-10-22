@@ -33,6 +33,15 @@
 | ۱۲ | گسترش policy به همهٔ ۱۰۰ جدول کمپنی‌محور | ✅ |
 | — | **استقرار روی staging و تولید** | ⬜ **قدم بعدی — سمت کاربر** |
 
+> ⚠️ **استقرار فقط روی دیتابیس تازه.** گام‌های ۱ تا ۹ migrationهای موجود را در جای
+> خود ویرایش کردند (طبقهٔ «دیتای زنده نیست» در
+> [phase-2-table-classification-fa.md](phase-2-table-classification-fa.md))،
+> پس دیتابیسی که پیش از فاز ۲ migrate شده آن تغییرات را با `migrate` نمی‌گیرد —
+> فقط دو migration جدید (`ledger_branches` و RLS) را اجرا می‌کند و روی اسکیمای کهنه
+> می‌افتد. دیتابیس توسعهٔ محلی (`nextbook`) خودش همین وضع را دارد: مثلاً
+> `sale_items.branch_id` هنوز در آن هست. روی staging/تولید: دیتابیس خالی +
+> `migrate --force --database=pgsql` + seed، یا `migrate:fresh` اگر داده‌اش ارزش ندارد.
+
 وضعیت تست‌ها در پایان این جلسه (`php artisan test`، هر سه suite):
 
 ```
@@ -210,7 +219,7 @@ helper مشترکش `BuildsErpContext::actingInCompany()` است و هر سه bi
 | کار | توضیح |
 |---|---|
 | ~~قفل نمبرگذاری~~ | ✅ انجام شد — `HasSequentialNumber::lockNumberSeries()` با `pg_advisory_xact_lock(hashtext(table \|\| company))`. فقط داخل تراکنش قفل می‌گیرد؛ صفحهٔ create که نمبر بعدی را نشان می‌دهد پشت یک ثبت در جریان صف نمی‌کشد |
-| کلیدهای `'branch_id'` بی‌اثر | حدود ۳۰ جا هنوز `'branch_id' => ...` را در payload موجودی یا آرایهٔ خطوط سند می‌فرستند؛ از `$fillable` حذف شده و نادیده گرفته می‌شود. بی‌خطر ولی گمراه‌کننده. حذف خودکار امن نیست چون همان فایل‌ها سندهای دارای شعبه هم می‌سازند |
+| ~~کلیدهای `'branch_id'` بی‌اثر~~ | ✅ انجام شد — ۱۲ payload موجودی (`stock_movements`/`stock_balances` کالم ندارند و `stock_lots` از هیچ payloadی ساخته نمی‌شود)، ۲ کلید `UnitMeasureController`، و `branch_id` از `$fillable`/casts مدل‌های `TransactionLine` و `AccountBalance`. کلیدهای باقی‌مانده همه به جدول دارای شعبه، voucher خوانده‌شده (`$voucher['branch_id']`)، داده‌های اعلان یا activity log می‌روند و زنده‌اند. Resourceهای مستر دیتا (`Brand`/`Currency`/`Size`/…) هنوز `branch_id` همیشه null برمی‌گردانند چون فرم‌های فرانت آن را برمی‌فرستند — بی‌خطر |
 | ~~متن دو پیام~~ | ✅ انجام شد — کلیدها به `contra_parties_must_share_a_company` و `counterpart_must_share_a_company` تغییر کردند و متنشان در هر سه زبان «شرکت» شد |
 | ~~ایندکس‌های بدون تصمیم~~ | ✅ تصمیم‌ها گرفته شد — جدول پایین |
 | نام `BranchContext` | محتوایش کمپنی‌محور است ولی نامش شعبه؛ تغییر نام ۶۳ جا را لمس می‌کند |

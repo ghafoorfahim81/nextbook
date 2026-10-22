@@ -222,7 +222,6 @@ class PurchaseController extends Controller
                     'expire_date'     => $item['expire_date'],
                     'variant_id'      => $item['variant_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
-                    'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,
                     'reference_id'    => $purchase->id,
                 ];
@@ -539,7 +538,6 @@ class PurchaseController extends Controller
                     'expire_date'     => $item['expire_date'] ?? null,
                     'variant_id'      => $item['variant_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
-                    'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,
                     'reference_id'    => $purchase->id,
                 ];

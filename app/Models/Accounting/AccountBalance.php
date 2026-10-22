@@ -30,7 +30,6 @@ class AccountBalance extends Model
         'base_balance',
         'balance_type',
         'snapshot_at',
-        'branch_id',
         'created_by',
     ];
 
@@ -43,7 +42,6 @@ class AccountBalance extends Model
             'base_credit' => 'float',
             'base_balance' => 'float',
             'snapshot_at' => 'datetime',
-            'branch_id' => 'string',
             'created_by' => 'string',
         ];
     }
