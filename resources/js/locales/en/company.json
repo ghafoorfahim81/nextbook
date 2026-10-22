@@ -29,6 +29,27 @@
     "upload_logo_description": "PNG, JPG, GIF up to 2MB",
     "logo_can_be_updated_in_edit_mode": "Logo can be updated in edit mode",
     "invoice_designer_view_only": "Click Edit to change the company invoice format. You can still preview the current formats here.",
-    "costing_method": "Costing Method"
-
+    "costing_method": "Costing Method",
+    "setup": {
+        "title": "Setting up your company",
+        "subtitle": "Preparing your books. This takes a moment.",
+        "done_title": "Your company is ready",
+        "done_subtitle": "Taking you in...",
+        "failed": "Something went wrong, and nothing was saved. Please try again.",
+        "created": "{count} created",
+        "steps": {
+            "company": "Creating the company",
+            "branch": "Opening the main branch",
+            "accounts": "Building the chart of accounts",
+            "currencies": "Adding the default currencies",
+            "units": "Setting up units and measures",
+            "catalog": "Preparing categories and brands",
+            "cash_customer": "Adding the walk-in cash customer",
+            "expenses": "Setting up expense categories and journal classes",
+            "hr": "Setting up HR: departments, shifts, leave and salary",
+            "financial_period": "Opening the financial year",
+            "warehouse": "Creating the main warehouse",
+            "access": "Giving you access"
+        }
+    }
 }

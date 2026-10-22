@@ -121,7 +121,7 @@ Route::middleware([
     Route::delete('/warehouses/{warehouse}/force-delete', [\App\Http\Controllers\Administration\WarehouseController::class, 'forceDelete'])
         ->name('warehouses.force-delete')
         ->withTrashed();
-    Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class)->except(['create', 'edit']);
+    Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class)->except(['edit']);
     Route::patch('/companies/{company}/restore', [\App\Http\Controllers\Administration\CompanyController::class, 'restore'])->name('companies.restore')->withTrashed();
     Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class)->except(['create', 'edit']);
     Route::patch('/brands/{brand}/restore', [\App\Http\Controllers\Administration\BrandController::class, 'restore'])->name('brands.restore')->withTrashed();

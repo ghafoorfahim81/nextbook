@@ -1,6 +1,8 @@
 <script setup>
-import {useForm } from '@inertiajs/vue3';
-import { onMounted, computed } from 'vue';
+import { useForm, router } from '@inertiajs/vue3';
+import { onMounted, onBeforeUnmount, computed, reactive } from 'vue';
+import axios from 'axios';
+import CompanySetupProgress from '@/Components/Onboarding/CompanySetupProgress.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -27,9 +29,18 @@ const props = defineProps({
         type: Array,
         required: true,
     },
-    currencies: {
+    // The catalog of currencies, not a company's: someone signing up has no
+    // company yet, so the company-scoped `currencies` list is empty for them.
+    // Sign-up posts to company.store; a super-admin adding another company
+    // (phase 5) reaches the same page from the companies screen and posts to
+    // companies.store. Both end in CompanySetupService.
+    submitRoute: {
+        type: String,
+        default: 'company.store',
+    },
+    currencyDefinitions: {
         type: Array,
-        required: true,
+        default: () => [],
     },
 });
 
@@ -53,7 +64,7 @@ const form = useForm({
     working_style: '',
     business_type: '',
     locale: 'en',
-    currency_id: '',
+    base_currency: 'AFN',
     email: '',
     website: '',
     invoice_description: '',
@@ -74,21 +85,68 @@ const form = useForm({
 //     }
 // });
 
-const submit = () => {
-    form.post(route('company.store'), {
-        onSuccess: () => {
-            form.reset();
-        },
-        onError: () => {
-            toast({
-                title: t('general.error'),
-                description: t('general.something_went_wrong'),
-                variant: 'destructive',
-                class:'bg-red-600 text-white',
-                duration: Infinity,
-            });
+// The set-up screen (CompanySetupProgress). Same keys, same order as
+// CompanySetupService::SUMMARY_STEPS on the server.
+const SETUP_STEPS = [
+    'company', 'branch', 'accounts', 'currencies', 'units', 'catalog',
+    'cash_customer', 'expenses', 'hr', 'financial_period', 'warehouse', 'access',
+]
+const setup = reactive({ open: false, activeIndex: 0, summary: null })
+let setupTimer = null
+
+const stopSetupTimer = () => {
+    if (setupTimer) clearInterval(setupTimer)
+    setupTimer = null
+}
+onBeforeUnmount(stopSetupTimer)
+
+const submit = async () => {
+    if (form.processing) return
+
+    form.clearErrors()
+    form.processing = true
+    Object.assign(setup, { open: true, activeIndex: 0, summary: null })
+
+    // The server does the whole set-up in one request. Walk through the steps
+    // while it works, but hold the last one until it has actually answered.
+    setupTimer = setInterval(() => {
+        if (setup.activeIndex < SETUP_STEPS.length - 1) setup.activeIndex++
+    }, 650)
+
+    // Posted for JSON so the screen can show what was created before leaving.
+    // The logo field holds only a preview here; it is not sent.
+    const { logo, selected_currency, selected_business_type, selected_calendar_type, selected_working_style, ...payload } = form.data()
+
+    try {
+        const { data } = await axios.post(route(props.submitRoute), payload, {
+            headers: { Accept: 'application/json' },
+        })
+
+        stopSetupTimer()
+        setup.activeIndex = SETUP_STEPS.length
+        setup.summary = data.summary ?? {}
+
+        // Long enough to read the result, then in.
+        setTimeout(() => router.visit(data.redirect), 1800)
+    } catch (error) {
+        stopSetupTimer()
+        setup.open = false
+        form.processing = false
+
+        if (error.response?.status === 422) {
+            form.setError(
+                Object.fromEntries(Object.entries(error.response.data.errors ?? {}).map(([key, messages]) => [key, messages[0]]))
+            )
         }
-    });
+
+        toast({
+            title: t('general.error'),
+            description: error.response?.status === 422 ? t('general.something_went_wrong') : t('company.setup.failed'),
+            variant: 'destructive',
+            class: 'bg-red-600 text-white',
+            duration: 8000,
+        })
+    }
 };
 
 const previewImage = (event) => {
@@ -117,9 +175,6 @@ const setCalendarLocaleStorage = (selected) => {
 }
 
 const handleSelectChange = (field, value) => {
-    if (field === 'currency_id') {
-        form.currency_id = value;
-    }
     if (field === 'calendar_type') {
         setCalendarLocaleStorage(value)
     }
@@ -131,6 +186,12 @@ const saveFormRef = useSaveShortcut({ form });
 
 <template>
     <div>
+        <CompanySetupProgress
+            :open="setup.open"
+            :steps="SETUP_STEPS"
+            :active-index="setup.activeIndex"
+            :summary="setup.summary"
+        />
         <div class="py-12">
             <div class="sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -214,18 +275,15 @@ const saveFormRef = useSaveShortcut({ form });
                                         :error="form.errors?.locale"
                                     />
                                     <NextSelect
-                                        :options="currencies.data"
-                                        v-model="form.selected_currency"
+                                        :options="currencyDefinitions"
+                                        v-model="form.base_currency"
                                         label-key="display_name"
                                         value-key="id"
-                                        @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                         :reduce="currency => currency.id"
                                         :floating-text="t('company.currency')"
                                         is-required
-                                        :error="form.errors?.currency_id"
+                                        :error="form.errors?.base_currency"
                                         :searchable="true"
-                                        resource-type="currencies"
-                                        :search-fields="['name', 'code', 'symbol']"
                                     />
                                 </div>
 

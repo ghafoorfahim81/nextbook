@@ -13,7 +13,10 @@ use App\Enums\Locale;
 use App\Enums\WorkingStyle;
 use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
+use App\Models\Role;
 use App\Models\Sale\InvoiceFormat;
+use App\Services\CompanySetupService;
+use App\Support\Inertia\CacheForget;
 use App\Support\Preferences\InvoiceThemeOptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,29 +37,37 @@ class CompanyController extends Controller
     /**
      * Store a newly created company in storage.
      */
-    public function store(CompanyStoreRequest $request)
+    /**
+     * Sign-up: a new user founds their company.
+     *
+     * Only for a user who has none yet. Adding a company beside an existing one
+     * is a super-admin's job on the companies screen (Administration\
+     * CompanyController), which grants it rather than making it home.
+     */
+    public function store(CompanyStoreRequest $request, CompanySetupService $setup)
     {
+        $user = Auth::user();
 
-        $validated = $request->validated();
+        abort_if((bool) $user->company_id, 403);
 
-        $validated['created_by'] = Auth::id();
-        $validated['updated_by'] = Auth::id();
+        $result = $setup->create($request->companyAttributes(), $request->validated('base_currency'), $user);
 
-        // Handle logo upload
-        if ($request->hasFile('logo')) {
-            $logoPath = $request->file('logo')->store('company-logos', 'public');
-            $validated['logo'] = $logoPath;
+        // The founder runs their own company. Super-admin reaches only the
+        // companies they belong to — the company and user screens check
+        // membership, and acting in a company goes through UserAccessService.
+        $founderRole = Role::query()->where('slug', 'super-admin')->first();
+
+        if ($founderRole) {
+            $user->assignRole($founderRole);
         }
 
-        $company = Company::create($validated);
-        $currency = Currency::find($validated['currency_id']);
-        $currency->is_base_currency = true;
-        $currency->exchange_rate = 1.00;
-        $currency->save();
-        // Update the user's company_id
-        $user = Auth::user();
-        $user->company_id = $company->id;
-        $user->save();
+        CacheForget::authForUserId($user->id);
+
+        // The set-up screen posts for JSON so it can show what was created
+        // before moving on; a plain form post just redirects.
+        if ($request->wantsJson()) {
+            return response()->json(['redirect' => route('dashboard'), 'summary' => $result['summary']], 201);
+        }
 
         return redirect()->route('dashboard')
             ->with('success', __('general.created_successfully', ['resource' => __('general.resource.company')]));
