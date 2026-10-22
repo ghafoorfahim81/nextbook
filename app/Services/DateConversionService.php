@@ -3,6 +3,7 @@
 
 namespace App\Services;
 
+use App\Support\CompanyContext;
 use Carbon\Carbon;
 use Morilog\Jalali\Jalalian;
 use Illuminate\Support\Collection;
@@ -218,8 +219,8 @@ class DateConversionService
     private function getCompanyCalendarType(): string
     {
         // Your company detection logic
-        $calendarType = auth()->check() && auth()->user()->company?->calendar_type
-            ? auth()->user()->company?->calendar_type
+        $calendarType = auth()->check() && CompanyContext::company()?->calendar_type
+            ? CompanyContext::company()?->calendar_type
             : null;
 
         // Return the string value of the enum or default to 'gregorian'

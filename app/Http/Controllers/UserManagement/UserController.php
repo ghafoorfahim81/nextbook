@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\UserManagement;
 
+use App\Support\CompanyContext;
 use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserManagement\UserStoreRequest;
@@ -32,7 +33,7 @@ class UserController extends Controller
         $users = User::with(['company', 'roles'])
             // Users are managed company-wide; without this the list showed
             // every tenant's accounts to anyone holding users.view_any.
-            ->where('company_id', $request->user()->company_id)
+            ->where('company_id', CompanyContext::companyId())
             ->when($request->query('search'), function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -88,8 +89,8 @@ class UserController extends Controller
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
         $data['status'] = UserStatus::ACTIVE->value;
-        $data['company_id'] = $request->user()->company_id;
-        $data['branch_id'] = $request->user()->branch_id;
+        $data['company_id'] = CompanyContext::companyId();
+        $data['branch_id'] = CompanyContext::branchId();
         $data['preferences'] = User::DEFAULT_PREFERENCES;
         $user = User::create($data);
 

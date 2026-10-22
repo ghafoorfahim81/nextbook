@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\CompanyContext;
 use App\Enums\AttendanceStatus;
 use App\Enums\EmploymentType;
 use App\Enums\Gender;
@@ -2945,7 +2946,7 @@ class ReportService
             return Carbon::parse($periodStart)->toDateString();
         }
 
-        $calendar = auth()->user()?->company?->calendar_type;
+        $calendar = CompanyContext::company()?->calendar_type;
         $calendar = $calendar instanceof \BackedEnum ? $calendar->value : $calendar;
 
         if ($calendar === 'jalali') {
@@ -4750,7 +4751,11 @@ class ReportService
 
     protected function resolveBranchId(?Authenticatable $user): string
     {
-        $branchId = $user?->branch_id ?? Auth::user()?->branch_id;
+        // The branch the request acts in comes first: since phase 5 a user can
+        // switch away from their home branch, and users.branch_id is the home.
+        // A user handed in from outside a request (a job) has no binding, so
+        // their home branch answers.
+        $branchId = CompanyContext::branchId() ?? $user?->branch_id;
 
         if ($branchId) {
             return (string) $branchId;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Ledger;
 
+use App\Support\CompanyContext;
 use App\Enums\CreditTerms;
 use App\Http\Requests\Ledger\Concerns\ValidatesLedgerOpenings;
 use App\Http\Requests\Ledger\Concerns\ValidatesPhoneNumbers;
@@ -35,7 +36,7 @@ class LedgerStoreRequest extends FormRequest
                 'string',
                 Rule::unique('ledgers', 'code')
                     ->where(fn ($query) => $query
-                        ->where('company_id', $this->user()?->company_id)
+                        ->where('company_id', CompanyContext::companyId())
                         ->whereNull('deleted_at')),
             ],
             'address' => ['nullable', 'string'],

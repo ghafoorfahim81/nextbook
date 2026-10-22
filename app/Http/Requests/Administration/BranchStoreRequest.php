@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Administration;
 
+use App\Support\CompanyContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +27,7 @@ class BranchStoreRequest extends FormRequest
      */
     public function rules(): array
     {
-        $companyId = $this->user()?->company_id;
+        $companyId = CompanyContext::companyId();
 
         return [
             'name' => [

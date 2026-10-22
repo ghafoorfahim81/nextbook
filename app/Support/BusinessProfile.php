@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Support\CompanyContext;
 use App\Enums\BusinessType;
 use App\Models\Administration\Company;
 use Illuminate\Support\Arr;
@@ -51,7 +52,7 @@ class BusinessProfile
      */
     public static function current(): self
     {
-        return static::for(auth()->user()?->company);
+        return static::for(CompanyContext::company());
     }
 
     /** @return array<string, bool> */

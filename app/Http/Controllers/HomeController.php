@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CompanyContext;
 use App\Models\Administration\Currency;
 use App\Models\Administration\UnitMeasure;
 use Illuminate\Container\Attributes\Auth;
@@ -18,7 +19,7 @@ class HomeController extends Controller
         $user = $request->user();
 
         // Currencies: scope to the user's branch (BranchSpecific global scope handles this
-        // automatically via auth()->user()->branch_id). If the user has no branch_id,
+        // automatically via CompanyContext::branchId()). If the user has no branch_id,
         // fall back to all active currencies for the company.
         $currencyQuery = Currency::query();
 
@@ -39,7 +40,7 @@ class HomeController extends Controller
             $unitQuery->withoutGlobalScope('branchSpecific');
         }
 
-        $authUser = Auth()->user()->company;
+        $authUser = CompanyContext::company();
         // dd($authUser);
         $unitMeasures = $unitQuery
             ->with('quantity:id,quantity,slug,symbol')
@@ -62,7 +63,7 @@ class HomeController extends Controller
             'to_code'     => 'required|string',
         ]);
 
-        $hasBranch = (bool) $request->user()?->branch_id;
+        $hasBranch = (bool) CompanyContext::branchId();
 
         $from = Currency::query()  
             ->where('code', $validated['from_code'])
@@ -107,7 +108,7 @@ class HomeController extends Controller
             'to_id'   => 'required|string',
         ]);
 
-        $hasBranch = (bool) $request->user()?->branch_id;
+        $hasBranch = (bool) CompanyContext::branchId();
 
         $from = UnitMeasure::query()
             ->when(! $hasBranch, fn ($q) => $q->withoutGlobalScope('branchSpecific'))

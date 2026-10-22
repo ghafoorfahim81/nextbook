@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Concerns;
 
+use App\Support\CompanyContext;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\Rules\Unique;
@@ -47,7 +48,7 @@ trait BranchScopedUnique
             }
         }
 
-        $branchId = $this->user()?->branch_id;
+        $branchId = CompanyContext::branchId();
 
         return $branchId ? (string) $branchId : null;
     }
@@ -128,7 +129,7 @@ trait BranchScopedUnique
             }
         }
 
-        $companyId = $this->user()?->company_id;
+        $companyId = CompanyContext::companyId();
 
         return $companyId ? (string) $companyId : null;
     }

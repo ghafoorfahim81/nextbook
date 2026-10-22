@@ -96,6 +96,21 @@ Two tables are excluded, both because they are read before a company exists:
   prevented at the application level by `CompanySpecific` on the Branch model,
   with `tests/Feature/Tenancy/CompanyScopeTest.php` holding it in place.
 
+Two more since phase 5, for the same reason:
+
+- **`user_company_access`** and **`user_branch_access`** — read by
+  SetActiveCompany and SetActiveBranch (through `UserAccessService`) to decide
+  which company and branch the request acts in, before any company is on the
+  connection. They hold membership, not books; only super-admins change them,
+  and the composite foreign keys keep a branch grant inside its company.
+
+These two were created by a migration that runs *after* the policy migration,
+so the policy migration never saw them — which is the general caveat worth
+knowing: **a company-scoped table added by a later migration gets no policy by
+itself.** The coverage test in `RowLevelSecurityTest` does see it and fails, so
+the gap cannot go unnoticed, but closing it means writing that table's policies
+in its own migration (or listing it as exempt, with the reason).
+
 `companies` needs no policy: it has no `company_id`, and `CompanySpecific` on
 the model scopes what a request can see.
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\UserAccessService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,12 +38,48 @@ class SetActiveCompany
         $user = Auth::user();
 
         if ($user && $user->company_id) {
-            $companyId = (string) $user->company_id;
+            $companyId = $this->resolve($request, $user);
 
             app()->instance('active_company_id', $companyId);
+            // Still the one active company, not every company the user may
+            // reach: reading across companies belongs to group reporting
+            // (phase 9), and the row level security policies admit one company
+            // per connection regardless.
             app()->instance('accessible_company_ids', [$companyId]);
+            app()->forgetInstance('active_company');
         }
 
         return $next($request);
+    }
+
+    /**
+     * The company picked with the switcher (phase 5), kept in the session, as
+     * long as the user may still act in it; otherwise their home company.
+     *
+     * The session value is checked on every request rather than trusted: access
+     * can be withdrawn while a session is alive, and a session is only as
+     * trustworthy as whoever last wrote to it.
+     */
+    private function resolve(Request $request, $user): string
+    {
+        $home = (string) $user->company_id;
+
+        if (! $request->hasSession()) {
+            return $home;
+        }
+
+        $picked = $request->session()->get('active_company_id');
+
+        if (! $picked || $picked === $home) {
+            return $home;
+        }
+
+        if (app(UserAccessService::class)->canAccessCompany($user, (string) $picked)) {
+            return (string) $picked;
+        }
+
+        $request->session()->forget(['active_company_id', 'active_branch_id']);
+
+        return $home;
     }
 }

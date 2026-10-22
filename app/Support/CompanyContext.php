@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\CostingMethod;
 use App\Models\Account\Account;
+use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -123,6 +124,40 @@ final class CompanyContext
     }
 
     /**
+     * The company the current request is acting in, as a model.
+     *
+     * Read this, never `auth()->user()->company`: since phase 5 a user can act
+     * in a company other than their home one, and the home company is what the
+     * relation returns. SetActiveCompany binds the model once per request; the
+     * id check keeps a binding left over from an earlier request in the same
+     * process (a test, a worker) from answering for a different company.
+     */
+    public static function company(): ?Company
+    {
+        $companyId = self::companyId();
+
+        if (! $companyId) {
+            return null;
+        }
+
+        if (app()->bound('active_company')) {
+            $company = app('active_company');
+
+            if ($company instanceof Company && (string) $company->getKey() === $companyId) {
+                return $company;
+            }
+        }
+
+        $company = Company::query()->find($companyId);
+
+        if ($company && app()->bound('active_company_id') && (string) app('active_company_id') === $companyId) {
+            app()->instance('active_company', $company);
+        }
+
+        return $company;
+    }
+
+    /**
      * Default posting accounts for a company, keyed by slug.
      *
      * @return Collection<string, string>
@@ -174,7 +209,7 @@ final class CompanyContext
      */
     public static function costingMethod(): string
     {
-        return Auth::user()?->company?->costing_method?->value
+        return self::company()?->costing_method?->value
             ?? CostingMethod::FIFO->value;
     }
 

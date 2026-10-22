@@ -611,9 +611,12 @@ Route::middleware([
     Route::get('/search/{resourceType}', [SearchController::class, 'search']);
     Route::get('/search/resource-types', [SearchController::class, 'getResourceTypes']);
 
-    // Branch switching (super-admin only)
+    // Switching company and branch (phase 5). Each controller checks the posted
+    // id against UserAccessService; neither trusts it.
     Route::post('/switch-branch', SwitchBranchController::class)
         ->name('branches.switch');
+    Route::post('/switch-company', \App\Http\Controllers\Administration\SwitchCompanyController::class)
+        ->name('companies.switch');
 
 });
 

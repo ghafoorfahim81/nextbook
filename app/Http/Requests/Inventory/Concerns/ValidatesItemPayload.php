@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Inventory\Concerns;
 
+use App\Support\CompanyContext;
 use App\Enums\CostingMethod;
 use App\Enums\ItemType;
 use App\Enums\PricingMethod;
@@ -40,7 +41,7 @@ trait ValidatesItemPayload
             }
         }
 
-        $companyId = $this->user()?->company_id;
+        $companyId = CompanyContext::companyId();
 
         return $companyId ? (string) $companyId : null;
     }

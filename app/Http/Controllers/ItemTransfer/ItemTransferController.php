@@ -316,7 +316,7 @@ class ItemTransferController extends Controller
             ->get();
 
         $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
-        $company = $request->user()?->company;
+        $company = CompanyContext::company();
         $companyName = match (app()->getLocale()) {
             'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
             'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),

@@ -54,6 +54,11 @@ class RowLevelSecurityTest extends TestCase
     private const UNPROTECTED_TABLES = [
         'users',
         'branches',
+        // Read by SetActiveCompany to decide which company the request acts in,
+        // before one is on the connection. Membership, not books; managed by
+        // super-admins in the application. See 2026_10_22_000002.
+        'user_company_access',
+        'user_branch_access',
     ];
 
     /**

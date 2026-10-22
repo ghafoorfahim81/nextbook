@@ -5,6 +5,7 @@ namespace App\Support\Inertia;
 use App\Models\Administration\Branch;
 use App\Services\NotificationService;
 use App\Support\BusinessProfile;
+use App\Support\CompanyContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -88,12 +89,13 @@ final class CoreShared
                     'profile_photo_path' => $user->profile_photo_path,
                     'profile_photo_url' => $user->profile_photo_url,
                     'two_factor_confirmed_at' => $user->two_factor_confirmed_at,
-                    'branch_id' => $user->branch_id,
+                    // The branch the request acts in, not the home branch.
+                    'branch_id' => $activeBranchId,
                     'branch_name' => $activeBranchName,
                     'permissions' => $permissions,
                     'roles' => $roles,
                     'role_slugs' => $roleSlugs,
-                    'calendar_type' => $user->company?->calendar_type,
+                    'calendar_type' => CompanyContext::company()?->calendar_type,
                     // Drives the one-time "check the user manual" dialog. True
                     // only for a user who belongs to a company and has never
                     // opened the manual or dismissed the prompt.
@@ -108,12 +110,13 @@ final class CoreShared
             ],
             'user_preferences' => $userPreferences,
             // Which item fields, sections and tracking defaults this trade
-            // uses. Cached per user because it derives from the company.
+            // uses. Cached per company: it derives from the company alone, and
+            // since phase 5 a user's companies can be different trades.
             'business_profile' => $user
                 ? Cache::remember(
-                    CacheKey::forUser($request, 'business_profile'),
+                    CacheKey::forCompany(CacheKey::companyId($request), 'business_profile'),
                     $cacheDuration,
-                    fn() => BusinessProfile::for($user->company)->toArray()
+                    fn() => BusinessProfile::for(CompanyContext::company())->toArray()
                 )
                 : null,
             'notification_center' => $user

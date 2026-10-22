@@ -26,6 +26,16 @@ final class CacheKey
         return "inertia:company:{$companyId}:branch:{$branchId}:locale:{$locale}:{$name}";
     }
 
+    /**
+     * A value that derives from the company alone — the business profile — so
+     * every user acting in it shares one entry, and a user who switches company
+     * reads the other company's.
+     */
+    public static function forCompany(?string $companyId, string $name): string
+    {
+        return 'inertia:company:'.($companyId ?? 'none').":{$name}";
+    }
+
     public static function forUser(Request $request, string $name): string
     {
         $userId = $request->user()?->id ?? 'guest';
@@ -34,19 +44,21 @@ final class CacheKey
     }
 
     /**
-     * Retrieve the company ID associated with the current request's user.
-     *
-     * Returns the user's direct company_id if available, otherwise uses the company relation.
+     * The company the request acts in, which since phase 5 need not be the
+     * user's home company. Keys built from the home company would hand one
+     * company's cached lookups to a user who has switched to another.
      */
     public static function companyId(Request $request): ?string
     {
-        $user = $request->user();
+        if (app()->bound('active_company_id')) {
+            $companyId = app('active_company_id');
 
-        if ($user?->company_id) {
-            return (string) $user->company_id;
+            return $companyId ? (string) $companyId : null;
         }
 
-        return $user?->company?->id ? (string) $user->company->id : null;
+        $companyId = $request->user()?->company_id;
+
+        return $companyId ? (string) $companyId : null;
     }
 
     public static function branchId(Request $request): ?string

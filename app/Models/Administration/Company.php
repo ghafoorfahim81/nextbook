@@ -30,6 +30,22 @@ class Company extends Model
     // soft-deletable.
     use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasDependencyCheck, HasSearch, HasSorting, SoftDeletes;
 
+    protected static function booted(): void
+    {
+        // CompanyContext::company() keeps the active company's model for the
+        // rest of the request. A save through any other instance — the company
+        // settings form, a test changing the calendar — would otherwise leave
+        // that copy answering with the old values until the request ends.
+        $forget = function (Company $company): void {
+            if (app()->bound('active_company') && (string) app('active_company')?->getKey() === (string) $company->getKey()) {
+                app()->forgetInstance('active_company');
+            }
+        };
+
+        static::saved($forget);
+        static::deleted($forget);
+    }
+
     protected static function searchableColumns(): array
     {
         return [
