@@ -715,7 +715,7 @@ class CompanyProvisioningService
             return 0;
         }
 
-        [$name, $start, $end] = $this->currentYearBounds();
+        [$name, $start, $end] = $this->currentYearBounds($company);
 
         $this->insert(FinancialPeriod::class, [
             'name' => $name,
@@ -732,9 +732,11 @@ class CompanyProvisioningService
     /**
      * @return array{0: string, 1: Carbon, 2: Carbon}
      */
-    private function currentYearBounds(): array
+    private function currentYearBounds(Company $company): array
     {
-        $calendar = Auth::user()?->company?->calendar_type?->value;
+        // The company being provisioned, not the caller's: a super-admin whose
+        // own company keeps the Gregorian calendar can create a Jalali one.
+        $calendar = $company->calendar_type?->value;
 
         if ($calendar === 'jalali') {
             $today = Jalalian::now();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CompanyContext;
 use App\Http\Requests\Administration\CompanyUpdateRequest;
 use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Http\Resources\Administration\CurrencyResource;
@@ -66,7 +67,7 @@ class CompanyController extends Controller
      */
     public function show()
     {
-        $company = Auth::user()->company->load('currency');
+        $company = CompanyContext::company()->load('currency');
 
         if (!$company) {
             return redirect()->route('company.create')
@@ -113,7 +114,7 @@ class CompanyController extends Controller
     {
         // dd($request->all());
         // Ensure the user can only update their own company
-        if (Auth::user()->company_id !== $company->id) {
+        if (CompanyContext::companyId() !== $company->id) {
             abort(403, __('messages.errors.unauthorized_company_update'));
         }
 

@@ -4,13 +4,15 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Support\Inertia\CacheForget;
+use App\Support\Inertia\CacheKey;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
  * Drop the per-user Inertia caches that derive from the company's trade.
  *
- * `business_profile` and `preferences` are cached per user (see
+ * `business_profile` is cached per company and `preferences` per user (see
  * App\Support\Inertia\CoreShared). When the company's business_type — or the
  * base currency / calendar — changes, every user in that company is still served
  * the old profile until their cache expires. Every Preferences write already
@@ -31,12 +33,15 @@ class RefreshCompanyProfileCache implements ShouldQueue
 
     public function handle(): void
     {
+        // Keyed by company since phase 5, so one entry covers every user
+        // acting in it — including users whose home company is another one.
+        Cache::forget(CacheKey::forCompany($this->companyId, 'business_profile'));
+
         User::query()
             ->withTrashed()
             ->where('company_id', $this->companyId)
             ->pluck('id')
             ->each(function (string $userId): void {
-                CacheForget::userById($userId, 'business_profile');
                 CacheForget::userById($userId, 'preferences');
             });
     }

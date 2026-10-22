@@ -486,6 +486,25 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
+    /**
+     * Companies granted on top of the home company. UserAccessService is what
+     * decides access; this is for listing.
+     */
+    public function companyAccess()
+    {
+        return $this->hasMany(\App\Models\Administration\UserCompanyAccess::class);
+    }
+
+    public function branchAccess()
+    {
+        return $this->hasMany(\App\Models\Administration\UserBranchAccess::class);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->roles->contains('slug', 'super-admin');
+    }
+
     public function notifications()
     {
         return $this->hasMany(Notification::class);

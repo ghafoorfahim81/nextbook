@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\StockMovementType;
+use App\Support\CompanyContext;
 use App\Enums\TransactionStatus;
 use App\Exceptions\Accounting\InvalidPostingException;
 use App\Exceptions\InvalidStatusTransitionException;
@@ -823,8 +824,11 @@ class TransactionService
 
     protected function resolveBranchId(array $header): ?string
     {
+        // The acting branch, not users.branch_id: since phase 5 a user switches
+        // branch and company in the session, and the home branch can be in a
+        // company the request is not acting for.
         return $header['branch_id']
-            ?? Auth::user()?->branch_id
+            ?? CompanyContext::branchId()
             ?? Branch::query()->value('id');
     }
 
@@ -850,7 +854,7 @@ class TransactionService
             }
         }
 
-        return Auth::user()?->company_id;
+        return CompanyContext::companyId();
     }
 
     /**

@@ -933,7 +933,7 @@ class SearchController extends Controller
      */
     public function suggestions(): JsonResponse
     {
-        $branchId = Auth::user()?->branch_id ?? 'default';
+        $branchId = CompanyContext::branchId() ?? 'default';
         $cacheKey = 'global_search_suggestions_v1:' . $branchId;
 
         $data = Cache::remember($cacheKey, now()->addMinutes(20), fn () => [

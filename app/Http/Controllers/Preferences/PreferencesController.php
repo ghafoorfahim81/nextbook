@@ -99,7 +99,7 @@ class PreferencesController extends Controller
             ],
         );
         Cache::forget(CacheKey::forUser($request, 'preferences'));
-        Cache::forget(CacheKey::forUser($request, 'business_profile'));
+        Cache::forget(CacheKey::forCompany(CacheKey::companyId($request), 'business_profile'));
         Cache::forget(CacheKey::forUser($request, 'recordsPerPage'));
         Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
         Cache::forget('balance_nature_format');
@@ -140,7 +140,7 @@ class PreferencesController extends Controller
             ],
         );
         Cache::forget(CacheKey::forUser($request, 'preferences'));
-        Cache::forget(CacheKey::forUser($request, 'business_profile'));
+        Cache::forget(CacheKey::forCompany(CacheKey::companyId($request), 'business_profile'));
         return redirect()->back()->with('success', __('preferences.preferences_reset'));
     }
 
@@ -284,7 +284,7 @@ class PreferencesController extends Controller
         $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
         $user->update(['preferences' => array_replace_recursive(User::DEFAULT_PREFERENCES, $validated)]);
         Cache::forget(CacheKey::forUser($request, 'preferences'));
-        Cache::forget(CacheKey::forUser($request, 'business_profile'));
+        Cache::forget(CacheKey::forCompany(CacheKey::companyId($request), 'business_profile'));
 
         app(ActivityLogService::class)->logUpdate(
             reference: $user,

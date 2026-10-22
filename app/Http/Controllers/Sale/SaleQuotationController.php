@@ -317,7 +317,7 @@ class SaleQuotationController extends Controller
     {
         $this->authorize('view', $saleQuotation);
 
-        $company = auth()->user()?->company;
+        $company = CompanyContext::company();
 
         $saleQuotation->load([
             'items.item',

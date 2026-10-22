@@ -109,7 +109,7 @@ class SupplierController extends Controller
         return inertia('Ledgers/Suppliers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             ...$this->referenceData(),
-            'nextCode' => $this->nextCode($request->user()?->company_id),
+            'nextCode' => $this->nextCode(CompanyContext::companyId()),
             'accountTypes' => [],
         ]);
     }
@@ -124,7 +124,7 @@ class SupplierController extends Controller
     ) {
         $validated = $request->validated();
         $validated['type'] = 'supplier';
-        $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->company_id);
+        $validated['code'] = $validated['code'] ?: $this->nextCode(CompanyContext::companyId());
         $validated['is_active'] = $validated['is_active'] ?? true;
 
         if ($request->hasFile('photo')) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Hr;
 
+use App\Support\CompanyContext;
 use App\Enums\EmploymentStatus;
 use App\Enums\EmploymentType;
 use App\Enums\Gender;
@@ -352,7 +353,7 @@ class EmployeeController extends Controller
 
     private function companyName(): ?string
     {
-        $company = auth()->user()?->company;
+        $company = CompanyContext::company();
 
         return match (app()->getLocale()) {
             'fa' => $company?->name_fa ?: $company?->name_en,

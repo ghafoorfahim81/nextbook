@@ -94,7 +94,12 @@ it('allows switching between branches of the same company', function () {
         ->post(route('branches.switch'), ['branch_id' => $herat->id])
         ->assertSessionHasNoErrors();
 
-    expect($user->refresh()->branch_id)->toBe($herat->id);
+    // Since phase 5 the switch lives in the session: the next request acts in
+    // Herat, and the home branch on the user is left where it was.
+    $this->get(route('dashboard'));
+
+    expect(app('active_branch_id'))->toBe($herat->id)
+        ->and($user->refresh()->branch_id)->toBe($mainBranch->id);
 });
 
 it('ignores a session branch that belongs to another company', function () {

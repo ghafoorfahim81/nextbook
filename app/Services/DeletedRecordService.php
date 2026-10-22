@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\CompanyContext;
 use App\Enums\LedgerType;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
@@ -760,7 +761,7 @@ class DeletedRecordService
                 // user to scope to — the same choice BranchSpecific makes, and
                 // the reason the cleanup job can still reach these rows rather
                 // than matching `company_id is null` and purging nothing.
-                'query' => fn (Builder $query) => ($companyId = auth()->user()?->company_id)
+                'query' => fn (Builder $query) => ($companyId = CompanyContext::companyId())
                     ? $query->where('company_id', $companyId)
                     : $query,
             ],

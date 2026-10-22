@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Sale;
 
+use App\Support\CompanyContext;
 use App\Http\Controllers\Controller;
 use App\Models\Administration\Company;
 use App\Models\Sale\InvoiceFormat;
@@ -16,7 +17,7 @@ class InvoiceFormatController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $company = $request->user()->company;
+        $company = CompanyContext::company();
 
         $formats = InvoiceFormat::where('company_id', $company->id)
             ->orderByDesc('is_default')
@@ -28,7 +29,7 @@ class InvoiceFormatController extends Controller
 
     public function store(Request $request, ActivityLogService $activityLogService): JsonResponse
     {
-        $company = $request->user()->company;
+        $company = CompanyContext::company();
         $this->authorize('update', $company);
 
         $validated = $this->validateFormat($request);
@@ -56,7 +57,7 @@ class InvoiceFormatController extends Controller
 
     public function update(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse
     {
-        $company = $request->user()->company;
+        $company = CompanyContext::company();
         $this->authorize('update', $company);
         abort_if($invoiceFormat->company_id !== $company->id, 403);
 
@@ -89,7 +90,7 @@ class InvoiceFormatController extends Controller
 
     public function destroy(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse
     {
-        $company = $request->user()->company;
+        $company = CompanyContext::company();
         $this->authorize('update', $company);
         abort_if($invoiceFormat->company_id !== $company->id, 403);
 
@@ -108,7 +109,7 @@ class InvoiceFormatController extends Controller
 
     public function setDefault(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse
     {
-        $company = $request->user()->company;
+        $company = CompanyContext::company();
         $this->authorize('update', $company);
         abort_if($invoiceFormat->company_id !== $company->id, 403);
 
@@ -130,7 +131,7 @@ class InvoiceFormatController extends Controller
 
     public function clone(Request $request, InvoiceFormat $invoiceFormat, ActivityLogService $activityLogService): JsonResponse
     {
-        $company = $request->user()->company;
+        $company = CompanyContext::company();
         $this->authorize('update', $company);
         abort_if($invoiceFormat->company_id !== $company->id, 403);
 
@@ -155,7 +156,7 @@ class InvoiceFormatController extends Controller
     public function selectTheme(Request $request, ActivityLogService $activityLogService): JsonResponse
     {
         /** @var Company $company */
-        $company = $request->user()->company;
+        $company = CompanyContext::company();
         $this->authorize('update', $company);
 
         $theme = $request->validate([

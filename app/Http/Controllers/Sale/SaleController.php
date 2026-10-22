@@ -1782,7 +1782,7 @@ class SaleController extends Controller
 
     public function print(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
-        $company = auth()->user()?->company;
+        $company = CompanyContext::company();
         $sale = $sale->load([
             'customer',
             'items.item',
@@ -1839,7 +1839,7 @@ class SaleController extends Controller
             ->keyBy('item_id');
 
         $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
-        $company = $request->user()?->company;
+        $company = CompanyContext::company();
         $companyName = match (app()->getLocale()) {
             'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
             'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
@@ -1972,7 +1972,7 @@ class SaleController extends Controller
             ->get();
 
         $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
-        $company = $request->user()?->company;
+        $company = CompanyContext::company();
         $companyName = match (app()->getLocale()) {
             'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
             'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),

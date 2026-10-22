@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Administration;
 
+use App\Support\CompanyContext;
 use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\UnitMeasureStoreRequest;
@@ -85,7 +86,7 @@ class UnitMeasureController extends Controller
             $request->offsetSet('name', $measure['name']);
             $request->offsetSet('unit', $measure['unit']);
             $request->offsetSet('symbol', $measure['symbol']);
-            $request->offsetSet('branch_id', Auth::user()->branch_id ?? 1);
+            $request->offsetSet('branch_id', CompanyContext::branchId() ?? 1);
             $request->offsetSet('created_by', Auth::id());
 
 

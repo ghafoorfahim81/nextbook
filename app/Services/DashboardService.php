@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\CompanyContext;
 use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
@@ -1161,7 +1162,11 @@ class DashboardService
 
     protected function resolveBranchId(?Authenticatable $user): string
     {
-        $branchId = $user?->branch_id ?? auth()->user()?->branch_id;
+        // The branch the request acts in comes first: since phase 5 a user can
+        // switch away from their home branch, and users.branch_id is the home.
+        // A user handed in from outside a request (a job) has no binding, so
+        // their home branch answers.
+        $branchId = CompanyContext::branchId() ?? $user?->branch_id;
 
         if ($branchId) {
             return (string) $branchId;

@@ -3,81 +3,42 @@
 namespace App\Http\Controllers\Administration;
 
 use App\Http\Controllers\Controller;
-use App\Support\Inertia\CacheKey;
+use App\Services\UserAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class SwitchBranchController extends Controller
 {
     /**
-     * Switch the active branch for the current super-admin user.
+     * Switch the branch the user acts in, within the active company.
+     *
+     * Open to anyone with access to more than one branch (phase 5), not only
+     * super-admins. Which branches that is comes from UserAccessService, scoped
+     * to the active company: a bare `exists:branches,id` would accept any branch
+     * in the database, and once switched every branch-scoped query follows.
+     *
+     * The choice lives in the session. It no longer overwrites users.branch_id —
+     * that is the home branch, and a switch made in one session must not move
+     * where every other session of the same user lands.
      */
-    public function __invoke(Request $request): RedirectResponse
+    public function __invoke(Request $request, UserAccessService $access): RedirectResponse
     {
-        $user = $request->user();
-
-        // Only super-admins are allowed to switch branches.
-        if (!$user || !method_exists($user, 'hasRole') || !$user->roles->contains('slug', 'super-admin')) {
-            abort(403);
-        }
-
-        // Scoped to the user's own company. A bare `exists:branches,id` accepts
-        // any branch id in the database, so a super-admin of one company could
-        // switch into another company's branch and read its books — and once
-        // switched, every branch-scoped query follows along. Widening access is
-        // a company-membership decision, not something a posted id may do.
         $validated = $request->validate([
-            'branch_id' => [
-                'required',
-                'string',
-                Rule::exists('branches', 'id')->where('company_id', $user->company_id),
-            ],
+            'branch_id' => ['required', 'string'],
         ]);
+
         $branchId = $validated['branch_id'];
+        $companyId = app()->bound('active_company_id') ? (string) app('active_company_id') : null;
 
-        cache()->forget('auth.user');
-        cache()->forget('warehouses');
-        cache()->forget('branches');
-        cache()->forget('categories');
-        cache()->forget('accounts');
-        cache()->forget('accountTypes');
-        cache()->forget('unitMeasures');
-        cache()->forget('sizes');
-        cache()->forget('brands');
-        cache()->forget('items');
-        cache()->forget('stocks');
-        cache()->forget('currencies');
-        cache()->forget('main_branch');
-        cache()->forget('home_currency');
-        cache()->forget('account_types');
-        cache()->forget('roles');
-        cache()->forget(CacheKey::forUser($request, 'preferences'));
-        cache()->forget(CacheKey::forUser($request, 'business_profile'));
-        cache()->forget('transaction_types');
-        cache()->forget('transaction_statuses');
-        cache()->forget('capital_accounts');
-        cache()->forget('drawing_accounts');
-        cache()->forget('ledgers');
-        cache()->forget('gl_accounts');
-        // Store the active branch in the session so subsequent requests
-        // // (and page refreshes) resolve to this branch.
-        // $request->session()->put('active_branch_id', $branchId);
-
-        // // Clear any cached branch-name for the previous branch so it will be
-        // // recomputed on the next request.
-        // cache()->forget('branch_name_' . ($user->branch_id ?? $branchId));
-
-        // Also update the user's default branch so new sessions/logins
-        // start on the last selected branch.
-        if ($user->branch_id !== $branchId) {
-            $user->branch_id = $branchId;
-            $user->save();
+        if (! $access->canAccessBranch($request->user(), $companyId, $branchId)) {
+            throw ValidationException::withMessages([
+                'branch_id' => __('validation.exists', ['attribute' => 'branch']),
+            ]);
         }
 
+        $request->session()->put('active_branch_id', $branchId);
 
         return back();
     }
 }
-
-

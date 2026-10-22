@@ -2,6 +2,7 @@
 // app/Http/Requests/Inventory/FastEntryRequest.php
 namespace App\Http\Requests\Inventory;
 
+use App\Support\CompanyContext;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,7 @@ class FastEntryRequest extends FormRequest
     public function rules(): array
     {
         // Items are company master data: one name and code per company.
-        $companyId = $this->user()?->company_id;
+        $companyId = CompanyContext::companyId();
 
         return [
             'items'                       => ['required','array','min:1'],
