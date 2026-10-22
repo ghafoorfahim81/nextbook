@@ -465,6 +465,8 @@ const activeCompanyId = computed<string | null>(() => (page.props.activeCompanyI
 // switcher — the plan keeps "company" and "branch" out of a small shop's way.
 const switcherCompanies = computed<{ id: string, name: string }[]>(() => (page.props.switcher as any)?.companies ?? [])
 const switcherBranches = computed<{ id: string, name: string }[]>(() => (page.props.switcher as any)?.branches ?? [])
+const canOpenCompanies = computed(() => switcherCompanies.value.length > 1 || isSuperAdmin.value)
+const companyInitials = computed(() => (activeCompanyName.value || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase())
 const activeCompanyName = computed(() => switcherCompanies.value.find((c) => c.id === activeCompanyId.value)?.name ?? '')
 
 // A refusal that has nothing to do with the page the user lands on — a save
@@ -880,56 +882,27 @@ function logout() {
     <SidebarProvider v-model:open="sidebarOpen" :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
+                <!-- The company you are working in (phase 5). Clickable only when
+                     there is somewhere to go: a second company, or a super-admin,
+                     whose company page is where a new one starts. -->
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger as-child>
-                                <!-- <SidebarMenuButton
-                                    size="lg"
-                                    class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                                >
-                                    <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                        <component :is="activeTeam.logo" class="size-4" />
-                                    </div>
-                                    <div class="grid flex-1 text-start text-sm leading-tight">
-                                        <span class="truncate font-semibold">{{ activeTeam.name }}</span>
-                                        <span class="truncate text-xs">{{ activeTeam.plan }}</span>
-                                    </div>
-                                    <ChevronsUpDown class="ms-auto" />
-                                </SidebarMenuButton> -->
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                class="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                                align="start"
-                                side="bottom"
-                                :side-offset="4"
+                        <SidebarMenuButton size="lg" as-child :tooltip="activeCompanyName" class="mt-2">
+                            <component
+                                :is="canOpenCompanies ? Link : 'div'"
+                                v-bind="canOpenCompanies ? { href: route('workspace.companies') } : {}"
+                                class="flex w-full items-center gap-2"
                             >
-                                <DropdownMenuLabel class="text-xs text-muted-foreground">
-                                    Teams
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                    v-for="(team, index) in data.teams"
-                                    :key="team.name"
-                                    class="gap-2 p-2"
-                                    @click="setActiveTeam(team)"
-                                >
-                                    <div class="flex size-6 items-center justify-center rounded-sm border">
-                                        <component :is="team.logo" class="size-4 shrink-0" />
-                                    </div>
-                                    {{ team.name }}
-                                    <DropdownMenuShortcut>⌘{{ index + 1 }}</DropdownMenuShortcut>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem class="gap-2 p-2">
-                                    <div class="flex size-6 items-center justify-center rounded-md border bg-background">
-                                        <Plus class="size-4" />
-                                    </div>
-                                    <div class="font-medium text-muted-foreground">
-                                        Add team
-                                    </div>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                <div class="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-violet-400 text-xs font-semibold text-white">
+                                    {{ companyInitials }}
+                                </div>
+                                <div class="grid min-w-0 flex-1 text-start text-sm leading-tight">
+                                    <span class="truncate font-semibold">{{ activeCompanyName }}</span>
+                                    <span v-if="canOpenCompanies" class="truncate text-xs text-muted-foreground">{{ t('layout.workspace') }}</span>
+                                </div>
+                                <ChevronsUpDown v-if="canOpenCompanies" class="ms-auto size-4 shrink-0 text-muted-foreground" />
+                            </component>
+                        </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
@@ -1246,6 +1219,17 @@ function logout() {
                     <SidebarTrigger class="-ml-1"/>
                     <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
                     <QuickLinks />
+                    <!-- The branch you are working in; opens the branch picker when there is a second one. -->
+                    <component
+                        :is="switcherBranches.length > 1 ? Link : 'span'"
+                        v-bind="switcherBranches.length > 1 ? { href: route('workspace.branches') } : {}"
+                        class="hidden max-w-[200px] items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-sm text-foreground sm:inline-flex"
+                        :class="switcherBranches.length > 1 ? 'transition hover:border-primary/50 hover:bg-primary/5' : ''"
+                        :title="activeBranchName || ''"
+                    >
+                        <Store class="size-4 shrink-0 text-primary" />
+                        <span class="truncate">{{ activeBranchName || '—' }}</span>
+                    </component>
                 </div>
 
                 <!-- Center: connection status + global search side by side (no overlap) -->
@@ -1271,14 +1255,6 @@ function logout() {
                 <!-- Right: actions -->
                 <div class="flex shrink-0 items-center gap-2 sm:gap-3 sm:pr-4">
 
-                    <!-- Where you are working. Switching lives in the user menu (phase 5). -->
-                    <div class="hidden min-w-0 items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-                        <template v-if="switcherCompanies.length > 1">
-                            <span class="max-w-[160px] truncate font-medium text-foreground" :title="activeCompanyName">{{ activeCompanyName }}</span>
-                            <span aria-hidden="true">·</span>
-                        </template>
-                        <span class="max-w-[140px] truncate" :title="activeBranchName || ''">{{ activeBranchName || '—' }}</span>
-                    </div>
                     <NotificationDropdown />
                     <LanguageSwitcher />
                     <button
