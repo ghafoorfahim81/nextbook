@@ -19,5 +19,6 @@
     "no_connection": "No connection",
     "online": "Online",
     "switch_company": "Switch company",
-    "switch_branch": "Switch branch"
+    "switch_branch": "Switch branch",
+    "workspace": "Workspace"
 }
