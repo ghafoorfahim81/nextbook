@@ -124,6 +124,40 @@ class UserAccessService
     }
 
     /**
+     * What the switchers in the top bar offer: the user's companies, and the
+     * branches they may use in the one they are acting in.
+     *
+     * The plan keeps the words "company" and "branch" away from a business that
+     * has one of each, so the layout shows a switcher only when its list has a
+     * second entry — which is why both lists are always sent, even when short.
+     *
+     * @return array{companies: array<int, array{id: string, name: string}>, branches: array<int, array{id: string, name: string}>}
+     */
+    public function switcherOptions(User $user, ?string $activeCompanyId): array
+    {
+        $companyIds = $this->accessibleCompanyIds($user);
+
+        $companies = Company::query()->whereKey($companyIds)->get()
+            ->sortBy(fn (Company $company) => array_search((string) $company->id, $companyIds, true))
+            ->map(fn (Company $company) => ['id' => (string) $company->id, 'name' => $company->localizedName()])
+            ->values()
+            ->all();
+
+        $branchIds = $this->allowedBranchIds($user, $activeCompanyId);
+
+        $branches = Branch::query()
+            ->withoutGlobalScope('companySpecific')
+            ->whereKey($branchIds)
+            ->get(['id', 'name'])
+            ->sortBy(fn (Branch $branch) => array_search((string) $branch->id, $branchIds, true))
+            ->map(fn (Branch $branch) => ['id' => (string) $branch->id, 'name' => (string) $branch->name])
+            ->values()
+            ->all();
+
+        return ['companies' => $companies, 'branches' => $branches];
+    }
+
+    /**
      * Give a user a company. Idempotent.
      */
     public function grantCompany(User $user, string $companyId, ?string $actorId = null): void

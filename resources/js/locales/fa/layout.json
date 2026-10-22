@@ -1,4 +1,4 @@
-﻿{
+{
     "upgrade_to_pro": "ارتقا به نسخه حرفه‌ای",
     "whats_new": "تازه‌های نسخه",
     "account": "حساب کاربری",
@@ -12,6 +12,7 @@
     "preferences": "تنظیمات",
     "logout": "خروج",
     "branch": "شعبه",
+    "company": "شرکت",
     "search_menu": "جستجوی منو...",
     "footer_copyright": "کپی‌رایت © 2026 App Forest. همه حقوق محفوظ است. Nextbook ورژن 1.1",
     "slow_connection": "اتصال ضعیف",

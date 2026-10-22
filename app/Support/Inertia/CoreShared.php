@@ -4,6 +4,7 @@ namespace App\Support\Inertia;
 
 use App\Models\Administration\Branch;
 use App\Services\NotificationService;
+use App\Services\UserAccessService;
 use App\Support\BusinessProfile;
 use App\Support\CompanyContext;
 use Illuminate\Http\Request;
@@ -107,6 +108,11 @@ final class CoreShared
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
                 'print_url' => fn() => $request->session()->get('print_url'),
+                // Shown by the layout on whatever page the user lands on —
+                // unlike `error`, which only some pages display. Used when the
+                // request was refused for a reason outside the page itself (a
+                // company switched in another tab).
+                'context_notice' => fn() => $request->session()->get('context_notice'),
             ],
             'user_preferences' => $userPreferences,
             // Which item fields, sections and tracking defaults this trade
@@ -126,6 +132,11 @@ final class CoreShared
             // every request from the page; RejectStaleCompanyContext refuses a
             // write whose page company is not the session's any more.
             'activeCompanyId' => CacheKey::companyId($request),
+            // The top-bar switchers (phase 5). Lazy, so a partial reload that
+            // does not ask for it skips the queries.
+            'switcher' => fn () => $user
+                ? app(UserAccessService::class)->switcherOptions($user, CacheKey::companyId($request))
+                : ['companies' => [], 'branches' => []],
             'activeBranchId' => $activeBranchId,
             'activeBranchName' => $activeBranchName,
             'balanceNatureFormat' => balanceNatureFormat(),

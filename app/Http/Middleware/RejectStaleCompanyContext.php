@@ -57,6 +57,9 @@ class RejectStaleCompanyContext
 
         // Home rather than back: the page the form came from belongs to the
         // other company, and its record may not exist in this one.
-        return redirect()->route('home')->with('error', $message);
+        // context_notice, not error: the layout shows it on any page, while
+        // `error` is only displayed by pages that look for it — the home page
+        // does not, and the refusal went unseen.
+        return redirect()->route('home')->with('context_notice', $message);
     }
 }

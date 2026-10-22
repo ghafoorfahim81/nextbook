@@ -46,6 +46,19 @@ class Company extends Model
         static::deleted($forget);
     }
 
+    /**
+     * The company's name in the given (or current) locale, falling back the
+     * way the printed documents do.
+     */
+    public function localizedName(?string $locale = null): string
+    {
+        return match ($locale ?? app()->getLocale()) {
+            'fa' => $this->name_fa ?: $this->name_en ?: $this->abbreviation ?: '',
+            'ps' => $this->name_pa ?: $this->name_en ?: $this->abbreviation ?: '',
+            default => $this->name_en ?: $this->abbreviation ?: $this->name_fa ?: $this->name_pa ?: '',
+        };
+    }
+
     protected static function searchableColumns(): array
     {
         return [
