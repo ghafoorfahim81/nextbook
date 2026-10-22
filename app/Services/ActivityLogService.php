@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\Administration\Branch;
+use App\Support\CompanyDatabaseContext;
 use DateTimeInterface;
 use Illuminate\Database\ClassMorphViolationException;
 use Illuminate\Contracts\Support\Arrayable;
@@ -84,7 +85,7 @@ class ActivityLogService
         }
 
         if ($payload !== null) {
-            ActivityLog::create($payload);
+            $this->persist($payload);
         }
     }
 
@@ -202,11 +203,40 @@ class ActivityLogService
                 if ($this->batch !== null) {
                     $this->batch[] = $payload;
                 } else {
-                    ActivityLog::create($payload);
+                    $this->persist($payload);
                 }
             });
 
             return new ActivityLog($payload);
+        }
+
+        return $this->persist($payload);
+    }
+
+    /**
+     * Write one entry, under the company it is attributed to when the
+     * connection has not been pointed at any company yet.
+     *
+     * Signing in is the case this exists for: the request starts before anyone
+     * is authenticated, so SetDatabaseCompanyContext leaves the connection
+     * pointed at no company, and the login entry — attributed to the user's
+     * company once they are in — is refused by the row level security policy.
+     * The company here is never input: resolveCompanyId() derives it from the
+     * record, the active company or the authenticated user. A connection that
+     * is already acting for a different company is left alone, so that
+     * mismatch still fails loudly rather than being written across.
+     */
+    protected function persist(array $payload): ActivityLog
+    {
+        $companyId = $payload['company_id'] ?? null;
+        $connection = (new ActivityLog())->getConnectionName();
+
+        if ($companyId !== null && CompanyDatabaseContext::current($connection) === null) {
+            return CompanyDatabaseContext::runFor(
+                $companyId,
+                fn () => ActivityLog::create($payload),
+                $connection,
+            );
         }
 
         return ActivityLog::create($payload);

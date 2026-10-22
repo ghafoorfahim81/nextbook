@@ -6,6 +6,7 @@ use App\Models\Account\Account;
 use App\Models\Administration\Company;
 use App\Support\CompanyDatabaseContext;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\BuildsErpContext;
@@ -454,6 +455,49 @@ class RowLevelSecurityTest extends TestCase
                 'An unattributed audit event was not written at all.'
             );
         });
+    }
+
+    /**
+     * Signing in records the login against the user's company.
+     *
+     * The sign-in request starts before anyone is authenticated, so the
+     * middleware points the connection at no company. The login entry is
+     * attributed to the user's company once they are in, which the policy
+     * refused — and BatchActivityLog swallows audit failures, so every sign-in
+     * went unrecorded without a visible error. Found by signing in on a local
+     * database running as `nextbook_app`; no other test starts a request with
+     * nothing bound.
+     */
+    public function test_signing_in_records_the_login_against_the_users_company(): void
+    {
+        $context = $this->bootstrapErpContext();
+
+        // What a fresh sign-in request sees: nobody signed in (the context
+        // helper acts as the user, and the guest middleware would otherwise
+        // redirect before the controller runs), nothing bound, and no company
+        // on the connection.
+        Auth::logout();
+        Auth::forgetGuards();
+        foreach (['active_company_id', 'active_branch_id', 'accessible_company_ids'] as $binding) {
+            app()->forgetInstance($binding);
+        }
+        CompanyDatabaseContext::forget();
+
+        $this->post('/login', [
+            'email' => $context['user']->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($context['user']);
+
+        $this->assertTrue(
+            $this->asSchemaOwner(fn () => DB::table('activity_logs')
+                ->where('event_type', 'login')
+                ->where('user_id', $context['user']->id)
+                ->where('company_id', $context['company']->id)
+                ->exists()),
+            'The sign-in was not recorded against the user\'s company.'
+        );
     }
 
     /**
