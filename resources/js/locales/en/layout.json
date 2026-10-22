@@ -1,4 +1,4 @@
-﻿{
+{
     "upgrade_to_pro": "Upgrade to Pro",
     "whats_new": "What's New",
     "account": "Account",
@@ -12,6 +12,7 @@
     "preferences": "Preferences",
     "logout": "Logout",
     "branch": "Branch",
+    "company": "Company",
     "search_menu": "Search menu...",
     "footer_copyright": "Copyright © 2026 App Forest. All rights reserved. Nextbook v1.1",
     "slow_connection": "Slow connection",

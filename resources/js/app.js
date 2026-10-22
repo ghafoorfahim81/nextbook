@@ -103,7 +103,12 @@ createInertiaApp({
             }
         }
         applyCompanyContext(initialPage)
+        // Both, like the locale below: switching company is a POST that
+        // redirects to the home page, and when the tab is already on it Inertia
+        // fires "success" but not "navigate" — which left the header on the old
+        // company and got this tab's next save refused as stale.
         router.on('navigate', (event) => applyCompanyContext(event.detail.page))
+        router.on('success', (event) => applyCompanyContext(event.detail.page))
 
         const applyFromPage = (page) => {
             const nextLocale = page?.props?.locale

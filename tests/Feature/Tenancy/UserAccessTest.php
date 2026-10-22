@@ -215,7 +215,7 @@ it('refuses a write sent from a page opened in another company', function () {
     $this->withHeader('X-Nextbook-Company', $electronics->id)
         ->post(route('brands.store'), ['name' => 'Stale Tab Brand'])
         ->assertRedirect(route('home'))
-        ->assertSessionHas('error', __('general.company_changed_in_another_tab'));
+        ->assertSessionHas('context_notice', __('general.company_changed_in_another_tab'));
 
     expect(\Illuminate\Support\Facades\DB::table('brands')->where('name', 'Stale Tab Brand')->exists())->toBeFalse();
 });
@@ -253,4 +253,40 @@ it('lets a page of the old company switch company', function () {
 
     $this->get(route('dashboard'));
     expect(app('active_company_id'))->toBe($electronics->id);
+});
+
+/**
+ * Step E: the top bar offers a switcher only when its list has a second entry,
+ * so both lists are shared, and they hold only what the user may use.
+ */
+it('shares the companies and branches the switchers may offer', function () {
+    [$electronics, $kabul] = accessCompany('Ahmad Electronics');
+    $herat = accessBranch($electronics, 'Herat');
+    [$construction] = accessCompany('Ahmad Construction');
+    accessCompany('Somebody Else');
+
+    $user = accessUser($electronics, $kabul);
+    app(UserAccessService::class)->grantBranch($user, $herat);
+    app(UserAccessService::class)->grantCompany($user, $construction->id);
+
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('switcher.companies', [
+                ['id' => $electronics->id, 'name' => 'Ahmad Electronics'],
+                ['id' => $construction->id, 'name' => 'Ahmad Construction'],
+            ])
+            // Main branch first, then by name.
+            ->where('switcher.branches', [
+                ['id' => $kabul->id, 'name' => 'Ahmad Electronics Main'],
+                ['id' => $herat->id, 'name' => 'Herat'],
+            ]));
+});
+
+it('offers a single-company user nothing to switch to', function () {
+    [$company, $kabul] = accessCompany('Ahmad Electronics');
+
+    $this->actingAs(accessUser($company, $kabul))->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->has('switcher.companies', 1)
+            ->has('switcher.branches', 1));
 });

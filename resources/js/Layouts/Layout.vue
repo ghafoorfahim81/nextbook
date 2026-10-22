@@ -104,6 +104,7 @@ import { usePage, Link, router } from '@inertiajs/vue3'
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 // @ts-ignore - Vue SFC default export shim
 import Sonner from '@/Components/ui/sonner/Sonner.vue'
+import { toast } from 'vue-sonner'
 // @ts-ignore - Vue SFC default export shim
 import PageLoadingOverlay from '@/Components/next/PageLoadingOverlay.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon, Home } from 'lucide-vue-next'
@@ -220,7 +221,7 @@ const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean; flush?: boo
     flush: false,
 })
 
-const { can, isSuperAdmin } = useAuth()
+const { can } = useAuth()
 
 // Keep track of sidebar open/collapsed state so we can alter menu behavior.
 // (We can't read sidebar context here because SidebarProvider is a child component.)
@@ -453,38 +454,58 @@ function onFlyoutContentLeave(key: string, event: MouseEvent) {
     if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
 }
 
-const branches = computed(() => {
-    const raw: any = page.props.branches
-    if (!raw) return []
-
-    // Support both plain arrays and Laravel resource collections ({ data: [...] }).
-    if (Array.isArray(raw)) {
-        return raw
-    }
-
-    if (Array.isArray(raw.data)) {
-        return raw.data
-    }
-
-    return []
-})
 const activeBranchId = computed<string | null>(() => (page.props.auth.user.branch_id as string | null) || null)
 const activeBranchName = computed<string | null>(() => (page.props.auth.user.branch_name as string | null) || null)
+const activeCompanyId = computed<string | null>(() => (page.props.activeCompanyId as string | null) || null)
+
+// What the top bar may offer (phase 5): the user's companies, and the branches
+// they may use in the active one. A business with one of each never sees a
+// switcher — the plan keeps "company" and "branch" out of a small shop's way.
+const switcherCompanies = computed<{ id: string, name: string }[]>(() => (page.props.switcher as any)?.companies ?? [])
+const switcherBranches = computed<{ id: string, name: string }[]>(() => (page.props.switcher as any)?.branches ?? [])
+const activeCompanyName = computed(() => switcherCompanies.value.find((c) => c.id === activeCompanyId.value)?.name ?? '')
 
 const selectedBranchId = ref<string | null>(activeBranchId.value)
+const selectedCompanyId = ref<string | null>(activeCompanyId.value)
+// Follow the page: after a switch (or a refused one) the selects show where
+// the server actually put the user, not where they clicked.
+watch(activeBranchId, (id) => { selectedBranchId.value = id })
+watch(activeCompanyId, (id) => { selectedCompanyId.value = id })
+
+// A refusal that has nothing to do with the page the user lands on — a save
+// from a tab left open after switching company elsewhere. The server sends
+// them home, which shows no flash of its own, so the layout says why.
+// After mount, not during setup: the redirect remounts this layout, and a toast
+// raised before its <Sonner> exists is dropped — which is what happened.
+onMounted(() => {
+    watch(
+        () => (page.props.flash as any)?.context_notice,
+        (message) => { if (message) toast.warning(message, { duration: 10000 }) },
+        { immediate: true, flush: 'post' },
+    )
+})
 
 function switchBranch() {
-    if (!isSuperAdmin.value || !selectedBranchId.value || selectedBranchId.value === activeBranchId.value) {
+    if (!selectedBranchId.value || selectedBranchId.value === activeBranchId.value) {
         return
     }
 
     router.post('/switch-branch', { branch_id: selectedBranchId.value }, {
-        // Wait until the server has actually switched the branch
-        // before reloading, so the refreshed page shows the new branch.
-        onSuccess: () => {
-            console.log('switched branch to 111', selectedBranchId.value);
-        },
-    });
+        preserveScroll: true,
+        onError: () => { selectedBranchId.value = activeBranchId.value },
+    })
+}
+
+function switchCompany() {
+    if (!selectedCompanyId.value || selectedCompanyId.value === activeCompanyId.value) {
+        return
+    }
+
+    // The server sends the user home: the page they are on belongs to the
+    // company they are leaving.
+    router.post('/switch-company', { company_id: selectedCompanyId.value }, {
+        onError: () => { selectedCompanyId.value = activeCompanyId.value },
+    })
 }
 
 const navMain = computed(() => [
@@ -1261,18 +1282,40 @@ function logout() {
                 <!-- Right: actions -->
                 <div class="flex shrink-0 items-center gap-2 sm:gap-3 sm:pr-4">
 
-                    <div v-if="isSuperAdmin" class="hidden items-center max-start gap-2 sm:flex">
-                        <!-- <label class="hidden text-xs text-muted-foreground md:block" for="branch-switcher">
-                            {{ t('layout.branch') || 'Branch' }}
-                        </label> -->
+                    <!-- Company: only once the user has a second one. -->
+                    <div v-if="switcherCompanies.length > 1" class="hidden items-center gap-2 sm:flex">
+                        <Select v-model="selectedCompanyId" :dir="selectDir" @update:modelValue="switchCompany">
+                            <SelectTrigger
+                                class="h-7 w-auto min-w-[110px] max-w-[240px] text-xs font-medium border-primary/40 [&>span]:!overflow-visible"
+                                :title="t('layout.company')"
+                            >
+                                <SelectValue :placeholder="t('layout.company')" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="company in switcherCompanies"
+                                    :key="company.id"
+                                    :value="company.id"
+                                    class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
+                                >
+                                    {{ company.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
+                    <!-- Branch: a picker once there is a second one to pick, else just its name. -->
+                    <div v-if="switcherBranches.length > 1" class="hidden items-center gap-2 sm:flex">
                         <Select v-model="selectedBranchId" :dir="selectDir" @update:modelValue="switchBranch">
-                            <SelectTrigger class="h-7 w-auto min-w-[110px] max-w-[240px] text-xs border-input [&>span]:!overflow-visible">
+                            <SelectTrigger
+                                class="h-7 w-auto min-w-[110px] max-w-[240px] text-xs border-input [&>span]:!overflow-visible"
+                                :title="t('layout.branch')"
+                            >
                                 <SelectValue :placeholder="t('layout.branch')" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem
-                                    v-for="branch in branches"
+                                    v-for="branch in switcherBranches"
                                     :key="branch.id"
                                     :value="branch.id"
                                     class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
