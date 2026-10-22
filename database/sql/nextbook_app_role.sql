@@ -58,6 +58,13 @@
 
 BEGIN;
 
+-- psql does not substitute :variables inside a dollar-quoted body, so the
+-- password reaches the DO block below through a setting local to this
+-- transaction instead. Writing :app_password inside the block is a syntax
+-- error that stops the whole file before anything is granted. Compared rather
+-- than selected so the password is not echoed back to the terminal.
+SELECT set_config('nextbook.app_password', :app_password, true) <> '' AS password_received;
+
 -- Created only when missing, and the password of an existing role is never
 -- touched: re-running this file must not lock out a working deployment.
 DO $$
@@ -66,7 +73,7 @@ BEGIN
         EXECUTE format(
             'CREATE ROLE nextbook_app LOGIN NOSUPERUSER NOBYPASSRLS '
             'NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L',
-            :app_password
+            current_setting('nextbook.app_password')
         );
         RAISE NOTICE 'created role nextbook_app';
     ELSE

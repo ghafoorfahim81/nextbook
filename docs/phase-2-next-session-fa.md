@@ -41,6 +41,14 @@
 > می‌افتد. دیتابیس توسعهٔ محلی (`nextbook`) خودش همین وضع را دارد: مثلاً
 > `sale_items.branch_id` هنوز در آن هست. روی staging/تولید: دیتابیس خالی +
 > `migrate --force --database=pgsql` + seed، یا `migrate:fresh` اگر داده‌اش ارزش ندارد.
+>
+> ترتیب دقیق، که روی دیتابیس آزمایشی تازه از اول تا آخر اجرا و تأیید شد
+> (۱۴۰۵/۰۷/۳۰): (۱) `nextbook_app_role.sql` با `-d <همان دیتابیس تازه>` — **پیش از**
+> migrate، چون یک migration از راه کانکشن اپ به جدول `cache` می‌رسد و
+> `ALTER DEFAULT PRIVILEGES` اسکریپت باید از قبل روی آن دیتابیس باشد؛ (۲)
+> `migrate --force --database=pgsql`؛ (۳) `db:seed --force --database=pgsql`. در `.env`:
+> `DB_USERNAME`/`DB_PASSWORD` صاحب اسکیما می‌ماند و `DB_APP_USERNAME`/`DB_APP_PASSWORD`
+> جدا — اگر `DB_USERNAME` را `nextbook_app` بگذاری، migration با نقش اپ اجرا می‌شود.
 
 وضعیت تست‌ها در پایان این جلسه (`php artisan test`، هر سه suite):
 
@@ -224,7 +232,8 @@ helper مشترکش `BuildsErpContext::actingInCompany()` است و هر سه bi
 | ~~ایندکس‌های بدون تصمیم~~ | ✅ تصمیم‌ها گرفته شد — جدول پایین |
 | ~~ثبت‌نشدن ورود در activity log~~ | ✅ اصلاح شد (۱۴۰۵/۰۷/۳۰) — در تمرین محلی با نقش `nextbook_app` پیدا شد. درخواست ورود پیش از احراز هویت شروع می‌شود، پس کانکشن کمپنی ندارد؛ ردیف ورود که به کمپنی کاربر نسبت داده می‌شود را policy رد می‌کرد و `BatchActivityLog` خطا را بی‌صدا می‌بلعید — هیچ ورودی ثبت نمی‌شد. حالا `ActivityLogService::persist()` وقتی کانکشن کمپنی ندارد، زیر همان کمپنیِ resolve‌شده می‌نویسد. تست: `test_signing_in_records_the_login_against_the_users_company`. سوئیت این را نمی‌دید چون `bootstrapErpContext()` کاربر را از قبل وارد می‌کند |
 | ~~نام `BranchContext`~~ | ✅ انجام شد — حالا `App\Support\CompanyContext` (۵۴ فایل، فقط نام؛ متدها همان‌اند). در سندهای قدیمی‌تر و نام ابزار `branchcontext_callers.php` نام قدیم مانده است |
-| سه trait موازی شعبه | `BranchSpecific`، `HasBranch`، `BelongsToBranch` هم‌پوشانی دارند |
+| ~~سه trait موازی شعبه~~ | ✅ انجام شد — `BelongsToBranch` هیچ مصرف‌کننده‌ای نداشت و حذف شد. `BranchSpecific` (فیلتر خواندن) و `HasBranch` (پرکردن هنگام ساخت) تکراری نیستند و همان جفت `CompanySpecific`/`HasCompany` یک سطح پایین‌ترند؛ ادغام نشدند. `HasBranch` حالا مثل `HasCompany` سخت‌گیر است: شعبه را از `CompanyContext::branchId()` می‌گیرد و دیگر «اولین شعبهٔ جدول» یا شعبهٔ تازه از factory نمی‌سازد — بیرون از درخواست آن شعبه می‌توانست مال هر کمپنی‌ای باشد |
+| ~~اسکریپت `nextbook_app_role.sql` کار نمی‌کرد~~ | ✅ اصلاح شد — psql متغیر `:app_password` را داخل بلاک `DO $$…$$` جایگزین نمی‌کند، پس اسکریپت با خطای syntax می‌ایستاد و هیچ grantی نمی‌داد. محلی دیده نمی‌شد چون نقش از قبل وجود داشت. حالا رمز از راه `set_config` محلی به تراکنش می‌رسد. هر دو مسیر (ساخت نقش تازه و نقش موجود) روی دیتابیس آزمایشی تست شد |
 | ~~`ledgers.company_id` nullable~~ | ✅ انجام شد — `NOT NULL` شد. سه کالم nullable باقی‌مانده (`customer_groups`، `payment_terms`، `activity_logs`) عمدی‌اند و policy مخصوص خودشان را دارند |
 
 ---
