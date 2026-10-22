@@ -7,6 +7,7 @@ use App\Models\Administration\Company;
 use App\Models\Administration\UserBranchAccess;
 use App\Models\Administration\UserCompanyAccess;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Which companies and branches a user may act in (phase 5).
@@ -196,6 +197,63 @@ class UserAccessService
             ->all();
 
         return ['companies' => $companies, 'branches' => $branches];
+    }
+
+    /**
+     * Set a user's grants to exactly these, within the companies the actor
+     * belongs to — the access screen's save.
+     *
+     * Grants in companies the actor cannot see are left alone: a super-admin
+     * of one company must not be able to take another company away from a user
+     * by leaving it unticked on a screen that never showed it. The user's home
+     * company is never removed; it is membership, not a grant. A branch is kept
+     * only under a company the user ends up with.
+     *
+     * @param  array<int, string>  $companyIds
+     * @param  array<int, string>  $branchIds
+     */
+    public function syncAccess(User $user, array $companyIds, array $branchIds, User $actor): void
+    {
+        $scope = $this->accessibleCompanyIds($actor);
+        $home = $user->company_id ? (string) $user->company_id : null;
+
+        $wanted = array_values(array_intersect(array_map('strval', $companyIds), $scope));
+        if ($home && in_array($home, $scope, true) && ! in_array($home, $wanted, true)) {
+            $wanted[] = $home;
+        }
+
+        $branches = Branch::query()
+            ->withoutGlobalScope('companySpecific')
+            ->whereKey(array_map('strval', $branchIds))
+            ->whereIn('company_id', $wanted)
+            ->get(['id', 'company_id']);
+
+        DB::transaction(function () use ($user, $actor, $scope, $wanted, $branches): void {
+            UserBranchAccess::query()
+                ->where('user_id', $user->id)
+                ->whereIn('company_id', $scope)
+                ->whereNotIn('branch_id', $branches->pluck('id')->all())
+                ->delete();
+
+            UserCompanyAccess::query()
+                ->where('user_id', $user->id)
+                ->whereIn('company_id', $scope)
+                ->whereNotIn('company_id', $wanted)
+                ->delete();
+
+            foreach ($wanted as $companyId) {
+                // The home company needs no grant of its own, but a branch
+                // grant hangs off one (the foreign key), so it gets one when it
+                // has branches granted.
+                if ($companyId !== (string) $user->company_id || $branches->contains('company_id', $companyId)) {
+                    $this->grantCompany($user, $companyId, $actor->id);
+                }
+            }
+
+            foreach ($branches as $branch) {
+                $this->grantBranch($user, $branch, $actor->id);
+            }
+        });
     }
 
     /**

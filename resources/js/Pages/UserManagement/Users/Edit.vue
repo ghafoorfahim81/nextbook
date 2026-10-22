@@ -2,7 +2,9 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
+import { Building2 } from 'lucide-vue-next';
+import { useAuth } from '@/composables/useAuth';
 import NextInput from "@/Components/next/NextInput.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
@@ -25,6 +27,7 @@ const props = defineProps({
     },
 });
 const user = props.user?.data;
+const { isSuperAdmin } = useAuth();
 
 const { loading: lazyLoading } = useLazyProps(props, ['roles'])
 
@@ -115,6 +118,15 @@ const saveFormRef = useSaveShortcut({ form })
 <template>
     <AppLayout :title="t('general.edit', { name: t('user_mangements.user') })">
         <FormPageToolbar back-route="users.index" module="user_management" />
+        <!-- Phase 5: which companies and branches this user may act in. -->
+        <div v-if="isSuperAdmin" class="mb-4 flex justify-end">
+            <Link
+                :href="route('users.access.edit', user.id)"
+                class="inline-flex items-center gap-2 rounded-lg border border-primary/40 px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-primary hover:text-primary-foreground"
+            >
+                <Building2 class="size-4" /> {{ t('workspace.access.title') }}
+            </Link>
+        </div>
         <form ref="saveFormRef" @submit.prevent="handleSubmit()">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
