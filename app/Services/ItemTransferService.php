@@ -17,7 +17,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Services\DateConversionService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 class ItemTransferService
 {
@@ -443,8 +443,8 @@ class ItemTransferService
             'transfer_cost' => $data['transfer_cost'] ?? null,
             'bank_account_id' => $data['bank_account_id'] ?? null,
             'expense_account_id' => $data['expense_account_id']
-                ?? BranchContext::glAccount('item-transfer-expense'),
-            'currency_id' => $data['currency_id'] ?? BranchContext::homeCurrency()?->id,
+                ?? CompanyContext::glAccount('item-transfer-expense'),
+            'currency_id' => $data['currency_id'] ?? CompanyContext::homeCurrency()?->id,
             'rate' => $data['rate'] ?? 1,
         ];
     }
@@ -465,8 +465,8 @@ class ItemTransferService
             return;
         }
 
-        $glAccounts = BranchContext::glAccounts();
-        $homeCurrency = BranchContext::homeCurrency();
+        $glAccounts = CompanyContext::glAccounts();
+        $homeCurrency = CompanyContext::homeCurrency();
 
         $bankAccountId = $transfer->bank_account_id ?? $glAccounts['cash-in-hand'] ?? null;
         $expenseAccountId = $transfer->expense_account_id

@@ -9,7 +9,7 @@ use App\Models\Hr\AttendanceDeviceUser;
 use App\Models\Hr\AttendancePunch;
 use App\Models\Hr\Employee;
 use App\Services\DateConversionService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -45,10 +45,10 @@ class PunchImportService
      */
     public function import(UploadedFile $file, ?string $deviceId, array $columnMap): array
     {
-        $branchId = BranchContext::branchId();
+        $branchId = CompanyContext::branchId();
         // Rows go in through insertOrIgnore, which skips the model hooks that
         // would otherwise fill the scope columns.
-        $companyId = BranchContext::companyId();
+        $companyId = CompanyContext::companyId();
         $batchId = (string) Str::ulid();
 
         $device = $deviceId

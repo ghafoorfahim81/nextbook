@@ -37,7 +37,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 class QuickCreateController extends Controller
 {
@@ -174,7 +174,7 @@ class QuickCreateController extends Controller
                 'is_active' => $category->is_active,
                 'company_id' => $category->company_id,
             ],
-            branchId: BranchContext::branchId(),
+            branchId: CompanyContext::branchId(),
         );
 
         return response()->json([
@@ -396,7 +396,7 @@ class QuickCreateController extends Controller
             $validated['slug'] = Str::slug($validated['name']);
             $account = Account::create($validated);
 
-            $glAccounts = BranchContext::glAccounts();
+            $glAccounts = CompanyContext::glAccounts();
             $transactionService = app(TransactionService::class);
 
             $transaction = $transactionService->post(
@@ -448,10 +448,10 @@ class QuickCreateController extends Controller
             Cache::forget(CacheKey::forCompanyBranchLocale($request, $name));
         }
 
-        // Posting accounts and the base currency are resolved through BranchContext,
+        // Posting accounts and the base currency are resolved through CompanyContext,
         // which memoises them per branch for the life of the process.
         if (array_intersect($names, ['accounts', 'gl_accounts', 'currencies', 'home_currency'])) {
-            BranchContext::flush();
+            CompanyContext::flush();
         }
     }
 
@@ -509,7 +509,7 @@ class QuickCreateController extends Controller
     {
         $rule = \Illuminate\Validation\Rule::unique($table)->whereNull('deleted_at');
 
-        $branchId = BranchContext::branchId();
+        $branchId = CompanyContext::branchId();
 
         if ($branchId !== null) {
             $rule->where('branch_id', $branchId);
@@ -526,7 +526,7 @@ class QuickCreateController extends Controller
     {
         $rule = \Illuminate\Validation\Rule::unique($table)->whereNull('deleted_at');
 
-        $companyId = BranchContext::companyId();
+        $companyId = CompanyContext::companyId();
 
         if ($companyId !== null) {
             $rule->where('company_id', $companyId);

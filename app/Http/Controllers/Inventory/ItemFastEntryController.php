@@ -11,7 +11,7 @@ use App\Enums\ItemType;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\BusinessProfile;
 
 class ItemFastEntryController extends Controller
@@ -34,8 +34,8 @@ class ItemFastEntryController extends Controller
         $rows = collect($validated['items']);
 
         DB::transaction(function () use ($rows) {
-            $glAccounts = BranchContext::glAccounts();
-            $homeCurrency = BranchContext::homeCurrency();
+            $glAccounts = CompanyContext::glAccounts();
+            $homeCurrency = CompanyContext::homeCurrency();
             $transactionService = app(\App\Services\TransactionService::class);
             $stockService = app(\App\Services\StockService::class);
 

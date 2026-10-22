@@ -9,17 +9,19 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Posting references for the branch the current request is acting on.
+ * Posting references for the company the current request is acting in.
  *
  * These used to be written to the global cache keys `gl_accounts`, `home_currency`
  * and `costing_method` on every request, so whichever request ran last decided which
- * branch's accounts every other request posted to. Two users in different branches
- * were enough to post a sale against the wrong branch's receivable account.
+ * accounts every other request posted to. Two users in different branches were
+ * enough to post a sale against the wrong receivable account.
  *
- * Everything here is resolved per branch and memoised per branch for the lifetime of
- * the process, so a value can never be handed to a request belonging to another branch.
+ * Everything here is resolved per company and memoised per company for the lifetime
+ * of the process, so a value can never be handed to a request belonging to another
+ * company. Formerly BranchContext: the chart of accounts and the currency set moved
+ * up to the company in phase 2, and only branchId() still answers for the branch.
  */
-final class BranchContext
+final class CompanyContext
 {
     /**
      * Slugs of the default accounts the posting code looks up by name.

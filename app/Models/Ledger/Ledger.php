@@ -12,7 +12,7 @@ use App\Models\Administration\Province;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Traits\HasAttachments;
 use App\Traits\HasCompany;
 use App\Traits\HasDependencyCheck;
@@ -376,7 +376,7 @@ class Ledger extends Model
                 return;
             }
 
-            $branchId = BranchContext::branchId();
+            $branchId = CompanyContext::branchId();
 
             $ledger->openToBranches($branchId !== null
                 ? [$branchId]

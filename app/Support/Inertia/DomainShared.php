@@ -14,7 +14,7 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 final class DomainShared
 {
@@ -65,7 +65,7 @@ final class DomainShared
                         ])
                         ->withStatementTotals()
                         ->where('is_active', true)
-                        ->availableInBranch(BranchContext::branchId())
+                        ->availableInBranch(CompanyContext::branchId())
                         ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
                         ->orderBy('created_at','desc')
                         ->limit(200)

@@ -4,7 +4,7 @@ namespace App\Services\Accounting;
 
 use App\Models\Receipt\Receipt;
 use App\Models\Sale\Sale;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -83,7 +83,7 @@ class SaleReceiveBackfill
 
         $branchId = (string) ($row->branch_id ?? $sale->branch_id);
         $companyId = (string) ($row->company_id ?? $sale->company_id);
-        $arAccountId = BranchContext::glAccount('account-receivable', $companyId);
+        $arAccountId = CompanyContext::glAccount('account-receivable', $companyId);
 
         if (! $arAccountId) {
             $this->skip($row, 'branch has no account-receivable account');

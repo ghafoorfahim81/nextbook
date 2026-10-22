@@ -11,7 +11,7 @@ use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Services\TransactionService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\Decimal;
 use App\Support\DocumentType;
 use Illuminate\Support\Collection;
@@ -790,7 +790,7 @@ class SettlementService
         $direction = ($voucher["direction"] ?? null) === self::DIRECTION_OUT
             ? self::DIRECTION_OUT
             : self::DIRECTION_IN;
-        $branchId = (string) ($voucher['branch_id'] ?? BranchContext::branchId());
+        $branchId = (string) ($voucher['branch_id'] ?? CompanyContext::branchId());
         // The books the lines post to. A ledger is company-level now, so
         // the company comes from the party rather than from the branch.
         $companyId = (string) ($voucher['company_id'] ?? $ledger->company_id);
@@ -1431,7 +1431,7 @@ class SettlementService
     {
         $slug = $this->advanceAccountSlug($ledger);
 
-        return BranchContext::glAccount($slug, $companyId)
+        return CompanyContext::glAccount($slug, $companyId)
             ?? $this->createAdvanceAccount($slug, $companyId);
     }
 
@@ -1456,7 +1456,7 @@ class SettlementService
      */
     private function requireAccount(string $slug, string $companyId): string
     {
-        $accountId = BranchContext::glAccount($slug, $companyId);
+        $accountId = CompanyContext::glAccount($slug, $companyId);
 
         if (! $accountId) {
             throw SettlementException::make(
@@ -1509,14 +1509,14 @@ class SettlementService
             'created_by' => Auth::id(),
         ]);
 
-        BranchContext::flush($companyId);
+        CompanyContext::flush($companyId);
 
         return $account->id;
     }
 
     private function baseCurrency(string $companyId): Currency
     {
-        $currency = BranchContext::homeCurrency($companyId);
+        $currency = CompanyContext::homeCurrency($companyId);
 
         if (! $currency) {
             throw SettlementException::make('This company has no base currency.', [['company_id' => $companyId]]);

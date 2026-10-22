@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 use App\Enums\CostingMethod;
 use App\Enums\FinancialPeriodStatus;
@@ -263,7 +263,7 @@ class StockAdjustmentService
             : (string) $adjustment->date;
         $status = $adjustment->status;
         $offsetAccountId = $this->resolveOffsetAccountId($reason);
-        $glAccounts = BranchContext::glAccounts();
+        $glAccounts = CompanyContext::glAccounts();
         $allowInCostOverride = (bool) user_preference('stock_adjustment.allow_in_cost_override', true);
 
         [$itemModelsById, $unitValuesById] = $this->buildItemLookup($items);
@@ -389,7 +389,7 @@ class StockAdjustmentService
             ];
         }
 
-        $homeCurrency = BranchContext::homeCurrency();
+        $homeCurrency = CompanyContext::homeCurrency();
 
         $this->transactionService->post(
             header: [
@@ -456,7 +456,7 @@ class StockAdjustmentService
         }
 
         if (!isset($this->offsetAccountIds[$slug])) {
-            $accountId = data_get(BranchContext::glAccounts(), $slug)
+            $accountId = data_get(CompanyContext::glAccounts(), $slug)
                 ?? Account::query()->where('slug', $slug)->value('id');
 
             if (!$accountId) {

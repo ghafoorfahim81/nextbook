@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Response;
 use App\Services\DateConversionService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 class DrawingController extends Controller
 {
     public function __construct()
@@ -461,7 +461,7 @@ class DrawingController extends Controller
             return [$currencyId, $rate];
         }
 
-        $homeCurrency = BranchContext::homeCurrency();
+        $homeCurrency = CompanyContext::homeCurrency();
         if (! $homeCurrency instanceof Currency) {
             $homeCurrency = Currency::query()
                 ->where('is_base_currency', true)

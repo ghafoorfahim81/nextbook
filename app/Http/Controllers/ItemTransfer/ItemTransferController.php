@@ -12,7 +12,7 @@ use App\Models\Administration\Warehouse;
 use App\Models\Inventory\Item;
 use App\Models\Account\Account;
 use App\Http\Resources\Account\AccountResource;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ItemTransferService;
@@ -95,7 +95,7 @@ class ItemTransferController extends Controller
                     ->orderBy('name')
                     ->get()
             ),
-            'defaultExpenseAccountId' => BranchContext::glAccount('item-transfer-expense'),
+            'defaultExpenseAccountId' => CompanyContext::glAccount('item-transfer-expense'),
         ];
     }
 

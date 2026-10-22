@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Sale;
 
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sale\SaleReturnStoreRequest;
@@ -457,7 +457,7 @@ class SaleReturnController extends Controller
             ->whereIn('id', $itemIds)
             ->get(['id', 'name', 'income_account_id', 'cost_account_id', 'asset_account_id'])
             ->keyBy('id');
-        $glAccounts = BranchContext::glAccounts();
+        $glAccounts = CompanyContext::glAccounts();
 
         $lines = [];
         $stockPayloads = [];

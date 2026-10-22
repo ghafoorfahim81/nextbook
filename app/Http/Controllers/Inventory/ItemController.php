@@ -38,7 +38,7 @@ use App\Support\BusinessProfile;
 use App\Enums\CostingMethod;
 use App\Enums\PricingMethod;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 class ItemController extends Controller
 {
     /**
@@ -134,7 +134,7 @@ class ItemController extends Controller
                 ->values(),
             // Shown as the fallback on the item form: a blank costing method
             // means "use the company default".
-            'companyCostingMethod' => BranchContext::costingMethod(),
+            'companyCostingMethod' => CompanyContext::costingMethod(),
         ];
     }
     public function store(ItemStoreRequest $request, AttachmentService $attachmentService)
@@ -192,8 +192,8 @@ class ItemController extends Controller
                 if ($openings->filter(function ($o) {
                     return !empty($o['warehouse_id']) && $o['quantity'] > 0;
                 })->count() > 0) {
-                    $glAccounts      = BranchContext::glAccounts();
-                    $homeCurrency = BranchContext::homeCurrency();
+                    $glAccounts      = CompanyContext::glAccounts();
+                    $homeCurrency = CompanyContext::homeCurrency();
                     $openingBalanceAccount = $glAccounts['opening-balance-equity'];
                     $itemType = $validated['item_type'];
                     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
@@ -287,7 +287,7 @@ class ItemController extends Controller
     {
         $valueByWarehouse = DB::table('stock_movements')
             ->where('item_id', $item->id)
-            ->whereIn('warehouse_id', Warehouse::idsOfBranch(BranchContext::branchId()))
+            ->whereIn('warehouse_id', Warehouse::idsOfBranch(CompanyContext::branchId()))
             ->whereNull('deleted_at')
             ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->groupBy('warehouse_id')

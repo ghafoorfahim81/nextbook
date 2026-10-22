@@ -3,7 +3,7 @@
 namespace App\Services\Accounting;
 
 use App\Enums\PaymentStatus;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\Decimal;
 use Illuminate\Support\Collection;
 use App\Support\DocumentType;
@@ -229,7 +229,7 @@ class PaymentStatusService
      */
     public function balancesForLedger(string $ledgerId, ?string $branchId = null): array
     {
-        $branchId = $branchId ?? BranchContext::branchId();
+        $branchId = $branchId ?? CompanyContext::branchId();
 
         $rows = DB::table('transaction_lines as tl')
             ->join('transactions as t', 't.id', '=', 'tl.transaction_id')

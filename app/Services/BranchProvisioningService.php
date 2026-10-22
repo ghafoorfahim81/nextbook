@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Administration\Branch;
 use App\Models\Administration\Warehouse;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Uid\Ulid;
@@ -50,7 +50,7 @@ class BranchProvisioningService
             fn (): int => $this->warehouse($branch, $actorId)
         );
 
-        BranchContext::flush($branch->company_id);
+        CompanyContext::flush($branch->company_id);
 
         return $counts;
     }

@@ -12,7 +12,7 @@ use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -125,7 +125,7 @@ class ItemOpeningService
     private function tracksLayers(): bool
     {
         return in_array(
-            BranchContext::costingMethod(),
+            CompanyContext::costingMethod(),
             [CostingMethod::FIFO->value, CostingMethod::LIFO->value],
             true
         );
@@ -480,8 +480,8 @@ class ItemOpeningService
             return;
         }
 
-        $homeCurrency = BranchContext::homeCurrency();
-        $equityId = BranchContext::glAccount('opening-balance-equity');
+        $homeCurrency = CompanyContext::homeCurrency();
+        $equityId = CompanyContext::glAccount('opening-balance-equity');
         $inventoryId = $this->inventoryAccount($item);
 
         if ($homeCurrency === null || $equityId === null || $inventoryId === null) {
@@ -523,7 +523,7 @@ class ItemOpeningService
             return $item->asset_account_id;
         }
 
-        return BranchContext::glAccount(match ($this->itemTypeValue($item)) {
+        return CompanyContext::glAccount(match ($this->itemTypeValue($item)) {
             ItemType::NON_INVENTORY_MATERIALS->value => 'non-inventory-items',
             ItemType::RAW_MATERIALS->value => 'raw-materials',
             ItemType::FINISHED_GOOD_ITEMS->value => 'finished-goods',
