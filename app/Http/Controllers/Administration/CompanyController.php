@@ -7,6 +7,7 @@ use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Http\Requests\Administration\CompanyUpdateRequest;
 use App\Http\Resources\Administration\CompanyResource;
 use App\Models\Administration\Company;
+use App\Services\CompanySetupService;
 use App\Services\UserAccessService;
 use Illuminate\Http\Request;
 
@@ -57,11 +58,34 @@ class CompanyController extends Controller
         ]);
     }
 
-    public function store(CompanyStoreRequest $request)
+    /**
+     * Adding a company beside the ones the user has (phase 5): the same full
+     * form as sign-up, posting here instead.
+     */
+    public function create(Request $request)
     {
-        $company = Company::create($request->validated());
+        abort_unless($request->user()->isSuperAdmin(), 403);
 
-        return response()->json($company);
+        return inertia('Company/Create', ['submitRoute' => 'companies.store']);
+    }
+
+    /**
+     * Super-admins only, by decision: a company is a set of books, and who may
+     * open one is not a permission to hand out with a role. The new company is
+     * provisioned and granted to its creator; their home stays where it was.
+     */
+    public function store(CompanyStoreRequest $request, CompanySetupService $setup)
+    {
+        abort_unless($request->user()->isSuperAdmin(), 403);
+
+        $result = $setup->create($request->companyAttributes(), $request->validated('base_currency'), $request->user());
+
+        if ($request->wantsJson()) {
+            return response()->json(['redirect' => route('companies.index'), 'summary' => $result['summary']], 201);
+        }
+
+        return redirect()->route('companies.index')
+            ->with('success', __('general.created_successfully', ['resource' => __('general.resource.company')]));
     }
 
     public function show(Request $request, Company $company)

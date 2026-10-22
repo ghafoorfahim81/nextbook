@@ -71,12 +71,12 @@ const editItem = (item) => {
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
-            @add="isDialogOpen = true"
             :title="t('admin.company.companies')"
             :url="`companies.index`"
             :showAddButton="true"
             :addTitle="t('admin.company.company')"
-            :addAction="'modal'"
+            :addAction="'redirect'"
+            :addRoute="'companies.create'"
         />
     </AppLayout>
 </template>
