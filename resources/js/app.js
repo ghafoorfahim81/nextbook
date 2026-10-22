@@ -1,4 +1,5 @@
 import './bootstrap';
+import axios from 'axios';
 import '../css/app.css';
 // Loaded after app.css so its html[data-surface='glass'] rules override the
 // Tailwind utilities they replace. Inert unless that attribute is set.
@@ -88,6 +89,21 @@ createInertiaApp({
         const i18n = createI18nInstance(initialLocale)
         applyDocumentLocale(initialLocale, initialDirection)
         applyAppearanceTheme(initialPage?.props?.user_preferences)
+
+        // Every request this tab sends says which company its page was opened
+        // in, so a form left open after switching company in another tab is
+        // refused instead of saving into the new one (RejectStaleCompanyContext).
+        // Per tab, because axios defaults live in this tab's JavaScript.
+        const applyCompanyContext = (page) => {
+            const companyId = page?.props?.activeCompanyId
+            if (companyId) {
+                axios.defaults.headers.common['X-Nextbook-Company'] = companyId
+            } else {
+                delete axios.defaults.headers.common['X-Nextbook-Company']
+            }
+        }
+        applyCompanyContext(initialPage)
+        router.on('navigate', (event) => applyCompanyContext(event.detail.page))
 
         const applyFromPage = (page) => {
             const nextLocale = page?.props?.locale

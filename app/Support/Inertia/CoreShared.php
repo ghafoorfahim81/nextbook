@@ -122,6 +122,10 @@ final class CoreShared
             'notification_center' => $user
                 ? app(NotificationService::class)->getNotificationCenter($user)
                 : ['unread_count' => 0, 'items' => []],
+            // The company this page is rendered in. app.js sends it back with
+            // every request from the page; RejectStaleCompanyContext refuses a
+            // write whose page company is not the session's any more.
+            'activeCompanyId' => CacheKey::companyId($request),
             'activeBranchId' => $activeBranchId,
             'activeBranchName' => $activeBranchName,
             'balanceNatureFormat' => balanceNatureFormat(),

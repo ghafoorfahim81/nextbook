@@ -123,6 +123,7 @@ return [
     'contra_amount_must_be_positive' => 'د تهاتر اندازه باید له صفر څخه لویه وي.',
     'contra_parties_must_share_a_company' => 'دواړه حسابونه باید په یوه شرکت کې وي.',
     'no_branch_access_in_company' => 'تاسو په دې شرکت کې هیڅ څانګې ته لاسرسی نه لرئ. له مدیر څخه لاسرسی وغواړئ.',
+    'company_changed_in_another_tab' => 'تاسو په بل ټب کې شرکت بدل کړی، نو هیڅ شی خوندي نه شو. اوس په اوسني شرکت کې یاست؛ خپل کار وګورئ او بیا هڅه وکړئ.',
     'contra_clearing_account_missing' => 'دې څانګې د تهاتر حساب نلري. د څانګې چمتووالی پرانیزئ.',
     'contra_needs_a_customer_account' => 'د اخیستنې اړخ باید د پیرودونکي حساب وي.',
     'contra_needs_a_supplier_account' => 'د ورکړې اړخ باید د عرضه کوونکي حساب وي.',

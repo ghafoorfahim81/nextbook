@@ -147,6 +147,7 @@ return [
     'contra_amount_must_be_positive' => 'مبلغ تهاتر باید بیشتر از صفر باشد.',
     'contra_parties_must_share_a_company' => 'هر دو حساب باید در یک شرکت باشند.',
     'no_branch_access_in_company' => 'شما در این شرکت به هیچ شعبه‌ای دسترسی ندارید. از مدیر سیستم دسترسی بخواهید.',
+    'company_changed_in_another_tab' => 'شما در تب دیگری شرکت را عوض کرده‌اید، پس چیزی ذخیره نشد. اکنون در شرکت جاری هستید؛ کار خود را بررسی کنید و دوباره تلاش کنید.',
     'contra_clearing_account_missing' => 'این شعبه حساب «تهاتر» ندارد. راه‌اندازی شعبه را اجرا کنید.',
     'contra_needs_a_customer_account' => 'طرف طلب باید یک حساب مشتری باشد.',
     'contra_needs_a_supplier_account' => 'طرف بدهی باید یک حساب تأمین‌کننده باشد.',
