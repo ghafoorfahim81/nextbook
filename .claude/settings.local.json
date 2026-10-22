@@ -1,12 +1,13 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
       "Bash(php artisan *)",
       "Bash(curl localhost:*)",
       "Bash(curl 127.0.0.1:*)",
       "Bash(npm *)",
-      "Bash(git *)"
-    ]
+      "Bash(git *)",
+      "PowerShell(php artisan tinker --execute='echo collect\\(DB::select\\(\"select table_name from information_schema.columns where table_schema=''public'' and column_name=''branch_id'' order by 1\"\\)\\)->pluck\\(\"table_name\"\\)->implode\\(\" \"\\);')"
+    ],
+    "defaultMode": "acceptEdits"
   }
 }
