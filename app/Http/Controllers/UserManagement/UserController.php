@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\UserManagement;
 
+use App\Services\UserAccessService;
 use App\Support\CompanyContext;
 use App\Http\Controllers\Concerns\TogglesRecordStatus;
 use App\Http\Controllers\Controller;
@@ -21,6 +22,22 @@ class UserController extends Controller
     public function __construct()
     {
         $this->authorizeResource(User::class, 'user');
+
+        // Before the action, so before a form request validates: another
+        // company's user gets a 404, not a validation answer about them.
+        $this->middleware(function (Request $request, \Closure $next) {
+            $target = $request->route('user');
+
+            if (! $target instanceof User && $request->route('id')) {
+                $target = User::withTrashed()->find($request->route('id'));
+            }
+
+            if ($target instanceof User) {
+                $this->ensureInActiveCompany($target);
+            }
+
+            return $next($request);
+        });
     }
 
     public function index(Request $request)
@@ -30,10 +47,12 @@ class UserController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $users = User::with(['company', 'roles'])
+        $users = app(UserAccessService::class)->membersOf((string) CompanyContext::companyId())
+            ->with(['company', 'roles'])
             // Users are managed company-wide; without this the list showed
-            // every tenant's accounts to anyone holding users.view_any.
-            ->where('company_id', CompanyContext::companyId())
+            // every tenant's accounts to anyone holding users.view_any. Since
+            // phase 5 that includes users granted this company, not only
+            // those whose home it is.
             ->when($request->query('search'), function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -177,5 +196,22 @@ class UserController extends Controller
     {
         return $this->toggleRecordStatus($user, 'general.resource.user');
     }
-}
 
+    /**
+     * 404 unless the user belongs to the company this request acts in.
+     *
+     * Users carry no company scope and the users table is outside row level
+     * security (it is read before sign-in), and the super-admin bypass answers
+     * before any policy runs — so without this a super-admin of one company
+     * could open, change, delete or purge another company's users by id.
+     */
+    private function ensureInActiveCompany(User $user): void
+    {
+        $companyId = (string) CompanyContext::companyId();
+
+        abort_unless(
+            app(UserAccessService::class)->membersOf($companyId)->withTrashed()->whereKey($user->getKey())->exists(),
+            404
+        );
+    }
+}

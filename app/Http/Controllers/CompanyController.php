@@ -171,6 +171,15 @@ class CompanyController extends Controller
     }
     public function restore(Company $company)
     {
+        // The route takes deleted companies, and `companies` has no company
+        // scope or policy that would keep this to the user's own (see
+        // Administration\CompanyController). 404 so another customer's
+        // company is not confirmed to exist.
+        abort_unless(
+            app(\App\Services\UserAccessService::class)->isMemberOf(Auth::user(), (string) $company->getKey()),
+            404
+        );
+
         $company->restore();
         return redirect()->route('companies.index')
             ->with('success', __('general.restored_successfully', ['resource' => __('general.resource.company')]));

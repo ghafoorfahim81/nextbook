@@ -5,17 +5,39 @@ namespace App\Http\Controllers\Administration;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Http\Requests\Administration\CompanyUpdateRequest;
-use App\Http\Resources\Administration\CompanyCollection;
 use App\Http\Resources\Administration\CompanyResource;
 use App\Models\Administration\Company;
+use App\Services\UserAccessService;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
+/**
+ * The companies screen: only ever the companies the signed-in user belongs to.
+ *
+ * `companies` carries no company_id, so neither the row level security
+ * policies nor a company scope bound it — and the policies cannot either,
+ * because the super-admin bypass in AuthServiceProvider answers before they
+ * run, and super-admins are exactly who use this screen. Without the checks
+ * below it listed every company in the database and let any super-admin read,
+ * change, delete or restore another customer's company by its id.
+ */
 class CompanyController extends Controller
 {
-    public function __construct()
+    public function __construct(private readonly UserAccessService $access)
     {
         $this->authorizeResource(Company::class, 'company');
+
+        // As middleware rather than in each action: it has to run before the
+        // form request validates, or another company's id gets a validation
+        // answer instead of a 404.
+        $this->middleware(function (Request $request, \Closure $next) {
+            $company = $request->route('company');
+
+            if ($company instanceof Company) {
+                $this->ensureMember($request, $company);
+            }
+
+            return $next($request);
+        });
     }
 
     public function index(Request $request)
@@ -25,6 +47,7 @@ class CompanyController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
 
         $companies = Company::with(['createdBy', 'updatedBy'])
+            ->whereKey($this->access->accessibleCompanyIds($request->user()))
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -59,9 +82,19 @@ class CompanyController extends Controller
 
         return response()->noContent();
     }
+
     public function restore(Request $request, Company $company)
     {
         $company->restore();
         return redirect()->route('companies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.company')]));
+    }
+
+    /**
+     * 404, not 403: another customer's company should not be confirmed to
+     * exist by the answer.
+     */
+    private function ensureMember(Request $request, Company $company): void
+    {
+        abort_unless($this->access->isMemberOf($request->user(), (string) $company->getKey()), 404);
     }
 }
