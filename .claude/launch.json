@@ -4,8 +4,8 @@
     {
       "name": "laravel-serve",
       "runtimeExecutable": "php",
-      "runtimeArgs": ["-S", "127.0.0.1:8000", "-t", "public", "C:/Users/Fahim-Pc/AppData/Local/Temp/claude/E--nextbook/f78cdc51-a625-4236-9423-1d20e28e0e21/scratchpad/server-router.php"],
-      "port": 8000
+      "runtimeArgs": ["-S", "127.0.0.1:8010", "-t", "public", "C:/Users/Fahim-Pc/AppData/Local/Temp/claude/E--nextbook/8647d8b4-9cf3-42fa-86fd-70b1ed6e61e0/scratchpad/server-router.php"],
+      "port": 8010
     }
   ]
 }

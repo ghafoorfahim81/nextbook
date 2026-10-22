@@ -89,24 +89,24 @@ Route::middleware([
     Route::delete('/deleted-records/{module}/{record}', [DeletedRecordController::class, 'destroy'])->name('deleted-records.destroy');
 
 
-    Route::resource('designations', DesignationController::class);
+    Route::resource('designations', DesignationController::class)->except(['create', 'edit']);
     Route::patch('/designations/{designation}/restore', [DesignationController::class, 'restore'])->name('designations.restore')->withTrashed();
     Route::delete('/designations/{designation}/force-delete', [DesignationController::class, 'forceDelete'])
         ->name('designations.force-delete')
         ->withTrashed();
     Route::get('/departments/parents', [DepartmentController::class, 'getParents'])->name('departments.parents');
-    Route::resource('/departments', DepartmentController::class);
+    Route::resource('/departments', DepartmentController::class)->except(['create', 'edit']);
     Route::patch('/departments/{department}/restore', [\App\Http\Controllers\Administration\DepartmentController::class, 'restore'])->name('departments.restore')->withTrashed();
     Route::delete('/departments/{department}/force-delete', [\App\Http\Controllers\Administration\DepartmentController::class, 'forceDelete'])
         ->name('departments.force-delete')
         ->withTrashed();
-    Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class);
+    Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class)->except(['create', 'edit']);
     Route::patch('/categories/{category}/restore', [\App\Http\Controllers\Administration\CategoryController::class, 'restore'])->name('categories.restore')->withTrashed();
     Route::patch('/categories/{category}/toggle-status', [\App\Http\Controllers\Administration\CategoryController::class, 'toggleStatus'])->name('categories.toggle-status');
     Route::delete('/categories/{category}/force-delete', [\App\Http\Controllers\Administration\CategoryController::class, 'forceDelete'])
         ->name('categories.force-delete')
         ->withTrashed();
-    Route::resource('/landed-cost-categories', \App\Http\Controllers\Administration\LandedCostCategoryController::class);
+    Route::resource('/landed-cost-categories', \App\Http\Controllers\Administration\LandedCostCategoryController::class)->except(['create', 'edit']);
     Route::patch('/landed-cost-categories/{landed_cost_category}/restore', [\App\Http\Controllers\Administration\LandedCostCategoryController::class, 'restore'])->name('landed-cost-categories.restore')->withTrashed();
     Route::delete('/landed-cost-categories/{landed_cost_category}/force-delete', [\App\Http\Controllers\Administration\LandedCostCategoryController::class, 'forceDelete'])
         ->name('landed-cost-categories.force-delete')
@@ -115,20 +115,20 @@ Route::middleware([
         ->except(['create', 'edit']);
     Route::resource('/payment-terms', \App\Http\Controllers\Administration\PaymentTermController::class)
         ->except(['create', 'edit']);
-    Route::resource('/warehouses', \App\Http\Controllers\Administration\WarehouseController::class);
+    Route::resource('/warehouses', \App\Http\Controllers\Administration\WarehouseController::class)->except(['create', 'edit']);
     Route::patch('/warehouses/{warehouse}/restore', [\App\Http\Controllers\Administration\WarehouseController::class, 'restore'])->name('warehouses.restore')->withTrashed();
     Route::patch('/warehouses/{warehouse}/toggle-status', [\App\Http\Controllers\Administration\WarehouseController::class, 'toggleStatus'])->name('warehouses.toggle-status');
     Route::delete('/warehouses/{warehouse}/force-delete', [\App\Http\Controllers\Administration\WarehouseController::class, 'forceDelete'])
         ->name('warehouses.force-delete')
         ->withTrashed();
-    Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class);
+    Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class)->except(['create', 'edit']);
     Route::patch('/companies/{company}/restore', [\App\Http\Controllers\Administration\CompanyController::class, 'restore'])->name('companies.restore')->withTrashed();
-    Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class);
+    Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class)->except(['create', 'edit']);
     Route::patch('/brands/{brand}/restore', [\App\Http\Controllers\Administration\BrandController::class, 'restore'])->name('brands.restore')->withTrashed();
     Route::delete('/brands/{brand}/force-delete', [\App\Http\Controllers\Administration\BrandController::class, 'forceDelete'])
         ->name('brands.force-delete')
         ->withTrashed();
-    Route::resource('/branches', \App\Http\Controllers\Administration\BranchController::class);
+    Route::resource('/branches', \App\Http\Controllers\Administration\BranchController::class)->except(['create', 'edit']);
     Route::patch('/branches/{branch}/restore', [\App\Http\Controllers\Administration\BranchController::class, 'restore'])->name('branches.restore')->withTrashed();
     Route::delete('/branches/{branch}/force-delete', [\App\Http\Controllers\Administration\BranchController::class, 'forceDelete'])
         ->name('branches.force-delete')
@@ -146,20 +146,20 @@ Route::middleware([
     Route::delete('/chart-of-accounts/{chart_of_account}/force-delete', [\App\Http\Controllers\Account\AccountController::class, 'forceDelete'])
         ->name('chart-of-accounts.force-delete')
         ->withTrashed();
-    Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class);
+    Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class)->except(['create', 'edit']);
     Route::patch('/currencies/{currency}/restore', [\App\Http\Controllers\Administration\CurrencyController::class, 'restore'])->name('currencies.restore')->withTrashed();
     Route::delete('/currencies/{currency}/force-delete', [\App\Http\Controllers\Administration\CurrencyController::class, 'forceDelete'])
         ->name('currencies.force-delete')
         ->withTrashed();
     Route::get('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'index'])->name('currency-rate-updates.index');
     Route::post('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'store'])->name('currency-rate-updates.store');
-    Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class);
+    Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class)->except(['create', 'edit']);
     Route::patch('/unit-measures/{unitMeasure}/restore', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'restore'])->name('unit-measures.restore')->withTrashed();
     Route::patch('/unit-measures/{unitMeasure}/toggle-status', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'toggleStatus'])->name('unit-measures.toggle-status');
     Route::delete('/unit-measures/{unitMeasure}/force-delete', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'forceDelete'])
         ->name('unit-measures.force-delete')
         ->withTrashed();
-    Route::resource('/sizes', \App\Http\Controllers\Administration\SizeController::class);
+    Route::resource('/sizes', \App\Http\Controllers\Administration\SizeController::class)->except(['create', 'edit']);
     Route::patch('/sizes/{size}/restore', [\App\Http\Controllers\Administration\SizeController::class, 'restore'])->name('sizes.restore')->withTrashed();
     Route::delete('/sizes/{size}/force-delete', [\App\Http\Controllers\Administration\SizeController::class, 'forceDelete'])
         ->name('sizes.force-delete')
@@ -192,7 +192,7 @@ Route::middleware([
     Route::delete('/stock-adjustments/{stockAdjustment}/force-delete', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'forceDelete'])
         ->name('stock-adjustments.force-delete')
         ->withTrashed();
-    Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
+    Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class)->except(['create', 'edit']);
     Route::patch('/ledgers/{ledger}/restore', [\App\Http\Controllers\Ledger\LedgerController::class, 'restore'])->name('ledgers.restore')->withTrashed();
     Route::delete('/ledgers/{ledger}/force-delete', [\App\Http\Controllers\Ledger\LedgerController::class, 'forceDelete'])
         ->name('ledgers.force-delete')
@@ -436,7 +436,7 @@ Route::middleware([
     Route::post('/invoice-formats/{invoiceFormat}/clone', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'clone'])->name('invoice-formats.clone');
 
     // Expense Categories
-    Route::resource('/expense-categories', \App\Http\Controllers\Expense\ExpenseCategoryController::class);
+    Route::resource('/expense-categories', \App\Http\Controllers\Expense\ExpenseCategoryController::class)->except(['create', 'edit']);
     Route::patch('/expense-categories/{expenseCategory}/restore', [\App\Http\Controllers\Expense\ExpenseCategoryController::class, 'restore'])->name('expense-categories.restore')->withTrashed();
     Route::delete('/expense-categories/{expenseCategory}/force-delete', [\App\Http\Controllers\Expense\ExpenseCategoryController::class, 'forceDelete'])
         ->name('expense-categories.force-delete')
@@ -472,7 +472,7 @@ Route::middleware([
     Route::delete('/journal-entries/{journalEntry}/force-delete', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'forceDelete'])
         ->name('journal-entries.force-delete')
         ->withTrashed();
-    Route::resource('/journal-classes', \App\Http\Controllers\JournalEntry\JournalClassController::class);
+    Route::resource('/journal-classes', \App\Http\Controllers\JournalEntry\JournalClassController::class)->except(['create', 'edit']);
     Route::patch('/journal-classes/{journalClass}/restore', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'restore'])->name('journal-classes.restore')->withTrashed();
     Route::delete('/journal-classes/{journalClass}/force-delete', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'forceDelete'])
         ->name('journal-classes.force-delete')

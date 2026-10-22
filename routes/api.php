@@ -43,12 +43,6 @@ Route::middleware([
         ->name('api.notifications.read');
 });
 
-
-Route::apiResource('quantities', App\Http\Controllers\Administration\QuantityController::class);
-Route::delete('/quantities/{quantity}/force-delete', [App\Http\Controllers\Administration\QuantityController::class, 'forceDelete'])
-    ->name('quantities.force-delete')
-    ->withTrashed();
-
 Route::middleware([
     'web',
     'auth:sanctum',

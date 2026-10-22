@@ -131,7 +131,6 @@ const toggleItemStatus = (item) => {
             :hasEdit="true"
             :hasShow="true"
             @add="isDialogOpen = true"
-            :addRoute="route('unit-measures.create')"
             :url="`unit-measures.index`"
         />
     </AppLayout>
