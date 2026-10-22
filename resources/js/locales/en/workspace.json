@@ -12,5 +12,18 @@
     "new_company": "New company",
     "new_company_hint": "Separate books, catalog and customers",
     "branches_count": "{count} branch | {count} branches",
-    "no_branch": "No branch you can use yet"
+    "no_branch": "No branch you can use yet",
+    "access": {
+        "title": "Company & branch access",
+        "subtitle": "Choose where {name} can work. Only companies you belong to are shown.",
+        "has_access": "Can work in this company",
+        "home_locked": "Their home company; always available.",
+        "branches": "Branches",
+        "branches_hint": "Pick the branches they may switch to.",
+        "all_branches": "Super-admins work in every branch of a company they have.",
+        "no_branches": "This company has no branches yet.",
+        "save": "Save access",
+        "back": "Back to user",
+        "button": "Access"
+    }
 }

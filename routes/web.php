@@ -412,6 +412,9 @@ Route::middleware([
     Route::resource('/users', \App\Http\Controllers\UserManagement\UserController::class);
     Route::patch('/users/{user}/restore', [\App\Http\Controllers\UserManagement\UserController::class, 'restore'])->name('users.restore')->withTrashed();
     Route::patch('/users/{user}/toggle-status', [\App\Http\Controllers\UserManagement\UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    // Which companies and branches the user may act in (phase 5; super-admins).
+    Route::get('/users/{user}/access', [\App\Http\Controllers\UserManagement\UserAccessController::class, 'edit'])->name('users.access.edit');
+    Route::put('/users/{user}/access', [\App\Http\Controllers\UserManagement\UserAccessController::class, 'update'])->name('users.access.update');
     Route::delete('/users/{user}/force-delete', [\App\Http\Controllers\UserManagement\UserController::class, 'forceDelete'])
         ->name('users.force-delete')
         ->withTrashed();
