@@ -16,7 +16,7 @@ use App\Models\Inventory\Item;
 use App\Models\Sale\Sale;
 use App\Services\DateConversionService;
 use App\Services\DiscountRuleResolver;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Http\Request;
 
 class DiscountRuleController extends Controller
@@ -93,7 +93,7 @@ class DiscountRuleController extends Controller
                 $itemId => $resolver->candidatesFor(
                     itemId: $itemId,
                     ledgerId: $validated['customer_id'] ?? null,
-                    companyId: BranchContext::companyId(),
+                    companyId: CompanyContext::companyId(),
                     onDate: $date,
                 )->map(fn (DiscountRule $rule) => [
                     'id' => $rule->id,

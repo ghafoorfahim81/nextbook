@@ -64,7 +64,7 @@ class CostingMethodTest extends TestCase
     private function useCompanyMethod(CostingMethod $method): void
     {
         $this->ctx['company']->update(['costing_method' => $method->value]);
-        \App\Support\BranchContext::flush();
+        \App\Support\CompanyContext::flush();
     }
 
     private function sellTwo(): Sale

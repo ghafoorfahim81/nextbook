@@ -87,7 +87,7 @@ class CurrencyController extends Controller
         CacheForget::lookup($request, 'currencies');
         CacheForget::lookup($request, 'home_currency');
 
-        // The posting code resolves the base currency through BranchContext.
-        \App\Support\BranchContext::flush();
+        // The posting code resolves the base currency through CompanyContext.
+        \App\Support\CompanyContext::flush();
     }
 }

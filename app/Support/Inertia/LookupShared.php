@@ -118,7 +118,7 @@ final class LookupShared
         // the global cache keys `gl_accounts`, `home_currency` and `costing_method`
         // here, and read back by the posting code. Those keys carried no branch, so
         // whichever request ran last decided which branch's accounts everyone posted
-        // to. The posting code resolves them per branch through BranchContext now.
+        // to. The posting code resolves them per branch through CompanyContext now.
 
         return [
             'mainBranch' => $mainBranch,

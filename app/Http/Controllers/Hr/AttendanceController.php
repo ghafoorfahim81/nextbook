@@ -17,7 +17,7 @@ use App\Services\ActivityLogService;
 use App\Services\DateConversionService;
 use App\Services\Hr\AttendanceService;
 use App\Services\Hr\PunchImportService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -78,7 +78,7 @@ class AttendanceController extends Controller
 
         return inertia('Hr/Attendances/Roster', [
             'roster' => $attendance->roster(
-                BranchContext::branchId(),
+                CompanyContext::branchId(),
                 $date,
                 $request->input('department_id'),
                 $request->input('shift_id'),

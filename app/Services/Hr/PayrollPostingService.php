@@ -16,7 +16,7 @@ use App\Models\Hr\PayrollLineComponent;
 use App\Models\Hr\SalaryComponent;
 use App\Models\Transaction\Transaction;
 use App\Services\TransactionService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 
@@ -133,7 +133,7 @@ class PayrollPostingService
 
             $transaction = $this->transactions->post(
                 header: [
-                    'currency_id' => $payroll->currency_id ?? BranchContext::homeCurrency($payroll->company_id)?->id,
+                    'currency_id' => $payroll->currency_id ?? CompanyContext::homeCurrency($payroll->company_id)?->id,
                     'rate' => 1,
                     'date' => $payroll->period_end->toDateString(),
                     'voucher_number' => 'PAY-'.$payroll->number,
@@ -460,7 +460,7 @@ class PayrollPostingService
         $accounts = [];
 
         foreach ($slugs as $slug) {
-            $id = BranchContext::glAccount($slug, $companyId);
+            $id = CompanyContext::glAccount($slug, $companyId);
 
             if (! $id) {
                 throw PayrollException::make(
@@ -491,7 +491,7 @@ class PayrollPostingService
      */
     private function linkLiabilityLines(Payroll $payroll, $lines, Transaction $transaction): void
     {
-        $liabilityAccountId = BranchContext::glAccount('payroll-liabilities', $payroll->company_id);
+        $liabilityAccountId = CompanyContext::glAccount('payroll-liabilities', $payroll->company_id);
 
         $byLedger = $transaction->lines()
             ->where('account_id', $liabilityAccountId)

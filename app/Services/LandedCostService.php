@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Models\Administration\Warehouse;
 
 use App\Enums\LandedCostAllocationMethod;
@@ -493,7 +493,7 @@ class LandedCostService
 
     private function resolveInventoryStockAccountId(): string
     {
-        return data_get(BranchContext::glAccounts(), 'inventory-stock')
+        return data_get(CompanyContext::glAccounts(), 'inventory-stock')
             ?? Account::withoutGlobalScopes()->where('slug', 'inventory-stock')->value('id')
             ?? throw ValidationException::withMessages([
                 'items' => __('general.landed_cost_inventory_stock_account_could_not_be_resolved'),

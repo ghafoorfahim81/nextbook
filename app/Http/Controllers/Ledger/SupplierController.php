@@ -15,7 +15,7 @@ use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Models\Administration\Country;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
@@ -327,7 +327,7 @@ class SupplierController extends Controller
             'provinces' => Province::query()->orderBy('name_en')->get(),
             // The company's branches, for the "open in branches" field.
             'branches' => BranchResource::collection(
-                Branch::query()->where('company_id', BranchContext::companyId())->orderBy('name')->get()
+                Branch::query()->where('company_id', CompanyContext::companyId())->orderBy('name')->get()
             ),
         ];
     }

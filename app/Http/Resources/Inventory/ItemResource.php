@@ -14,7 +14,7 @@ use App\Http\Resources\Inventory\StockMovementResource;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\AttachmentResource;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Models\Administration\Warehouse;
 class ItemResource extends JsonResource
 {
@@ -154,7 +154,7 @@ class ItemResource extends JsonResource
                 $cancelled = StockStatus::CANCELLED->value;
                 $value = DB::table('stock_movements as sm')
                     ->where('sm.item_id', $this->id)
-                    ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch(BranchContext::branchId()))
+                    ->whereIn('sm.warehouse_id', Warehouse::idsOfBranch(CompanyContext::branchId()))
                     ->whereNull('sm.deleted_at')
                     ->whereNotIn('sm.status', [$voided, $cancelled])
                     ->selectRaw(

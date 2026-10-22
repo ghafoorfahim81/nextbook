@@ -3,7 +3,7 @@
 require_once __DIR__ . '/bootstrap.php';
 
 /**
- * BranchContext::glAccount / glAccounts / homeCurrency take a COMPANY now —
+ * CompanyContext::glAccount / glAccounts / homeCurrency take a COMPANY now —
  * the chart of accounts and the currency set moved up a level. Any caller
  * still handing them a branch gets null back, with no error.
  *
@@ -25,7 +25,7 @@ $changed = [];
 $review = [];
 
 foreach (phpFiles(repo('app')) as $path) {
-    if (str_ends_with(str_replace('\\', '/', $path), 'Support/BranchContext.php')) {
+    if (str_ends_with(str_replace('\\', '/', $path), 'Support/CompanyContext.php')) {
         continue;
     }
 
@@ -33,11 +33,11 @@ foreach (phpFiles(repo('app')) as $path) {
     $dirty = false;
 
     foreach ($lines as $i => $line) {
-        if (! preg_match('/BranchContext::(glAccount|glAccounts|homeCurrency)\(/', $line)) {
+        if (! preg_match('/CompanyContext::(glAccount|glAccounts|homeCurrency)\(/', $line)) {
             continue;
         }
         // No argument means "the acting company" — already correct.
-        if (preg_match('/BranchContext::(glAccount|glAccounts|homeCurrency)\(\)/', $line)) {
+        if (preg_match('/CompanyContext::(glAccount|glAccounts|homeCurrency)\(\)/', $line)) {
             continue;
         }
         if (! preg_match('/branch/i', $line)) {

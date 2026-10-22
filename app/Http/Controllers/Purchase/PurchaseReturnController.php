@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Purchase;
 
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\PurchaseReturnStoreRequest;
@@ -457,7 +457,7 @@ class PurchaseReturnController extends Controller
             ->whereIn('id', $itemIds)
             ->get(['id', 'name', 'asset_account_id'])
             ->keyBy('id');
-        $glAccounts = BranchContext::glAccounts();
+        $glAccounts = CompanyContext::glAccounts();
 
         $lines = [];
         $stockPayloads = [];

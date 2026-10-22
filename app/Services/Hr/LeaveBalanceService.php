@@ -5,7 +5,7 @@ namespace App\Services\Hr;
 use App\Enums\LeaveRequestStatus;
 use App\Models\Hr\Employee;
 use App\Models\Hr\LeaveAllocation;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -40,7 +40,7 @@ class LeaveBalanceService
         // branch-scoped, so in any legitimate flow the two are the same — and
         // this is a cheap way to stop a `with('employee:id,full_name')`
         // somewhere unrelated from turning into a 500 on this page.
-        $branchId = $employee->branch_id ?? BranchContext::branchId();
+        $branchId = $employee->branch_id ?? CompanyContext::branchId();
 
         if (! $branchId) {
             return [];

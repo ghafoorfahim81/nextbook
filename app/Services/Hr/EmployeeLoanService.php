@@ -8,7 +8,7 @@ use App\Exceptions\Hr\PayrollException;
 use App\Models\Hr\EmployeeLoan;
 use App\Models\Hr\EmployeeLoanRepayment;
 use App\Services\TransactionService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 
@@ -124,7 +124,7 @@ class EmployeeLoanService
             $transaction = $this->transactions->post(
                 header: [
                     'currency_id' => $loan->currency_id
-                        ?? BranchContext::homeCurrency($loan->company_id)?->id,
+                        ?? CompanyContext::homeCurrency($loan->company_id)?->id,
                     'rate' => $rate,
                     'date' => $loan->issue_date->toDateString(),
                     'voucher_number' => 'LOAN-'.$loan->number,
@@ -219,7 +219,7 @@ class EmployeeLoanService
         return DB::transaction(function () use ($loan, $employee, $attributes, $amount, $rate, $currencyId, $controlAccountId) {
             $transaction = $this->transactions->post(
                 header: [
-                    'currency_id' => $currencyId ?? BranchContext::homeCurrency($loan->company_id)?->id,
+                    'currency_id' => $currencyId ?? CompanyContext::homeCurrency($loan->company_id)?->id,
                     'rate' => $rate,
                     'date' => $attributes['date'],
                     'voucher_number' => 'LREP-'.$loan->number,
@@ -312,7 +312,7 @@ class EmployeeLoanService
             $transaction = $this->transactions->post(
                 header: [
                     'currency_id' => $loan->currency_id
-                        ?? BranchContext::homeCurrency($loan->company_id)?->id,
+                        ?? CompanyContext::homeCurrency($loan->company_id)?->id,
                     'rate' => $rate,
                     'date' => $date,
                     'voucher_number' => 'LWO-'.$loan->number,
@@ -382,7 +382,7 @@ class EmployeeLoanService
 
     private function account(string $slug, string $companyId): string
     {
-        $id = BranchContext::glAccount($slug, $companyId);
+        $id = CompanyContext::glAccount($slug, $companyId);
 
         if (! $id) {
             throw PayrollException::make(

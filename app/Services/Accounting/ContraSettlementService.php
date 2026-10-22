@@ -5,7 +5,7 @@ namespace App\Services\Accounting;
 use App\Enums\LedgerType;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\Decimal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -55,7 +55,7 @@ class ContraSettlementService
     ): array {
         $this->assertRoles($customer, $supplier);
 
-        $branchId = (string) ($voucher['branch_id'] ?? BranchContext::branchId());
+        $branchId = (string) ($voucher['branch_id'] ?? CompanyContext::branchId());
         // The books the offset posts to. Ledgers are company-level, so the
         // company comes from the party.
         $companyId = (string) ($voucher['company_id'] ?? $customer->company_id);
@@ -73,7 +73,7 @@ class ContraSettlementService
             ]);
         }
 
-        $clearingId = BranchContext::glAccount('contra-clearing', $companyId);
+        $clearingId = CompanyContext::glAccount('contra-clearing', $companyId);
 
         if (! $clearingId) {
             throw ValidationException::withMessages([

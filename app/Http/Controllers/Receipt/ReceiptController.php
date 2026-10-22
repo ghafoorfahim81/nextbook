@@ -28,7 +28,7 @@ use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
 use App\Services\AttachmentService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 class ReceiptController extends Controller
 {
     use \App\Http\Controllers\Concerns\ListsCashMovements;

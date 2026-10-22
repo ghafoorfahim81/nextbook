@@ -26,7 +26,7 @@ use App\Models\Hr\TaxBracketSet;
 use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\CompanyDatabaseContext;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -96,7 +96,7 @@ class CompanyProvisioningService
         }));
 
         // Posting accounts and the base currency may have just changed.
-        BranchContext::flush($company->id);
+        CompanyContext::flush($company->id);
 
         return $created;
     }

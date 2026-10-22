@@ -5,7 +5,7 @@ namespace Tests\Feature\Hr;
 use App\Enums\LedgerType;
 use App\Models\Ledger\Ledger;
 use App\Services\Accounting\SettlementService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use ReflectionMethod;
@@ -174,11 +174,11 @@ class LedgerTypeIsolationFeatureTest extends TestCase
 
     public function test_payroll_control_accounts_resolve_by_slug(): void
     {
-        BranchContext::flush($this->ctx['company']->id);
+        CompanyContext::flush($this->ctx['company']->id);
 
         foreach (['payroll-liabilities', 'salary-tax-payable', 'employee-advances', 'employee-loans-receivable'] as $slug) {
             $this->assertNotNull(
-                BranchContext::glAccount($slug, $this->ctx['company']->id),
+                CompanyContext::glAccount($slug, $this->ctx['company']->id),
                 "Expected the company to resolve the [{$slug}] account by slug."
             );
         }

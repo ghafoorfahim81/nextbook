@@ -38,7 +38,7 @@ use App\Models\Transaction\Transaction;
 use App\Models\User;
 use App\Services\Accounting\SettlementService;
 use App\Services\DiscountRuleResolver;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;

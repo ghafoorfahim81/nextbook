@@ -37,7 +37,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 class SearchController extends Controller
 {
@@ -253,7 +253,7 @@ class SearchController extends Controller
         // Ledgers have no branch of their own; a customer or supplier is
         // offered to the branches it is open to. The branch is the acting one,
         // never a request parameter.
-        $query->availableInBranch(BranchContext::branchId());
+        $query->availableInBranch(CompanyContext::branchId());
 
         return LedgerOptionResource::collection(
             $query->orderBy('created_at','desc')->limit($limit)->get()

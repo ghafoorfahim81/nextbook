@@ -223,7 +223,7 @@ helper مشترکش `BuildsErpContext::actingInCompany()` است و هر سه bi
 | ~~متن دو پیام~~ | ✅ انجام شد — کلیدها به `contra_parties_must_share_a_company` و `counterpart_must_share_a_company` تغییر کردند و متنشان در هر سه زبان «شرکت» شد |
 | ~~ایندکس‌های بدون تصمیم~~ | ✅ تصمیم‌ها گرفته شد — جدول پایین |
 | ~~ثبت‌نشدن ورود در activity log~~ | ✅ اصلاح شد (۱۴۰۵/۰۷/۳۰) — در تمرین محلی با نقش `nextbook_app` پیدا شد. درخواست ورود پیش از احراز هویت شروع می‌شود، پس کانکشن کمپنی ندارد؛ ردیف ورود که به کمپنی کاربر نسبت داده می‌شود را policy رد می‌کرد و `BatchActivityLog` خطا را بی‌صدا می‌بلعید — هیچ ورودی ثبت نمی‌شد. حالا `ActivityLogService::persist()` وقتی کانکشن کمپنی ندارد، زیر همان کمپنیِ resolve‌شده می‌نویسد. تست: `test_signing_in_records_the_login_against_the_users_company`. سوئیت این را نمی‌دید چون `bootstrapErpContext()` کاربر را از قبل وارد می‌کند |
-| نام `BranchContext` | محتوایش کمپنی‌محور است ولی نامش شعبه؛ تغییر نام ۶۳ جا را لمس می‌کند |
+| ~~نام `BranchContext`~~ | ✅ انجام شد — حالا `App\Support\CompanyContext` (۵۴ فایل، فقط نام؛ متدها همان‌اند). در سندهای قدیمی‌تر و نام ابزار `branchcontext_callers.php` نام قدیم مانده است |
 | سه trait موازی شعبه | `BranchSpecific`، `HasBranch`، `BelongsToBranch` هم‌پوشانی دارند |
 | ~~`ledgers.company_id` nullable~~ | ✅ انجام شد — `NOT NULL` شد. سه کالم nullable باقی‌مانده (`customer_groups`، `payment_terms`، `activity_logs`) عمدی‌اند و policy مخصوص خودشان را دارند |
 

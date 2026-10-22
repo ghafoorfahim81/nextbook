@@ -15,7 +15,7 @@ use Carbon\Carbon;
 use App\Services\ItemVariantService;
 use App\Services\StockService;
 use App\Services\TransactionService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 class FastOpeningController extends Controller
 {
@@ -51,8 +51,8 @@ class FastOpeningController extends Controller
         $posted = 0;
 
         DB::transaction(function () use ($rows, &$posted) {
-            $glAccounts = BranchContext::glAccounts();
-            $homeCurrency = BranchContext::homeCurrency();
+            $glAccounts = CompanyContext::glAccounts();
+            $homeCurrency = CompanyContext::homeCurrency();
             $stockService = app(StockService::class);
             $transactionService = app(TransactionService::class);
             $variantService = app(ItemVariantService::class);

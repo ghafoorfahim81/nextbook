@@ -334,7 +334,7 @@ class Item extends Model
             return $this->costing_method;
         }
 
-        $companyDefault = \App\Support\BranchContext::costingMethod();
+        $companyDefault = \App\Support\CompanyContext::costingMethod();
 
         return CostingMethod::tryFrom((string) $companyDefault) ?? CostingMethod::WEIGHTED_AVERAGE;
     }

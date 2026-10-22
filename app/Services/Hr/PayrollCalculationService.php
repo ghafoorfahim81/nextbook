@@ -19,7 +19,7 @@ use App\Models\Hr\SalaryComponent;
 use App\Models\Hr\SalaryStructure;
 use App\Models\Hr\Shift;
 use App\Models\Hr\TaxBracketSet;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\Decimal;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -782,7 +782,7 @@ class PayrollCalculationService
             return Decimal::rate($payroll->rate ?? 1);
         }
 
-        $home = BranchContext::homeCurrency($payroll->company_id);
+        $home = CompanyContext::homeCurrency($payroll->company_id);
 
         if ($home && $home->id === $currencyId) {
             return '1.00000000';

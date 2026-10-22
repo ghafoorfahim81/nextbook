@@ -18,7 +18,7 @@ use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 class SaleQuotationController extends Controller
 {
@@ -97,7 +97,7 @@ class SaleQuotationController extends Controller
                     ->select(['id', 'name', 'code', 'type', 'currency_id', 'is_active', 'company_id'])
                     ->where('type', 'customer')
                     ->where('is_active', true)
-                    ->availableInBranch(BranchContext::branchId())
+                    ->availableInBranch(CompanyContext::branchId())
                     ->orderBy('created_at', 'desc')
                     ->limit(200)
                     ->get()

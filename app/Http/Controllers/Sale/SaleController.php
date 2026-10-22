@@ -45,7 +45,7 @@ use App\Services\ActivityLogService;
 use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Validation\ValidationException;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 
 class SaleController extends Controller
 {
@@ -167,7 +167,7 @@ class SaleController extends Controller
                     ])
                     ->withStatementTotals()
                     ->where('is_active', true)
-                    ->availableInBranch(BranchContext::branchId())
+                    ->availableInBranch(CompanyContext::branchId())
                     ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
                     ->orderBy('created_at','desc')
                     ->limit(200)
@@ -289,7 +289,7 @@ class SaleController extends Controller
 
             $lines = [];
             $stockPayloads = [];
-            $glAccounts = BranchContext::glAccounts();
+            $glAccounts = CompanyContext::glAccounts();
             // Every transaction_line is expressed in the transaction's currency; reports
             // multiply by transactions.rate to get home currency. Selling prices already
             // come in that currency, but stock cost is always home currency, so COGS and
@@ -608,7 +608,7 @@ class SaleController extends Controller
                     ->withStatementTotals()
                     ->where('is_active', true)
                     // Its own customer stays selectable even if no longer open here.
-                    ->where(fn ($q) => $q->availableInBranch(BranchContext::branchId())->orWhere('id', $sale->customer_id))
+                    ->where(fn ($q) => $q->availableInBranch(CompanyContext::branchId())->orWhere('id', $sale->customer_id))
                     ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
                     ->orderBy('created_at','desc')
                     ->limit(200)
@@ -788,7 +788,7 @@ class SaleController extends Controller
             $lines = [];
             $stockPayloads = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
-            $glAccounts = BranchContext::glAccounts();
+            $glAccounts = CompanyContext::glAccounts();
             // See store(): cost is home currency, GL lines are transaction currency.
             $rate = $this->transactionRate($validated);
 
@@ -1342,7 +1342,7 @@ class SaleController extends Controller
         // company default (Item::effectiveCostingMethod), and StockService
         // deducts the stock on that override — so reading the company default
         // here issued the goods at one cost and booked them at another.
-        $method = $costingMethod ?? BranchContext::costingMethod();
+        $method = $costingMethod ?? CompanyContext::costingMethod();
 
         if ($method !== CostingMethod::FIFO->value && $method !== CostingMethod::LIFO->value) {
             return $this->resolveUnitCost($avgCost, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);

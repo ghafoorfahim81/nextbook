@@ -29,7 +29,7 @@ use App\Services\PdfExportService;
 use App\Services\SpreadsheetExportService;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use App\Support\Inertia\CacheForget;
 use App\Enums\TransactionType;
 class AccountController extends Controller
@@ -215,7 +215,7 @@ class AccountController extends Controller
         }
 
         $isDebit = ($validated['transaction_type'] ?? TransactionType::DEBIT->value) === TransactionType::DEBIT->value;
-        $glAccounts = BranchContext::glAccounts();
+        $glAccounts = CompanyContext::glAccounts();
 
         $transaction = app(TransactionService::class)->post(
             header: [

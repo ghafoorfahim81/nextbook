@@ -12,7 +12,7 @@ use App\Models\Hr\LeaveType;
 use App\Services\DateConversionService;
 use App\Services\DeletedRecordService;
 use App\Services\Hr\LeaveBalanceService;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Http\Request;
 
 class LeaveAllocationController extends Controller
@@ -42,7 +42,7 @@ class LeaveAllocationController extends Controller
         // Balances resolved in ONE query for the whole page rather than per row,
         // which is the entire reason LeaveBalanceService has a batch method.
         $balanceMap = $balances->forEmployees(
-            BranchContext::branchId(),
+            CompanyContext::branchId(),
             $allocations->pluck('employee_id')->unique()->values()->all()
         );
 

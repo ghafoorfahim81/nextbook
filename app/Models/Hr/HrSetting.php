@@ -6,7 +6,7 @@ use App\Traits\CompanySpecific;
 use App\Traits\HasCompany;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

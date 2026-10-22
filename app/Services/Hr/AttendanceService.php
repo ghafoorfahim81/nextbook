@@ -8,7 +8,7 @@ use App\Models\Hr\Attendance;
 use App\Models\Hr\Employee;
 use App\Models\Hr\Holiday;
 use App\Models\Hr\Shift;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -100,7 +100,7 @@ class AttendanceService
      */
     public function upsertRoster(Carbon $date, array $rows, ?string $defaultShiftId = null): int
     {
-        $branchId = BranchContext::branchId();
+        $branchId = CompanyContext::branchId();
 
         $employeeIds = collect($rows)->pluck('employee_id')->filter()->unique()->values();
 

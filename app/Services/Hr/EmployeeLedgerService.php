@@ -5,7 +5,7 @@ namespace App\Services\Hr;
 use App\Enums\LedgerType;
 use App\Models\Hr\Employee;
 use App\Models\Ledger\Ledger;
-use App\Support\BranchContext;
+use App\Support\CompanyContext;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -75,7 +75,7 @@ class EmployeeLedgerService
             // branches of one company keeps a single account.
             'company_id' => $employee->company_id,
             'currency_id' => $employee->currency_id
-                ?? BranchContext::homeCurrency($employee->company_id)?->id,
+                ?? CompanyContext::homeCurrency($employee->company_id)?->id,
             'is_active' => (bool) $employee->is_active,
             'is_main' => false,
         ]);
