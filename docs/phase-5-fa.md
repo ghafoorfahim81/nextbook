@@ -54,7 +54,7 @@ super-admin پیش از هر policy «بله» می‌گوید. **هر صفحه�
 | کار | توضیح |
 |---|---|
 | تست RTL | دری و پشتو در مرورگر بررسی نشده‌اند |
-| `CreateEditModal` کمپنی | بلااستفاده و خراب (فیلدهایش در جدول نیست)؛ قابل حذف |
+| ~~`CreateEditModal` کمپنی~~ | ✅ حذف شد، همراه `Companies/Index.vue` (هر دو پس از ریدایرکت `/companies` بلااستفاده بودند) |
 | منوی ارز در مرحلهٔ ۲ | گاهی خودبه‌خود باز می‌شود |
 | تست گاه‌به‌گاه | `StockEdgeCaseScenarioTest › a transfer and its reversal` دو بار در اجرای کامل با UniqueConstraint شکست؛ خروجی کامل حالا در هر اجرا ذخیره می‌شود |
 | جدول کمپنی‌محور تازه | migration بعد از RLS به‌خودی‌خود policy نمی‌گیرد؛ تست پوشش می‌گیرد (`row-level-security.md`) |
