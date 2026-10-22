@@ -46,10 +46,15 @@ it('lists only the companies the user belongs to', function () {
     [$own, , $admin] = boundaryCompany('Ahmad Electronics');
     [$other] = boundaryCompany('Somebody Else');
 
+    // The old list now hands over to the picker, which is the companies page.
     $this->actingAs($admin)->get(route('companies.index'))
+        ->assertRedirect(route('workspace.companies'));
+
+    $this->get(route('workspace.companies'))
         ->assertInertia(fn ($page) => $page
-            ->where('companies.data.0.id', $own->id)
-            ->has('companies.data', 1));
+            ->component('Workspace/Companies')
+            ->where('companies.0.id', $own->id)
+            ->has('companies', 1));
 });
 
 it('will not show, change, delete or restore another company', function () {

@@ -149,6 +149,15 @@ return [
     'no_branch_access_in_company' => 'شما در این شرکت به هیچ شعبه‌ای دسترسی ندارید. از مدیر سیستم دسترسی بخواهید.',
     'company_changed_in_another_tab' => 'شما در تب دیگری شرکت را عوض کرده‌اید، پس چیزی ذخیره نشد. اکنون در شرکت جاری هستید؛ کار خود را بررسی کنید و دوباره تلاش کنید.',
     'main_branch' => 'شعبهٔ اصلی',
+    // Field names in validation messages on the company set-up form.
+    'company_fields' => [
+        'name_en' => 'نام انگلیسی', 'name_fa' => 'نام دری', 'name_pa' => 'نام پشتو',
+        'abbreviation' => 'مخفف', 'logo' => 'لوگو', 'business_type' => 'نوع تجارت',
+        'base_currency' => 'ارز اصلی', 'locale' => 'زبان', 'calendar_type' => 'تقویم',
+        'working_style' => 'شیوهٔ کار', 'costing_method' => 'روش قیمت‌گذاری', 'phone' => 'تلفون',
+        'email' => 'ایمیل', 'website' => 'وب‌سایت', 'license_number' => 'شمارهٔ جواز',
+        'license_issued_at' => 'تاریخ صدور جواز', 'license_expires_at' => 'تاریخ انقضای جواز',
+    ],
     'contra_clearing_account_missing' => 'این شعبه حساب «تهاتر» ندارد. راه‌اندازی شعبه را اجرا کنید.',
     'contra_needs_a_customer_account' => 'طرف طلب باید یک حساب مشتری باشد.',
     'contra_needs_a_supplier_account' => 'طرف بدهی باید یک حساب تأمین‌کننده باشد.',

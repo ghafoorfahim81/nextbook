@@ -39,6 +39,8 @@ class SwitchBranchController extends Controller
 
         $request->session()->put('active_branch_id', $branchId);
 
-        return back();
+        // Home, as switching company does: the switch is made from the branch
+        // picker, and the page before it belonged to the other branch.
+        return redirect()->route('home');
     }
 }

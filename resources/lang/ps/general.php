@@ -125,6 +125,15 @@ return [
     'no_branch_access_in_company' => 'تاسو په دې شرکت کې هیڅ څانګې ته لاسرسی نه لرئ. له مدیر څخه لاسرسی وغواړئ.',
     'company_changed_in_another_tab' => 'تاسو په بل ټب کې شرکت بدل کړی، نو هیڅ شی خوندي نه شو. اوس په اوسني شرکت کې یاست؛ خپل کار وګورئ او بیا هڅه وکړئ.',
     'main_branch' => 'اصلي څانګه',
+    // Field names in validation messages on the company set-up form.
+    'company_fields' => [
+        'name_en' => 'انګلیسي نوم', 'name_fa' => 'دري نوم', 'name_pa' => 'پښتو نوم',
+        'abbreviation' => 'لنډیز', 'logo' => 'لوګو', 'business_type' => 'د سوداګرۍ ډول',
+        'base_currency' => 'اصلي اسعار', 'locale' => 'ژبه', 'calendar_type' => 'کلیز',
+        'working_style' => 'د کار طریقه', 'costing_method' => 'د بیې طریقه', 'phone' => 'تلیفون',
+        'email' => 'برېښنالیک', 'website' => 'ویب پاڼه', 'license_number' => 'د جواز شمېره',
+        'license_issued_at' => 'د جواز د صادرېدو نېټه', 'license_expires_at' => 'د جواز د پای نېټه',
+    ],
     'contra_clearing_account_missing' => 'دې څانګې د تهاتر حساب نلري. د څانګې چمتووالی پرانیزئ.',
     'contra_needs_a_customer_account' => 'د اخیستنې اړخ باید د پیرودونکي حساب وي.',
     'contra_needs_a_supplier_account' => 'د ورکړې اړخ باید د عرضه کوونکي حساب وي.',

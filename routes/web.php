@@ -40,7 +40,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/company/create', [\App\Http\Controllers\CompanyController::class, 'create'])
             ->name('company.create');
 
+        // Precognitive: the set-up wizard has each step validated before it
+        // moves on, and the whole form before the set-up screen opens.
         Route::post('/company', [\App\Http\Controllers\CompanyController::class, 'store'])
+            ->middleware(\Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class)
             ->name('company.store');
     });
 
@@ -121,7 +124,10 @@ Route::middleware([
     Route::delete('/warehouses/{warehouse}/force-delete', [\App\Http\Controllers\Administration\WarehouseController::class, 'forceDelete'])
         ->name('warehouses.force-delete')
         ->withTrashed();
-    Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class)->except(['edit']);
+    Route::post('/companies', [\App\Http\Controllers\Administration\CompanyController::class, 'store'])
+        ->middleware(\Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class)
+        ->name('companies.store');
+    Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class)->except(['edit', 'store']);
     Route::patch('/companies/{company}/restore', [\App\Http\Controllers\Administration\CompanyController::class, 'restore'])->name('companies.restore')->withTrashed();
     Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class)->except(['create', 'edit']);
     Route::patch('/brands/{brand}/restore', [\App\Http\Controllers\Administration\BrandController::class, 'restore'])->name('brands.restore')->withTrashed();
@@ -617,6 +623,11 @@ Route::middleware([
         ->name('branches.switch');
     Route::post('/switch-company', \App\Http\Controllers\Administration\SwitchCompanyController::class)
         ->name('companies.switch');
+    // The pickers behind the user menu's "Switch company" / "Switch branch".
+    Route::get('/workspace/companies', [\App\Http\Controllers\Administration\WorkspaceController::class, 'companies'])
+        ->name('workspace.companies');
+    Route::get('/workspace/branches', [\App\Http\Controllers\Administration\WorkspaceController::class, 'branches'])
+        ->name('workspace.branches');
 
 });
 

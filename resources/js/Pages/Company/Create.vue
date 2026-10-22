@@ -1,279 +1,427 @@
 <script setup>
-import { useForm, router } from '@inertiajs/vue3';
-import { onMounted, onBeforeUnmount, computed, reactive } from 'vue';
-import axios from 'axios';
-import CompanySetupProgress from '@/Components/Onboarding/CompanySetupProgress.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import NextSelect from '@/Components/next/NextSelect.vue';
-import NextInput from '@/Components/next/NextInput.vue';
-import NextTextarea from '@/Components/next/NextTextarea.vue';
-import { useI18n } from 'vue-i18n';
-const { t } = useI18n();
-const { toast } = useToast();
-import { useToast } from '@/Components/ui/toast/use-toast';
-import { useSaveShortcut } from '@/composables/useSaveShortcut';
+/**
+ * Company set-up wizard (phase 5): sign-up, and a super-admin adding another
+ * company from the companies page. Both post to a route that ends in
+ * CompanySetupService.
+ *
+ * Every step is checked by the server before the wizard moves on — the store
+ * routes are precognitive, and a step sends only its own fields for checking
+ * (Precognition-Validate-Only). The set-up screen opens only once the whole
+ * form has passed the same check, so it is never shown for a form the server
+ * would turn away.
+ */
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
+import axios from 'axios'
+import {
+    ArrowLeft, ArrowRight, BookOpen, Building2, Calculator, Car, Check, Coffee, Cpu, Factory, FlaskConical,
+    Gem, Hotel, ImagePlus, Layers, Loader2, Pencil, Pill, Shirt, ShoppingBasket, ShoppingCart,
+    Smartphone, Store, Trash2, Tv, UtensilsCrossed,
+} from 'lucide-vue-next'
+import CompanySetupProgress from '@/Components/Onboarding/CompanySetupProgress.vue'
+import NextInput from '@/Components/next/NextInput.vue'
+import NextSelect from '@/Components/next/NextSelect.vue'
+import NextTextarea from '@/Components/next/NextTextarea.vue'
+import { useToast } from '@/Components/ui/toast/use-toast'
+
 const props = defineProps({
-    calendarTypes: {
-        type: Array,
-        required: true,
-    },
-    workingStyles: {
-        type: Array,
-        required: true,
-    },
-    businessTypes: {
-        type: Array,
-        required: true,
-    },
-    locales: {
-        type: Array,
-        required: true,
-    },
-    // The catalog of currencies, not a company's: someone signing up has no
-    // company yet, so the company-scoped `currencies` list is empty for them.
-    // Sign-up posts to company.store; a super-admin adding another company
-    // (phase 5) reaches the same page from the companies screen and posts to
-    // companies.store. Both end in CompanySetupService.
-    submitRoute: {
-        type: String,
-        default: 'company.store',
-    },
-    currencyDefinitions: {
-        type: Array,
-        default: () => [],
-    },
-});
+    calendarTypes: { type: Array, default: () => [] },
+    workingStyles: { type: Array, default: () => [] },
+    businessTypes: { type: Array, default: () => [] },
+    locales: { type: Array, default: () => [] },
+    costingMethods: { type: Array, default: () => [] },
+    // The catalog, not a company's currencies: someone signing up has none.
+    currencyDefinitions: { type: Array, default: () => [] },
+    // company.store for sign-up, companies.store from the companies page.
+    submitRoute: { type: String, default: 'company.store' },
+})
 
-console.log(props.calendarTypes);
+const { t } = useI18n()
+const { toast } = useToast()
+const page = usePage()
 
-const form = useForm({
+const isSignup = computed(() => props.submitRoute === 'company.store')
+
+const form = reactive({
     name_en: '',
     name_fa: '',
     name_pa: '',
     abbreviation: '',
-    address: '',
-    phone: '',
-    country: '',
-    city: '',
-    logo: null,
-    calendar_type: '',
-    selected_currency: null,
-    selected_business_type: null,
-    selected_calendar_type: null,
-    selected_working_style: null,
-    working_style: '',
     business_type: '',
-    locale: 'en',
     base_currency: 'AFN',
+    locale: page.props.locale || 'fa',
+    calendar_type: 'jalali',
+    working_style: 'normal',
+    costing_method: 'fifo',
+    phone: '',
     email: '',
     website: '',
+    country: '',
+    city: '',
+    address: '',
+    license_number: '',
+    license_issued_at: '',
+    license_expires_at: '',
     invoice_description: '',
-});
+})
+const errors = ref({})
+const logoFile = ref(null)
+const logoPreview = ref(null)
 
-// Find base currency
-// const baseCurrency = computed(() => {
-//     if (props.currencies?.data) {
-//         return props.currencies.data.find(currency => currency.is_base_currency);
-//     }
-//     return null;
-// });
+// The fields each step sends for checking; the review step sends everything.
+const STEPS = [
+    { key: 'identity', fields: ['name_en', 'name_fa', 'name_pa', 'abbreviation', 'logo', 'business_type'] },
+    { key: 'settings', fields: ['base_currency', 'locale', 'calendar_type', 'working_style', 'costing_method'] },
+    {
+        key: 'contact',
+        fields: ['phone', 'email', 'website', 'country', 'city', 'address', 'license_number',
+            'license_issued_at', 'license_expires_at', 'invoice_description'],
+    },
+    { key: 'review', fields: [] },
+]
+const step = ref(0)
+const highestReached = ref(0)
+const checking = ref(false)
 
-// // Set base currency as default when component mounts
-// onMounted(() => {
-//     if (baseCurrency.value && !form.currency_id) {
-//         form.currency_id = baseCurrency.value.id;
-//     }
-// });
+const BUSINESS_ICONS = {
+    pharmacy: Pill, supermarket: ShoppingCart, grocery: ShoppingBasket, manufacturing: Factory,
+    retail: Store, accounting: Calculator, automobile: Car, book: BookOpen, clothing: Shirt,
+    hotel: Hotel, carpet: Layers, electronics: Tv, computer: Cpu, jewellery: Gem, mobile: Smartphone,
+    pharma_manufacturing: FlaskConical, ply_carpet: Layers, restaurant: UtensilsCrossed,
+}
+const businessIcon = (id) => BUSINESS_ICONS[id] ?? Coffee
 
-// The set-up screen (CompanySetupProgress). Same keys, same order as
-// CompanySetupService::SUMMARY_STEPS on the server.
+const labelOf = (options, id) => options.find((option) => option.id === id)?.name ?? null
+const currencyLabel = computed(() => labelOf(props.currencyDefinitions, form.base_currency) ?? form.base_currency)
+const displayName = computed(() => {
+    if (form.locale === 'fa' && form.name_fa) return form.name_fa
+    if (form.locale === 'ps' && form.name_pa) return form.name_pa
+    return form.name_en || t('company.wizard.title_new')
+})
+const initials = computed(() => (form.name_en || '?').split(/\s+/).filter(Boolean).slice(0, 2)
+    .map((word) => word[0]).join('').toUpperCase())
+
+function chooseLogo(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    logoFile.value = file
+    const reader = new FileReader()
+    reader.onload = (e) => { logoPreview.value = e.target.result }
+    reader.readAsDataURL(file)
+    event.target.value = ''
+}
+
+function pickBusinessType(id) {
+    form.business_type = id
+    const { business_type, ...rest } = errors.value
+    errors.value = rest
+}
+
+function removeLogo() {
+    logoFile.value = null
+    logoPreview.value = null
+}
+
+function payload() {
+    const data = new FormData()
+    Object.entries(form).forEach(([key, value]) => {
+        if (value !== null && value !== '') data.append(key, value)
+    })
+    if (logoFile.value) data.append('logo', logoFile.value)
+    return data
+}
+
+const firstErrors = (raw) => Object.fromEntries(
+    Object.entries(raw ?? {}).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages])
+)
+
+/**
+ * Ask the server whether these fields would pass, without creating anything.
+ * Resolves true when they do; otherwise shows the errors and resolves false.
+ */
+async function precheck(fields) {
+    checking.value = true
+    try {
+        await axios.post(route(props.submitRoute), payload(), {
+            headers: {
+                Accept: 'application/json',
+                Precognition: 'true',
+                ...(fields.length ? { 'Precognition-Validate-Only': fields.join(',') } : {}),
+            },
+        })
+        STEPS.forEach((s) => s.fields.forEach((field) => { if (!fields.length || fields.includes(field)) delete errors.value[field] }))
+        return true
+    } catch (error) {
+        if (error.response?.status === 422) {
+            errors.value = { ...errors.value, ...firstErrors(error.response.data.errors) }
+            return false
+        }
+        toast({ title: t('general.error'), description: t('company.setup.failed'), variant: 'destructive' })
+        return false
+    } finally {
+        checking.value = false
+    }
+}
+
+async function next() {
+    if (checking.value) return
+    if (!(await precheck(STEPS[step.value].fields))) return
+    step.value = Math.min(step.value + 1, STEPS.length - 1)
+    highestReached.value = Math.max(highestReached.value, step.value)
+}
+
+function back() {
+    step.value = Math.max(step.value - 1, 0)
+}
+
+function goTo(index) {
+    if (index <= highestReached.value && !checking.value && !setup.open) step.value = index
+}
+
+// The set-up screen. Same keys and order as CompanySetupService::SUMMARY_STEPS.
 const SETUP_STEPS = [
     'company', 'branch', 'accounts', 'currencies', 'units', 'catalog',
     'cash_customer', 'expenses', 'hr', 'financial_period', 'warehouse', 'access',
 ]
 const setup = reactive({ open: false, activeIndex: 0, summary: null })
 let setupTimer = null
-
 const stopSetupTimer = () => {
     if (setupTimer) clearInterval(setupTimer)
     setupTimer = null
 }
 onBeforeUnmount(stopSetupTimer)
 
-const submit = async () => {
-    if (form.processing) return
+async function create() {
+    if (checking.value || setup.open) return
 
-    form.clearErrors()
-    form.processing = true
+    // The whole form, checked first: the set-up screen opens only for a form
+    // the server will accept.
+    if (!(await precheck([]))) {
+        const failing = STEPS.findIndex((s) => s.fields.some((field) => errors.value[field]))
+        if (failing >= 0) step.value = failing
+        return
+    }
+
     Object.assign(setup, { open: true, activeIndex: 0, summary: null })
-
-    // The server does the whole set-up in one request. Walk through the steps
-    // while it works, but hold the last one until it has actually answered.
+    // One request does the whole set-up; walk the steps while it works, and
+    // hold the last one until the server has answered.
     setupTimer = setInterval(() => {
         if (setup.activeIndex < SETUP_STEPS.length - 1) setup.activeIndex++
     }, 650)
 
-    // Posted for JSON so the screen can show what was created before leaving.
-    // The logo field holds only a preview here; it is not sent.
-    const { logo, selected_currency, selected_business_type, selected_calendar_type, selected_working_style, ...payload } = form.data()
-
     try {
-        const { data } = await axios.post(route(props.submitRoute), payload, {
+        const { data } = await axios.post(route(props.submitRoute), payload(), {
             headers: { Accept: 'application/json' },
         })
-
         stopSetupTimer()
         setup.activeIndex = SETUP_STEPS.length
         setup.summary = data.summary ?? {}
-
-        // Long enough to read the result, then in.
         setTimeout(() => router.visit(data.redirect), 1800)
     } catch (error) {
         stopSetupTimer()
         setup.open = false
-        form.processing = false
-
-        if (error.response?.status === 422) {
-            form.setError(
-                Object.fromEntries(Object.entries(error.response.data.errors ?? {}).map(([key, messages]) => [key, messages[0]]))
-            )
-        }
-
-        toast({
-            title: t('general.error'),
-            description: error.response?.status === 422 ? t('general.something_went_wrong') : t('company.setup.failed'),
-            variant: 'destructive',
-            class: 'bg-red-600 text-white',
-            duration: 8000,
-        })
-    }
-};
-
-const previewImage = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            form.logo = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-};
-
-const setCalendarLocaleStorage = (selected) => {
-    try {
-        const id = typeof selected === 'object' && selected ? selected.id : selected
-        const item = Array.isArray(props.calendarTypes)
-            ? props.calendarTypes.find(ct => (ct?.id ?? ct?.value) === id)
-            : null
-        const name = (item?.name || item?.label || item?.value || '').toString().toLowerCase()
-        const locale = /miladi|gregorian|english|en/.test(name) ? 'en' : 'fa'
-        if (typeof localStorage !== 'undefined') localStorage.setItem('calendar_type', locale)
-    } catch (e) {
-        // noop
+        if (error.response?.status === 422) errors.value = firstErrors(error.response.data.errors)
+        toast({ title: t('general.error'), description: t('company.setup.failed'), variant: 'destructive' })
     }
 }
 
-const handleSelectChange = (field, value) => {
-    if (field === 'calendar_type') {
-        setCalendarLocaleStorage(value)
-    }
-    form[field] = value;
-};
+const reviewSections = computed(() => [
+    {
+        step: 0,
+        title: t('company.wizard.steps.identity'),
+        rows: [
+            [t('company.name_en'), form.name_en],
+            [t('company.name_fa'), form.name_fa],
+            [t('company.name_pa'), form.name_pa],
+            [t('company.abbreviation'), form.abbreviation],
+            [t('company.business_type'), labelOf(props.businessTypes, form.business_type)],
+        ],
+    },
+    {
+        step: 1,
+        title: t('company.wizard.steps.settings'),
+        rows: [
+            [t('company.currency'), currencyLabel.value],
+            [t('company.wizard.language'), labelOf(props.locales, form.locale)],
+            [t('company.wizard.calendar'), labelOf(props.calendarTypes, form.calendar_type)],
+            [t('company.wizard.working_style'), labelOf(props.workingStyles, form.working_style)],
+            [t('company.costing_method'), labelOf(props.costingMethods, form.costing_method)],
+        ],
+    },
+    {
+        step: 2,
+        title: t('company.wizard.steps.contact'),
+        rows: [
+            [t('company.phone'), form.phone],
+            [t('company.email'), form.email],
+            [t('company.website'), form.website],
+            [t('company.city'), [form.city, form.country].filter(Boolean).join(', ')],
+            [t('company.address'), form.address],
+            [t('company.wizard.license_number'), form.license_number],
+            [t('company.wizard.license_issued_at'), form.license_issued_at],
+            [t('company.wizard.license_expires_at'), form.license_expires_at],
+        ],
+    },
+])
 
-const saveFormRef = useSaveShortcut({ form });
+const optionCard = (selected) => [
+    'relative flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-start text-sm transition',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+    selected
+        ? 'border-primary bg-primary/5 text-foreground ring-1 ring-primary/40'
+        : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground',
+]
 </script>
 
 <template>
-    <div>
-        <CompanySetupProgress
-            :open="setup.open"
-            :steps="SETUP_STEPS"
-            :active-index="setup.activeIndex"
-            :summary="setup.summary"
-        />
-        <div class="py-12">
-            <div class="sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 bg-white border-b border-gray-200">
-                        <form ref="saveFormRef" @submit.prevent="submit" class="space-y-6">
-                            <div class="mb-5 grid grid-cols-2 gap-x-2 gap-y-5">
-                                <!-- Basic Information -->
-                                <div class="space-y-4">
-                                    <h3 class="text-lg font-medium">{{ t('company.basic_information') }}</h3>
+    <Head :title="isSignup ? t('company.wizard.title_signup') : t('company.wizard.title_new')" />
 
-                                    <NextInput is-required :error="form.errors?.name_en" type="text" v-model="form.name_en" :label="t('company.name_en')" />
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.name_fa" :label="t('company.name_fa')" />
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.name_pa" :label="t('company.name_pa')" />
+    <CompanySetupProgress
+        :open="setup.open"
+        :steps="SETUP_STEPS"
+        :active-index="setup.activeIndex"
+        :summary="setup.summary"
+    />
 
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.abbreviation" :label="t('company.abbreviation')" />
+    <div class="min-h-screen bg-gradient-to-br from-primary/10 via-background to-amber-500/5 px-4 py-8 sm:px-6 lg:py-12">
+        <div class="w-full">
+            <Link
+                v-if="!isSignup"
+                :href="route('workspace.companies')"
+                class="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+            >
+                <ArrowLeft class="size-4 rtl:rotate-180" /> {{ t('company.wizard.back_to_companies') }}
+            </Link>
 
+            <div class="grid gap-6 lg:grid-cols-[300px_1fr] 2xl:grid-cols-[340px_1fr]">
+                <!-- Steps and a live preview of what is being created. -->
+                <aside class="space-y-6">
+                    <div>
+                        <h1 class="text-2xl font-semibold tracking-tight text-foreground">
+                            {{ isSignup ? t('company.wizard.title_signup') : t('company.wizard.title_new') }}
+                        </h1>
+                        <p class="mt-2 text-sm text-muted-foreground">{{ t('company.wizard.subtitle') }}</p>
+                    </div>
+
+                    <ol class="space-y-1">
+                        <li v-for="(s, index) in STEPS" :key="s.key">
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start transition"
+                                :class="[
+                                    index === step ? 'bg-card shadow-sm ring-1 ring-border' : '',
+                                    index <= highestReached ? 'cursor-pointer hover:bg-card/70' : 'cursor-default opacity-60',
+                                ]"
+                                :disabled="index > highestReached"
+                                @click="goTo(index)"
+                            >
+                                <span
+                                    class="flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition"
+                                    :class="index < step
+                                        ? 'border-emerald-500 bg-emerald-500 text-white'
+                                        : index === step ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'"
+                                >
+                                    <Check v-if="index < step" class="size-4" />
+                                    <template v-else>{{ index + 1 }}</template>
+                                </span>
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-medium text-foreground">{{ t(`company.wizard.steps.${s.key}`) }}</span>
+                                    <span class="block truncate text-xs text-muted-foreground">{{ t(`company.wizard.steps.${s.key}_hint`) }}</span>
+                                </span>
+                            </button>
+                        </li>
+                    </ol>
+
+                    <div class="hidden rounded-2xl border border-border bg-card/80 p-5 shadow-sm backdrop-blur lg:block">
+                        <div class="flex items-center gap-3">
+                            <img v-if="logoPreview" :src="logoPreview" alt="" class="size-12 rounded-xl object-cover" />
+                            <div v-else class="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-400 text-base font-semibold text-white">
+                                {{ initials }}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-foreground">{{ displayName }}</p>
+                                <p class="truncate text-xs text-muted-foreground">{{ labelOf(businessTypes, form.business_type) || '—' }}</p>
+                            </div>
+                        </div>
+                        <dl class="mt-4 space-y-2 text-xs">
+                            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">{{ t('company.currency') }}</dt><dd class="truncate font-medium text-foreground">{{ form.base_currency }}</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">{{ t('company.wizard.calendar') }}</dt><dd class="truncate font-medium text-foreground">{{ labelOf(calendarTypes, form.calendar_type) }}</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">{{ t('company.wizard.language') }}</dt><dd class="truncate font-medium text-foreground">{{ labelOf(locales, form.locale) }}</dd></div>
+                        </dl>
+                    </div>
+                </aside>
+
+                <!-- The current step. -->
+                <section class="flex min-h-[560px] flex-col rounded-2xl border border-border bg-card shadow-sm">
+                    <div class="border-b border-border px-6 py-4">
+                        <p class="text-xs font-medium uppercase tracking-wide text-primary">
+                            {{ t('company.wizard.step_of', { current: step + 1, total: STEPS.length }) }}
+                        </p>
+                        <h2 class="mt-1 text-lg font-semibold text-foreground">{{ t(`company.wizard.steps.${STEPS[step].key}`) }}</h2>
+                    </div>
+
+                    <form class="flex-1 space-y-8 px-6 py-6" @submit.prevent="step === STEPS.length - 1 ? create() : next()">
+                        <Transition mode="out-in" enter-active-class="transition duration-200 ease-out" enter-from-class="translate-y-2 opacity-0" leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0">
+                            <!-- 1. Identity -->
+                            <div v-if="step === 0" key="identity" class="space-y-8">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-foreground">{{ t('company.wizard.names') }}</h3>
+                                    <p class="mb-4 text-xs text-muted-foreground">{{ t('company.wizard.names_hint') }}</p>
+                                    <div class="grid gap-4 sm:grid-cols-2">
+                                        <NextInput v-model="form.name_en" :label="t('company.name_en')" is-required autofocus :error="errors.name_en" />
+                                        <NextInput v-model="form.abbreviation" :label="t('company.abbreviation')" :error="errors.abbreviation" />
+                                        <NextInput v-model="form.name_fa" :label="t('company.name_fa')" :error="errors.name_fa" />
+                                        <NextInput v-model="form.name_pa" :label="t('company.name_pa')" :error="errors.name_pa" />
+                                    </div>
                                 </div>
 
-                                <!-- Contact Information -->
-                                <div class="space-y-4">
-                                    <h3 class="text-lg font-medium">{{ t('company.contact_information') }}</h3>
-
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.email" :label="t('company.email')" />
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.phone" :label="t('company.phone')" />
-
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <NextInput :error="form.errors?.name" type="text" v-model="form.country" :label="t('company.country')" />
-                                        <NextInput :error="form.errors?.name" type="text" v-model="form.city" :label="t('company.city')" />
+                                <div class="flex flex-wrap items-center gap-4">
+                                    <img v-if="logoPreview" :src="logoPreview" alt="" class="size-16 rounded-xl object-cover ring-1 ring-border" />
+                                    <div v-else class="flex size-16 items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground">
+                                        <ImagePlus class="size-6" />
                                     </div>
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.website" :label="t('company.website')" />
+                                    <div class="space-y-1">
+                                        <div class="flex gap-2">
+                                            <label class="inline-flex cursor-pointer items-center rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted">
+                                                {{ t('company.wizard.logo_choose') }}
+                                                <input type="file" accept="image/png,image/jpeg,image/gif" class="sr-only" @change="chooseLogo" />
+                                            </label>
+                                            <button v-if="logoFile" type="button" class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-red-600 transition hover:bg-red-500/10" @click="removeLogo">
+                                                <Trash2 class="size-4" /> {{ t('company.wizard.logo_remove') }}
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-muted-foreground">{{ t('company.wizard.logo_hint') }}</p>
+                                        <p v-if="errors.logo" class="text-xs text-red-600">{{ errors.logo }}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 class="text-sm font-semibold text-foreground">
+                                        {{ t('company.business_type') }} <span class="text-red-500">*</span>
+                                    </h3>
+                                    <p class="mb-4 text-xs text-muted-foreground">{{ t('company.wizard.business_type_hint') }}</p>
+                                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6" role="radiogroup">
+                                        <button
+                                            v-for="type in businessTypes"
+                                            :key="type.id"
+                                            type="button"
+                                            role="radio"
+                                            :aria-checked="form.business_type === type.id"
+                                            :class="optionCard(form.business_type === type.id)"
+                                            @click="pickBusinessType(type.id)"
+                                        >
+                                            <component :is="businessIcon(type.id)" class="size-5 shrink-0" :class="form.business_type === type.id ? 'text-primary' : ''" />
+                                            <span class="line-clamp-2">{{ type.name }}</span>
+                                        </button>
+                                    </div>
+                                    <p v-if="errors.business_type" class="mt-2 text-xs text-red-600">{{ errors.business_type }}</p>
                                 </div>
                             </div>
 
-                            <!-- Settings -->
-                            <div class="pt-6 mt-6 border-t border-gray-200">
-                                <h3 class="text-lg font-medium">{{ t('company.preferences') }}</h3>
-
-                                <div class="grid grid-cols-1 gap-6 mt-4 md:grid-cols-3">
-
-                                    <NextSelect
-                                        :options="businessTypes"
-                                        v-model="form.selected_business_type"
-                                        label-key="name"
-                                        value-key="id"
-                                        @update:modelValue="(value) => handleSelectChange('business_type', value)"
-                                        :floating-text="t('company.business_type')"
-                                        is-required
-                                        :error="form.errors?.business_type"
-                                    />
-                                    <NextSelect
-                                        :options="calendarTypes"
-                                        v-model="form.selected_calendar_type"
-                                        label-key="name"
-                                        value-key="id"
-                                        @update:modelValue="(value) => handleSelectChange('calendar_type', value)"
-                                        :floating-text="t('company.calendar_type')"
-                                        is-required
-                                        :error="form.errors?.calendar_type"
-                                    />
-                                    <NextSelect
-                                        :options="workingStyles"
-                                        v-model="form.selected_working_style"
-                                        label-key="name"
-                                        value-key="id"
-                                        @update:modelValue="(value) => handleSelectChange('working_style', value)"
-                                        :floating-text="t('company.working_style')"
-                                        is-required
-                                        :error="form.errors?.working_style"
-                                    />
-                                </div>
-
-                                <div class="grid grid-cols-1 gap-6 mt-4 md:grid-cols-3">
-                                    <NextSelect
-                                        :options="locales"
-                                        v-model="form.locale"
-                                        label-key="name"
-                                        value-key="id"
-                                        @update:modelValue="(value) => handleSelectChange('locale', value)"
-                                        :floating-text="t('company.locale')"
-                                        is-required
-                                        :error="form.errors?.locale"
-                                    />
+                            <!-- 2. Books & language -->
+                            <div v-else-if="step === 1" key="settings" class="space-y-8">
+                                <div>
                                     <NextSelect
                                         :options="currencyDefinitions"
                                         v-model="form.base_currency"
@@ -282,54 +430,128 @@ const saveFormRef = useSaveShortcut({ form });
                                         :reduce="currency => currency.id"
                                         :floating-text="t('company.currency')"
                                         is-required
-                                        :error="form.errors?.base_currency"
+                                        :error="errors.base_currency"
                                         :searchable="true"
                                     />
+                                    <p class="mt-2 text-xs text-muted-foreground">{{ t('company.wizard.base_currency_hint') }}</p>
                                 </div>
 
-                                <div class="mt-4">
-                                    <NextTextarea
-                                        v-model="form.invoice_description"
-                                        rows="3"
-                                        :label="t('company.invoice_description')"
-                                        :floating-text="t('company.invoice_description')"
-                                        :error="form.errors?.invoice_description"
-                                    /> 
-                                </div>
-                            </div>
-
-                            <!-- Logo Upload -->
-                            <div class="pt-6 mt-6 border-t border-gray-200">
-                                <h3 class="text-lg font-medium">{{ t('company.logo') }}</h3>
-
-                                <div class="flex items-center mt-4">
-                                    <div class="mr-4">
-                                        <div v-if="form.logo" class="w-24 h-24 overflow-hidden bg-gray-200 rounded-full">
-                                            <img :src="form.logo" alt="Logo Preview" class="object-cover w-full h-full" />
-                                        </div>
-                                        <div v-else class="flex items-center justify-center w-24 h-24 bg-gray-200 rounded-full">
-                                            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                            </svg>
-                                        </div>
+                                <div v-for="group in [
+                                    { field: 'locale', label: t('company.wizard.language'), options: locales, cols: 'sm:grid-cols-3' },
+                                    { field: 'calendar_type', label: t('company.wizard.calendar'), options: calendarTypes, cols: 'sm:grid-cols-2' },
+                                    { field: 'working_style', label: t('company.wizard.working_style'), options: workingStyles, cols: 'sm:grid-cols-2' },
+                                    { field: 'costing_method', label: t('company.costing_method'), options: costingMethods, cols: 'sm:grid-cols-2', hint: t('company.wizard.costing_method_hint') },
+                                ]" :key="group.field">
+                                    <h3 class="text-sm font-semibold text-foreground">{{ group.label }}</h3>
+                                    <p v-if="group.hint" class="text-xs text-muted-foreground">{{ group.hint }}</p>
+                                    <div class="mt-3 grid gap-2" :class="group.cols" role="radiogroup">
+                                        <button
+                                            v-for="option in group.options"
+                                            :key="option.id"
+                                            type="button"
+                                            role="radio"
+                                            :aria-checked="form[group.field] === option.id"
+                                            :class="optionCard(form[group.field] === option.id)"
+                                            @click="form[group.field] = option.id"
+                                        >
+                                            <span
+                                                class="flex size-4 shrink-0 items-center justify-center rounded-full border"
+                                                :class="form[group.field] === option.id ? 'border-primary bg-primary' : 'border-muted-foreground/40'"
+                                            >
+                                                <span v-if="form[group.field] === option.id" class="size-1.5 rounded-full bg-white" />
+                                            </span>
+                                            <span>{{ option.name }}</span>
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                            <span>{{ t('company.upload_logo') }}</span>
-                                            <input id="logo" name="logo" type="file" class="sr-only" @change="previewImage" accept="image/*">
-                                        </label>
-                                        <p class="mt-1 text-xs text-gray-500">{{ t('company.upload_logo_description') }}</p>
-                                    </div>
+                                    <p v-if="errors[group.field]" class="mt-2 text-xs text-red-600">{{ errors[group.field] }}</p>
                                 </div>
                             </div>
 
-                            <div class="flex justify-end pt-6 mt-6 border-t border-gray-200">
-                                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300" :disabled="form.processing">{{ t('general.create') }}</button>
-
+                            <!-- 3. Contact & licence -->
+                            <div v-else-if="step === 2" key="contact" class="space-y-8">
+                                <div>
+                                    <h3 class="mb-4 text-sm font-semibold text-foreground">{{ t('company.wizard.contact') }}</h3>
+                                    <div class="grid gap-4 sm:grid-cols-2">
+                                        <NextInput v-model="form.phone" :label="t('company.phone')" :error="errors.phone" />
+                                        <NextInput v-model="form.email" type="email" :label="t('company.email')" :error="errors.email" />
+                                        <NextInput v-model="form.website" :label="t('company.website')" :error="errors.website" placeholder="https://" />
+                                        <NextInput v-model="form.country" :label="t('company.country')" :error="errors.country" />
+                                        <NextInput v-model="form.city" :label="t('company.city')" :error="errors.city" />
+                                        <NextInput v-model="form.address" :label="t('company.address')" :error="errors.address" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-foreground">{{ t('company.wizard.license') }}</h3>
+                                    <p class="mb-4 text-xs text-muted-foreground">{{ t('company.wizard.license_hint') }}</p>
+                                    <div class="grid gap-4 sm:grid-cols-3">
+                                        <NextInput v-model="form.license_number" :label="t('company.wizard.license_number')" :error="errors.license_number" />
+                                        <NextDate v-model="form.license_issued_at" :label="t('company.wizard.license_issued_at')" :error="errors.license_issued_at" />
+                                        <NextDate v-model="form.license_expires_at" :label="t('company.wizard.license_expires_at')" :error="errors.license_expires_at" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <NextTextarea v-model="form.invoice_description" :label="t('company.invoice_description')" :rows="3" :error="errors.invoice_description" />
+                                    <p class="mt-2 text-xs text-muted-foreground">{{ t('company.wizard.invoice_description_hint') }}</p>
+                                </div>
                             </div>
-                        </form>
+
+                            <!-- 4. Review -->
+                            <div v-else key="review" class="space-y-5">
+                                <p class="text-sm text-muted-foreground">{{ t('company.wizard.review_hint') }}</p>
+                                <div v-for="section in reviewSections" :key="section.step" class="rounded-xl border border-border">
+                                    <div class="flex items-center justify-between border-b border-border px-4 py-2.5">
+                                        <h3 class="text-sm font-semibold text-foreground">{{ section.title }}</h3>
+                                        <button type="button" class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline" @click="goTo(section.step)">
+                                            <Pencil class="size-3.5" /> {{ t('company.wizard.edit') }}
+                                        </button>
+                                    </div>
+                                    <dl class="grid gap-x-6 gap-y-2 px-4 py-3 text-sm sm:grid-cols-2">
+                                        <div v-for="[label, value] in section.rows" :key="label" class="flex justify-between gap-3">
+                                            <dt class="text-muted-foreground">{{ label }}</dt>
+                                            <dd class="truncate text-end font-medium" :class="value ? 'text-foreground' : 'text-muted-foreground/60'">
+                                                {{ value || t('company.wizard.not_set') }}
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+                        </Transition>
+
+                        <button type="submit" class="hidden" aria-hidden="true" tabindex="-1" />
+                    </form>
+
+                    <div class="flex items-center justify-between gap-3 border-t border-border px-6 py-4">
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:invisible"
+                            :disabled="step === 0 || checking"
+                            @click="back"
+                        >
+                            <ArrowLeft class="size-4 rtl:rotate-180" /> {{ t('company.wizard.back') }}
+                        </button>
+
+                        <button
+                            v-if="step < STEPS.length - 1"
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-60"
+                            :disabled="checking"
+                            @click="next"
+                        >
+                            <template v-if="checking"><Loader2 class="size-4 motion-safe:animate-spin" /> {{ t('company.wizard.checking') }}</template>
+                            <template v-else>{{ t('company.wizard.next') }} <ArrowRight class="size-4 rtl:rotate-180" /></template>
+                        </button>
+                        <button
+                            v-else
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-60"
+                            :disabled="checking || setup.open"
+                            @click="create"
+                        >
+                            <template v-if="checking"><Loader2 class="size-4 motion-safe:animate-spin" /> {{ t('company.wizard.checking') }}</template>
+                            <template v-else><Building2 class="size-4" /> {{ t('company.wizard.create') }}</template>
+                        </button>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     </div>

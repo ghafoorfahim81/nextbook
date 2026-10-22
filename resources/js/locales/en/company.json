@@ -51,5 +51,47 @@
             "warehouse": "Creating the main warehouse",
             "access": "Giving you access"
         }
+    },
+    "wizard": {
+        "title_signup": "Set up your company",
+        "title_new": "Add a new company",
+        "subtitle": "A few details and your books are ready. You can change any of this later in company settings.",
+        "back_to_companies": "Back to companies",
+        "step_of": "Step {current} of {total}",
+        "steps": {
+            "identity": "Identity",
+            "identity_hint": "Name, logo and trade",
+            "settings": "Books & language",
+            "settings_hint": "Currency, calendar, costing",
+            "contact": "Contact & licence",
+            "contact_hint": "How to reach you, your licence",
+            "review": "Review",
+            "review_hint": "Check and create"
+        },
+        "names": "Company name",
+        "names_hint": "The English name is required; add Dari and Pashto to print them on documents.",
+        "logo_hint": "PNG or JPG, up to 2 MB. Printed on your invoices.",
+        "logo_choose": "Choose logo",
+        "logo_remove": "Remove",
+        "business_type_hint": "Shapes which fields, reports and defaults you see.",
+        "base_currency_hint": "Your books are kept in this currency. It cannot be changed once you trade.",
+        "language": "Language",
+        "calendar": "Calendar",
+        "working_style": "Working style",
+        "costing_method_hint": "How the cost of goods sold is worked out.",
+        "contact": "Contact",
+        "license": "Business licence",
+        "license_hint": "Shared by all branches; printed with your company name.",
+        "license_number": "Licence number",
+        "license_issued_at": "Issued on",
+        "license_expires_at": "Expires on",
+        "invoice_description_hint": "A note printed at the foot of every invoice.",
+        "review_hint": "Everything below can be changed later in company settings.",
+        "not_set": "Not set",
+        "edit": "Edit",
+        "next": "Next",
+        "back": "Back",
+        "create": "Create company",
+        "checking": "Checking..."
     }
 }
