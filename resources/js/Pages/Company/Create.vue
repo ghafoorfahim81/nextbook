@@ -361,7 +361,10 @@ const optionCard = (selected) => [
                         <h2 class="mt-1 text-lg font-semibold text-foreground">{{ t(`company.wizard.steps.${STEPS[step].key}`) }}</h2>
                     </div>
 
-                    <form class="flex-1 space-y-8 px-6 py-6" @submit.prevent="step === STEPS.length - 1 ? create() : next()">
+                    <!-- A div, not a form: the app autofocuses the first field of every form,
+                         and on step 2 that is the currency select, which opens on focus. The
+                         wizard posts with axios and moves on its buttons, so it needs no form. -->
+                    <div class="flex-1 space-y-8 px-6 py-6">
                         <Transition mode="out-in" enter-active-class="transition duration-200 ease-out" enter-from-class="translate-y-2 opacity-0" leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0">
                             <!-- 1. Identity -->
                             <div v-if="step === 0" key="identity" class="space-y-8">
@@ -517,8 +520,7 @@ const optionCard = (selected) => [
                             </div>
                         </Transition>
 
-                        <button type="submit" class="hidden" aria-hidden="true" tabindex="-1" />
-                    </form>
+                    </div>
 
                     <div class="flex items-center justify-between gap-3 border-t border-border px-6 py-4">
                         <button
