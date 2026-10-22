@@ -39,8 +39,8 @@ class SaleItemResource extends JsonResource
             'item' => $this->whenLoaded('item', function () {
                 return [
                     'id' => $this->item?->id,
-                    'name' => $this->item?->name,
-                    'code' => $this->item?->code,
+                    'name' => $this->snapshotItemName(),
+                    'code' => $this->snapshotItemCode(),
                     'unit_measure_id' => $this->item?->unit_measure_id,
                     'unitMeasure' => $this->item?->unitMeasure,
                     'sale_price' => $this->item?->sale_price,
@@ -61,12 +61,12 @@ class SaleItemResource extends JsonResource
                         : [],
                 ];
             }),
-            'item_name' => $this->item->name,
-            'item_code' => $this->item->code,
+            'item_name' => $this->snapshotItemName(),
+            'item_code' => $this->snapshotItemCode(),
             'variant_id' => $this->variant_id,
             'variant' => $this->whenLoaded('variant', fn () => $this->variant ? [
                 'id' => $this->variant->id,
-                'display_name' => $this->variant->displayName(),
+                'display_name' => $this->snapshotVariantName(),
                 'sku' => $this->variant->sku,
                 'barcode' => $this->variant->barcode,
             ] : null),
@@ -75,7 +75,7 @@ class SaleItemResource extends JsonResource
             'quantity' => $this->quantity,
             'unit_measure_id' => $this->unit_measure_id,
             'unit_measure' => $this->whenLoaded('unitMeasure', fn () => $this->unitMeasure),
-            'unit_measure_name' => $this->unitMeasure?->name,
+            'unit_measure_name' => $this->snapshotUnitName(),
             'unit_price' => $this->unit_price,
             'discount' => $this->discount,
             'free' => $this->free,

@@ -440,7 +440,7 @@ class PurchaseOrderController extends Controller
             ],
             'items' => $purchaseOrder->items->map(fn (PurchaseOrderItem $item) => [
                 'item_id' => $item->item_id,
-                'item_name' => $item->item?->name,
+                'item_name' => $item->snapshotItemName(),
                 'quantity' => (float) $item->quantity,
                 'free' => (float) $item->free,
                 'unit_price' => (float) $item->unit_price,

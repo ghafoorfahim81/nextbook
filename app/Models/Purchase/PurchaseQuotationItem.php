@@ -13,10 +13,11 @@ use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\CompanySpecific;
 use App\Traits\HasCompanyFromParent;
+use App\Traits\SnapshotsItem;
 
 class PurchaseQuotationItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, CompanySpecific, HasCompanyFromParent;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, CompanySpecific, HasCompanyFromParent, SnapshotsItem;
 
     protected $keyType = 'string';
     public $incrementing = false;

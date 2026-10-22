@@ -38,7 +38,7 @@ class SaleOrderResource extends JsonResource
             'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) {
                 return [
                     'item_id' => $item->item_id,
-                    'item_name' => $item->item?->name,
+                    'item_name' => $item->snapshotItemName(),
                     'quantity' => $item->quantity,
                     'free' => $item->free,
                     'unit_price' => $item->unit_price,

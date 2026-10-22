@@ -40,7 +40,7 @@ class PurchaseReturnResource extends JsonResource
                 return [
                     'purchase_item_id' => $item->purchase_item_id,
                     'item_id' => $item->item_id,
-                    'item_name' => $item->item?->name,
+                    'item_name' => $item->snapshotItemName(),
                     'batch' => $item->batch,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
