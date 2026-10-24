@@ -465,7 +465,11 @@ const activeCompanyId = computed<string | null>(() => (page.props.activeCompanyI
 // switcher — the plan keeps "company" and "branch" out of a small shop's way.
 const switcherCompanies = computed<{ id: string, name: string }[]>(() => (page.props.switcher as any)?.companies ?? [])
 const switcherBranches = computed<{ id: string, name: string }[]>(() => (page.props.switcher as any)?.branches ?? [])
-const canOpenCompanies = computed(() => switcherCompanies.value.length > 1 || isSuperAdmin.value)
+// The company and branch pages (show, edit, new) are reached from here, not from
+// the Administration menu: offered when there is somewhere to switch to, and to
+// anyone whose role lets them see the company or its branches.
+const canOpenCompanies = computed(() => switcherCompanies.value.length > 1 || isSuperAdmin.value || can('companies.view'))
+const canOpenBranches = computed(() => switcherBranches.value.length > 1 || can('branches.view_any') || can('branches.create'))
 const companyInitials = computed(() => (activeCompanyName.value || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase())
 const activeCompanyName = computed(() => switcherCompanies.value.find((c) => c.id === activeCompanyId.value)?.name ?? '')
 
@@ -680,10 +684,8 @@ const navMain = computed(() => [
             { title: t('sidebar.administration.currency_rate_update'), url: '/currency-rate-updates', permission: 'currencies.view_any' },
             { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view_any' },
             { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view_any' },
-            { title: t('sidebar.administration.branch'), url: '/branches', permission: 'branches.view_any' },
             { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view_any' },
             { title: t('sidebar.administration.warehouse'), url: '/warehouses', permission: 'warehouses.view_any' },
-            { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view_any' },
             { title: t('sidebar.administration.landed_cost_category'), url: '/landed-cost-categories', permission: 'landed_cost_categories.view_any' },
         ],
     },
@@ -1153,15 +1155,15 @@ function logout() {
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuGroup v-if="switcherCompanies.length > 1 || isSuperAdmin || switcherBranches.length > 1">
-                                    <DropdownMenuItem v-if="switcherCompanies.length > 1 || isSuperAdmin" as-child>
+                                <DropdownMenuGroup v-if="canOpenCompanies || canOpenBranches">
+                                    <DropdownMenuItem v-if="canOpenCompanies" as-child>
                                         <Link :href="route('workspace.companies')" class="flex w-full items-center gap-2">
                                             <Building2 class="text-primary hover:text-white" />
                                             <span class="flex-1">{{ t('layout.switch_company') }}</span>
                                             <span class="max-w-[7rem] truncate text-xs text-muted-foreground">{{ activeCompanyName }}</span>
                                         </Link>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem v-if="switcherBranches.length > 1" as-child>
+                                    <DropdownMenuItem v-if="canOpenBranches" as-child>
                                         <Link :href="route('workspace.branches')" class="flex w-full items-center gap-2">
                                             <Store class="text-primary hover:text-white" />
                                             <span class="flex-1">{{ t('layout.switch_branch') }}</span>
@@ -1169,7 +1171,7 @@ function logout() {
                                         </Link>
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
-                                <DropdownMenuSeparator v-if="switcherCompanies.length > 1 || isSuperAdmin || switcherBranches.length > 1" />
+                                <DropdownMenuSeparator v-if="canOpenCompanies || canOpenBranches" />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem as-child>
                                         <Link :href="route('preferences.index')" class="flex w-full items-center">
@@ -1221,10 +1223,10 @@ function logout() {
                     <QuickLinks />
                     <!-- The branch you are working in; opens the branch picker when there is a second one. -->
                     <component
-                        :is="switcherBranches.length > 1 ? Link : 'span'"
-                        v-bind="switcherBranches.length > 1 ? { href: route('workspace.branches') } : {}"
+                        :is="canOpenBranches ? Link : 'span'"
+                        v-bind="canOpenBranches ? { href: route('workspace.branches') } : {}"
                         class="hidden max-w-[200px] items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-sm text-foreground sm:inline-flex"
-                        :class="switcherBranches.length > 1 ? 'transition hover:border-primary/50 hover:bg-primary/5' : ''"
+                        :class="canOpenBranches ? 'transition hover:border-primary/50 hover:bg-primary/5' : ''"
                         :title="activeBranchName || ''"
                     >
                         <Store class="size-4 shrink-0 text-primary" />

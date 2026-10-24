@@ -15,7 +15,9 @@ use Inertia\Response;
  *
  * The companies page is also where a super-admin starts a new company: it
  * replaced the old companies list, whose columns (legal name, industry, …)
- * no longer matched the table. Both pages list only what UserAccessService
+ * no longer matched the table. Each card opens that company's own page (show,
+ * edit), and the branches page does the same for branches — there is no
+ * separate list for either. Both pages list only what UserAccessService
  * gives the user; switching posts to SwitchCompanyController /
  * SwitchBranchController, which check again.
  */
@@ -52,6 +54,9 @@ class WorkspaceController extends Controller
                 'branches' => (int) ($branchCounts[$company->id] ?? 0),
                 'is_active' => (string) $company->id === $activeId,
                 'is_home' => (string) $company->id === (string) $user->company_id,
+                'can_view' => $user->can('view', $company),
+                // Editing reaches the company's books, open only while it is the active one.
+                'can_edit' => (string) $company->id === $activeId && $user->can('update', $company),
                 // A super-admin acts in every branch; anyone else needs one.
                 'can_switch' => $this->access->defaultBranchId($user, (string) $company->id) !== null,
             ])
@@ -82,12 +87,15 @@ class WorkspaceController extends Controller
                 'is_main' => (bool) $branch->is_main,
                 'is_active' => (string) $branch->id === $activeId,
                 'is_home' => (string) $branch->id === (string) $user->branch_id,
+                'can_view' => $user->can('view', $branch),
+                'can_edit' => $user->can('update', $branch),
             ])
             ->values();
 
         return inertia('Workspace/Branches', [
             'branches' => $branches,
             'companyName' => \App\Support\CompanyContext::company()?->localizedName(),
+            'canCreate' => $user->can('create', Branch::class),
         ]);
     }
 }

@@ -97,7 +97,15 @@
         "checking": "Checking...",
         "company_settings_intro": "These start from the usual defaults. Change what you need now, or later on the company page.",
         "settings_defaults": "Defaults",
-        "settings_customised": "Customised"
+        "settings_customised": "Customised",
+        "title_edit": "Edit company",
+        "subtitle_edit": "Change any detail of this company. Nothing is saved until you press Save.",
+        "back_to_company": "Back to company",
+        "save": "Save changes",
+        "saving": "Saving...",
+        "currency_hint_edit": "The base currency your books are kept in.",
+        "settings_locked": "You can view these settings, but changing them needs the company settings permission.",
+        "invoice_intro": "The invoice theme saves as soon as you pick it."
     },
     "settings": {
         "title": "Company settings",
@@ -111,5 +119,17 @@
             "posting": "Posting",
             "formats": "Formats"
         }
+    },
+    "show": {
+        "edit": "Edit company",
+        "edit_active_only": "Switch to this company to edit it.",
+        "branches": "Branches",
+        "no_branches": "No branches yet.",
+        "created_on": "Created on",
+        "licence_none": "No licence recorded"
+    },
+    "steps": {
+        "invoice": "Invoice design",
+        "invoice_hint": "Theme and formats"
     }
 }

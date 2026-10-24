@@ -17,6 +17,7 @@ use App\Models\Administration\Currency;
 use App\Models\Role;
 use App\Models\Sale\InvoiceFormat;
 use App\Services\CompanySetupService;
+use App\Services\CompanySettingsService;
 use App\Support\Inertia\CacheForget;
 use App\Support\Preferences\InvoiceThemeOptions;
 use Illuminate\Http\Request;
@@ -67,57 +68,20 @@ class CompanyController extends Controller
     }
 
     /**
-     * Display the company information page.
+     * The old /company address: the active company's page now lives under the
+     * companies resource (Administration\CompanyController::show).
      */
     public function show()
     {
-        $company = CompanyContext::company()->load('currency');
+        $company = CompanyContext::company();
 
-        if (!$company) {
+        if (! $company) {
             return redirect()->route('company.create')
                 ->with('error', __('general.no_company_found_create_first'));
         }
 
-        return inertia('Administration/Companies/Show', [
-            'company' => $company,
-            // Phase 6: the settings everyone in the company shares.
-            'settings' => Settings::forCompany($company),
-            'canEditSettings' => request()->user()->can('company_settings.update'),
-            'cashAccounts' => \App\Models\Account\Account::select('id', 'name')
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get(),
-            'invoiceThemes' => InvoiceThemeOptions::all(),
-            'invoiceFormats' => InvoiceFormat::query()
-                ->where('company_id', $company->id)
-                ->orderByDesc('is_default')
-                ->orderBy('name')
-                ->get(),
-            'invoiceFormatDefaults' => InvoiceFormat::defaultConfig(),
-            'currencies' => CurrencyResource::collection(Currency::query()->orderBy('name')->get()),
-            'businessTypes' => collect(BusinessType::cases())->map(fn (BusinessType $type) => [
-                'id' => $type->value,
-                'name' => $type->getLabel(),
-            ])->values(),
-            'calendarTypes' => collect(CalendarType::cases())->map(fn (CalendarType $type) => [
-                'id' => $type->value,
-                'name' => $type->getLabel(),
-            ])->values(),
-            'workingStyles' => collect(WorkingStyle::cases())->map(fn (WorkingStyle $style) => [
-                'id' => $style->value,
-                'name' => $style->getLabel(),
-            ])->values(),
-            'locales' => collect(Locale::cases())->map(fn (Locale $locale) => [
-                'id' => $locale->value,
-                'name' => $locale->getLabel(),
-            ])->values(),
-            'costingMethods' => collect(CostingMethod::selectable())->map(fn (CostingMethod $method) => [
-                'id' => $method->value,
-                'name' => $method->getLabel(),
-            ])->values(),
-        ]);
+        return redirect()->route('companies.show', $company);
     }
-
     /**
      * Save the active company's settings (phase 6) — the keys listed as
      * company_keys in config/preferences.php, the same for everyone in it.
@@ -133,82 +97,9 @@ class CompanyController extends Controller
             \App\Http\Requests\Preferences\UpdatePreferencesRequest::companyRules()
         );
 
-        $before = Settings::forCompany($company);
-        Settings::putForCompany($company, $validated);
-        $after = Settings::forCompany($company->fresh());
-
-        if ($after != $before) {
-            app(\App\Services\ActivityLogService::class)->logUpdate(
-                reference: $company,
-                before: $before,
-                after: $after,
-                module: 'setting',
-                description: "Company settings updated for {$company->localizedName('en')}.",
-                metadata: [
-                    'action' => 'company_settings_update',
-                ],
-            );
-        }
-
-        Cache::forget(\App\Support\Inertia\CacheKey::forCompany((string) $company->id, 'business_profile'));
+        app(CompanySettingsService::class)->save($company, $validated);
 
         return redirect()->back()->with('success', __('preferences.preferences_saved'));
-    }
-
-    /**
-     * Update the company information.
-     */
-    public function update(CompanyUpdateRequest $request, Company $company)
-    {
-        // dd($request->all());
-        // Ensure the user can only update their own company
-        if (CompanyContext::companyId() !== $company->id) {
-            abort(403, __('messages.errors.unauthorized_company_update'));
-        }
-
-        $validated = $request->validated();
-
-        // dd($validated);
-        $validated['updated_by'] = Auth::id();
-        $currency = Currency::find($validated['currency_id']);
-        $currency->is_base_currency = true;
-        $currency->exchange_rate = 1.00;
-        $currency->save();
-
-        $newLogoPath = null;
-        if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
-            $newLogoPath = $request->file('logo')->store('company-logos', 'public');
-        }
-
-        if ($newLogoPath) {
-            // Schedule old logo deletion after commit
-            $oldLogoPath = $company->logo;
-
-            $validated['logo'] = $newLogoPath;
-
-            $company->update($validated);
-
-
-            // Delete old file after successful commit
-            if ($oldLogoPath && Storage::disk('public')->exists($oldLogoPath)) {
-                Storage::disk('public')->delete($oldLogoPath);
-            }
-        } else {
-            // No new file; just update other fields
-            $company->update($validated);
-        }
-
-        Cache::forget('user_'.Auth::id());
-
-        // The trade shapes which item fields, sections and tracking defaults
-        // every user in the company sees, and that is cached per user. Drop it
-        // for the whole company so the new profile takes effect on next load.
-        if ($company->wasChanged(['business_type', 'currency_id', 'calendar_type'])) {
-            \App\Jobs\RefreshCompanyProfileCache::dispatch($company->id);
-        }
-
-        return redirect()->back()
-            ->with('success', __('general.updated_successfully', ['resource' => __('general.resource.company')]));
     }
 
     public function destroy(Company $company)

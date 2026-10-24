@@ -132,6 +132,7 @@ return [
     'errors' => [
         'unauthorized' => 'تاسو د دې کار اجازه نه لرئ.',
         'unauthorized_company_update' => 'تاسو د دې شرکت د سمولو اجازه نه لرئ.',
+        'company_edit_active_only' => 'د سمون څخه مخکې دې شرکت ته ورشئ.',
         'validation_failed' => 'اعتبار سنجي ناکامه شوه.',
         'search_failed' => 'لټون ناکام شو.',
         'quick_create_failed' => 'چټک جوړول ناکام شو.',

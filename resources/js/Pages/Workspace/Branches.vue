@@ -1,17 +1,20 @@
 <script setup>
 /**
  * Switch branch (phase 5): the branches of the active company this user may
- * act in. Reached from the user menu.
+ * act in. Each card opens the branch's own page and its edit page, and a new
+ * branch starts here — there is no separate branch list. Reached from the user
+ * menu.
  */
 import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
-import { ArrowRight, Check, Home, Loader2, MapPin, Star, Store } from 'lucide-vue-next'
+import { ArrowRight, Check, Eye, Home, Loader2, MapPin, Pencil, Plus, Star, Store } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 
 defineProps({
     branches: { type: Array, required: true },
     companyName: { type: String, default: '' },
+    canCreate: { type: Boolean, default: false },
 })
 
 const { t } = useI18n()
@@ -30,9 +33,19 @@ function switchTo(branch) {
 <template>
     <AppLayout :title="t('workspace.branches_title')">
         <div class="w-full px-4 py-6 sm:px-6">
-            <div class="mb-6">
-                <h1 class="text-2xl font-semibold tracking-tight text-foreground">{{ t('workspace.branches_title') }}</h1>
-                <p class="mt-1 text-sm text-muted-foreground">{{ t('workspace.branches_subtitle', { company: companyName }) }}</p>
+            <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-semibold tracking-tight text-foreground">{{ t('workspace.branches_title') }}</h1>
+                    <p class="mt-1 text-sm text-muted-foreground">{{ t('workspace.branches_subtitle', { company: companyName }) }}</p>
+                </div>
+                <Link
+                    v-if="canCreate"
+                    :href="route('branches.create')"
+                    class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
+                >
+                    <Plus class="size-4" />
+                    {{ t('workspace.new_branch') }}
+                </Link>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -68,7 +81,23 @@ function switchTo(branch) {
                         </span>
                     </div>
 
-                    <div class="mt-5 flex items-center justify-end border-t border-border pt-4">
+                    <div class="mt-5 flex items-center justify-between gap-2 border-t border-border pt-4">
+                        <div class="flex items-center gap-3">
+                            <Link
+                                v-if="branch.can_view"
+                                :href="route('branches.show', branch.id)"
+                                class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                            >
+                                <Eye class="size-4" /> {{ t('workspace.open') }}
+                            </Link>
+                            <Link
+                                v-if="branch.can_edit"
+                                :href="route('branches.edit', branch.id)"
+                                class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                            >
+                                <Pencil class="size-4" /> {{ t('workspace.edit') }}
+                            </Link>
+                        </div>
                         <span v-if="branch.is_active" class="text-sm text-muted-foreground">{{ t('workspace.working_here') }}</span>
                         <button
                             v-else
@@ -82,6 +111,19 @@ function switchTo(branch) {
                         </button>
                     </div>
                 </div>
+
+                <!-- Starting a new branch lives here, beside the ones you have. -->
+                <Link
+                    v-if="canCreate"
+                    :href="route('branches.create')"
+                    class="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border p-5 text-center text-muted-foreground transition hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                >
+                    <span class="flex size-12 items-center justify-center rounded-full bg-muted">
+                        <Store class="size-6" />
+                    </span>
+                    <span class="text-sm font-medium">{{ t('workspace.new_branch') }}</span>
+                    <span class="text-xs">{{ t('workspace.new_branch_hint') }}</span>
+                </Link>
             </div>
         </div>
     </AppLayout>

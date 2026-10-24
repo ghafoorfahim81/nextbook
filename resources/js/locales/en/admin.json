@@ -109,7 +109,19 @@
         "branch": "Branch",
         "branches": "Branches",
         "city": "City",
-        "location": "Location"
+        "location": "Location",
+        "new": "New branch",
+        "edit": "Edit branch",
+        "back": "Back to branches",
+        "back_to_branch": "Back to branch",
+        "details": "Details",
+        "sub_branches": "Sub-branches",
+        "no_sub_branches": "No sub-branches.",
+        "company": "Company",
+        "created_on": "Created on",
+        "subtitle_new": "A new place to trade. It shares this company's books, catalog and customers; its warehouse, cash and defaults are set up for it.",
+        "subtitle_edit": "Change this branch's details.",
+        "parent_hint": "Leave empty for a top-level branch."
     },
     "customer_group": {
         "customer_group": "Customer Group",

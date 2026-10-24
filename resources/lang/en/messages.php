@@ -144,6 +144,7 @@ return [
     'errors' => [
         'unauthorized' => 'This action is unauthorized.',
         'unauthorized_company_update' => 'Unauthorized to update this company.',
+        'company_edit_active_only' => 'Switch to this company before editing it.',
         'validation_failed' => 'Validation failed.',
         'search_failed' => 'Search failed.',
         'quick_create_failed' => 'Quick create failed.',

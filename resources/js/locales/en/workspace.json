@@ -27,5 +27,9 @@
         "button": "Access",
         "roles": "Roles in this company",
         "roles_locked": "Only a super-admin of this company can change roles here."
-    }
+    },
+    "open": "Open",
+    "edit": "Edit",
+    "new_branch": "New branch",
+    "new_branch_hint": "Another place to trade, sharing this company's books"
 }

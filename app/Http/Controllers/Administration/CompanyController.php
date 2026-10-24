@@ -6,10 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Http\Requests\Administration\CompanyUpdateRequest;
 use App\Http\Resources\Administration\CompanyResource;
+use App\Http\Resources\Administration\CurrencyResource;
+use App\Jobs\RefreshCompanyProfileCache;
+use App\Models\Account\Account;
+use App\Models\Administration\Branch;
 use App\Models\Administration\Company;
+use App\Models\Administration\Currency;
+use App\Models\Sale\InvoiceFormat;
 use App\Services\CompanySetupService;
+use App\Services\CompanySettingsService;
+use App\Services\DateConversionService;
+use App\Support\Preferences\InvoiceThemeOptions;
+use App\Support\Settings;
 use App\Services\UserAccessService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * The companies screen: only ever the companies the signed-in user belongs to.
@@ -83,18 +95,126 @@ class CompanyController extends Controller
             ->with('success', __('general.created_successfully', ['resource' => __('general.resource.company')]));
     }
 
+    /**
+     * One company, read-only: who it is, how its books are kept, how to reach
+     * it, its licence and its branches. Editing is the edit page.
+     */
     public function show(Request $request, Company $company)
     {
-        return response()->json($company);
+        $user = $request->user();
+        $isActive = $this->isActive($company);
+        $dates = app(DateConversionService::class);
+
+        $branches = Branch::query()
+            ->withoutGlobalScope('companySpecific')
+            ->where('company_id', $company->id)
+            ->orderByDesc('is_main')
+            ->orderBy('name')
+            ->get(['id', 'name', 'location', 'is_main'])
+            ->map(fn (Branch $branch) => [
+                'id' => (string) $branch->id,
+                'name' => (string) $branch->name,
+                'location' => $branch->location,
+                'is_main' => (bool) $branch->is_main,
+            ]);
+
+        return inertia('Company/Show', [
+            'company' => [
+                ...$this->companyFields($company),
+                'currency' => $isActive ? $company->currency?->display_name : null,
+                'license_issued_at' => $dates->toDisplay($company->license_issued_at?->toDateString()),
+                'license_expires_at' => $dates->toDisplay($company->license_expires_at?->toDateString()),
+                'created_at' => $dates->toDisplay($company->created_at?->toDateString()),
+            ],
+            'isActive' => $isActive,
+            'isHome' => (string) $company->id === (string) $user->company_id,
+            // Editing reaches the company's books (currency, settings), which
+            // are only open while it is the one being worked in.
+            'canEdit' => $isActive && $user->can('update', $company),
+            'branches' => $branches,
+            'canViewBranches' => $isActive && $user->can('branches.view_any'),
+        ]);
     }
 
-    public function update(CompanyUpdateRequest $request, Company $company)
+    public function edit(Request $request, Company $company)
     {
-        $company->update($request->validated());
+        abort_unless($this->isActive($company), 403, __('messages.errors.company_edit_active_only'));
 
-        return response()->json($company);
+        $user = $request->user();
+        $dates = app(DateConversionService::class);
+
+        return inertia('Company/Edit', [
+            'company' => [
+                ...$this->companyFields($company),
+                'currency_id' => $company->currency_id,
+                'license_issued_at' => $dates->toDisplay($company->license_issued_at?->toDateString()),
+                'license_expires_at' => $dates->toDisplay($company->license_expires_at?->toDateString()),
+            ],
+            // This company's own currencies, not the catalog: the base one is
+            // picked from what the company already has.
+            'companyCurrencies' => CurrencyResource::collection(Currency::query()->orderBy('name')->get())->resolve(),
+            'settings' => Settings::forCompany($company),
+            'canEditSettings' => $user->can('company_settings.update'),
+            'cashAccounts' => Account::select('id', 'name')->where('is_active', true)->orderBy('name')->get(),
+            'invoiceThemes' => InvoiceThemeOptions::all(),
+            'invoiceFormats' => InvoiceFormat::query()
+                ->where('company_id', $company->id)
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get(),
+            'invoiceFormatDefaults' => InvoiceFormat::defaultConfig(),
+            'currentInvoiceTheme' => $company->invoice_theme ?: 'format1',
+        ]);
     }
 
+    /**
+     * Save the edit page: the company's own fields and, for someone allowed to
+     * change them, the settings it shares (one request, so a half-saved edit
+     * cannot happen).
+     */
+    public function update(CompanyUpdateRequest $request, Company $company, CompanySettingsService $settings)
+    {
+        abort_unless($this->isActive($company), 403, __('messages.errors.unauthorized_company_update'));
+
+        $attributes = $request->companyAttributes();
+        $attributes['updated_by'] = $request->user()->id;
+
+        // The chosen currency is the company's base currency.
+        $currency = Currency::findOrFail($attributes['currency_id']);
+        $currency->forceFill(['is_base_currency' => true, 'exchange_rate' => 1.00])->save();
+
+        $oldLogo = $company->logo;
+        if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
+            $attributes['logo'] = $request->file('logo')->store('company-logos', 'public');
+        }
+
+        $company->update($attributes);
+
+        if (isset($attributes['logo']) && $oldLogo && $oldLogo !== $company->logo
+            && Storage::disk('public')->exists($oldLogo)) {
+            Storage::disk('public')->delete($oldLogo);
+        }
+
+        if ($request->has('settings') && $request->user()->can('company_settings.update')) {
+            $settings->save($company, (array) $request->validated('settings', []));
+        }
+
+        Cache::forget('user_'.$request->user()->id);
+
+        // The trade shapes which item fields, sections and tracking defaults
+        // every user in the company sees, and that is cached per company.
+        if ($company->wasChanged(['business_type', 'currency_id', 'calendar_type'])) {
+            RefreshCompanyProfileCache::dispatch($company->id);
+        }
+
+        $message = __('general.updated_successfully', ['resource' => __('general.resource.company')]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['redirect' => route('companies.show', $company), 'message' => $message]);
+        }
+
+        return redirect()->route('companies.show', $company)->with('success', $message);
+    }
     public function destroy(Request $request, Company $company)
     {
         $company->delete();
@@ -108,6 +228,43 @@ class CompanyController extends Controller
         return redirect()->route('companies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.company')]));
     }
 
+    /** Whether this is the company the request is working in. */
+    private function isActive(Company $company): bool
+    {
+        return app()->bound('active_company_id')
+            && (string) app('active_company_id') === (string) $company->id;
+    }
+
+    /**
+     * The fields the show and edit pages share, with enums as their values.
+     *
+     * @return array<string, mixed>
+     */
+    private function companyFields(Company $company): array
+    {
+        return [
+            'id' => (string) $company->id,
+            'name' => $company->localizedName(),
+            'name_en' => $company->name_en,
+            'name_fa' => $company->name_fa,
+            'name_pa' => $company->name_pa,
+            'abbreviation' => $company->abbreviation,
+            'logo_url' => $company->logo_url,
+            'business_type' => $company->business_type?->value,
+            'locale' => $company->locale?->value,
+            'calendar_type' => $company->calendar_type?->value,
+            'working_style' => $company->working_style?->value,
+            'costing_method' => $company->costing_method?->value,
+            'phone' => $company->phone,
+            'email' => $company->email,
+            'website' => $company->website,
+            'country' => $company->country,
+            'city' => $company->city,
+            'address' => $company->address,
+            'license_number' => $company->license_number,
+            'invoice_description' => $company->invoice_description,
+        ];
+    }
     /**
      * 404, not 403: another customer's company should not be confirmed to
      * exist by the answer.

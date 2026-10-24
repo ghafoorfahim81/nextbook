@@ -132,6 +132,7 @@ return [
     'errors' => [
         'unauthorized' => 'شما اجازه انجام این عملیات را ندارید.',
         'unauthorized_company_update' => 'شما اجازه ویرایش این شرکت را ندارید.',
+        'company_edit_active_only' => 'پیش از ویرایش، به این شرکت تغییر دهید.',
         'validation_failed' => 'اعتبارسنجی ناموفق بود.',
         'search_failed' => 'جستجو ناموفق بود.',
         'quick_create_failed' => 'ایجاد سریع ناموفق بود.',

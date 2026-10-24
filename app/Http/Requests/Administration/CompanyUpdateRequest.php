@@ -43,7 +43,55 @@ class CompanyUpdateRequest extends FormRequest
             'email' => ['nullable', 'email'],
             'website' => ['nullable', 'string'],
             'invoice_description' => ['nullable', 'string'],
+            // The licence belongs to the company, and its branches share it.
+            'license_number' => ['nullable', 'string', 'max:100'],
+            'license_issued_at' => ['nullable', 'date'],
+            'license_expires_at' => ['nullable', 'date', 'after_or_equal:license_issued_at'],
+
+            // The edit page's settings step: the company's own settings, posted
+            // as one JSON field because the rest of the form is FormData.
+            'settings' => ['sometimes', 'array'],
+            ...\App\Http\Requests\Preferences\UpdatePreferencesRequest::companyRules('settings.'),
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('settings'))) {
+            $this->merge(['settings' => json_decode($this->input('settings'), true) ?: []]);
+        }
+    }
+
+    /**
+     * Readable field names for the messages, in the user's language.
+     */
+    public function attributes(): array
+    {
+        $names = __('general.company_fields');
+
+        return is_array($names) ? $names : [];
+    }
+
+    /**
+     * The company row's attributes: the validated fields without the settings,
+     * with licence dates stored as Gregorian (the date picker follows the
+     * company's calendar).
+     *
+     * @return array<string, mixed>
+     */
+    public function companyAttributes(): array
+    {
+        $attributes = collect($this->validated())->except(['logo', 'settings'])->all();
+
+        foreach (['license_issued_at', 'license_expires_at'] as $field) {
+            if (array_key_exists($field, $attributes)) {
+                $attributes[$field] = filled($attributes[$field])
+                    ? app(\App\Services\DateConversionService::class)->toGregorian((string) $attributes[$field])
+                    : null;
+            }
+        }
+
+        return $attributes;
     }
 
     /**

@@ -127,14 +127,14 @@ Route::middleware([
     Route::post('/companies', [\App\Http\Controllers\Administration\CompanyController::class, 'store'])
         ->middleware(\Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class)
         ->name('companies.store');
-    Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class)->except(['edit', 'store']);
+    Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class)->except(['store']);
     Route::patch('/companies/{company}/restore', [\App\Http\Controllers\Administration\CompanyController::class, 'restore'])->name('companies.restore')->withTrashed();
     Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class)->except(['create', 'edit']);
     Route::patch('/brands/{brand}/restore', [\App\Http\Controllers\Administration\BrandController::class, 'restore'])->name('brands.restore')->withTrashed();
     Route::delete('/brands/{brand}/force-delete', [\App\Http\Controllers\Administration\BrandController::class, 'forceDelete'])
         ->name('brands.force-delete')
         ->withTrashed();
-    Route::resource('/branches', \App\Http\Controllers\Administration\BranchController::class)->except(['create', 'edit']);
+    Route::resource('/branches', \App\Http\Controllers\Administration\BranchController::class);
     Route::patch('/branches/{branch}/restore', [\App\Http\Controllers\Administration\BranchController::class, 'restore'])->name('branches.restore')->withTrashed();
     Route::delete('/branches/{branch}/force-delete', [\App\Http\Controllers\Administration\BranchController::class, 'forceDelete'])
         ->name('branches.force-delete')
@@ -316,14 +316,13 @@ Route::middleware([
         ->withTrashed();
 
 
-    // Company routes
+    // Company routes. /company is the old address of the active company's page
+    // (now companies.show); settings still save through their own route.
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
         ->name('company.show');
-    // Before /company/{company}, which would otherwise take "settings" for an id.
+    // Before /company/{company}/restore's siblings: "settings" must not read as an id.
     Route::put('/company/settings', [\App\Http\Controllers\CompanyController::class, 'updateSettings'])
         ->name('company.settings.update');
-    Route::put('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
-        ->name('company.update');
     Route::patch('/company/{company}/restore', [\App\Http\Controllers\CompanyController::class, 'restore'])->name('company.restore')->withTrashed();
 
     // Search routes

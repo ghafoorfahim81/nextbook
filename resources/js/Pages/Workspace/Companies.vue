@@ -1,12 +1,14 @@
 <script setup>
 /**
  * Switch company (phase 5): every company the user may act in, and — for a
- * super-admin — where a new one is started. Reached from the user menu.
+ * super-admin — where a new one is started. Each card opens the company's own
+ * page and, while it is the one being worked in, its edit page. Reached from
+ * the user menu.
  */
 import { reactive, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
-import { ArrowRight, Building2, Check, Home, Loader2, Plus, Settings, Store } from 'lucide-vue-next'
+import { ArrowRight, Building2, Check, Eye, Home, Loader2, Pencil, Plus, Store } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 
 const props = defineProps({
@@ -98,14 +100,24 @@ function switchTo(company) {
                         </span>
                     </div>
 
-                    <div class="mt-5 flex items-center justify-end border-t border-border pt-4">
-                        <Link
-                            v-if="company.is_active"
-                            :href="route('company.show')"
-                            class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-                        >
-                            <Settings class="size-4" /> {{ t('workspace.settings') }}
-                        </Link>
+                    <div class="mt-5 flex items-center justify-between gap-2 border-t border-border pt-4">
+                        <div class="flex items-center gap-3">
+                            <Link
+                                v-if="company.can_view"
+                                :href="route('companies.show', company.id)"
+                                class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                            >
+                                <Eye class="size-4" /> {{ t('workspace.open') }}
+                            </Link>
+                            <Link
+                                v-if="company.can_edit"
+                                :href="route('companies.edit', company.id)"
+                                class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                            >
+                                <Pencil class="size-4" /> {{ t('workspace.edit') }}
+                            </Link>
+                        </div>
+                        <span v-if="company.is_active" />
                         <span v-else-if="!company.can_switch" class="text-xs text-muted-foreground">
                             {{ t('workspace.no_branch') }}
                         </span>
