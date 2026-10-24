@@ -24,6 +24,8 @@
         "no_branches": "This company has no branches yet.",
         "save": "Save access",
         "back": "Back to user",
-        "button": "Access"
+        "button": "Access",
+        "roles": "Roles in this company",
+        "roles_locked": "Only a super-admin of this company can change roles here."
     }
 }

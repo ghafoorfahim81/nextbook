@@ -120,7 +120,7 @@ class UserAccessService
             ->withoutGlobalScope('companySpecific')
             ->where('company_id', $companyId);
 
-        if (! $user->isSuperAdmin()) {
+        if (! $this->isSuperAdminIn($user, (string) $companyId)) {
             $granted = UserBranchAccess::query()
                 ->where('user_id', $user->id)
                 ->where('company_id', $companyId)
@@ -142,6 +142,25 @@ class UserAccessService
             ->all();
     }
 
+    /**
+     * Whether the user holds super-admin in that company — not in the one the
+     * request happens to act in, which is all $user->isSuperAdmin() can say
+     * since roles became per company (phase 6). Read straight from the pivot so
+     * it does not depend on, or disturb, the Spatie team currently set.
+     */
+    public function isSuperAdminIn(User $user, ?string $companyId): bool
+    {
+        if (! $companyId) {
+            return false;
+        }
+
+        return DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.team_id', $companyId)
+            ->where('roles.slug', 'super-admin')
+            ->exists();
+    }
     public function canAccessBranch(User $user, ?string $companyId, ?string $branchId): bool
     {
         return $branchId !== null
@@ -254,6 +273,72 @@ class UserAccessService
                 $this->grantBranch($user, $branch, $actor->id);
             }
         });
+    }
+
+    /**
+     * Set a user's roles per company — the access screen's role pickers.
+     *
+     * Only in companies where the actor is super-admin themselves: having
+     * access to a company is not the right to hand out roles in it, least of
+     * all super-admin. A company the user no longer belongs to (after
+     * syncAccess) loses their roles there too.
+     *
+     * @param  array<string, array<int, string>>  $roleIdsByCompany
+     */
+    public function syncCompanyRoles(User $user, array $roleIdsByCompany, User $actor): void
+    {
+        $userCompanies = $this->accessibleCompanyIds($user);
+
+        foreach ($this->accessibleCompanyIds($actor) as $companyId) {
+            if (! $this->isSuperAdminIn($actor, $companyId)) {
+                continue;
+            }
+
+            // Untouched unless the screen sent this company's roles, or the user
+            // no longer belongs to it — a request that says nothing about roles
+            // must not strip them.
+            $keeps = in_array($companyId, $userCompanies, true);
+            if ($keeps && ! array_key_exists($companyId, $roleIdsByCompany)) {
+                continue;
+            }
+
+            // Models, not ids: Spatie reads a non-numeric string as a role name,
+            // and these ids are ULIDs. Only the shared role set (team_id null).
+            $roles = in_array($companyId, $userCompanies, true)
+                ? \App\Models\Role::query()->whereNull('team_id')
+                    ->whereKey(array_map('strval', $roleIdsByCompany[$companyId] ?? []))->get()
+                : collect();
+
+            setPermissionsTeamId($companyId);
+
+            try {
+                $user->unsetRelation('roles')->syncRoles($roles);
+            } finally {
+                setPermissionsTeamId(null);
+                $user->unsetRelation('roles')->unsetRelation('permissions');
+            }
+        }
+    }
+
+    /**
+     * The role ids a user holds in each of these companies.
+     *
+     * @param  array<int, string>  $companyIds
+     * @return array<string, array<int, string>>
+     */
+    public function rolesByCompany(User $user, array $companyIds): array
+    {
+        $rows = DB::table('model_has_roles')
+            ->where('model_id', $user->id)
+            ->whereIn('team_id', $companyIds)
+            ->get(['team_id', 'role_id']);
+
+        $byCompany = array_fill_keys($companyIds, []);
+        foreach ($rows as $row) {
+            $byCompany[(string) $row->team_id][] = (string) $row->role_id;
+        }
+
+        return $byCompany;
     }
 
     /**

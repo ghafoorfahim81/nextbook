@@ -342,8 +342,12 @@ class RolePermissionSeeder extends Seeder
         */
         $superAdminUser = User::where('email', 'admin@nextbook.af')->first();
 
-        if ($superAdminUser) {
+        // Roles are held per company since phase 6, so the assignment names the
+        // admin's company; a console run has no company of its own to infer.
+        if ($superAdminUser && $superAdminUser->company_id) {
+            setPermissionsTeamId($superAdminUser->company_id);
             $superAdminUser->syncRoles(['super-admin']);
+            setPermissionsTeamId(null);
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

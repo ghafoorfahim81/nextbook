@@ -34,7 +34,7 @@ function boundaryCompany(string $name): array
         'branch_id' => $branch->id,
     ]));
 
-    $admin->assignRole(Role::query()->firstOrCreate(
+    assignRoleInHomeCompany($admin, Role::query()->firstOrCreate(
         ['name' => 'super-admin', 'guard_name' => 'web'],
         ['slug' => 'super-admin']
     ));

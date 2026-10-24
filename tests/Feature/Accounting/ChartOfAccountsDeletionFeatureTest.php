@@ -42,7 +42,6 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
             $role->save();
         }
 
-        $user->assignRole($role);
         $this->actingAs($user);
 
         // Company first: a branch needs its owning company, and the currency
@@ -83,6 +82,8 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
         ]);
 
         $user->refresh();
+        // Roles are held per company (phase 6), so only now that the user has one.
+        assignRoleInHomeCompany($user, $role);
         $this->actingAs($user);
         app()->instance('active_branch_id', $branch->id);
 

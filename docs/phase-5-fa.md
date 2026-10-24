@@ -59,3 +59,42 @@ super-admin پیش از هر policy «بله» می‌گوید. **هر صفحه�
 | تست گاه‌به‌گاه | `StockEdgeCaseScenarioTest › a transfer and its reversal` دو بار در اجرای کامل با UniqueConstraint شکست؛ خروجی کامل حالا در هر اجرا ذخیره می‌شود |
 | جدول کمپنی‌محور تازه | migration بعد از RLS به‌خودی‌خود policy نمی‌گیرد؛ تست پوشش می‌گیرد (`row-level-security.md`) |
 | استقرار | مراحل cPanel حالا در `row-level-security.md` («On shared hosting (cPanel)») است؛ خود استقرار هنوز انجام نشده |
+
+---
+
+## ۵. فاز ۶ — نقش به‌ازای هر کمپنی (۱۴۰۵/۰۸/۰۲)
+
+### تصمیم‌های کاربر (دوباره نپرس)
+
+| سؤال | تصمیم |
+|---|---|
+| تعریف نقش‌ها | **یک مجموعهٔ مشترک** (super-admin، admin، accountant، clerk…)؛ فقط این‌که چه کسی چه نقشی دارد به‌ازای کمپنی فرق می‌کند |
+| دامنهٔ super-admin | **به‌ازای کمپنی** — فقط در کمپنی‌ای که به او داده شده |
+| نقش‌های موجود | **در همهٔ کمپنی‌های کاربر کپی شد** (خانه + هر grant) تا روز اول چیزی عوض نشود |
+| جای تعیین نقش | **صفحهٔ دسترسی** — کنار هر کمپنی |
+
+### چگونه ساخته شد
+
+- Spatie «teams» روشن شد و **تیم = کمپنی**. `App\Support\CompanyTeamResolver`
+  تیم را از `CompanyContext` می‌خواند، پس `can()`، `hasRole()` و `Gate::before`
+  همیشه برای کمپنی فعال جواب می‌دهند. هر جا باید برای کمپنی دیگری عمل شود:
+  `setPermissionsTeamId($companyId)` … و بعد `setPermissionsTeamId(null)`.
+- migration `2026_10_24_000001`: `team_id` (ULID، FK به companies) روی
+  `model_has_roles`/`model_has_permissions` و جزء کلید اصلی؛ `roles.team_id`
+  برای نقش‌های مشترک null. migration اصلی جدول‌های permission حالا همیشه شکل
+  بی‌تیم را می‌سازد (`$teams = false`).
+- اسمش `team_id` است نه `company_id`: ستون `company_id` تازه بعد از migration
+  RLS بدون policy می‌ماند.
+- `UserAccessService::isSuperAdminIn($user, $companyId)` — برای پرسیدن دربارهٔ
+  کمپنی غیرفعال؛ `$user->isSuperAdmin()` فقط کمپنی فعال را می‌گوید.
+- سازندهٔ کمپنی (ثبت‌نام یا super-admin) در `CompanySetupService` super-admin
+  همان کمپنی می‌شود و فقط همان.
+- صفحهٔ دسترسی: انتخاب نقش برای هر کمپنی، **فقط** در کمپنی‌هایی که مدیر
+  خودش super-admin آن‌هاست؛ درخواستی که دربارهٔ نقش‌ها چیزی نگوید آن‌ها را
+  دست نمی‌زند.
+- cache نقش و permission در `CoreShared` به‌ازای کمپنی کلید می‌خورد.
+
+### برای تست‌ها
+
+نقش دادن بدون کمپنی (`team_id` null) رد می‌شود. از `assignRoleInHomeCompany()`
+و `assignRoleInCompany()` در `tests/Pest.php` استفاده کنید.

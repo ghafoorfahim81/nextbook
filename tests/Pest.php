@@ -45,3 +45,29 @@ function something()
 {
     // ..
 }
+
+/**
+ * Give a user a role in their home company (phase 6: roles are held per
+ * company, so an assignment has to name one). Puts the team back afterwards,
+ * so the rest of the test answers for the company it acts in.
+ */
+function assignRoleInHomeCompany(\App\Models\User $user, mixed $role): void
+{
+    assignRoleInCompany($user, $role, (string) $user->company_id);
+}
+
+/**
+ * Give a user a role in one company: since phase 6 super-admin in the home
+ * company says nothing about a company granted beside it.
+ */
+function assignRoleInCompany(\App\Models\User $user, mixed $role, string $companyId): void
+{
+    setPermissionsTeamId($companyId);
+
+    try {
+        $user->unsetRelation('roles')->assignRole($role);
+    } finally {
+        setPermissionsTeamId(null);
+        $user->unsetRelation('roles')->unsetRelation('permissions');
+    }
+}

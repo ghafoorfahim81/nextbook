@@ -40,7 +40,7 @@ function screenUser(Company $company, Branch $branch, bool $superAdmin = false):
     ]));
 
     if ($superAdmin) {
-        $user->assignRole(Role::query()->firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web'], ['slug' => 'super-admin']));
+        assignRoleInHomeCompany($user, Role::query()->firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web'], ['slug' => 'super-admin']));
     }
 
     return $user->refresh();
@@ -128,4 +128,77 @@ it('is for super-admins only, and only for users of the company', function () {
     $this->put(route('users.access.update', $outsider), ['companies' => [$electronics->id]])->assertNotFound();
 
     expect(UserCompanyAccess::query()->where('user_id', $outsider->id)->exists())->toBeFalse();
+});
+
+function screenRole(string $slug): Role
+{
+    return Role::query()->firstOrCreate(['name' => $slug, 'guard_name' => 'web'], ['slug' => $slug]);
+}
+
+/**
+ * Phase 6: the same screen sets which roles the user holds in each company —
+ * and only where the admin is super-admin themselves.
+ */
+it('sets a different role per company', function () {
+    [$electronics, $kabul] = screenCompany('Ahmad Electronics');
+    [$construction, $constructionMain] = screenCompany('Ahmad Construction');
+
+    $admin = screenUser($electronics, $kabul, superAdmin: true);
+    app(UserAccessService::class)->grantCompany($admin, $construction->id);
+    assignRoleInCompany($admin, 'super-admin', $construction->id);
+    $clerk = screenUser($electronics, $kabul);
+
+    $accountant = screenRole('accountant');
+    $manager = screenRole('admin');
+
+    $this->actingAs($admin)->put(route('users.access.update', $clerk), [
+        'companies' => [$construction->id],
+        'branches' => [$constructionMain->id],
+        'roles' => [
+            $electronics->id => [$accountant->id],
+            $construction->id => [$manager->id],
+        ],
+    ])->assertSessionHasNoErrors();
+
+    $roles = app(UserAccessService::class)->rolesByCompany($clerk, [$electronics->id, $construction->id]);
+
+    expect($roles[$electronics->id])->toBe([$accountant->id])
+        ->and($roles[$construction->id])->toBe([$manager->id]);
+});
+
+it('leaves roles alone in a company where the admin is not super-admin', function () {
+    [$electronics, $kabul] = screenCompany('Ahmad Electronics');
+    [$construction] = screenCompany('Ahmad Construction');
+
+    // Super-admin at home only; merely granted Construction.
+    $admin = screenUser($electronics, $kabul, superAdmin: true);
+    app(UserAccessService::class)->grantCompany($admin, $construction->id);
+
+    $clerk = screenUser($electronics, $kabul);
+    app(UserAccessService::class)->grantCompany($clerk, $construction->id);
+    $accountant = screenRole('accountant');
+    assignRoleInCompany($clerk, $accountant, $construction->id);
+
+    $this->actingAs($admin)->put(route('users.access.update', $clerk), [
+        'companies' => [$construction->id],
+        'branches' => [],
+        'roles' => [$construction->id => [screenRole('super-admin')->id]],
+    ])->assertSessionHasNoErrors();
+
+    expect(app(UserAccessService::class)->rolesByCompany($clerk, [$construction->id])[$construction->id])
+        ->toBe([$accountant->id]);
+});
+
+it('keeps the roles when a save says nothing about them', function () {
+    [$electronics, $kabul] = screenCompany('Ahmad Electronics');
+    $admin = screenUser($electronics, $kabul, superAdmin: true);
+    $clerk = screenUser($electronics, $kabul);
+    $accountant = screenRole('accountant');
+    assignRoleInHomeCompany($clerk, $accountant);
+
+    $this->actingAs($admin)->put(route('users.access.update', $clerk), ['companies' => [], 'branches' => []])
+        ->assertSessionHasNoErrors();
+
+    expect(app(UserAccessService::class)->rolesByCompany($clerk, [$electronics->id])[$electronics->id])
+        ->toBe([$accountant->id]);
 });

@@ -43,7 +43,7 @@ function superAdminIn(Company $company, Branch $branch): User
         ['slug' => 'super-admin']
     );
 
-    $user->assignRole($role);
+    assignRoleInHomeCompany($user, $role);
 
     return $user->refresh();
 }

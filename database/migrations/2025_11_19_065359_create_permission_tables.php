@@ -11,7 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $teams = config('permission.teams');
+        // Always the team-less shape: teams were turned on later (phase 6), and
+        // 2026_10_24_000001_scope_roles_to_companies adds them — with ULID
+        // company ids, where this file would have made a bigint team_id.
+        $teams = false;
         $tableNames = config('permission.table_names');
         $columnNames = config('permission.column_names');
         $pivotRole = $columnNames['role_pivot_key'] ?? 'role_id';

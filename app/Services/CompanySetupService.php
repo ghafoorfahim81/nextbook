@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
+use App\Models\Role;
 use App\Models\User;
 use App\Support\CompanyContext;
 use App\Support\CompanyDatabaseContext;
@@ -106,10 +107,37 @@ class CompanySetupService
                 $this->access->grantCompany($creator, $company->id, $creator->id);
             }
 
+            $this->makeSuperAdmin($creator, $company);
+
             CompanyContext::flush($company->id);
 
             return ['company' => $company, 'summary' => $this->summarise($counts)];
         });
+    }
+
+    /**
+     * The creator runs the company they made: super-admin in it, and only in
+     * it (phase 6 — roles are held per company). On sign-up that is the
+     * founder's first and only role; a super-admin adding a company gains the
+     * same standing in the new one.
+     */
+    private function makeSuperAdmin(User $creator, Company $company): void
+    {
+        $role = Role::query()->where('slug', 'super-admin')->first();
+
+        if (! $role) {
+            return;
+        }
+
+        setPermissionsTeamId($company->id);
+
+        try {
+            $creator->unsetRelation('roles')->assignRole($role);
+        } finally {
+            // Back to the company the request acts in.
+            setPermissionsTeamId(null);
+            $creator->unsetRelation('roles')->unsetRelation('permissions');
+        }
     }
 
     /**

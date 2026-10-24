@@ -108,7 +108,7 @@ it('lets a super-admin add a company, granted to them, home unchanged', function
         'company_id' => $home->id,
         'branch_id' => $branch->id,
     ]));
-    $admin->assignRole(superAdminRole());
+    assignRoleInHomeCompany($admin, superAdminRole());
 
     $this->actingAs($admin)
         ->post(route('companies.store'), setupPayload(['name_en' => 'Karimi Construction', 'business_type' => 'supermarket']))
@@ -219,4 +219,18 @@ it('stores the licence, its dates in the Gregorian calendar', function () {
     expect($company->license_number)->toBe('AISA-12345')
         ->and(\Illuminate\Support\Carbon::parse($company->license_issued_at)->format('Y-m-d'))->toBe('2026-03-21')
         ->and($company->currency_id)->not->toBeNull();
+});
+
+it('makes the creator super-admin of the company they made, and only there', function () {
+    superAdminRole();
+    $founder = User::factory()->create(['company_id' => null, 'branch_id' => null]);
+
+    $this->actingAs($founder)->postJson(route('company.store'), setupPayload())->assertCreated();
+
+    $company = Company::query()->firstOrFail();
+    $other = Company::factory()->create();
+    $access = app(UserAccessService::class);
+
+    expect($access->isSuperAdminIn($founder->fresh(), $company->id))->toBeTrue()
+        ->and($access->isSuperAdminIn($founder->fresh(), $other->id))->toBeFalse();
 });
