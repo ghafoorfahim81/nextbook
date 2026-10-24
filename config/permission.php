@@ -131,12 +131,15 @@ return [
      * (view the latest version of this package's migration file)
      */
 
-    'teams' => false,
+    // Phase 6: a team is a company (team_id = company id), so roles are held
+    // per company. See App\Support\CompanyTeamResolver and the migration
+    // 2026_10_24_000001_scope_roles_to_companies.
+    'teams' => true,
 
     /*
      * The class to use to resolve the permissions team id
      */
-    'team_resolver' => \Spatie\Permission\DefaultTeamResolver::class,
+    'team_resolver' => \App\Support\CompanyTeamResolver::class,
 
     /*
      * Passport Client Credentials Grant

@@ -51,7 +51,7 @@ function accessUser(Company $company, Branch $branch, bool $superAdmin = false):
     ]));
 
     if ($superAdmin) {
-        $user->assignRole(Role::query()->firstOrCreate(
+        assignRoleInHomeCompany($user, Role::query()->firstOrCreate(
             ['name' => 'super-admin', 'guard_name' => 'web'],
             ['slug' => 'super-admin']
         ));
@@ -66,6 +66,8 @@ it('switches to a company the user has been given and lands in its main branch',
 
     $user = accessUser($electronics, $kabul, superAdmin: true);
     app(UserAccessService::class)->grantCompany($user, $construction->id);
+    // Phase 6: super-admin there too, or the company has no branch for them.
+    assignRoleInCompany($user, 'super-admin', $construction->id);
 
     $this->actingAs($user)
         ->post(route('companies.switch'), ['company_id' => $construction->id])
@@ -203,6 +205,7 @@ function twoCompanyUserSwitchedToSecond($test): array
 
     $user = accessUser($electronics, $kabul, superAdmin: true);
     app(UserAccessService::class)->grantCompany($user, $construction->id);
+    assignRoleInCompany($user, 'super-admin', $construction->id);
 
     $test->actingAs($user)->post(route('companies.switch'), ['company_id' => $construction->id]);
 
@@ -289,4 +292,38 @@ it('offers a single-company user nothing to switch to', function () {
         ->assertInertia(fn ($page) => $page
             ->has('switcher.companies', 1)
             ->has('switcher.branches', 1));
+});
+
+/**
+ * Phase 6: roles are held per company. Super-admin in the home company says
+ * nothing about a company granted beside it, and the bypass in
+ * AuthServiceProvider follows the company the request acts in.
+ */
+it('holds a role only in the company it was given in', function () {
+    [$electronics, $kabul] = accessCompany('Ahmad Electronics');
+    [$construction] = accessCompany('Ahmad Construction');
+
+    $user = accessUser($electronics, $kabul, superAdmin: true);
+    $access = app(UserAccessService::class);
+    $access->grantCompany($user, $construction->id);
+
+    expect($access->isSuperAdminIn($user, $electronics->id))->toBeTrue()
+        ->and($access->isSuperAdminIn($user, $construction->id))->toBeFalse();
+
+    // Acting in the home company, the bypass applies.
+    $this->actingAs($user)->get(route('dashboard'));
+    expect($user->fresh()->isSuperAdmin())->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Gate::forUser($user->fresh())->allows('companies.create'))->toBeTrue();
+
+    // Given super-admin in Construction as well, they can switch there and
+    // hold it there; taking it back leaves Electronics untouched.
+    assignRoleInCompany($user, 'super-admin', $construction->id);
+    expect($access->isSuperAdminIn($user, $construction->id))->toBeTrue();
+
+    setPermissionsTeamId($construction->id);
+    $user->fresh()->removeRole('super-admin');
+    setPermissionsTeamId(null);
+
+    expect($access->isSuperAdminIn($user, $construction->id))->toBeFalse()
+        ->and($access->isSuperAdminIn($user, $electronics->id))->toBeTrue();
 });

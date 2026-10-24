@@ -52,15 +52,7 @@ class CompanyController extends Controller
 
         $result = $setup->create($request->companyAttributes(), $request->validated('base_currency'), $user);
 
-        // The founder runs their own company. Super-admin reaches only the
-        // companies they belong to — the company and user screens check
-        // membership, and acting in a company goes through UserAccessService.
-        $founderRole = Role::query()->where('slug', 'super-admin')->first();
-
-        if ($founderRole) {
-            $user->assignRole($founderRole);
-        }
-
+        // CompanySetupService made the founder super-admin of this company.
         CacheForget::authForUserId($user->id);
 
         // The set-up screen posts for JSON so it can show what was created

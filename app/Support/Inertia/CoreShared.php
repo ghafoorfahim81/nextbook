@@ -35,7 +35,7 @@ final class CoreShared
 
         $permissions = $user
             ? Cache::remember(
-                CacheKey::forUser($request, 'permissions'),
+                CacheKey::forUser($request, 'permissions:'.CacheKey::companyId($request)),
                 $cacheDuration,
                 fn() => $user->getAllPermissions()->pluck('name')->toArray()
             )
@@ -43,7 +43,7 @@ final class CoreShared
 
         $roles = $user
             ? Cache::remember(
-                CacheKey::forUser($request, 'roles'),
+                CacheKey::forUser($request, 'roles:'.CacheKey::companyId($request)),
                 $cacheDuration,
                 fn() => $user->getRoleNames()->toArray()
             )
@@ -51,7 +51,7 @@ final class CoreShared
 
         $roleSlugs = $user
             ? Cache::remember(
-                CacheKey::forUser($request, 'role_slugs'),
+                CacheKey::forUser($request, 'role_slugs:'.CacheKey::companyId($request)),
                 $cacheDuration,
                 fn() => $user->roles->pluck('slug')->toArray()
             )

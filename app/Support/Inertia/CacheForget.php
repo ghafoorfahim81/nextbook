@@ -76,8 +76,18 @@ final class CacheForget
             return;
         }
 
+        // Roles and permissions are held per company since phase 6, and cached
+        // per company (App\Support\Inertia\CoreShared), so every company the user
+        // belongs to has its own entry.
+        $user = \App\Models\User::withTrashed()->find($userId);
+        $companyIds = $user ? app(\App\Services\UserAccessService::class)->accessibleCompanyIds($user) : [];
+
         foreach (self::USER_AUTH_KEYS as $name) {
             self::userById($userId, $name);
+
+            foreach ($companyIds as $companyId) {
+                self::userById($userId, "{$name}:{$companyId}");
+            }
         }
     }
 }

@@ -8,9 +8,11 @@ use App\Models\Administration\Branch;
 use App\Models\Administration\Company;
 use App\Models\Administration\UserBranchAccess;
 use App\Models\Administration\UserCompanyAccess;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\UserAccessService;
 use App\Support\CompanyContext;
+use App\Support\Inertia\CacheForget;
 use Illuminate\Http\Request;
 
 /**
@@ -63,6 +65,8 @@ class UserAccessController extends Controller
                     ? $company->business_type
                     : BusinessType::tryFrom((string) $company->business_type))?->getLabel(),
                 'is_home' => (string) $company->id === (string) $user->company_id,
+                // Roles can be changed only where the admin is super-admin.
+                'can_manage_roles' => $this->access->isSuperAdminIn($request->user(), (string) $company->id),
                 'branches' => ($branches[$company->id] ?? collect())->map(fn (Branch $branch) => [
                     'id' => (string) $branch->id,
                     'name' => (string) $branch->name,
@@ -75,6 +79,10 @@ class UserAccessController extends Controller
         return inertia('UserManagement/Users/Access', [
             'user' => ['id' => (string) $user->id, 'name' => $user->name, 'email' => $user->email],
             'userIsSuperAdmin' => $user->isSuperAdmin(),
+            // The shared role set (phase 6); who holds which differs per company.
+            'roles' => Role::query()->whereNull('team_id')->orderBy('name')->get(['id', 'name', 'slug'])
+                ->map(fn (Role $role) => ['id' => (string) $role->id, 'name' => $role->name, 'slug' => $role->slug]),
+            'rolesByCompany' => $this->access->rolesByCompany($user, $companyIds),
             'companies' => $companies,
             'granted' => [
                 'companies' => array_values(array_unique(array_filter([...$grantedCompanies, (string) $user->company_id]))),
@@ -90,9 +98,15 @@ class UserAccessController extends Controller
             'companies.*' => ['string'],
             'branches' => ['array'],
             'branches.*' => ['string'],
+            'roles' => ['array'],
+            'roles.*' => ['array'],
+            'roles.*.*' => ['string'],
         ]);
 
         $this->access->syncAccess($user, $validated['companies'] ?? [], $validated['branches'] ?? [], $request->user());
+        // After the access: a company the user just lost takes its roles with it.
+        $this->access->syncCompanyRoles($user, $validated['roles'] ?? [], $request->user());
+        CacheForget::authForUserId((string) $user->id);
 
         return redirect()->route('users.access.edit', $user)
             ->with('success', __('general.updated_successfully', ['resource' => __('general.resource.user')]));

@@ -14,6 +14,9 @@ const props = defineProps({
     userIsSuperAdmin: { type: Boolean, default: false },
     companies: { type: Array, required: true },
     granted: { type: Object, required: true },
+    // Phase 6: the shared role set, and which of them the user holds where.
+    roles: { type: Array, default: () => [] },
+    rolesByCompany: { type: Object, default: () => ({}) },
 })
 
 const { t } = useI18n()
@@ -21,7 +24,21 @@ const { t } = useI18n()
 const form = useForm({
     companies: [...props.granted.companies],
     branches: [...props.granted.branches],
+    roles: Object.fromEntries(Object.entries(props.rolesByCompany).map(([id, ids]) => [id, [...ids]])),
 })
+
+const superAdminRoleId = props.roles.find((role) => role.slug === 'super-admin')?.id
+// Roles are per company, so is super-admin: read it off this company's picker.
+const superAdminIn = (company) => (form.roles[company.id] ?? []).includes(superAdminRoleId)
+
+function toggleRole(company, role) {
+    if (!company.can_manage_roles || !hasCompany(company)) return
+    const held = form.roles[company.id] ?? []
+    form.roles = {
+        ...form.roles,
+        [company.id]: held.includes(role.id) ? held.filter((id) => id !== role.id) : [...held, role.id],
+    }
+}
 
 const hasCompany = (company) => company.is_home || form.companies.includes(company.id)
 
@@ -39,7 +56,7 @@ function toggleCompany(company) {
 }
 
 function toggleBranch(company, branch) {
-    if (!hasCompany(company) || props.userIsSuperAdmin) return
+    if (!hasCompany(company) || superAdminIn(company)) return
 
     form.branches = form.branches.includes(branch.id)
         ? form.branches.filter((id) => id !== branch.id)
@@ -62,7 +79,7 @@ const save = () => form.put(route('users.access.update', props.user.id), { prese
                 <p class="text-xs text-muted-foreground/80">{{ user.email }}</p>
             </div>
 
-            <div v-if="userIsSuperAdmin" class="mb-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
+            <div v-if="companies.some(superAdminIn)" class="mb-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
                 <ShieldCheck class="mt-0.5 size-4 shrink-0 text-primary" />
                 {{ t('workspace.access.all_branches') }}
             </div>
@@ -111,15 +128,15 @@ const save = () => form.put(route('users.access.update', props.user.id), { prese
                                 v-for="branch in company.branches"
                                 :key="branch.id"
                                 class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition"
-                                :class="(userIsSuperAdmin || form.branches.includes(branch.id)) && hasCompany(company)
+                                :class="(superAdminIn(company) || form.branches.includes(branch.id)) && hasCompany(company)
                                     ? 'border-primary/50 bg-primary/5 text-foreground'
                                     : 'border-border text-muted-foreground hover:border-primary/30'"
                             >
                                 <input
                                     type="checkbox"
                                     class="size-4 rounded border-border text-primary focus:ring-primary/40"
-                                    :checked="userIsSuperAdmin || form.branches.includes(branch.id)"
-                                    :disabled="userIsSuperAdmin || !hasCompany(company)"
+                                    :checked="superAdminIn(company) || form.branches.includes(branch.id)"
+                                    :disabled="superAdminIn(company) || !hasCompany(company)"
                                     @change="toggleBranch(company, branch)"
                                 />
                                 <span dir="auto" class="min-w-0 flex-1 truncate text-start">{{ branch.name }}</span>
@@ -127,9 +144,30 @@ const save = () => form.put(route('users.access.update', props.user.id), { prese
                                 <Home v-if="branch.is_home" class="size-3.5 shrink-0 text-muted-foreground" :title="t('workspace.home')" />
                             </label>
                         </div>
-                        <p v-if="company.branches.length && !userIsSuperAdmin && hasCompany(company)" class="mt-2 text-xs text-muted-foreground">
+                        <p v-if="company.branches.length && !superAdminIn(company) && hasCompany(company)" class="mt-2 text-xs text-muted-foreground">
                             {{ t('workspace.access.branches_hint') }}
                         </p>
+                        <!-- Roles in this company (phase 6). -->
+                        <div class="mt-4 border-t border-border pt-3">
+                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ t('workspace.access.roles') }}</p>
+                            <div class="mt-2 flex flex-wrap gap-2" :class="!hasCompany(company) ? 'pointer-events-none opacity-40' : ''">
+                                <button
+                                    v-for="role in roles"
+                                    :key="role.id"
+                                    type="button"
+                                    class="rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed"
+                                    :class="(form.roles[company.id] ?? []).includes(role.id)
+                                        ? 'border-primary bg-primary text-primary-foreground'
+                                        : 'border-border text-muted-foreground hover:border-primary/40'"
+                                    :disabled="!company.can_manage_roles || !hasCompany(company)"
+                                    :aria-pressed="(form.roles[company.id] ?? []).includes(role.id)"
+                                    @click="toggleRole(company, role)"
+                                >
+                                    {{ role.name }}
+                                </button>
+                            </div>
+                            <p v-if="!company.can_manage_roles" class="mt-2 text-xs text-muted-foreground">{{ t('workspace.access.roles_locked') }}</p>
+                        </div>
                     </div>
                 </section>
             </div>
