@@ -49,7 +49,7 @@ function switchTo(branch) {
                             <Store class="size-6" />
                         </div>
                         <div class="min-w-0 flex-1">
-                            <h2 class="truncate text-base font-semibold text-foreground" :title="branch.name">{{ branch.name }}</h2>
+                            <h2 dir="auto" class="truncate text-start text-base font-semibold text-foreground" :title="branch.name">{{ branch.name }}</h2>
                             <p v-if="branch.location" class="flex items-center gap-1 truncate text-sm text-muted-foreground">
                                 <MapPin class="size-3.5 shrink-0" /> {{ branch.location }}
                             </p>

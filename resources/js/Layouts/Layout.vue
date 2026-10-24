@@ -897,7 +897,7 @@ function logout() {
                                     {{ companyInitials }}
                                 </div>
                                 <div class="grid min-w-0 flex-1 text-start text-sm leading-tight">
-                                    <span class="truncate font-semibold">{{ activeCompanyName }}</span>
+                                    <span dir="auto" class="truncate text-start font-semibold">{{ activeCompanyName }}</span>
                                     <span v-if="canOpenCompanies" class="truncate text-xs text-muted-foreground">{{ t('layout.workspace') }}</span>
                                 </div>
                                 <ChevronsUpDown v-if="canOpenCompanies" class="ms-auto size-4 shrink-0 text-muted-foreground" />
@@ -1228,7 +1228,7 @@ function logout() {
                         :title="activeBranchName || ''"
                     >
                         <Store class="size-4 shrink-0 text-primary" />
-                        <span class="truncate">{{ activeBranchName || '—' }}</span>
+                        <span dir="auto" class="truncate">{{ activeBranchName || '—' }}</span>
                     </component>
                 </div>
 
