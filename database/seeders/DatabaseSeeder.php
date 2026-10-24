@@ -45,8 +45,10 @@ class DatabaseSeeder extends Seeder
             $this->call(ReferenceDataSeeder::class);
             $this->call(LedgerSeeder::class);
             $this->call(AccountSeeder::class);
-            $this->call(RolePermissionSeeder::class);
+            // Before RolePermissionSeeder: this pass links the admin to the
+            // company, and the admin's role is assigned per company.
             $this->call(CompanySeeder::class);
+            $this->call(RolePermissionSeeder::class);
             $this->call(SizeSeeder::class);
             $this->call(CategorySeeder::class);
             $this->call(LandedCostCategorySeeder::class);
@@ -64,8 +66,8 @@ class DatabaseSeeder extends Seeder
             $this->call(LedgerSeeder::class);
             $this->call(AccountTypeSeeder::class);
             $this->call(AccountSeeder::class);
-            $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
+            $this->call(RolePermissionSeeder::class);
             $this->call(SizeSeeder::class);
             $this->call(CategorySeeder::class);
             $this->call(LandedCostCategorySeeder::class);
