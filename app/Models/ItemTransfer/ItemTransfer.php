@@ -128,11 +128,17 @@ class ItemTransfer extends Model
         return $this->belongsTo(\App\Models\Administration\Branch::class, 'to_branch_id');
     }
 
+    /** Whether the goods change branch, which makes it a send-and-receive (phase 4). */
+    public function isInterbranch(): bool
+    {
+        return $this->to_branch_id !== null
+            && (string) $this->to_branch_id !== (string) $this->branch_id;
+    }
+
     /** Sent to another branch and not yet received there (phase 4). */
     public function isInTransit(): bool
     {
-        return $this->to_branch_id !== null
-            && (string) $this->to_branch_id !== (string) $this->branch_id
+        return $this->isInterbranch()
             && $this->status === TransactionStatus::POSTED
             && $this->received_at === null;
     }

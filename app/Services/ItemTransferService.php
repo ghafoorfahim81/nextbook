@@ -202,7 +202,7 @@ class ItemTransferService
             $movedVariantIds = [];
             // Phase 4: to another branch, only the leg out happens now; the
             // receiving branch books the goods in later (receiveTransfer).
-            $interbranch = $this->isInterbranch($transfer);
+            $interbranch = $transfer->isInterbranch();
 
             // Process each item
             foreach ($transfer->items as $item) {
@@ -318,7 +318,7 @@ class ItemTransferService
         return DB::transaction(function () use ($transfer, $received) {
             $transfer->refresh()->load('items');
 
-            if (! $this->isInterbranch($transfer)
+            if (! $transfer->isInterbranch()
                 || $transfer->status !== TransactionStatus::POSTED
                 || $transfer->received_at !== null) {
                 throw ValidationException::withMessages([
@@ -494,13 +494,6 @@ class ItemTransferService
         );
     }
 
-    /** Whether the goods change branch, which makes it a send-and-receive (phase 4). */
-    private function isInterbranch(ItemTransfer $transfer): bool
-    {
-        return $transfer->to_branch_id !== null
-            && (string) $transfer->to_branch_id !== (string) $transfer->branch_id;
-    }
-
     private function branchOfWarehouse(?string $warehouseId): ?string
     {
         return $warehouseId
@@ -517,6 +510,14 @@ class ItemTransferService
             if ($transfer->status === TransactionStatus::REVERSED) {
                 throw ValidationException::withMessages([
                     'status' => [__('messages.transfer.already_cancelled')],
+                ]);
+            }
+
+            // Between branches, the branch that sent the goods is the one that
+            // may take the transfer back; the receiver only receives.
+            if ($transfer->isInterbranch() && CompanyContext::branchId() !== (string) $transfer->branch_id) {
+                throw ValidationException::withMessages([
+                    'status' => [__('messages.transfer.cancel_in_source')],
                 ]);
             }
 
