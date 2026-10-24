@@ -189,6 +189,38 @@ it('checks one step of the wizard without creating anything', function () {
     expect(Company::query()->count())->toBe(0);
 });
 
+it('keeps the company settings chosen in the wizard', function () {
+    superAdminRole();
+    $founder = User::factory()->create(['company_id' => null, 'branch_id' => null]);
+
+    // The wizard posts FormData, so the settings travel as one JSON field.
+    $this->actingAs($founder)
+        ->postJson(route('company.store'), setupPayload(['settings' => json_encode([
+            'sale' => ['invoice_prefix' => 'KP-'],
+            'transaction' => ['sale_post_immediately' => false],
+        ])]))
+        ->assertCreated();
+
+    $company = Company::query()->where('name_en', 'Karimi Pharmacy')->firstOrFail();
+    $settings = \App\Support\Settings::forCompany($company);
+
+    expect($settings['sale']['invoice_prefix'])->toBe('KP-')
+        ->and($settings['transaction']['sale_post_immediately'])->toBeFalse()
+        // Anything not chosen comes from the defaults.
+        ->and($settings['purchase']['invoice_prefix'])->toBe('PUR-');
+});
+
+it('checks the wizard settings step on its own', function () {
+    $founder = User::factory()->create(['company_id' => null, 'branch_id' => null]);
+
+    $this->actingAs($founder)
+        ->withHeaders(['Precognition' => 'true', 'Precognition-Validate-Only' => 'settings'])
+        ->postJson(route('company.store'), ['settings' => json_encode(['sale' => ['start_number' => 0]])])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['settings.sale.start_number'])
+        ->assertJsonMissingValidationErrors(['name_en']);
+});
+
 it('passes the whole form through the check before the set-up screen opens', function () {
     $founder = User::factory()->create(['company_id' => null, 'branch_id' => null]);
 

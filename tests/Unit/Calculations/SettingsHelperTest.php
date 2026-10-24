@@ -18,7 +18,7 @@ class SettingsHelperTest extends TestCase
 
         $this->assertEquals('with_nature', balanceNatureFormat());
         $this->assertEquals(15, recordsPerPage());
-        $this->assertEquals(User::DEFAULT_PREFERENCES, all_user_preferences());
+        $this->assertEquals(\App\Support\Settings::defaults(), all_user_preferences());
     }
 
     public function test_helper_can_set_and_get_user_preferences(): void
@@ -32,12 +32,16 @@ class SettingsHelperTest extends TestCase
         $this->assertEquals(50, recordsPerPage());
     }
 
-    public function test_balance_nature_format_reflects_user_preference(): void
+    public function test_balance_nature_format_is_the_companys_setting(): void
     {
         $ctx = $this->bootstrapErpContext();
-        $ctx['user']->setPreference('appearance.balance_nature_format', 'without_nature')->save();
-        $this->actingAs($ctx['user']->fresh());
+        $this->actingAs($ctx['user']);
 
+        // A user's own copy no longer counts (phase 6); the company's does.
+        $ctx['user']->setPreference('appearance.balance_nature_format', 'without_nature')->save();
+        $this->assertEquals('with_nature', balanceNatureFormat());
+
+        set_company_setting('appearance.balance_nature_format', 'without_nature');
         $this->assertEquals('without_nature', balanceNatureFormat());
     }
 }

@@ -58,13 +58,18 @@ final class CoreShared
             : [];
 
         $userPreferences = $user
-            ? Cache::remember(
-                CacheKey::forUser($request, 'preferences'),
-                $cacheDuration,
-                // Merge with defaults so newly introduced preference keys are
-                // always present for the frontend, even for users whose stored
-                // preferences predate them.
-                fn() => $user->getAllPreferences()
+            ? \App\Support\Settings::overlayCompany(
+                Cache::remember(
+                    CacheKey::forUser($request, 'preferences'),
+                    $cacheDuration,
+                    // Merge with defaults so newly introduced preference keys are
+                    // always present for the frontend, even for users whose stored
+                    // preferences predate them.
+                    fn() => $user->getAllPreferences()
+                ),
+                // Company settings go over the cached personal ones on every
+                // request, so a change reaches the whole company at once.
+                CompanyContext::company()
             )
             : null;
         // $recordsPerPage = $userPreferences['appearance']['records_per_page'] ?? 10;

@@ -11,7 +11,7 @@ class EnsureSidebarMenusSeeder extends Seeder
     public function run(): void
     {
         $defaultMenus = data_get(
-            User::DEFAULT_PREFERENCES,
+            \App\Support\Settings::defaults(),
             'appearance.sidebar_menus',
             []
         );
@@ -24,7 +24,7 @@ class EnsureSidebarMenusSeeder extends Seeder
             ->select(['id', 'preferences'])
             ->chunkById(100, function ($users) use ($defaultMenus): void {
                 foreach ($users as $user) {
-                    $preferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
+                    $preferences = $user->preferences ?? \App\Support\Settings::defaults();
                     $menus = data_get($preferences, 'appearance.sidebar_menus');
 
                     // Only seed the key for users who have never set it. Merging

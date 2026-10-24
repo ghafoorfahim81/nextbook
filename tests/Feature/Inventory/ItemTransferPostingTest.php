@@ -48,7 +48,7 @@ class ItemTransferPostingTest extends TestCase
 
         // Post-immediately is on by default, which would post a transfer the
         // moment it is created. These tests need the draft -> post path.
-        set_user_preference('transaction.item_transfer_post_immediately', false, $this->ctx['user']);
+        set_company_setting('transaction.item_transfer_post_immediately', false);
     }
 
     public function test_posting_a_transfer_posts_its_stock_movements(): void
@@ -237,7 +237,7 @@ class ItemTransferPostingTest extends TestCase
 
     public function test_a_transfer_posted_on_creation_also_posts_its_movements(): void
     {
-        set_user_preference('transaction.item_transfer_post_immediately', true, $this->ctx['user']);
+        set_company_setting('transaction.item_transfer_post_immediately', true);
 
         $this->seedStock(10, 15);
         $transfer = $this->createTransfer(quantity: 4, unitPrice: 15);

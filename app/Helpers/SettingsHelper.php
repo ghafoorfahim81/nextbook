@@ -13,13 +13,31 @@ if (!function_exists('user_preference')) {
      */
     function user_preference(string $key, mixed $default = null, ?User $user = null): mixed
     {
-        $user = $user ?? auth()->user();
+        // A company key (config/preferences.php) comes from the active
+        // company, whatever the user has stored.
+        return \App\Support\Settings::get($key, $default, $user);
+    }
+}
 
-        if (!$user) {
-            return data_get(User::DEFAULT_PREFERENCES, $key, $default);
+if (!function_exists('set_company_setting')) {
+    /**
+     * Set a company setting (a key listed in config/preferences.php).
+     *
+     * @param string $key Dot notation key (e.g., 'transaction.sale_post_immediately')
+     * @param mixed $value Value to set
+     * @param \App\Models\Administration\Company|null $company Defaults to the active company
+     */
+    function set_company_setting(string $key, mixed $value, ?\App\Models\Administration\Company $company = null): void
+    {
+        $company = $company ?? \App\Support\CompanyContext::company();
+
+        if (! $company || ! \App\Support\Settings::isCompanyKey($key)) {
+            throw new InvalidArgumentException("{$key} is not a company setting, or there is no company.");
         }
 
-        return $user->getPreference($key, $default);
+        $values = [];
+        data_set($values, $key, $value);
+        \App\Support\Settings::putForCompany($company, $values);
     }
 }
 
@@ -54,13 +72,7 @@ if (!function_exists('all_user_preferences')) {
      */
     function all_user_preferences(?User $user = null): array
     {
-        $user = $user ?? auth()->user();
-
-        if (!$user) {
-            return User::DEFAULT_PREFERENCES;
-        }
-
-        return $user->getAllPreferences();
+        return \App\Support\Settings::resolve($user);
     }
 }
 
@@ -83,11 +95,8 @@ if (!function_exists('balance_nature_format')) {
      */
     function balanceNatureFormat(): string
     {
-        $user = auth()->user();
-        if ($user) {
-            return $user->preferences['appearance']['balance_nature_format'] ?? 'with_nature';
-        }
-        return 'with_nature';
+        // A company setting since phase 6.
+        return (string) \App\Support\Settings::get('appearance.balance_nature_format', 'with_nature');
     }
 }
 

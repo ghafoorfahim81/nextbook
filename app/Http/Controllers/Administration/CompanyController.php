@@ -58,7 +58,10 @@ class CompanyController extends Controller
     {
         abort_unless($request->user()->isSuperAdmin(), 403);
 
-        return inertia('Company/Create', ['submitRoute' => 'companies.store']);
+        return inertia('Company/Create', [
+            'submitRoute' => 'companies.store',
+            'defaultSettings' => \App\Support\Settings::forCompany(null),
+        ]);
     }
 
     /**

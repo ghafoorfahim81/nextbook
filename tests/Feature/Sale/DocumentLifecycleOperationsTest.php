@@ -57,7 +57,7 @@ class DocumentLifecycleOperationsTest extends TestCase
 
     private function draftMode(string $key): void
     {
-        $this->ctx['user']->setPreference("transaction.{$key}_post_immediately", false);
+        set_company_setting("transaction.{$key}_post_immediately", false);
         $this->ctx['user']->save();
     }
 

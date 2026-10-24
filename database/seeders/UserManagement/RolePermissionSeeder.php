@@ -192,6 +192,11 @@ class RolePermissionSeeder extends Seeder
             $this->ensurePermission("activity_logs.{$action}");
         }
 
+        // Changing a setting the whole company shares (config/preferences.php
+        // company_keys), apart from preferences.update, which covers a user's
+        // own. Super-admin and admin get it with everything below.
+        $this->ensurePermission('company_settings.update');
+
         /*
         |--------------------------------------------------------------------------
         | 4. Create Roles

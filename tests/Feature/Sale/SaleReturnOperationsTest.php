@@ -201,7 +201,7 @@ class SaleReturnOperationsTest extends TestCase
 
     public function test_a_draft_return_can_be_deleted_restored_and_force_deleted(): void
     {
-        $this->ctx['user']->setPreference('transaction.sale_return_post_immediately', false);
+        set_company_setting('transaction.sale_return_post_immediately', false);
         $this->ctx['user']->save();
 
         $return = $this->createReturn(['number' => 8502]);

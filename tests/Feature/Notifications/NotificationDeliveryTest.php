@@ -252,7 +252,7 @@ class NotificationDeliveryTest extends TestCase
 
     private function makeSuperAdmin(string $branchId): User
     {
-        $preferences = User::DEFAULT_PREFERENCES;
+        $preferences = \App\Support\Settings::defaults();
         $preferences['notifications']['new_transaction_alert'] = true;
 
         $user = User::factory()->create([

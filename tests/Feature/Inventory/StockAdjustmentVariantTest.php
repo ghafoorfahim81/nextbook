@@ -39,7 +39,6 @@ class StockAdjustmentVariantTest extends TestCase
         // The offset accounts an adjustment posts against are not part of the
         // shared ERP context.
         foreach ([
-            ['Inventory Shrinkage & Wastage', '9040', 'inventory-shrinkage-and-wastage'],
             ['Inventory Adjustments', '9050', 'inventory-adjustments'],
         ] as [$name, $number, $slug]) {
             Account::factory()->create([

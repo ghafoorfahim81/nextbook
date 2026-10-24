@@ -67,7 +67,6 @@ class ScenarioWalkthroughTest extends TestCase
         $this->today = now()->toDateString();
 
         foreach ([
-            ['Inventory Shrinkage & Wastage', '9040', 'inventory-shrinkage-and-wastage'],
             ['Inventory Adjustments', '9050', 'inventory-adjustments'],
         ] as [$name, $number, $slug]) {
             Account::factory()->create([
@@ -560,7 +559,7 @@ class ScenarioWalkthroughTest extends TestCase
 
     private function phase06(): void
     {
-        set_user_preference('transaction.item_transfer_post_immediately', true, $this->ctx['user']);
+        set_company_setting('transaction.item_transfer_post_immediately', true);
 
         $this->post(route('item-transfers.store'), [
             'date' => $this->today,

@@ -68,7 +68,7 @@ class PurchaseOrderOperationsTest extends TestCase
      */
     private function createDraftOrder(array $overrides = []): PurchaseOrder
     {
-        $this->ctx['user']->setPreference('transaction.purchase_order_post_immediately', false);
+        set_company_setting('transaction.purchase_order_post_immediately', false);
         $this->ctx['user']->save();
 
         $order = $this->createOrder($overrides);

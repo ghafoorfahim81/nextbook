@@ -18,8 +18,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from 'vue-sonner';
 
 import {
-    Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
-    Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
+    Palette, Package, ShoppingCart, ShoppingBag, CreditCard,
+    Bell, Globe, Monitor, RotateCcw, Download, Upload,
     Save, Plug, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText, Check
 } from 'lucide-vue-next'
 import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode, resolveSurfaceStyle } from '@/lib/theme'
@@ -29,9 +29,7 @@ import { stringsMatchQuery, tabSearchValues, translateSearchKeys } from '@/Pages
 const props = defineProps({
     preferences: Object,
     defaultPreferences: Object,
-    cashAccounts: Array,
     sidebarMenus: Array,
-    timezones: Object,
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
     warehouses: { type: [Array, Object], required: true },
@@ -74,16 +72,12 @@ const importLoading = ref(false)
 const tabs = [
     { id: 'appearance', label: 'preferences.tabs.appearance', icon: Palette },
     { id: 'item_management', label: 'preferences.tabs.item_management', icon: Package },
-    { id: 'stock_adjustment', label: 'preferences.tabs.stock_adjustment', icon: preferencesIcon },
     { id: 'sale', label: 'preferences.tabs.sale', icon: ShoppingCart },
     { id: 'purchase', label: 'preferences.tabs.purchase', icon: ShoppingBag },
     { id: 'receipt_payment', label: 'preferences.tabs.receipt_payment', icon: CreditCard },
     { id: 'transaction', label: 'preferences.tabs.transaction', icon: FileText },
-    { id: 'tax_currency', label: 'preferences.tabs.tax_currency', icon: Calculator },
     { id: 'notifications', label: 'preferences.tabs.notifications', icon: Bell },
-    { id: 'security', label: 'preferences.tabs.security', icon: Shield },
     { id: 'install_plugins', label: 'preferences.tabs.install_plugins', icon: Plug },
-    { id: 'backup', label: 'preferences.tabs.backup', icon: Database },
     { id: 'localization', label: 'preferences.tabs.localization', icon: Globe },
     { id: 'display', label: 'preferences.tabs.display', icon: Monitor },
 ]
@@ -237,12 +231,6 @@ const tabSearchTerms = {
         'item transfer',
         'drawing',
     ],
-    tax_currency: [
-        'tax currency',
-        'tax plus',
-        'tax minus',
-        'multi currency opening',
-    ],
     notifications: [
         'notifications',
         'email notifications',
@@ -258,17 +246,6 @@ const tabSearchTerms = {
         'daily summary report',
         'weekly financial summary',
     ],
-    security: [
-        'security',
-        'session timeout',
-        'login attempts limit',
-        'password min length',
-        'password special chars',
-        'two factor auth',
-        'report lock',
-        'lock reports',
-        'lock password',
-    ],
     install_plugins: [
         'install plugins',
         'measures',
@@ -280,28 +257,9 @@ const tabSearchTerms = {
         'customers',
         'suppliers',
     ],
-    backup: [
-        'backup',
-        'auto backup',
-        'backup retention days',
-        'cloud backup',
-        'cloud provider',
-        'export formats',
-        'daily',
-        'weekly',
-        'monthly',
-    ],
     localization: [
         'localization',
         'language',
-        'timezone',
-        'date format',
-        'time format',
-        'number format',
-        'first day of week',
-        'sunday',
-        'monday',
-        'saturday',
     ],
     display: [
         'display',
@@ -750,7 +708,6 @@ const itemColumns = [
     { key: 'tax', label: 'preferences.fields.tax' },
     { key: 'free', label: 'preferences.fields.free' },
 
-
 ]
 
 // A field with no explicit override inherits its visibility from the company's
@@ -818,25 +775,6 @@ const receiptPaymentFields = [
     { key: 'ledger_old_balance', label: 'preferences.receipt_fields.ledger_old_balance' },
 ]
 
-const transactionPostModules = [
-    { key: 'sale_post_immediately', label: 'preferences.transaction.modules.sale' },
-    { key: 'sale_order_post_immediately', label: 'preferences.transaction.modules.sale_order' },
-    { key: 'purchase_post_immediately', label: 'preferences.transaction.modules.purchase' },
-    { key: 'expense_post_immediately', label: 'preferences.transaction.modules.expense' },
-    { key: 'journal_entry_post_immediately', label: 'preferences.transaction.modules.journal_entry' },
-    { key: 'receipt_post_immediately', label: 'preferences.transaction.modules.receipt' },
-    { key: 'payment_post_immediately', label: 'preferences.transaction.modules.payment' },
-    { key: 'account_transfer_post_immediately', label: 'preferences.transaction.modules.account_transfer' },
-    { key: 'item_transfer_post_immediately', label: 'preferences.transaction.modules.item_transfer' },
-    { key: 'drawing_post_immediately', label: 'preferences.transaction.modules.drawing' },
-    { key: 'stock_adjustment_post_immediately', label: 'preferences.transaction.modules.stock_adjustment' },
-    { key: 'sale_return_post_immediately', label: 'preferences.transaction.modules.sale_return' },
-    { key: 'sale_quotation_post_immediately', label: 'preferences.transaction.modules.sale_quotation' },
-    { key: 'purchase_order_post_immediately', label: 'preferences.transaction.modules.purchase_order' },
-    { key: 'purchase_return_post_immediately', label: 'preferences.transaction.modules.purchase_return' },
-    { key: 'purchase_quotation_post_immediately', label: 'preferences.transaction.modules.purchase_quotation' },
-]
-
 // Per-module "confirm before save" toggles for modules without a dedicated
 // preferences tab. Sale/Purchase/Receipt/Payment/Item are configured in their own tabs.
 const confirmSaveModules = [
@@ -845,79 +783,16 @@ const confirmSaveModules = [
     { key: 'account_transfer', label: 'preferences.transaction.modules.account_transfer' },
     { key: 'item_transfer', label: 'preferences.transaction.modules.item_transfer' },
     { key: 'drawing', label: 'preferences.transaction.modules.drawing' },
+    { key: 'stock_adjustment', label: 'preferences.transaction.modules.stock_adjustment' },
     { key: 'ledger', label: 'preferences.transaction.modules.ledger' },
     { key: 'account', label: 'preferences.transaction.modules.account' },
     { key: 'owner', label: 'preferences.transaction.modules.owner' },
 ]
 
-// Stock adjustment: reason → offset account mapping (9040 shrinkage vs 9050 adjustments).
-const stockAdjustmentReasons = [
-    { key: 'damage', direction: 'out' },
-    { key: 'expiry', direction: 'out' },
-    { key: 'theft', direction: 'out' },
-    { key: 'loss', direction: 'out' },
-    { key: 'count_down', direction: 'out' },
-    { key: 'internal_use', direction: 'out' },
-    { key: 'sample', direction: 'out' },
-    { key: 'wastage', direction: 'out' },
-    { key: 'quality_rejection', direction: 'out' },
-    { key: 'count_up', direction: 'in' },
-    { key: 'found', direction: 'in' },
-    { key: 'opening_stock', direction: 'in' },
-    { key: 'production_output', direction: 'in' },
-    { key: 'surplus', direction: 'in' },
-]
-const stockAdjustmentDefaultAccounts = {
-    damage: 'inventory-shrinkage-and-wastage',
-    expiry: 'inventory-shrinkage-and-wastage',
-    theft: 'inventory-shrinkage-and-wastage',
-    loss: 'inventory-shrinkage-and-wastage',
-    internal_use: 'inventory-shrinkage-and-wastage',
-    sample: 'inventory-shrinkage-and-wastage',
-    wastage: 'inventory-shrinkage-and-wastage',
-    quality_rejection: 'inventory-shrinkage-and-wastage',
-    count_down: 'inventory-adjustments',
-    count_up: 'inventory-adjustments',
-    found: 'inventory-adjustments',
-    opening_stock: 'inventory-adjustments',
-    production_output: 'inventory-adjustments',
-    surplus: 'inventory-adjustments',
-}
-const offsetAccountOptions = [
-    { id: 'inventory-shrinkage-and-wastage', label: 'preferences.stock_adjustment.accounts.shrinkage' },
-    { id: 'inventory-adjustments', label: 'preferences.stock_adjustment.accounts.adjustments' },
-]
-const ensureStockAdjustmentPrefs = () => {
-    if (!form.stock_adjustment) form.stock_adjustment = {}
-    if (!form.stock_adjustment.reason_accounts) form.stock_adjustment.reason_accounts = {}
-}
-const getStockAdjustmentPref = (key, fallback) => form.stock_adjustment?.[key] ?? fallback
-const setStockAdjustmentPref = (key, value) => {
-    ensureStockAdjustmentPrefs()
-    form.stock_adjustment[key] = value
-}
-const getReasonAccount = (reason) =>
-    form.stock_adjustment?.reason_accounts?.[reason] ?? stockAdjustmentDefaultAccounts[reason]
-const setReasonAccount = (reason, value) => {
-    ensureStockAdjustmentPrefs()
-    form.stock_adjustment.reason_accounts[reason] = value
-}
-
 const getConfirmSave = (key) => form.confirmations?.[key] ?? true
 const setConfirmSave = (key, value) => {
     if (!form.confirmations) form.confirmations = {}
     form.confirmations[key] = value
-}
-
-const getTransactionPost = (key) => form.transaction?.[key] ?? true
-const allTransactionsPostImmediately = computed(() =>
-    transactionPostModules.every((module) => getTransactionPost(module.key))
-)
-const setAllTransactionsPostImmediately = (checked) => {
-    if (!form.transaction) form.transaction = {}
-    transactionPostModules.forEach((module) => {
-        form.transaction[module.key] = checked
-    })
 }
 
 const sharedFieldLabelKeys = computed(() => [
@@ -960,28 +835,16 @@ const tabSearchExtras = computed(() => ({
             'preferences.receipt_fields.debit_account',
             'preferences.receipt_fields.ledger_old_balance',
         ]),
-        ...(props.cashAccounts ?? []).map((account) => account.name),
         ...(tabSearchTerms.receipt_payment ?? []),
     ],
     transaction: [
         t('preferences.tabs.transaction'),
-        ...translateSearchKeys(t, [
-            ...transactionPostModules.map((module) => module.label),
-            ...confirmSaveModules.map((module) => module.label),
-        ]),
+        ...translateSearchKeys(t, confirmSaveModules.map((module) => module.label)),
         ...(tabSearchTerms.transaction ?? []),
-    ],
-    tax_currency: [
-        t('preferences.tabs.tax_currency'),
-        ...(tabSearchTerms.tax_currency ?? []),
     ],
     notifications: [
         t('preferences.tabs.notifications'),
         ...(tabSearchTerms.notifications ?? []),
-    ],
-    security: [
-        t('preferences.tabs.security'),
-        ...(tabSearchTerms.security ?? []),
     ],
     install_plugins: [
         t('preferences.tabs.install_plugins'),
@@ -994,22 +857,11 @@ const tabSearchExtras = computed(() => ({
         ...allLedgers.value.map((item) => item.name),
         ...(tabSearchTerms.install_plugins ?? []),
     ],
-    backup: [
-        t('preferences.tabs.backup'),
-        'PDF',
-        'Excel',
-        'CSV',
-        'Amazon S3',
-        'Google Cloud',
-        'Azure Blob',
-        ...(tabSearchTerms.backup ?? []),
-    ],
     localization: [
         t('preferences.tabs.localization'),
         'English',
         'فارسی (Persian)',
         'پښتو (Pashto)',
-        ...(Object.values(props.timezones ?? {})),
         ...(tabSearchTerms.localization ?? []),
     ],
     display: [
@@ -1241,31 +1093,6 @@ watch(normalizedMenuSearch, (query) => {
                                     </Select>
                                 </div>
                                 <div class="space-y-2">
-                                    <Label>{{ t('preferences.appearance.decimal_places') }}</Label>
-                                    <Select v-model="form.appearance.decimal_places">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem :value="0">0</SelectItem>
-                                            <SelectItem :value="2">2</SelectItem>
-                                            <SelectItem :value="3">3</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.appearance.balance_nature_format') }}</Label>
-                                    <Select v-model="form.appearance.balance_nature_format">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem :value="'without_nature'">{{ t('preferences.appearance.without_nature') }}</SelectItem>
-                                            <SelectItem :value="'with_nature'">{{ t('preferences.appearance.with_nature') }}</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.records_per_page') }}</Label>
                                     <Input v-model.number="form.appearance.records_per_page" type="number" min="1" max="100" />
                                 </div>
@@ -1373,10 +1200,6 @@ watch(normalizedMenuSearch, (query) => {
                                     </div>
                                 </div>
                             </div>
-                            <div class="space-y-2 mt-3">
-                                <Label>{{ t('preferences.tax_currency.spec_text') }}</Label>
-                                <Textarea v-model="form.item_management.spec_text" rows="3" />
-                            </div>
                             <div class="rounded-lg border border-border bg-background/70 p-4 mt-3 flex items-center justify-between">
                                 <div class="space-y-1">
                                     <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
@@ -1449,62 +1272,7 @@ watch(normalizedMenuSearch, (query) => {
                                 </div>
                             </div>
 
-                            <!-- Additional preferences -->
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.sale.invoice_prefix') }}</Label>
-                                    <Input v-model="form[activeSaleType].invoice_prefix" />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.sale.start_number') }}</Label>
-                                    <Input v-model.number="form[activeSaleType].start_number" type="number" min="1" />
-                                </div>
-                            </div>
-
-                            <template v-if="activeSaleType === 'sale' || activeSaleType === 'sale_order'">
-                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                    <div class="space-y-2">
-                                        <Label>{{ t('preferences.sale.due_days') }}</Label>
-                                        <Input v-model.number="form[activeSaleType].due_days" type="number" min="0" />
-                                    </div>
-                                    <div class="space-y-2">
-                                        <Label>{{ t('preferences.sale.terms') }}</Label>
-                                        <Textarea v-model="form[activeSaleType].terms" rows="2" />
-                                    </div>
-                                </div>
-                            </template>
-
                             <template v-if="activeSaleType === 'sale'">
-                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                    <div class="flex items-center gap-3">
-                                        <Switch
-                                            :model-value="form.sale.auto_reminders"
-                                            @update:model-value="(v) => form.sale.auto_reminders = v"
-                                        />
-                                        <Label>{{ t('preferences.sale.auto_reminders') }}</Label>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <Label>{{ t('preferences.sale.reminder_days') }}</Label>
-                                        <Input v-model.number="form.sale.reminder_days" type="number" min="1" :disabled="!form.sale.auto_reminders" />
-                                    </div>
-                                    <div class="space-y-2">
-                                        <Label>{{ t('preferences.sale.late_fee_percentage') }}</Label>
-                                        <Input v-model.number="form.sale.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                    <div class="space-y-2">
-                                        <Label>{{ t('preferences.sale.tax_percentage') }}</Label>
-                                        <Input v-model.number="form.sale.tax_percentage" type="number" min="0" max="100" step="0.1" />
-                                    </div>
-                                    <div class="flex items-center gap-3 pt-8">
-                                        <Switch
-                                            :model-value="form.sale.auto_calculate_tax"
-                                            @update:model-value="(v) => form.sale.auto_calculate_tax = v"
-                                        />
-                                        <Label>{{ t('preferences.sale.auto_calculate_tax') }}</Label>
-                                    </div>
-                                </div>
                                 <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
@@ -1530,26 +1298,6 @@ watch(normalizedMenuSearch, (query) => {
                                 </div>
                             </template>
 
-                            <div class="rounded-lg border border-border bg-background/70 p-4">
-                                <div class="flex items-start gap-3">
-                                    <Checkbox
-                                        id="sale-enforce_sale_stock_reservation"
-                                        :checked="form.sale?.enforce_sale_stock_reservation ?? false"
-                                        @update:checked="(checked) => {
-                                            if (!form.sale) form.sale = {}
-                                            form.sale.enforce_sale_stock_reservation = checked
-                                        }"
-                                    />
-                                    <div class="space-y-1">
-                                        <Label for="sale-enforce_sale_stock_reservation" class="cursor-pointer font-medium">
-                                            {{ t('preferences.sale.enforce_sale_stock_reservation') }}
-                                        </Label>
-                                        <p class="text-sm text-muted-foreground">
-                                            {{ t('preferences.sale.enforce_sale_stock_reservation_help') }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                             <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
                                 <div class="space-y-1">
                                     <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
@@ -1622,46 +1370,7 @@ watch(normalizedMenuSearch, (query) => {
                                 </div>
                             </div>
 
-                            <!-- Additional preferences -->
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.purchase.invoice_prefix') }}</Label>
-                                    <Input v-model="form[activePurchaseType].invoice_prefix" />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.purchase.start_number') }}</Label>
-                                    <Input v-model.number="form[activePurchaseType].start_number" type="number" min="1" />
-                                </div>
-                            </div>
-
                             <template v-if="activePurchaseType === 'purchase'">
-                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                    <div class="space-y-2">
-                                            <Label>{{ t('preferences.purchase.due_days') }}</Label>
-                                        <Input v-model.number="form.purchase.due_days" type="number" min="0" />
-                                    </div>
-                                    <div class="space-y-2">
-                                        <Label>{{ t('preferences.purchase.terms') }}</Label>
-                                        <Textarea v-model="form.purchase.terms" rows="2" />
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                    <div class="flex items-center gap-3">
-                                        <Switch
-                                                :model-value="form.purchase.auto_reminders"
-                                            @update:model-value="(v) => form.purchase.auto_reminders = v"
-                                        />
-                                        <Label>{{ t('preferences.purchase.auto_reminders') }}</Label>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <Label>{{ t('preferences.purchase.reminder_days') }}</Label>
-                                        <Input v-model.number="form.purchase.reminder_days" type="number" min="1" :disabled="!form.purchase.auto_reminders" />
-                                    </div>
-                                    <div class="space-y-2">
-                                            <Label>{{ t('preferences.purchase.late_fee_percentage') }}</Label>
-                                        <Input v-model.number="form.purchase.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
-                                    </div>
-                                </div>
                                 <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
@@ -1722,41 +1431,6 @@ watch(normalizedMenuSearch, (query) => {
                                     </div>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.receipt_payment.default_cash_account') }}</Label>
-                                    <Select v-model="form.receipt_payment.default_cash_account">
-                                        <SelectTrigger>
-                                            <SelectValue :placeholder="t('preferences.receipt_payment.select_account')" />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem v-for="account in cashAccounts" :key="account.id" :value="account.id">
-                                                {{ account.name }}
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.receipt_payment.lock_after_days') }}</Label>
-                                    <Input v-model.number="form.receipt_payment.lock_after_days" type="number" min="0" />
-                                </div>
-                            </div>
-                            <div class="flex flex-wrap gap-6">
-                                <div class="flex items-center gap-3">
-                                    <Switch
-                                        :model-value="form.receipt_payment.auto_sequence"
-                                        @update:model-value="(v) => form.receipt_payment.auto_sequence = v"
-                                    />
-                                    <Label>{{ t('preferences.receipt_payment.auto_sequence') }}</Label>
-                                </div>
-                                <div class="flex items-center gap-3">
-                                    <Switch
-                                        :model-value="form.receipt_payment.require_approval"
-                                        @update:model-value="(v) => form.receipt_payment.require_approval = v"
-                                    />
-                                    <Label>{{ t('preferences.receipt_payment.require_approval') }}</Label>
-                                </div>
-                            </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
                                     <Label class="font-normal">{{ t('preferences.transaction.modules.receipt') }} - {{ t('general.confirm_before_save') }}</Label>
@@ -1783,43 +1457,9 @@ watch(normalizedMenuSearch, (query) => {
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-4">
-                            <div class="flex items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
-                                <Checkbox
-                                    id="transaction-select-all"
-                                    :checked="allTransactionsPostImmediately"
-                                    @update:checked="setAllTransactionsPostImmediately"
-                                />
-                                <Label for="transaction-select-all" class="cursor-pointer font-medium">
-                                    {{ allTransactionsPostImmediately ? t('preferences.transaction.deselect_all') : t('preferences.transaction.select_all') }}
-                                </Label>
-                            </div>
-                            <div
-                                v-for="module in transactionPostModules"
-                                :key="module.key"
-                                class="rounded-lg border border-border bg-background/70 p-4"
-                            >
-                                <div class="flex items-start gap-3">
-                                    <Checkbox
-                                        :id="`transaction-${module.key}`"
-                                        :checked="getTransactionPost(module.key)"
-                                        @update:checked="(checked) => {
-                                            if (!form.transaction) form.transaction = {}
-                                            form.transaction[module.key] = checked
-                                        }"
-                                    />
-                                    <div class="space-y-1">
-                                        <Label :for="`transaction-${module.key}`" class="cursor-pointer font-medium">
-                                            {{ t(module.label) }} - {{ t('preferences.transaction.post_immediately') }}
-                                        </Label>
-                                        <p class="text-sm text-muted-foreground">
-                                            {{ t('preferences.transaction.post_immediately_help') }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Confirm before save (modules without a dedicated tab) -->
-                            <div class="pt-2">
+                            <!-- Confirm before save (modules without a dedicated tab). When a
+                                 document posts is the company's call, on the company page. -->
+                            <div>
                                 <Label class="text-base font-medium">{{ t('general.confirm_before_save') }}</Label>
                                 <p class="text-sm text-muted-foreground mb-3">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1837,140 +1477,6 @@ watch(normalizedMenuSearch, (query) => {
                                             @update:model-value="(v) => setConfirmSave(module.key, v)"
                                         />
                                     </div>
-                                </div>
-                            </div>
-
-                        </CardContent>
-                    </Card>
-
-                    <!-- Stock adjustment preferences -->
-                    <Card v-if="isTabBuilt('stock_adjustment')" v-show="activeTab === 'stock_adjustment'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <CardTitle>{{ t('preferences.stock_adjustment.title') }}</CardTitle>
-                                <CardDescription>{{ t('preferences.stock_adjustment.description') }}</CardDescription>
-                            </div>
-                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('stock_adjustment')">
-                                <RotateCcw class="w-4 h-4 mr-2" />
-                                {{ t('preferences.reset') }}
-                            </Button>
-                        </CardHeader>
-                        <CardContent class="space-y-6">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div class="flex items-center justify-between rounded-lg border border-border bg-background/70 px-4 py-3">
-                                    <div class="space-y-0.5">
-                                        <Label class="font-normal">{{ t('preferences.transaction.post_immediately') }}</Label>
-                                        <p class="text-xs text-muted-foreground">{{ t('preferences.transaction.post_immediately_help') }}</p>
-                                    </div>
-                                    <Switch
-                                        :model-value="getTransactionPost('stock_adjustment_post_immediately')"
-                                        @update:model-value="(v) => {
-                                            if (!form.transaction) form.transaction = {}
-                                            form.transaction.stock_adjustment_post_immediately = v
-                                        }"
-                                    />
-                                </div>
-                                <div class="flex items-center justify-between rounded-lg border border-border bg-background/70 px-4 py-3">
-                                    <Label class="font-normal">{{ t('general.confirm_before_save') }}</Label>
-                                    <Switch
-                                        :model-value="getConfirmSave('stock_adjustment')"
-                                        @update:model-value="(v) => setConfirmSave('stock_adjustment', v)"
-                                    />
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.stock_adjustment.reference_prefix') }}</Label>
-                                    <Input
-                                        :model-value="getStockAdjustmentPref('reference_prefix', 'ADJ-')"
-                                        @update:model-value="(v) => setStockAdjustmentPref('reference_prefix', v)"
-                                    />
-                                </div>
-                                <div class="flex items-center gap-3 sm:pt-7">
-                                    <Switch
-                                        :model-value="getStockAdjustmentPref('allow_in_cost_override', true)"
-                                        @update:model-value="(v) => setStockAdjustmentPref('allow_in_cost_override', v)"
-                                    />
-                                    <Label>{{ t('preferences.stock_adjustment.allow_in_cost_override') }}</Label>
-                                </div>
-                            </div>
-                            <div>
-                                <Label class="font-medium">{{ t('preferences.stock_adjustment.reason_accounts') }}</Label>
-                                <p class="text-sm text-muted-foreground mb-3">{{ t('preferences.stock_adjustment.reason_accounts_help') }}</p>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div
-                                        v-for="reason in stockAdjustmentReasons"
-                                        :key="`reason-account-${reason.key}`"
-                                        class="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/70 px-4 py-3"
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            <Label class="font-normal">{{ t(`adjustment.reasons.${reason.key}`) }}</Label>
-                                            <span
-                                                class="text-[10px] font-semibold uppercase rounded px-1.5 py-0.5"
-                                                :class="reason.direction === 'in'
-                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'"
-                                            >
-                                                {{ t(`adjustment.direction.${reason.direction}`) }}
-                                            </span>
-                                        </div>
-                                        <Select
-                                            :model-value="getReasonAccount(reason.key)"
-                                            @update:model-value="(v) => setReasonAccount(reason.key, v)"
-                                        >
-                                            <SelectTrigger class="w-56">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem
-                                                    v-for="option in offsetAccountOptions"
-                                                    :key="option.id"
-                                                    :value="option.id"
-                                                >
-                                                    {{ t(option.label) }}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <!-- Tax & Currency preferences -->
-                    <Card v-if="isTabBuilt('tax_currency')" v-show="activeTab === 'tax_currency'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <CardTitle>{{ t('preferences.tabs.tax_currency') }}</CardTitle>
-                                <CardDescription>{{ t('preferences.tax_currency.description') }}</CardDescription>
-                            </div>
-                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('tax_currency')">
-                                <RotateCcw class="w-4 h-4 mr-2" />
-                                {{ t('preferences.reset') }}
-                            </Button>
-                        </CardHeader>
-                        <CardContent class="space-y-6">
-                                <div class="flex flex-wrap gap-6">
-                                <div class="flex items-center gap-3">
-                                    <Switch
-                                        :model-value="form.tax_currency.tax_plus"
-                                        @update:model-value="(v) => form.tax_currency.tax_plus = v"
-                                    />
-                                    <Label>{{ t('preferences.tax_currency.tax_plus') }}</Label>
-                                </div>
-                                <div class="flex items-center gap-3">
-                                    <Switch
-                                        :model-value="form.tax_currency.tax_minus"
-                                        @update:model-value="(v) => form.tax_currency.tax_minus = v"
-                                    />
-                                    <Label>{{ t('preferences.tax_currency.tax_minus') }}</Label>
-                                </div>
-                                <div class="flex items-center gap-3">
-                                    <Switch
-                                        :model-value="form.tax_currency.multi_currency_opening"
-                                        @update:model-value="(v) => form.tax_currency.multi_currency_opening = v"
-                                    />
-                                    <Label>{{ t('preferences.tax_currency.multi_currency_opening') }}</Label>
                                 </div>
                             </div>
 
@@ -2031,7 +1537,6 @@ watch(normalizedMenuSearch, (query) => {
                                         @update:model-value="(v) => form.notifications.nearest_expiry_alert = v"
                                     />
                                 </div>
-
 
                                 <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
@@ -2188,67 +1693,6 @@ watch(normalizedMenuSearch, (query) => {
                                             {{ t('preferences.notifications.sound.remove_custom') }}
                                         </Button>
                                     </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <!-- Security preferences -->
-                    <Card v-if="isTabBuilt('security')" v-show="activeTab === 'security'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <CardTitle>{{ t('preferences.tabs.security') }}</CardTitle>
-                                <CardDescription>{{ t('preferences.security.description') }}</CardDescription>
-                            </div>
-                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('security')">
-                                <RotateCcw class="w-4 h-4 mr-2" />
-                                {{ t('preferences.reset') }}
-                            </Button>
-                        </CardHeader>
-                        <CardContent class="space-y-6">
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.security.session_timeout') }}</Label>
-                                    <Input v-model.number="form.security.session_timeout" type="number" min="5" max="1440" />
-                                    <p class="text-sm text-muted-foreground">{{ t('preferences.security.session_timeout_hint') }}</p>
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.security.login_attempts_limit') }}</Label>
-                                    <Input v-model.number="form.security.login_attempts_limit" type="number" min="3" max="10" />
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.security.password_min_length') }}</Label>
-                                    <Input v-model.number="form.security.password_min_length" type="number" min="6" max="32" />
-                                </div>
-                                <div class="flex items-center gap-3 pt-8">
-                                    <Switch
-                                        :model-value="form.security.password_special_chars"
-                                        @update:model-value="(v) => form.security.password_special_chars = v"
-                                    />
-                                    <Label>{{ t('preferences.security.password_special_chars') }}</Label>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <Switch
-                                    :model-value="form.security.two_factor_auth"
-                                    @update:model-value="(v) => form.security.two_factor_auth = v"
-                                />
-                                <Label>{{ t('preferences.security.two_factor_auth') }}</Label>
-                            </div>
-                            <div class="border-t pt-6 space-y-4">
-                                <Label class="text-base font-medium">{{ t('preferences.security.report_lock') }}</Label>
-                                <div class="flex items-center gap-3">
-                                    <Switch
-                                        :model-value="form.security.lock_reports"
-                                        @update:model-value="(v) => form.security.lock_reports = v"
-                                    />
-                                    <Label>{{ t('preferences.security.lock_reports') }}</Label>
-                                </div>
-                                <div v-if="form.security.lock_reports" class="space-y-2 max-w-sm">
-                                    <Label>{{ t('preferences.security.lock_password') }}</Label>
-                                    <Input v-model="form.security.lock_password" type="password" />
                                 </div>
                             </div>
                         </CardContent>
@@ -2436,93 +1880,6 @@ watch(normalizedMenuSearch, (query) => {
                         </CardContent>
                     </Card>
 
-                    <!-- Backup preferences -->
-                    <Card v-if="isTabBuilt('backup')" v-show="activeTab === 'backup'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <CardTitle>{{ t('preferences.tabs.backup') }}</CardTitle>
-                                <CardDescription>{{ t('preferences.backup.description') }}</CardDescription>
-                            </div>
-                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('backup')">
-                                <RotateCcw class="w-4 h-4 mr-2" />
-                                {{ t('preferences.reset') }}
-                            </Button>
-                        </CardHeader>
-                        <CardContent class="space-y-6">
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.backup.auto_backup') }}</Label>
-                                    <Select v-model="form.backup.auto_backup">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem value="none">{{ t('preferences.backup.none') }}</SelectItem>
-                                            <SelectItem value="daily">{{ t('preferences.backup.daily') }}</SelectItem>
-                                            <SelectItem value="weekly">{{ t('preferences.backup.weekly') }}</SelectItem>
-                                            <SelectItem value="monthly">{{ t('preferences.backup.monthly') }}</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.backup.backup_retention_days') }}</Label>
-                                    <Input v-model.number="form.backup.backup_retention_days" type="number" min="1" max="365" />
-                                </div>
-                            </div>
-                            <div class="space-y-4">
-                                <div class="flex items-center gap-3">
-                                    <Switch
-                                        :model-value="form.backup.cloud_backup"
-                                        @update:model-value="(v) => form.backup.cloud_backup = v"
-                                    />
-                                    <Label>{{ t('preferences.backup.cloud_backup') }}</Label>
-                                </div>
-                                <div v-if="form.backup.cloud_backup" class="space-y-2 max-w-sm">
-                                    <Label>{{ t('preferences.backup.cloud_provider') }}</Label>
-                                    <Select v-model="form.backup.cloud_provider">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem value="aws">Amazon S3</SelectItem>
-                                            <SelectItem value="google">Google Cloud</SelectItem>
-                                            <SelectItem value="azure">Azure Blob</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div class="space-y-3">
-                                <Label class="text-base font-medium">{{ t('preferences.backup.export_formats') }}</Label>
-                                <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
-                                    <div class="flex items-center gap-2">
-                                        <Checkbox
-                                            id="export-pdf"
-                                            :checked="form.backup.export_pdf"
-                                            @update:checked="(v) => form.backup.export_pdf = v"
-                                        />
-                                        <Label for="export-pdf" class="font-normal cursor-pointer">PDF</Label>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <Checkbox
-                                            id="export-excel"
-                                            :checked="form.backup.export_excel"
-                                            @update:checked="(v) => form.backup.export_excel = v"
-                                        />
-                                        <Label for="export-excel" class="font-normal cursor-pointer">Excel</Label>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <Checkbox
-                                            id="export-csv"
-                                            :checked="form.backup.export_csv"
-                                            @update:checked="(v) => form.backup.export_csv = v"
-                                        />
-                                        <Label for="export-csv" class="font-normal cursor-pointer">CSV</Label>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
                     <!-- Localization preferences -->
                     <Card v-if="isTabBuilt('localization')" v-show="activeTab === 'localization'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -2547,74 +1904,6 @@ watch(normalizedMenuSearch, (query) => {
                                             <SelectItem value="en">English</SelectItem>
                                             <SelectItem value="fa">فارسی (Persian)</SelectItem>
                                             <SelectItem value="ps">پښتو (Pashto)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.localization.timezone') }}</Label>
-                                    <Select v-model="form.localization.timezone">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem v-for="(label, value) in timezones" :key="value" :value="value">
-                                                {{ label }}
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.localization.date_format') }}</Label>
-                                    <Select v-model="form.localization.date_format">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem value="Y-m-d">2024-01-15</SelectItem>
-                                            <SelectItem value="d/m/Y">15/01/2024</SelectItem>
-                                            <SelectItem value="m/d/Y">01/15/2024</SelectItem>
-                                            <SelectItem value="d-m-Y">15-01-2024</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.localization.time_format') }}</Label>
-                                    <Select v-model="form.localization.time_format">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
-                                            <SelectItem value="24h">24-hour</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.localization.number_format') }}</Label>
-                                    <Select v-model="form.localization.number_format">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem value="1,000.00">1,000.00</SelectItem>
-                                            <SelectItem value="1.000,00">1.000,00</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div class="space-y-2">
-                                    <Label>{{ t('preferences.localization.first_day_of_week') }}</Label>
-                                    <Select v-model="form.localization.first_day_of_week">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent v-highlight-search="preferenceSearchContext">
-                                            <SelectItem value="sunday">{{ t('preferences.localization.sunday') }}</SelectItem>
-                                            <SelectItem value="monday">{{ t('preferences.localization.monday') }}</SelectItem>
-                                            <SelectItem value="saturday">{{ t('preferences.localization.saturday') }}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

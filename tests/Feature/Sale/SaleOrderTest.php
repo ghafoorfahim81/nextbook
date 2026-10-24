@@ -196,7 +196,7 @@ class SaleOrderTest extends TestCase
     public function test_draft_sale_order_can_be_posted_then_no_longer_edited_or_cancelled(): void
     {
         // Force draft by disabling post-immediately preference for this request.
-        $this->ctx['user']->setPreference('transaction.sale_order_post_immediately', false);
+        set_company_setting('transaction.sale_order_post_immediately', false);
         $this->ctx['user']->save();
 
         $this->post(route('sale-orders.store'), $this->storeSaleOrderPayload(['number' => 5002]));
@@ -216,7 +216,7 @@ class SaleOrderTest extends TestCase
 
     public function test_draft_sale_order_can_be_cancelled(): void
     {
-        $this->ctx['user']->setPreference('transaction.sale_order_post_immediately', false);
+        set_company_setting('transaction.sale_order_post_immediately', false);
         $this->ctx['user']->save();
 
         $this->post(route('sale-orders.store'), $this->storeSaleOrderPayload(['number' => 5003]));

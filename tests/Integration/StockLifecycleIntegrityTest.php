@@ -56,7 +56,6 @@ class StockLifecycleIntegrityTest extends TestCase
         Cache::put('costing_method', 'fifo');
 
         foreach ([
-            ['Inventory Shrinkage & Wastage', '9040', 'inventory-shrinkage-and-wastage'],
             ['Inventory Adjustments', '9050', 'inventory-adjustments'],
         ] as [$name, $number, $slug]) {
             Account::factory()->create([

@@ -29,7 +29,7 @@ class ChartOfAccountsDeletionFeatureTest extends TestCase
         $user = User::factory()->create([
             'name' => 'account-delete-admin',
             'email' => 'account-delete-admin@example.test',
-            'preferences' => User::DEFAULT_PREFERENCES,
+            'preferences' => \App\Support\Settings::defaults(),
         ]);
 
         $role = Role::query()->firstOrCreate(

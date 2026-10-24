@@ -110,7 +110,7 @@ class UserController extends Controller
         $data['status'] = UserStatus::ACTIVE->value;
         $data['company_id'] = CompanyContext::companyId();
         $data['branch_id'] = CompanyContext::branchId();
-        $data['preferences'] = User::DEFAULT_PREFERENCES;
+        $data['preferences'] = \App\Support\Settings::defaults();
         $user = User::create($data);
 
         if (isset($data['roles'])) {

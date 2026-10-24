@@ -173,15 +173,7 @@ class ReportsFeatureTest extends TestCase
     {
         Cache::put('costing_method', 'fifo');
 
-        Account::factory()->create([
-            'company_id' => $this->ctx['company']->id,
-            'name' => 'Inventory Shrinkage & Wastage',
-            'number' => '9040',
-            'slug' => 'inventory-shrinkage-and-wastage',
-            'account_type_id' => $this->ctx['account_types']['expense']->id,
-            'is_main' => true,
-            'is_active' => true,
-        ]);
+        // 9040 (shrinkage) comes with the ERP context since phase 4.
         Account::factory()->create([
             'company_id' => $this->ctx['company']->id,
             'name' => 'Inventory Adjustments',

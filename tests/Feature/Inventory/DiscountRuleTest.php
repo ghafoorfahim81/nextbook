@@ -50,7 +50,7 @@ class DiscountRuleTest extends TestCase
         );
 
         return tap(User::factory()->create([
-            'preferences' => User::DEFAULT_PREFERENCES,
+            'preferences' => \App\Support\Settings::defaults(),
             'company_id' => $this->ctx['company']->id,
             'branch_id' => $this->ctx['branch']->id,
         ]), fn (User $user) => $user->assignRole($role));

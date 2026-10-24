@@ -29,7 +29,7 @@ it('stops showing the prompt after it is dismissed', function () {
 it('does not resurface the prompt once a dismissed timestamp is stored', function () {
     ['user' => $user] = $this->bootstrapErpContext();
 
-    $preferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
+    $preferences = $user->preferences ?? \App\Support\Settings::defaults();
     data_set($preferences, 'onboarding.manual_prompt_dismissed_at', now()->toIso8601String());
     $user->update(['preferences' => $preferences]);
 
