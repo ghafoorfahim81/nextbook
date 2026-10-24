@@ -75,6 +75,7 @@ return [
         'already_cancelled' => 'Document is already cancelled.',
         'not_in_transit' => 'This transfer is not waiting to be received.',
         'receive_in_destination' => 'Switch to the receiving branch to receive this transfer.',
+        'cancel_in_source' => 'Switch to the sending branch to reverse this transfer.',
         'received_more_than_sent' => 'More cannot arrive than was sent.',
         'transit_accounts_missing' => 'The Goods in Transit or inventory shrinkage account is missing from the chart of accounts.',
         'set_off_already_reversed' => 'This set-off has already been reversed.',

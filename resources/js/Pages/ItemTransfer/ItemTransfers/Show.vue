@@ -95,6 +95,7 @@ const reverseTransfer = (reason) => {
         :status="transfer.status"
         :edit-route="transfer.id ? route('item-transfers.edit', transfer.id) : null"
         edit-permission="item_transfers.update"
+        :reversible="transfer.can_reverse"
         @post="postDialogOpen = true"
         @reverse="reverseDialogOpen = true"
       />

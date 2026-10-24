@@ -121,6 +121,18 @@ class InterbranchTransferTest extends TestCase
         $this->assertSame(0.0, $this->balance('goods-in-transit'));
     }
 
+    public function test_the_receiving_branch_cannot_reverse_the_transfer(): void
+    {
+        $transfer = $this->send(quantity: 8, unitPrice: 10);
+
+        $this->post(route('branches.switch'), ['branch_id' => $this->herat->id]);
+        $this->post(route('item-transfers.reverse', $transfer), ['reason' => 'not ours'])
+            ->assertSessionHasErrors('status');
+
+        $this->assertTrue($transfer->fresh()->isInTransit());
+        $this->assertSame(80.0, $this->balance('goods-in-transit'));
+    }
+
     public function test_a_transfer_within_one_branch_still_moves_at_once(): void
     {
         $shelf = Warehouse::factory()->create(['branch_id' => $this->ctx['branch']->id, 'name' => 'Back Shelf']);

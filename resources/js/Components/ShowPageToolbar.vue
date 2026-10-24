@@ -16,12 +16,14 @@ const props = defineProps({
     editPermission: { type: String, default: null },
     exportUrl: { type: String, default: null },
     printUrl: { type: String, default: null },
+    // A page can withhold the reverse button when this user may not reverse here.
+    reversible: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['post', 'reverse'])
 
 const canPost = () => props.status === 'draft'
-const canReverse = () => props.status === 'posted'
+const canReverse = () => props.status === 'posted' && props.reversible
 const canEdit = () => {
     if (!props.editRoute || props.status !== 'draft') return false
     if (props.editPermission) return can(props.editPermission)
