@@ -34,6 +34,17 @@ class ItemTransferResource extends JsonResource
             ]),
             'status' => $this->status->value,
             'status_label' => $this->status->getLabel(),
+            // Phase 4: a transfer to another branch is sent, then received.
+            'to_branch_id' => $this->to_branch_id,
+            'to_branch_name' => $this->to_branch_id
+                ? \App\Models\Administration\Branch::withoutGlobalScopes()->whereKey($this->to_branch_id)->value('name')
+                : null,
+            'from_branch_name' => $this->whenLoaded('branch', fn () => $this->branch?->name),
+            'is_interbranch' => $this->to_branch_id !== null && (string) $this->to_branch_id !== (string) $this->branch_id,
+            'is_in_transit' => $this->isInTransit(),
+            'received_at' => $this->received_at?->toDateTimeString(),
+            // Only someone working in the receiving branch may take it in.
+            'can_receive' => $this->isInTransit() && \App\Support\CompanyContext::branchId() === (string) $this->to_branch_id,
             'has_transfer_cost' => (bool) $this->has_transfer_cost,
             'transfer_cost' => $this->transfer_cost,
             'bank_account_id' => $this->bank_account_id,

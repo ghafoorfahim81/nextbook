@@ -52,6 +52,8 @@ final class CompanyContext
         // Freight for moving goods between the company's own warehouses. An
         // item transfer defaults its expense line to this account.
         'item-transfer-expense',
+        // Between sending stock to another branch and its receipt there.
+        'goods-in-transit',
         'contra-clearing',
         // Realised exchange differences and unapplied money, both resolved by
         // slug only — the names are localised into Dari and Pashto, so any

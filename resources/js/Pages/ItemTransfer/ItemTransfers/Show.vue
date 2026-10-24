@@ -10,7 +10,7 @@ import { useI18n } from 'vue-i18n'
 import { useDocumentAction } from '@/composables/useDocumentAction'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import {
-  ArrowLeftRight, Calendar, Store, DollarSign, FileText, User, Landmark, Coins,
+  ArrowLeftRight, Calendar, Store, DollarSign, FileText, User, Landmark, Coins, Truck, PackageCheck,
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -42,6 +42,22 @@ const totalQuantity = computed(() =>
 const totalAmount = computed(() =>
   items.value.reduce((sum, item) => sum + (Number(item.quantity || 0) * Number(item.unit_price || 0)), 0)
 )
+
+// Phase 4: what arrived, per line; everything sent until changed.
+const received = ref({})
+const resetReceived = () => {
+  received.value = Object.fromEntries(items.value.map((line) => [line.id, Number(line.quantity)]))
+}
+resetReceived()
+const shortfall = computed(() => items.value.reduce(
+  (sum, line) => sum + Math.max(0, Number(line.quantity) - Number(received.value[line.id] ?? line.quantity)), 0
+))
+
+const receiveTransfer = () => {
+  submit(route('item-transfers.receive', transfer.value.id), { received: received.value }, {
+    onSuccess: () => resetReceived(),
+  })
+}
 
 const postDialogOpen = ref(false)
 const reverseDialogOpen = ref(false)
@@ -100,6 +116,53 @@ const reverseTransfer = (reason) => {
         @confirm="reverseTransfer"
       />
 
+      <!-- Phase 4: sent to another branch and waiting there. -->
+      <div
+        v-if="transfer.is_in_transit"
+        class="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4"
+      >
+        <div class="flex flex-wrap items-center gap-2">
+          <Truck class="h-5 w-5 text-amber-600" />
+          <p class="font-semibold text-foreground">{{ t('item_transfer.in_transit_to', { branch: transfer.to_branch_name }) }}</p>
+        </div>
+        <p class="mt-1 text-sm text-muted-foreground">
+          {{ transfer.can_receive ? t('item_transfer.receive_hint') : t('item_transfer.in_transit_hint', { branch: transfer.to_branch_name }) }}
+        </p>
+
+        <div v-if="transfer.can_receive" class="mt-4 space-y-2">
+          <div
+            v-for="line in items"
+            :key="line.id"
+            class="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm"
+          >
+            <span dir="auto" class="min-w-0 flex-1 truncate text-start font-medium">{{ line.item?.name || line.item_name }}</span>
+            <span class="text-muted-foreground">{{ t('item_transfer.sent') }}: {{ Number(line.quantity) }}</span>
+            <label class="flex items-center gap-2">
+              <span class="text-muted-foreground">{{ t('item_transfer.arrived') }}</span>
+              <input
+                v-model.number="received[line.id]"
+                type="number"
+                min="0"
+                :max="Number(line.quantity)"
+                step="any"
+                class="w-24 rounded-md border border-border bg-background px-2 py-1 text-end"
+              />
+            </label>
+          </div>
+          <p v-if="shortfall > 0" class="text-xs text-amber-600">{{ t('item_transfer.shortfall_note', { qty: shortfall }) }}</p>
+          <div class="flex justify-end">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+              :disabled="processing"
+              @click="receiveTransfer"
+            >
+              <PackageCheck class="h-4 w-4" /> {{ t('item_transfer.receive') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Header card -->
       <fieldset class="min-w-0 rounded-xl border border-border bg-card px-5 pb-5 pt-3 text-card-foreground shadow-sm">
         <legend class="px-2 flex items-center gap-1.5">
@@ -123,13 +186,13 @@ const reverseTransfer = (reason) => {
             <div class="flex items-center gap-2 text-xs text-muted-foreground">
               <Store class="h-3 w-3" />{{ t('item_transfer.from_warehouse') }}
             </div>
-            <div class="text-sm font-medium text-foreground">{{ transfer.from_warehouse?.name || '-' }}</div>
+            <div class="text-sm font-medium text-foreground">{{ transfer.from_warehouse?.name || '-' }}<span v-if="transfer.is_interbranch && transfer.from_branch_name" class="text-muted-foreground"> · {{ transfer.from_branch_name }}</span></div>
           </div>
           <div class="space-y-1.5">
             <div class="flex items-center gap-2 text-xs text-muted-foreground">
               <Store class="h-3 w-3" />{{ t('item_transfer.to_warehouse') }}
             </div>
-            <div class="text-sm font-medium text-foreground">{{ transfer.to_warehouse?.name || '-' }}</div>
+            <div class="text-sm font-medium text-foreground">{{ transfer.to_warehouse?.name || '-' }}<span v-if="transfer.is_interbranch && transfer.to_branch_name" class="text-muted-foreground"> · {{ transfer.to_branch_name }}</span></div>
           </div>
           <div class="space-y-1.5">
             <div class="flex items-center gap-2 text-xs text-muted-foreground">

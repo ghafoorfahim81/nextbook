@@ -18,5 +18,13 @@
   "has_transfer_cost": "This transfer has a transfer cost",
   "bank_account": "Bank Account",
   "expense_account": "Expense Account",
-  "expense_account_hint": "Freight for moving goods between your own warehouses is charged here. It defaults to the Item Transfer Expense account so this cost shows on its own line in the profit and loss."
+  "expense_account_hint": "Freight for moving goods between your own warehouses is charged here. It defaults to the Item Transfer Expense account so this cost shows on its own line in the profit and loss.",
+  "in_transit": "In transit",
+  "in_transit_to": "In transit to {branch}",
+  "in_transit_hint": "Waiting for {branch} to receive it. The goods have left this warehouse.",
+  "receive_hint": "Enter what actually arrived. Anything missing is booked as inventory shrinkage.",
+  "sent": "Sent",
+  "arrived": "Arrived",
+  "shortfall_note": "{qty} short will be booked as inventory shrinkage.",
+  "receive": "Receive"
 }

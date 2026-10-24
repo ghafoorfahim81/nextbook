@@ -32,6 +32,7 @@ class ItemTransferItem extends Model
         'quantity',
         'measure_id',
         'unit_price',
+        'received_quantity',
     ];
 
     protected function casts(): array
@@ -45,6 +46,7 @@ class ItemTransferItem extends Model
             'quantity' => 'decimal:4',
             'measure_id' => 'string',
             'unit_price' => 'decimal:4',
+            'received_quantity' => 'decimal:4',
         ];
     }
 

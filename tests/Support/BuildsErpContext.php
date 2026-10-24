@@ -323,6 +323,10 @@ trait BuildsErpContext
             // An item transfer defaults its expense line here.
             'item-transfer-expense' => ['name' => 'Item Transfer Expense', 'type' => 'expense', 'number' => '9801'],
             'contra-clearing' => ['name' => 'Set-off Clearing', 'type' => 'other-current-asset', 'number' => '3070'],
+            // Phase 4: a transfer to another branch, between send and receipt,
+            // and what goes missing on the way.
+            'goods-in-transit' => ['name' => 'Goods in Transit', 'type' => 'other-current-asset', 'number' => '3025'],
+            'inventory-shrinkage-and-wastage' => ['name' => 'Inventory Shrinkage and Wastage', 'type' => 'expense', 'number' => '9040'],
             // Realised exchange differences. Resolved by slug everywhere —
             // the names are localised into Dari and Pashto in production.
             'fx-gain' => ['name' => 'Foreign Exchange Gain', 'type' => 'income', 'number' => '9070'],

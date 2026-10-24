@@ -3,7 +3,6 @@
 namespace App\Models\ItemTransfer;
 
 use App\Enums\TransactionStatus;
-use App\Traits\BranchSpecific;
 use App\Traits\CompanySpecific;
 use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
@@ -22,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransfer extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $table = 'item_transfers';
 
@@ -40,6 +39,10 @@ class ItemTransfer extends Model
         'rate',
         'branch_id',
         'remarks',
+        // Phase 4: the receiving branch, and when it took the goods in.
+        'to_branch_id',
+        'received_at',
+        'received_by',
         'created_by',
         'updated_by',
     ];
@@ -51,6 +54,7 @@ class ItemTransfer extends Model
             'from_warehouse_id' => 'string',
             'to_warehouse_id' => 'string',
             'status' => TransactionStatus::class,
+            'received_at' => 'datetime',
             'has_transfer_cost' => 'boolean',
             'transfer_cost' => 'decimal:4',
             'bank_account_id' => 'string',
@@ -82,14 +86,55 @@ class ItemTransfer extends Model
         'created_by',
     ];
 
+    // Both ends show on either branch's copy of the transfer, so the other
+    // branch's warehouse must not be filtered out by its branch scope.
     public function fromWarehouse(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'from_warehouse_id');
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'from_warehouse_id')
+            ->withoutGlobalScope('branchSpecific');
     }
 
     public function toWarehouse(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'to_warehouse_id');
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'to_warehouse_id')
+            ->withoutGlobalScope('branchSpecific');
+    }
+
+    /**
+     * A transfer belongs to two branches once it crosses them (phase 4): the
+     * one sending and the one receiving, which has to see it to take the goods
+     * in. So instead of BranchSpecific's branch_id-only scope, under the same
+     * name so `withoutGlobalScope('branchSpecific')` keeps working. Like
+     * BranchSpecific, no branch (a job, a command) means no filter.
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope('branchSpecific', function (\Illuminate\Database\Eloquent\Builder $builder) {
+            $branchId = \App\Support\CompanyContext::branchId();
+
+            if ($branchId === null) {
+                return;
+            }
+
+            $table = $builder->getModel()->getTable();
+            $builder->where(fn ($query) => $query
+                ->where("{$table}.branch_id", $branchId)
+                ->orWhere("{$table}.to_branch_id", $branchId));
+        });
+    }
+
+    public function toBranch(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Branch::class, 'to_branch_id');
+    }
+
+    /** Sent to another branch and not yet received there (phase 4). */
+    public function isInTransit(): bool
+    {
+        return $this->to_branch_id !== null
+            && (string) $this->to_branch_id !== (string) $this->branch_id
+            && $this->status === TransactionStatus::POSTED
+            && $this->received_at === null;
     }
 
     public function branch(): BelongsTo
