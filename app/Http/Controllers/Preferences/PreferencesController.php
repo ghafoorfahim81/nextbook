@@ -26,27 +26,20 @@ use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Support\Preferences\SoundOptions;
 use App\Services\ActivityLogService;
+use App\Support\Settings;
 
 class PreferencesController extends Controller
 {
     public function index(Request $request)
     {
         $user = $request->user();
+        // Personal settings only (phase 6); the company's are on the company page.
         $preferences = $user->getAllPreferences();
-        // Get accounts for default cash account dropdown
-        $cashAccounts = Account::select('id', 'name')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
 
         return Inertia::render('Preferences/Index', [
             'preferences' => $preferences,
-            'defaultPreferences' => User::DEFAULT_PREFERENCES,
-            // Kept on first load: small, and the settings search matches
-            // account names and timezones to jump to their tab.
-            'cashAccounts' => $cashAccounts,
+            'defaultPreferences' => Settings::defaults(),
             'sidebarMenus' => $this->getSidebarMenuOptions(),
-            'timezones' => $this->getTimezones(),
             'soundOptions' => SoundOptions::grouped(),
 
             // Only the "Install plugins" tab uses these, and they were the
@@ -75,35 +68,39 @@ class PreferencesController extends Controller
         abort_unless($user->can('preferences.update'), 403);
         $validated = $request->validated();
 
-        // Merge validated preferences with existing ones
-        $currentPreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
-        $newPreferences = array_replace_recursive($currentPreferences, $validated);
+        // Personal settings only (phase 6). Company keys are saved on the
+        // company page; one sent here (a form panel echoing its whole group
+        // back, an old export) is left out, not refused.
+        $personal = Settings::withoutCompanyKeys($validated);
 
-        if (array_key_exists('sidebar_menus', $validated['appearance'] ?? [])) {
+        // Merge validated preferences with existing ones
+        $currentPreferences = $user->preferences ?? Settings::defaults();
+        $newPreferences = array_replace_recursive($currentPreferences, $personal);
+
+        if (array_key_exists('sidebar_menus', $personal['appearance'] ?? [])) {
             data_set(
                 $newPreferences,
                 'appearance.sidebar_menus',
-                array_values(array_unique($validated['appearance']['sidebar_menus']))
+                array_values(array_unique($personal['appearance']['sidebar_menus']))
             );
         }
 
-        $user->update(['preferences' => $newPreferences]);
-        app(ActivityLogService::class)->logUpdate(
-            reference: $user,
-            before: $currentPreferences,
-            after: $newPreferences,
-            module: 'setting',
-            description: "Preferences updated for {$user->name}.",
-            metadata: [
-                'action' => 'preferences_update',
-            ],
-        );
+        if ($newPreferences !== $currentPreferences) {
+            $user->update(['preferences' => $newPreferences]);
+            app(ActivityLogService::class)->logUpdate(
+                reference: $user,
+                before: $currentPreferences,
+                after: $newPreferences,
+                module: 'setting',
+                description: "Preferences updated for {$user->name}.",
+                metadata: [
+                    'action' => 'preferences_update',
+                ],
+            );
+        }
         Cache::forget(CacheKey::forUser($request, 'preferences'));
         Cache::forget(CacheKey::forCompany(CacheKey::companyId($request), 'business_profile'));
         Cache::forget(CacheKey::forUser($request, 'recordsPerPage'));
-        Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
-        Cache::forget('balance_nature_format');
-        Cache::put('balance_nature_format', $newPreferences['appearance']['balance_nature_format']);
 
         // AJAX saves (e.g. inline preference panel on Create/Edit forms) expect a JSON
         // response. Returning a redirect here causes the browser to follow it with the
@@ -112,7 +109,7 @@ class PreferencesController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => __('preferences.preferences_saved'),
-                'preferences' => $newPreferences,
+                'preferences' => Settings::resolve($user->fresh()),
             ]);
         }
 
@@ -123,9 +120,9 @@ class PreferencesController extends Controller
     {
         $user = $request->user();
         abort_unless($user->can('preferences.update'), 403);
-        $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
+        $beforePreferences = $user->preferences ?? Settings::defaults();
         $user->resetPreferences($category)->save();
-        $afterPreferences = $user->fresh()->preferences ?? User::DEFAULT_PREFERENCES;
+        $afterPreferences = $user->fresh()->preferences ?? \App\Support\Settings::defaults();
         app(ActivityLogService::class)->logUpdate(
             reference: $user,
             before: $beforePreferences,
@@ -232,7 +229,7 @@ class PreferencesController extends Controller
     {
         $user = $request->user();
         abort_unless($user->can('preferences.export'), 403);
-        $preferences = $user->getAllPreferences();
+        $preferences = Settings::resolve($user);
 
         app(ActivityLogService::class)->logAction(
             eventType: 'export',
@@ -263,7 +260,7 @@ class PreferencesController extends Controller
             return redirect()->back()->with('error', __('preferences.invalid_preferences_file'));
         }
 
-        $unknownCategories = array_diff(array_keys($preferences), array_keys(User::DEFAULT_PREFERENCES));
+        $unknownCategories = array_diff(array_keys($preferences), array_keys(\App\Support\Settings::defaults()));
         if ($unknownCategories !== []) {
             return redirect()->back()->withErrors([
                 'file' => __('preferences.invalid_preferences_file'),
@@ -281,15 +278,15 @@ class PreferencesController extends Controller
         unset($validated['sale']['invoice_theme']);
 
         $user = $request->user();
-        $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
-        $user->update(['preferences' => array_replace_recursive(User::DEFAULT_PREFERENCES, $validated)]);
+        $beforePreferences = $user->preferences ?? Settings::defaults();
+        $user->update(['preferences' => array_replace_recursive(Settings::defaults(), Settings::withoutCompanyKeys($validated))]);
         Cache::forget(CacheKey::forUser($request, 'preferences'));
         Cache::forget(CacheKey::forCompany(CacheKey::companyId($request), 'business_profile'));
 
         app(ActivityLogService::class)->logUpdate(
             reference: $user,
             before: $beforePreferences,
-            after: $user->fresh()->preferences ?? User::DEFAULT_PREFERENCES,
+            after: $user->fresh()->preferences ?? \App\Support\Settings::defaults(),
             module: 'setting',
             description: "Preferences imported for {$user->name}.",
             metadata: [
@@ -329,22 +326,6 @@ class PreferencesController extends Controller
             ['value' => 'administration', 'label' => 'sidebar.main.administration'],
             ['value' => 'reports', 'label' => 'sidebar.main.reports'],
             ['value' => 'system', 'label' => 'sidebar.main.system'],
-        ];
-    }
-
-    private function getTimezones(): array
-    {
-        return [
-            'UTC' => 'UTC',
-            'Asia/Kabul' => 'Asia/Kabul (UTC+4:30)',
-            'Asia/Tehran' => 'Asia/Tehran (UTC+3:30)',
-            'Asia/Dubai' => 'Asia/Dubai (UTC+4)',
-            'Asia/Karachi' => 'Asia/Karachi (UTC+5)',
-            'Asia/Kolkata' => 'Asia/Kolkata (UTC+5:30)',
-            'Europe/London' => 'Europe/London (UTC+0)',
-            'Europe/Paris' => 'Europe/Paris (UTC+1)',
-            'America/New_York' => 'America/New_York (UTC-5)',
-            'America/Los_Angeles' => 'America/Los_Angeles (UTC-8)',
         ];
     }
 }

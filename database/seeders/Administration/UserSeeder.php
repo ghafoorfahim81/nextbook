@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
                 'name' => 'admin',
                 'email' => 'admin@nextbook.af',
                 'password' => bcrypt('password'),
-                'preferences' => User::DEFAULT_PREFERENCES,
+                'preferences' => \App\Support\Settings::defaults(),
             ];
 
             if ($branch) {

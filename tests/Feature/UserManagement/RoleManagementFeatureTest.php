@@ -35,7 +35,7 @@ class RoleManagementFeatureTest extends TestCase
         $assignedUser = User::factory()->create([
             'branch_id' => $ctx['branch']->id,
             'company_id' => $ctx['company']->id,
-            'preferences' => User::DEFAULT_PREFERENCES,
+            'preferences' => \App\Support\Settings::defaults(),
         ]);
         $assignedUser->assignRole($role);
 
@@ -66,7 +66,7 @@ class RoleManagementFeatureTest extends TestCase
         $assignedUser = User::factory()->create([
             'branch_id' => $ctx['branch']->id,
             'company_id' => $ctx['company']->id,
-            'preferences' => User::DEFAULT_PREFERENCES,
+            'preferences' => \App\Support\Settings::defaults(),
         ]);
         $assignedUser->assignRole($role);
 

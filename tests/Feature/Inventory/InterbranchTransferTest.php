@@ -50,7 +50,7 @@ class InterbranchTransferTest extends TestCase
             'name' => 'Herat Warehouse',
         ]);
 
-        set_user_preference('transaction.item_transfer_post_immediately', false, $this->ctx['user']);
+        set_company_setting('transaction.item_transfer_post_immediately', false);
 
         $this->seedStock(20, 10);
     }

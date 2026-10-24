@@ -68,7 +68,7 @@ trait BuildsErpContext
         $user = User::factory()->create([
             'name' => 'erp-super-admin',
             'email' => 'erp-admin-'.fake()->unique()->numberBetween(1000, 9999).'@example.test',
-            'preferences' => User::DEFAULT_PREFERENCES,
+            'preferences' => \App\Support\Settings::defaults(),
             'company_id' => $company->id,
         ]);
 

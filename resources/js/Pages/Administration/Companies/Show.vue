@@ -7,7 +7,8 @@ import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
-import { Edit, Save, X, Building2, Upload } from 'lucide-vue-next';
+import { Edit, Save, X, Building2, Upload, SlidersHorizontal } from 'lucide-vue-next';
+import CompanySettingsForm from '@/Components/Company/CompanySettingsForm.vue';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth';
@@ -27,7 +28,37 @@ const props = defineProps({
     invoiceThemes: { type: Array, default: () => [] },
     invoiceFormats: { type: Array, default: () => [] },
     invoiceFormatDefaults: { type: Object, default: () => ({}) },
+    // Phase 6: the company's shared settings, and who may change them.
+    settings: { type: Object, default: () => ({}) },
+    canEditSettings: { type: Boolean, default: false },
+    cashAccounts: { type: Array, default: () => [] },
 });
+
+// The company settings save on their own (company.settings.update), so
+// editing them does not reopen the company's details, and the other way round.
+const settingsForm = useForm(JSON.parse(JSON.stringify(props.settings)));
+const editingSettings = ref(false);
+
+const saveSettings = () => {
+    settingsForm.put(route('company.settings.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            editingSettings.value = false;
+            settingsForm.defaults();
+            toast({
+                title: t('general.success'),
+                description: t('company.settings.saved'),
+                class: 'bg-green-600 text-white',
+            });
+        },
+    });
+};
+
+const cancelSettings = () => {
+    settingsForm.reset();
+    settingsForm.clearErrors();
+    editingSettings.value = false;
+};
 
 const isEditing = ref(false);
 const originalData = ref({});
@@ -758,6 +789,45 @@ const setCalendarLocaleStorage = (selected) => {
                     </form>
                 </div>
             </div>
+
+            <!-- Company settings (phase 6): one set for everyone in the company,
+                 saved on their own, apart from the company's details above. -->
+            <section class="mt-6 rounded-lg border border-border bg-card shadow-sm">
+                <div class="flex flex-col gap-3 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h2 class="flex items-center gap-2 text-lg font-semibold text-foreground">
+                            <SlidersHorizontal class="h-5 w-5 text-primary" />
+                            {{ t('company.settings.title') }}
+                        </h2>
+                        <p class="mt-1 text-sm text-muted-foreground">{{ t('company.settings.description') }}</p>
+                        <p v-if="!canEditSettings" class="mt-1 text-sm text-muted-foreground">{{ t('company.settings.read_only') }}</p>
+                    </div>
+                    <div v-if="canEditSettings" class="flex shrink-0 gap-2">
+                        <Button v-if="!editingSettings" variant="outline" class="bg-primary text-white" @click="editingSettings = true">
+                            <Edit class="h-4 w-4" />
+                            {{ t('general.edit', { name: t('company.settings.title') }) }}
+                        </Button>
+                        <template v-else>
+                            <Button :disabled="settingsForm.processing" class="flex items-center gap-2" @click="saveSettings">
+                                <Save class="h-4 w-4" />
+                                {{ settingsForm.processing ? t('general.saving') : t('general.save') }}
+                            </Button>
+                            <Button variant="outline" class="flex items-center gap-2" @click="cancelSettings">
+                                <X class="h-4 w-4" />
+                                {{ t('general.cancel') }}
+                            </Button>
+                        </template>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <CompanySettingsForm
+                        :settings="settingsForm"
+                        :disabled="!editingSettings"
+                        :cash-accounts="cashAccounts"
+                        :errors="settingsForm.errors"
+                    />
+                </div>
+            </section>
 
             <section class="mt-6 rounded-lg border border-border bg-card shadow-sm">
                 <div class="border-b border-border p-6">

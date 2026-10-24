@@ -205,7 +205,7 @@ class ReverseBlockedByReturnTest extends TestCase
      */
     public function test_even_a_draft_return_blocks_the_purchase(): void
     {
-        set_user_preference('transaction.purchase_return_post_immediately', false, $this->ctx['user']);
+        set_company_setting('transaction.purchase_return_post_immediately', false);
 
         $purchase = $this->buy();
         $return = $this->returnPurchase($purchase);
@@ -224,7 +224,7 @@ class ReverseBlockedByReturnTest extends TestCase
 
     public function test_deleting_the_draft_return_releases_the_purchase(): void
     {
-        set_user_preference('transaction.purchase_return_post_immediately', false, $this->ctx['user']);
+        set_company_setting('transaction.purchase_return_post_immediately', false);
 
         $purchase = $this->buy();
         $return = $this->returnPurchase($purchase);

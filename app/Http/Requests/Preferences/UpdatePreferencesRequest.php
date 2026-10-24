@@ -13,6 +13,24 @@ use Illuminate\Validation\Rule;
         return true;
     }
 
+    /**
+     * The rules for the company's settings only (config/preferences.php
+     * company_keys), for the company page and the set-up wizard. A prefix
+     * nests them, as 'settings.' does in the wizard.
+     */
+    public static function companyRules(string $prefix = ''): array
+    {
+        $rules = [];
+
+        foreach ((new self())->rules() as $key => $rule) {
+            if (\App\Support\Settings::isCompanyKey($key)) {
+                $rules[$prefix.$key] = $rule;
+            }
+        }
+
+        return $rules;
+    }
+
     public function rules(): array
     {
         return [

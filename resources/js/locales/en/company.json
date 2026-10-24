@@ -66,7 +66,9 @@
             "contact": "Contact & licence",
             "contact_hint": "How to reach you, your licence",
             "review": "Review",
-            "review_hint": "Check and create"
+            "review_hint": "Check and create",
+            "company_settings": "Company settings",
+            "company_settings_hint": "Numbering, posting, formats"
         },
         "names": "Company name",
         "names_hint": "The English name is required; add Dari and Pashto to print them on documents.",
@@ -92,6 +94,22 @@
         "next": "Next",
         "back": "Back",
         "create": "Create company",
-        "checking": "Checking..."
+        "checking": "Checking...",
+        "company_settings_intro": "These start from the usual defaults. Change what you need now, or later on the company page.",
+        "settings_defaults": "Defaults",
+        "settings_customised": "Customised"
+    },
+    "settings": {
+        "title": "Company settings",
+        "description": "The rules everyone in this company works by: document numbering, posting, tax, formats, security and backup.",
+        "read_only": "Only someone allowed to change company settings can change these.",
+        "document": "Document",
+        "accepted_return_days": "Return window (days)",
+        "saved": "Company settings saved.",
+        "tabs": {
+            "documents": "Documents",
+            "posting": "Posting",
+            "formats": "Formats"
+        }
     }
 }

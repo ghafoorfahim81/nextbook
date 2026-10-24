@@ -516,7 +516,7 @@ class StockEdgeCaseScenarioTest extends TestCase
 
     public function test_a_transfer_and_its_reversal_leave_both_warehouses_whole(): void
     {
-        set_user_preference('transaction.item_transfer_post_immediately', true, $this->ctx['user']);
+        set_company_setting('transaction.item_transfer_post_immediately', true);
 
         $second = Warehouse::factory()->create([
             'branch_id' => $this->ctx['branch']->id,

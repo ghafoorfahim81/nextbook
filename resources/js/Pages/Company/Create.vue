@@ -20,6 +20,7 @@ import {
     Smartphone, Store, Trash2, Tv, UtensilsCrossed,
 } from 'lucide-vue-next'
 import CompanySetupProgress from '@/Components/Onboarding/CompanySetupProgress.vue'
+import CompanySettingsForm from '@/Components/Company/CompanySettingsForm.vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -35,6 +36,8 @@ const props = defineProps({
     currencyDefinitions: { type: Array, default: () => [] },
     // company.store for sign-up, companies.store from the companies page.
     submitRoute: { type: String, default: 'company.store' },
+    // The company settings a new company starts from (phase 6).
+    defaultSettings: { type: Object, default: () => ({}) },
 })
 
 const { t } = useI18n()
@@ -69,7 +72,19 @@ const errors = ref({})
 const logoFile = ref(null)
 const logoPreview = ref(null)
 
+// The company's own settings (numbering, posting, formats…), edited in place
+// by CompanySettingsForm and posted as one JSON field.
+const companySettings = reactive(JSON.parse(JSON.stringify(props.defaultSettings)))
+const settingsChanged = computed(() => JSON.stringify(companySettings) !== JSON.stringify(props.defaultSettings))
+// The server names them settings.<key>; the form wants <key>.
+const settingsErrors = computed(() => Object.fromEntries(
+    Object.entries(errors.value)
+        .filter(([key]) => key.startsWith('settings.'))
+        .map(([key, message]) => [key.slice('settings.'.length), message])
+))
+
 // The fields each step sends for checking; the review step sends everything.
+// "settings" stands for every rule under it (CompanyStoreRequest).
 const STEPS = [
     { key: 'identity', fields: ['name_en', 'name_fa', 'name_pa', 'abbreviation', 'logo', 'business_type'] },
     { key: 'settings', fields: ['base_currency', 'locale', 'calendar_type', 'working_style', 'costing_method'] },
@@ -78,8 +93,10 @@ const STEPS = [
         fields: ['phone', 'email', 'website', 'country', 'city', 'address', 'license_number',
             'license_issued_at', 'license_expires_at', 'invoice_description'],
     },
+    { key: 'company_settings', fields: ['settings'] },
     { key: 'review', fields: [] },
 ]
+const belongsTo = (key, field) => key === field || key.startsWith(`${field}.`)
 const step = ref(0)
 const highestReached = ref(0)
 const checking = ref(false)
@@ -129,6 +146,7 @@ function payload() {
         if (value !== null && value !== '') data.append(key, value)
     })
     if (logoFile.value) data.append('logo', logoFile.value)
+    data.append('settings', JSON.stringify(companySettings))
     return data
 }
 
@@ -150,7 +168,8 @@ async function precheck(fields) {
                 ...(fields.length ? { 'Precognition-Validate-Only': fields.join(',') } : {}),
             },
         })
-        STEPS.forEach((s) => s.fields.forEach((field) => { if (!fields.length || fields.includes(field)) delete errors.value[field] }))
+        errors.value = Object.fromEntries(Object.entries(errors.value)
+            .filter(([key]) => fields.length && !fields.some((field) => belongsTo(key, field))))
         return true
     } catch (error) {
         if (error.response?.status === 422) {
@@ -198,7 +217,7 @@ async function create() {
     // The whole form, checked first: the set-up screen opens only for a form
     // the server will accept.
     if (!(await precheck([]))) {
-        const failing = STEPS.findIndex((s) => s.fields.some((field) => errors.value[field]))
+        const failing = STEPS.findIndex((s) => s.fields.some((field) => Object.keys(errors.value).some((key) => belongsTo(key, field))))
         if (failing >= 0) step.value = failing
         return
     }
@@ -261,6 +280,15 @@ const reviewSections = computed(() => [
             [t('company.wizard.license_number'), form.license_number],
             [t('company.wizard.license_issued_at'), form.license_issued_at],
             [t('company.wizard.license_expires_at'), form.license_expires_at],
+        ],
+    },
+    {
+        step: 3,
+        title: t('company.wizard.steps.company_settings'),
+        rows: [
+            [t('company.settings.title'), settingsChanged.value ? t('company.wizard.settings_customised') : t('company.wizard.settings_defaults')],
+            [t('preferences.sale.types.sale'), companySettings.sale?.invoice_prefix],
+            [t('preferences.purchase.types.purchase'), companySettings.purchase?.invoice_prefix],
         ],
     },
 ])
@@ -498,7 +526,13 @@ const optionCard = (selected) => [
                                 </div>
                             </div>
 
-                            <!-- 4. Review -->
+                            <!-- 4. Company settings, from the defaults -->
+                            <div v-else-if="step === 3" key="company_settings" class="space-y-5">
+                                <p class="text-sm text-muted-foreground">{{ t('company.wizard.company_settings_intro') }}</p>
+                                <CompanySettingsForm :settings="companySettings" :errors="settingsErrors" />
+                            </div>
+
+                            <!-- 5. Review -->
                             <div v-else key="review" class="space-y-5">
                                 <p class="text-sm text-muted-foreground">{{ t('company.wizard.review_hint') }}</p>
                                 <div v-for="section in reviewSections" :key="section.step" class="rounded-xl border border-border">

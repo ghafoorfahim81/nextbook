@@ -55,7 +55,37 @@ class CompanyStoreRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'website' => ['nullable', 'url', 'max:255'],
             'invoice_description' => ['nullable', 'string'],
+
+            // The wizard's settings step (phase 6): the company's own settings,
+            // posted as one JSON field because the rest of the form is FormData.
+            'settings' => ['sometimes', 'array'],
+            ...\App\Http\Requests\Preferences\UpdatePreferencesRequest::companyRules('settings.'),
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('settings'))) {
+            $this->merge(['settings' => json_decode($this->input('settings'), true) ?: []]);
+        }
+    }
+
+    /**
+     * A wizard step asks for its own fields only (Precognition-Validate-Only).
+     * The settings step names just "settings", which stands for every rule
+     * under it; Laravel would otherwise keep only an exact match.
+     */
+    public function filterPrecognitiveRules($rules)
+    {
+        if (! $this->headers->has('Precognition-Validate-Only')) {
+            return $rules;
+        }
+
+        $only = explode(',', (string) $this->header('Precognition-Validate-Only'));
+
+        return collect($rules)
+            ->filter(fn ($rule, $key) => collect($only)->contains(fn ($field) => $key === $field || str_starts_with($key, $field.'.')))
+            ->all();
     }
 
     /**
@@ -79,7 +109,14 @@ class CompanyStoreRequest extends FormRequest
      */
     public function companyAttributes(): array
     {
-        $attributes = collect($this->validated())->except(['base_currency', 'logo'])->all();
+        $attributes = collect($this->validated())->except(['base_currency', 'logo', 'settings'])->all();
+
+        // The company's settings, if the wizard sent any; the rest come from
+        // the defaults through App\Support\Settings.
+        $settings = \App\Support\Settings::companyPart((array) $this->validated('settings', []));
+        if ($settings !== []) {
+            $attributes['preferences'] = $settings;
+        }
 
         if ($this->hasFile('logo')) {
             $attributes['logo'] = $this->file('logo')->store('company-logos', 'public');

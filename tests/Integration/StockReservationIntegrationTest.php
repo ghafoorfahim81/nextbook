@@ -133,7 +133,7 @@ class StockReservationIntegrationTest extends TestCase
     public function test_draft_sale_reserves_and_post_releases_then_deducts(): void
     {
         $this->seedStock(10);
-        set_user_preference('transaction.sale_post_immediately', false, $this->ctx['user']);
+        set_company_setting('transaction.sale_post_immediately', false);
 
         $this->post(route('sales.store'), [
             'number' => 7001,
@@ -176,7 +176,7 @@ class StockReservationIntegrationTest extends TestCase
     public function test_deleting_draft_sale_releases_reservation(): void
     {
         $this->seedStock(10);
-        set_user_preference('transaction.sale_post_immediately', false, $this->ctx['user']);
+        set_company_setting('transaction.sale_post_immediately', false);
 
         $this->post(route('sales.store'), [
             'number' => 7002,

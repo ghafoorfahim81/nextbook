@@ -2,6 +2,7 @@
 
 return [
     'preferences_saved' => 'Preferences saved successfully.',
+    'company_settings_forbidden' => 'Only someone allowed to change company settings can change this. It applies to everyone in the company.',
     'preferences_reset' => 'Preferences reset successfully.',
     'invalid_preferences_file' => 'Invalid preferences file.',
     'tabs' => [

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\CompanyContext;
+use App\Support\Settings;
 use App\Http\Requests\Administration\CompanyUpdateRequest;
 use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Http\Resources\Administration\CurrencyResource;
@@ -31,7 +32,7 @@ class CompanyController extends Controller
      */
     public function create()
     {
-        return inertia('Company/Create');
+        return inertia('Company/Create', ['defaultSettings' => Settings::forCompany(null)]);
     }
 
     /**
@@ -79,6 +80,13 @@ class CompanyController extends Controller
 
         return inertia('Administration/Companies/Show', [
             'company' => $company,
+            // Phase 6: the settings everyone in the company shares.
+            'settings' => Settings::forCompany($company),
+            'canEditSettings' => request()->user()->can('company_settings.update'),
+            'cashAccounts' => \App\Models\Account\Account::select('id', 'name')
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
             'invoiceThemes' => InvoiceThemeOptions::all(),
             'invoiceFormats' => InvoiceFormat::query()
                 ->where('company_id', $company->id)
@@ -108,6 +116,43 @@ class CompanyController extends Controller
                 'name' => $method->getLabel(),
             ])->values(),
         ]);
+    }
+
+    /**
+     * Save the active company's settings (phase 6) — the keys listed as
+     * company_keys in config/preferences.php, the same for everyone in it.
+     */
+    public function updateSettings(Request $request)
+    {
+        abort_unless($request->user()->can('company_settings.update'), 403, __('preferences.company_settings_forbidden'));
+
+        $company = CompanyContext::company();
+        abort_unless($company, 404);
+
+        $validated = $request->validate(
+            \App\Http\Requests\Preferences\UpdatePreferencesRequest::companyRules()
+        );
+
+        $before = Settings::forCompany($company);
+        Settings::putForCompany($company, $validated);
+        $after = Settings::forCompany($company->fresh());
+
+        if ($after != $before) {
+            app(\App\Services\ActivityLogService::class)->logUpdate(
+                reference: $company,
+                before: $before,
+                after: $after,
+                module: 'setting',
+                description: "Company settings updated for {$company->localizedName('en')}.",
+                metadata: [
+                    'action' => 'company_settings_update',
+                ],
+            );
+        }
+
+        Cache::forget(\App\Support\Inertia\CacheKey::forCompany((string) $company->id, 'business_profile'));
+
+        return redirect()->back()->with('success', __('preferences.preferences_saved'));
     }
 
     /**

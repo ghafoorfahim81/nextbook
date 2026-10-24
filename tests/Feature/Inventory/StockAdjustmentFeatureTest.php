@@ -32,15 +32,8 @@ class StockAdjustmentFeatureTest extends TestCase
         $this->ctx = $this->bootstrapErpContext();
         Cache::put('costing_method', 'fifo');
 
-        $this->shrinkageAccount = Account::factory()->create([
-            'company_id' => $this->ctx['company']->id,
-            'name' => 'Inventory Shrinkage & Wastage',
-            'number' => '9040',
-            'slug' => 'inventory-shrinkage-and-wastage',
-            'account_type_id' => $this->ctx['account_types']['expense']->id,
-            'is_main' => true,
-            'is_active' => true,
-        ]);
+        // The ERP context has carried 9040 since phase 4 (a transfer's shortfall).
+        $this->shrinkageAccount = $this->ctx['accounts']['inventory-shrinkage-and-wastage'];
 
         $this->adjustmentsAccount = Account::factory()->create([
             'company_id' => $this->ctx['company']->id,
@@ -230,7 +223,7 @@ class StockAdjustmentFeatureTest extends TestCase
         $this->seedStock(10, 15);
 
         $user = $this->ctx['user'];
-        $user->setPreference('transaction.stock_adjustment_post_immediately', false)->save();
+        set_company_setting('transaction.stock_adjustment_post_immediately', false);
 
         $this->post(route('stock-adjustments.store'), [
             'date' => '2026-03-22',

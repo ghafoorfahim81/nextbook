@@ -37,8 +37,8 @@ class DraftVoucherSaveTest extends TestCase
         $this->actingAs($this->ctx['user']);
 
         // The preference the two forms read. Off means "save as draft".
-        set_user_preference('transaction.receipt_post_immediately', false, $this->ctx['user']);
-        set_user_preference('transaction.payment_post_immediately', false, $this->ctx['user']);
+        set_company_setting('transaction.receipt_post_immediately', false);
+        set_company_setting('transaction.payment_post_immediately', false);
     }
 
     public function test_a_receipt_can_be_saved_as_a_draft(): void

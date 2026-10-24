@@ -319,6 +319,9 @@ Route::middleware([
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
         ->name('company.show');
+    // Before /company/{company}, which would otherwise take "settings" for an id.
+    Route::put('/company/settings', [\App\Http\Controllers\CompanyController::class, 'updateSettings'])
+        ->name('company.settings.update');
     Route::put('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
         ->name('company.update');
     Route::patch('/company/{company}/restore', [\App\Http\Controllers\CompanyController::class, 'restore'])->name('company.restore')->withTrashed();
