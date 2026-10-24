@@ -277,6 +277,25 @@ class ItemTransferController extends Controller
         return $this->complete($request, $itemTransfer);
     }
 
+    /**
+     * Take in a transfer sent from another branch (phase 4). Only from the
+     * receiving branch — ItemTransferService::receiveTransfer checks — and a
+     * line may arrive short.
+     */
+    public function receive(Request $request, ItemTransfer $itemTransfer)
+    {
+        $this->authorize('view', $itemTransfer);
+
+        $validated = $request->validate([
+            'received' => ['nullable', 'array'],
+            'received.*' => ['numeric', 'min:0'],
+        ]);
+
+        $this->transferService->receiveTransfer($itemTransfer, $validated['received'] ?? []);
+
+        return redirect()->back()->with('success', __('general.received_successfully', ['resource' => __('general.resource.item_transfer')]));
+    }
+
     public function reverse(Request $request, ItemTransfer $itemTransfer)
     {
         $request->validate(['reason' => ['nullable', 'string', 'max:255']]);

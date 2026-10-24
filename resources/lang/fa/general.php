@@ -60,6 +60,7 @@ return [
     'deactivated_successfully' => ':resource با موفقیت غیرفعال شد.',
     'status_updated_successfully' => 'وضعیت :resource با موفقیت به‌روزرسانی شد.',
     'completed_successfully' => ':resource با موفقیت تکمیل شد.',
+    'received_successfully' => ':resource با موفقیت دریافت شد.',
     'cancelled_successfully' => ':resource با موفقیت لغو شد.',
     'saved_successfully' => ':resource با موفقیت ذخیره شد.',
     'items_created_successfully' => 'آیتم‌ها با موفقیت ایجاد شدند.',

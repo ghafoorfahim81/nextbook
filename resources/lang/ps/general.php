@@ -60,6 +60,7 @@ return [
     'deactivated_successfully' => ':resource غیرفعال شو.',
     'status_updated_successfully' => 'د :resource حالت په بریالیتوب سره تازه شو.',
     'completed_successfully' => ':resource په بریالیتوب سره بشپړ شو.',
+    'received_successfully' => ':resource په بریالیتوب سره ترلاسه شو.',
     'cancelled_successfully' => ':resource په بریالیتوب سره لغوه شو.',
     'saved_successfully' => ':resource په بریالیتوب سره خوندي شو.',
     'items_created_successfully' => 'اجناس په بریالیتوب سره جوړ شول.',

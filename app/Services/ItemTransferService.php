@@ -49,6 +49,8 @@ class ItemTransferService
             $transfer = ItemTransfer::create([
                 'company_id' => $source?->company_id,
                 'branch_id' => $source?->branch_id,
+                // Phase 4: a different branch here makes it a send-and-receive.
+                'to_branch_id' => $this->branchOfWarehouse($data['to_warehouse_id']),
                 'date' => $this->dateConversionService->toGregorian($data['date']),
                 'from_warehouse_id' => $data['from_warehouse_id'],
                 'to_warehouse_id' => $data['to_warehouse_id'],
@@ -126,6 +128,7 @@ class ItemTransferService
                 'date' => $this->dateConversionService->toGregorian($data['date']) ?? $transfer->date,
                 'from_warehouse_id' => $data['from_warehouse_id'] ?? $transfer->from_warehouse_id,
                 'to_warehouse_id' => $data['to_warehouse_id'] ?? $transfer->to_warehouse_id,
+                'to_branch_id' => $this->branchOfWarehouse($data['to_warehouse_id'] ?? $transfer->to_warehouse_id),
                 'status' => $data['status'] ?? $transfer->status,
                 'remarks' => $data['remarks'] ?? $transfer->remarks,
                 ...$this->transferCostAttributes($data, $transfer),
@@ -197,6 +200,9 @@ class ItemTransferService
 
             $date = $this->dateConversionService->toGregorian($transfer->date);
             $movedVariantIds = [];
+            // Phase 4: to another branch, only the leg out happens now; the
+            // receiving branch books the goods in later (receiveTransfer).
+            $interbranch = $this->isInterbranch($transfer);
 
             // Process each item
             foreach ($transfer->items as $item) {
@@ -235,6 +241,10 @@ class ItemTransferService
                     'warehouse_id'  => $transfer->from_warehouse_id,
                 ]);
 
+                if ($interbranch) {
+                    continue;
+                }
+
                 // ...and put it into the destination warehouse.
                 [$inMovement] = $this->stockService->post([
                     ...$leg,
@@ -256,9 +266,21 @@ class ItemTransferService
                 $this->stockService->recalculateVariantAverage($variantId);
             }
 
+            if ($interbranch) {
+                // The goods left the source branch's books for Goods in Transit.
+                $this->postTransit($transfer, $transfer->items->mapWithKeys(fn ($item) => [$item->id => (float) $item->quantity])->all(), receiving: false);
+            } else {
+                // One step: received the moment it is sent.
+                $transfer->items->each(fn ($item) => $item->update(['received_quantity' => $item->quantity]));
+            }
+
             // Update transfer status
             $oldStatus = $transfer->status?->value ?? $transfer->status;
-            $transfer->update(['status' => TransactionStatus::POSTED]);
+            $transfer->update([
+                'status' => TransactionStatus::POSTED,
+                'received_at' => $interbranch ? null : now(),
+                'received_by' => $interbranch ? null : auth()->id(),
+            ]);
 
             $transfer->load('items');
 
@@ -277,6 +299,213 @@ class ItemTransferService
 
             return $transfer;
         });
+    }
+
+    /**
+     * Receive a transfer sent from another branch (phase 4).
+     *
+     * Done in the receiving branch, by someone working there — the sender does
+     * not confirm their own delivery. Each line may arrive short: the goods
+     * that came are booked into the destination warehouse at the cost they
+     * left with, and the shortfall is charged to inventory shrinkage.
+     *
+     * @param  array<string, float|int|string>  $received  line id => quantity
+     *                                                     that arrived (a line
+     *                                                     left out arrived in full)
+     */
+    public function receiveTransfer(ItemTransfer $transfer, array $received = []): ItemTransfer
+    {
+        return DB::transaction(function () use ($transfer, $received) {
+            $transfer->refresh()->load('items');
+
+            if (! $this->isInterbranch($transfer)
+                || $transfer->status !== TransactionStatus::POSTED
+                || $transfer->received_at !== null) {
+                throw ValidationException::withMessages([
+                    'status' => [__('messages.transfer.not_in_transit')],
+                ]);
+            }
+
+            if (CompanyContext::branchId() !== (string) $transfer->to_branch_id) {
+                throw ValidationException::withMessages([
+                    'status' => [__('messages.transfer.receive_in_destination')],
+                ]);
+            }
+
+            $quantities = [];
+            foreach ($transfer->items as $item) {
+                $sent = (float) $item->quantity;
+                $arrived = array_key_exists($item->id, $received) ? (float) $received[$item->id] : $sent;
+
+                if ($arrived < 0 || $arrived > $sent) {
+                    throw ValidationException::withMessages([
+                        "received.{$item->id}" => [__('messages.transfer.received_more_than_sent')],
+                    ]);
+                }
+
+                $quantities[$item->id] = $arrived;
+            }
+
+            $movedVariantIds = [];
+            foreach ($transfer->items as $item) {
+                $arrived = $quantities[$item->id];
+                $item->update(['received_quantity' => $arrived]);
+
+                if ($arrived <= 0) {
+                    continue;
+                }
+
+                $unitCost = (float) $item->unit_price;
+                [$inMovement] = $this->stockService->post([
+                    'item_id' => $item->item_id,
+                    'unit_measure_id' => $item->measure_id,
+                    'quantity' => $arrived,
+                    'source' => StockSourceType::ITEM_TRANSFER->value,
+                    // The cost the goods left with: arriving is not a purchase.
+                    'unit_cost' => $unitCost,
+                    'unit_cost_override' => $unitCost,
+                    'status' => StockStatus::POSTED->value,
+                    'skip_average_recost' => true,
+                    'batch' => $item->batch ?? null,
+                    'date' => now()->toDateString(),
+                    'expire_date' => $item->expire_date ?? null,
+                    'variant_id' => $item->variant_id ?? null,
+                    'reference_type' => ItemTransfer::class,
+                    'reference_id' => $transfer->id,
+                    'movement_type' => StockMovementType::IN->value,
+                    'warehouse_id' => $transfer->to_warehouse_id,
+                ]);
+
+                if ($inMovement?->variant_id) {
+                    $movedVariantIds[$inMovement->variant_id] = $inMovement->variant_id;
+                }
+            }
+
+            foreach ($movedVariantIds as $variantId) {
+                $this->stockService->recalculateVariantAverage($variantId);
+            }
+
+            $this->postTransit($transfer, $quantities, receiving: true);
+
+            $transfer->update(['received_at' => now(), 'received_by' => auth()->id()]);
+
+            $this->activityLogService->logAction(
+                eventType: 'received',
+                reference: $transfer,
+                module: 'item_transfer',
+                description: "Item transfer #{$transfer->id} received.",
+                newValues: ['received' => $quantities],
+                metadata: ['action' => 'item_transfer_receive'],
+            );
+
+            return $transfer->load('items');
+        });
+    }
+
+    /**
+     * The ledger side of a transfer between branches (phase 4).
+     *
+     * Sending: Goods in Transit is debited and each item's inventory account
+     * credited, in the sending branch. Receiving: inventory is debited for
+     * what arrived and shrinkage for what did not, Goods in Transit credited in
+     * full, in the receiving branch — so the two branches' books each show
+     * their side and Goods in Transit clears once the goods are in.
+     *
+     * @param  array<string, float>  $quantities  line id => quantity (sent, or arrived)
+     */
+    private function postTransit(ItemTransfer $transfer, array $quantities, bool $receiving): void
+    {
+        $gl = CompanyContext::glAccounts((string) $transfer->company_id);
+        $transitId = $gl['goods-in-transit'] ?? null;
+        $shrinkageId = $gl['inventory-shrinkage-and-wastage'] ?? null;
+
+        if (! $transitId || ($receiving && ! $shrinkageId)) {
+            throw ValidationException::withMessages([
+                'status' => [__('messages.transfer.transit_accounts_missing')],
+            ]);
+        }
+
+        $assetAccounts = \App\Models\Inventory\Item::withoutGlobalScopes()
+            ->whereIn('id', $transfer->items->pluck('item_id'))
+            ->pluck('asset_account_id', 'id');
+
+        $debits = [];
+        $credits = [];
+        $add = function (array &$side, ?string $account, float $amount): void {
+            if ($account && $amount > 0) {
+                $side[$account] = ($side[$account] ?? 0) + $amount;
+            }
+        };
+
+        foreach ($transfer->items as $item) {
+            $price = (float) $item->unit_price;
+            $sent = round((float) $item->quantity * $price, 4);
+            $inventoryId = $assetAccounts[$item->item_id] ?? $gl['inventory-stock'] ?? null;
+
+            if (! $receiving) {
+                $add($debits, $transitId, $sent);
+                $add($credits, $inventoryId, $sent);
+                continue;
+            }
+
+            $arrived = round((float) ($quantities[$item->id] ?? $item->quantity) * $price, 4);
+            $add($debits, $inventoryId, $arrived);
+            $add($debits, $shrinkageId, round($sent - $arrived, 4));
+            $add($credits, $transitId, $sent);
+        }
+
+        if (array_sum($debits) <= 0) {
+            // Nothing priced, nothing to move in the ledger.
+            return;
+        }
+
+        $route = $this->transferRouteLabel($transfer);
+        $remark = $receiving
+            ? ['Received item transfer ' . $route, 'دریافت انتقال جنس ' . $route, 'د جنس د لیږد ترلاسه کول ' . $route]
+            : ['Item transfer sent ' . $route, 'ارسال انتقال جنس ' . $route, 'د جنس لیږل ' . $route];
+
+        $lines = [];
+        foreach (['debit' => $debits, 'credit' => $credits] as $side => $amounts) {
+            foreach ($amounts as $accountId => $amount) {
+                $lines[] = [
+                    'account_id' => $accountId,
+                    'debit' => $side === 'debit' ? $amount : 0,
+                    'credit' => $side === 'credit' ? $amount : 0,
+                    'remark' => $remark[0],
+                    'remark_fa' => $remark[1],
+                    'remark_ps' => $remark[2],
+                ];
+            }
+        }
+
+        app(TransactionService::class)->post(
+            header: [
+                'currency_id' => CompanyContext::homeCurrency((string) $transfer->company_id)?->id,
+                'rate' => 1,
+                'date' => $receiving ? now()->toDateString() : $this->dateConversionService->toGregorian($transfer->date),
+                'remark' => $remark[0],
+                'reference_type' => ItemTransfer::class,
+                'reference_id' => $transfer->id,
+                'status' => TransactionStatus::POSTED->value,
+                // Each branch's books carry its own side of the move.
+                'branch_id' => $receiving ? $transfer->to_branch_id : $transfer->branch_id,
+            ],
+            lines: $lines,
+        );
+    }
+
+    /** Whether the goods change branch, which makes it a send-and-receive (phase 4). */
+    private function isInterbranch(ItemTransfer $transfer): bool
+    {
+        return $transfer->to_branch_id !== null
+            && (string) $transfer->to_branch_id !== (string) $transfer->branch_id;
+    }
+
+    private function branchOfWarehouse(?string $warehouseId): ?string
+    {
+        return $warehouseId
+            ? Warehouse::withoutGlobalScopes()->whereKey($warehouseId)->value('branch_id')
+            : null;
     }
 
     /**
@@ -361,13 +590,17 @@ class ItemTransferService
                 // that never blended one. Voiding the legs above first leaves it
                 // nothing to compensate, so the GL is reversed and the stock is
                 // not undone twice.
-                $transaction = Transaction::query()
+                // Every voucher the transfer posted: the freight, and for a
+                // transfer between branches the send and the receipt (phase 4),
+                // newest first.
+                $transactions = Transaction::query()
                     ->where('reference_type', ItemTransfer::class)
                     ->where('reference_id', $transfer->id)
                     ->where('status', TransactionStatus::POSTED->value)
-                    ->first();
+                    ->orderByDesc('id')
+                    ->get();
 
-                if ($transaction) {
+                foreach ($transactions as $transaction) {
                     // Naming the document and its type is what makes the
                     // reversal remark come back translated: TransactionService
                     // keeps the per-language wording keyed by reference type.

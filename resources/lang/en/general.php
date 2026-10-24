@@ -60,6 +60,7 @@ return [
     'deactivated_successfully' => ':resource deactivated successfully.',
     'status_updated_successfully' => ':resource status updated successfully.',
     'completed_successfully' => ':resource completed successfully.',
+    'received_successfully' => ':resource received successfully.',
     'cancelled_successfully' => ':resource cancelled successfully.',
     'saved_successfully' => ':resource saved successfully.',
     'items_created_successfully' => 'Items created successfully.',

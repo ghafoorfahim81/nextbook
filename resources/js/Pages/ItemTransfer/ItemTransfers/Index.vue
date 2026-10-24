@@ -55,7 +55,8 @@ const columns = computed(() => ([
   { key: 'date', label: t('general.date'), sortable: true },
   { key: 'from_warehouse.name', label: t('item_transfer.from_warehouse') },
   { key: 'to_warehouse.name', label: t('item_transfer.to_warehouse') },
-  { key: 'status_label', label: t('general.status') },
+  // Phase 4: a transfer to another branch shows as in transit until received.
+  { key: 'status_label', label: t('general.status'), render: (row) => row.is_in_transit ? t('item_transfer.in_transit') : row.status_label },
   { key: 'transfer_cost', label: t('item_transfer.transfer_cost'), sortable: true },
   {
     key: 'created_by.name',

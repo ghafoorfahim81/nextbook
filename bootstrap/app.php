@@ -38,6 +38,13 @@ return Application::configure(basePath: dirname(__DIR__))
             // One activity log entry per request, not one per saved row.
             \App\Http\Middleware\BatchActivityLog::class,
         ]);
+
+        // Route model binding reads a protected table, so Postgres has to know
+        // the company first; appended to the group, these would run after
+        // SubstituteBindings and every bound model would come back as a 404.
+        foreach ([SetActiveCompany::class, SetDatabaseCompanyContext::class, SetActiveBranch::class] as $contextMiddleware) {
+            $middleware->prependToPriorityList(\Illuminate\Routing\Middleware\SubstituteBindings::class, $contextMiddleware);
+        }
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthorizationException $e, $request) {

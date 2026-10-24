@@ -530,6 +530,26 @@ class RowLevelSecurityTest extends TestCase
     }
 
     /**
+     * A route-bound model is found on a request that starts with no company.
+     *
+     * Route model binding reads a protected table, so the company has to be on
+     * the connection before SubstituteBindings runs. Appended to the web group,
+     * the context middleware ran after it and every show and edit page was a
+     * 404; the test harness hid that by setting the company before each request,
+     * which is why this one clears it first.
+     */
+    public function test_route_model_binding_runs_after_the_company_is_set(): void
+    {
+        $context = $this->bootstrapErpContext();
+
+        CompanyDatabaseContext::forget();
+
+        $this->actingAs($context['user'])
+            ->get(route('warehouses.show', $context['warehouse']))
+            ->assertSuccessful();
+    }
+
+    /**
      * CompanyDatabaseContext::runFor restores whatever company was set before.
      *
      * The notification jobs loop over companies inside one worker process; if a

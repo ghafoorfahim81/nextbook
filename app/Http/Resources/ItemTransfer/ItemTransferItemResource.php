@@ -43,6 +43,8 @@ class ItemTransferItemResource extends JsonResource
             'batch' => $this->batch,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
             'quantity' => $this->quantity,
+            // Phase 4: what actually arrived at the receiving branch.
+            'received_quantity' => $this->received_quantity,
             'measure_id' => $this->measure_id,
             'unit_measure' => $this->whenLoaded('unitMeasure', fn() => [
                 'id' => $this->unitMeasure->id,

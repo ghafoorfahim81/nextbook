@@ -465,6 +465,19 @@ class Account extends Model
                 'is_main' => true,
             ],
             [
+                // Phase 4: stock sent to another branch and not yet received.
+                // Still the company's, so an asset; it clears when the
+                // receiving branch books the goods in.
+                'name' => 'Goods in Transit',
+                'local_name' => 'کالای در راه',
+                'number' => '3025',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'goods-in-transit',
+                'remark' => 'Stock sent between branches and not yet received',
+                'is_main' => true,
+            ],
+            [
                 'name' => 'Landed Costs Clearing',
                 'local_name' => 'تسویه انتقالات و گمرک',
                 'number' => '3060',

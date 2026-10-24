@@ -472,6 +472,8 @@ Route::middleware([
         ->withTrashed();
     Route::patch('/item-transfers/{itemTransfer}/complete', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'complete'])->name('item-transfers.complete');
     Route::patch('/item-transfers/{itemTransfer}/cancel', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'cancel'])->name('item-transfers.cancel');
+    // Phase 4: the receiving branch takes in a transfer sent to it.
+    Route::post('/item-transfers/{itemTransfer}/receive', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'receive'])->name('item-transfers.receive');
     // Journal Entries
     Route::get('/journal-entries/export', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'export'])->name('journal-entries.export');
     Route::resource('/journal-entries', \App\Http\Controllers\JournalEntry\JournalEntryController::class);
