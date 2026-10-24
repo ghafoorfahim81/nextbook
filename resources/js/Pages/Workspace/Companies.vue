@@ -79,7 +79,7 @@ function switchTo(company) {
                             {{ initials(company.name) }}
                         </div>
                         <div class="min-w-0 flex-1">
-                            <h2 class="truncate text-base font-semibold text-foreground" :title="company.name">{{ company.name }}</h2>
+                            <h2 dir="auto" class="truncate text-start text-base font-semibold text-foreground" :title="company.name">{{ company.name }}</h2>
                             <p class="truncate text-sm text-muted-foreground">
                                 {{ company.business_type || '—' }}<template v-if="company.city"> · {{ company.city }}</template>
                             </p>

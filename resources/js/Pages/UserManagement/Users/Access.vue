@@ -79,7 +79,7 @@ const save = () => form.put(route('users.access.update', props.user.id), { prese
                             <Building2 class="size-5" />
                         </span>
                         <div class="min-w-0 flex-1">
-                            <p class="truncate font-semibold text-foreground">{{ company.name }}</p>
+                            <p dir="auto" class="truncate text-start font-semibold text-foreground">{{ company.name }}</p>
                             <p class="truncate text-xs text-muted-foreground">{{ company.business_type || '—' }}</p>
                         </div>
                         <span v-if="company.is_home" class="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
@@ -122,7 +122,7 @@ const save = () => form.put(route('users.access.update', props.user.id), { prese
                                     :disabled="userIsSuperAdmin || !hasCompany(company)"
                                     @change="toggleBranch(company, branch)"
                                 />
-                                <span class="min-w-0 flex-1 truncate">{{ branch.name }}</span>
+                                <span dir="auto" class="min-w-0 flex-1 truncate text-start">{{ branch.name }}</span>
                                 <Star v-if="branch.is_main" class="size-3.5 shrink-0 text-amber-500" :title="t('workspace.main')" />
                                 <Home v-if="branch.is_home" class="size-3.5 shrink-0 text-muted-foreground" :title="t('workspace.home')" />
                             </label>

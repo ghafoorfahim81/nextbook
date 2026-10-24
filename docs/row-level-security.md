@@ -193,6 +193,52 @@ On a server, in this order:
    ALTER TABLE sales DISABLE ROW LEVEL SECURITY;  -- must fail: must be owner
    ```
 
+### On shared hosting (cPanel)
+
+cPanel gives no superuser, so `database/sql/nextbook_app_role.sql` cannot run
+there: it creates a role, and only a superuser (or a role with CREATEROLE) may.
+The same two-role arrangement is built from the panel instead.
+
+1. **Create the app user in cPanel → PostgreSQL Databases**, e.g.
+   `<account>_nbapp`, with its own strong password, and add it to the
+   database. Do not reuse the owner user. cPanel prefixes the name; that is
+   fine, because the migration reads the role name from `DB_APP_USERNAME`.
+2. **Use an empty database.** Phase 2 edited migrations in place; an
+   already-migrated database will not pick those changes up.
+3. **Migrate and seed with the owner as the default connection.** Some
+   migrations read the cache through the default connection, and the new user
+   has no table privileges until the row level security migration grants them:
+
+   ```
+   DB_CONNECTION=pgsql
+   DB_USERNAME=<owner user>      DB_PASSWORD=<owner password>
+   DB_APP_USERNAME=<account>_nbapp   DB_APP_PASSWORD=<its password>
+   ```
+
+   ```bash
+   php artisan migrate --force --database=pgsql
+   php artisan db:seed --force --database=pgsql
+   ```
+
+4. **Switch the application to the app user:** `DB_CONNECTION=pgsql_app`, then
+   `php artisan config:clear`.
+5. **Prove the policies apply to it.** Some hosts make database users members of
+   the account's main role; if that role owns the tables, Postgres treats the
+   member as the owner and row level security silently does nothing. Connect as
+   the app user (`psql -h localhost -U <account>_nbapp -d <database>` — cPanel
+   accepts TCP only, not the local socket) and run:
+
+   ```sql
+   SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user;          -- f | f
+   SELECT pg_has_role(current_user,
+          (SELECT tableowner FROM pg_tables WHERE tablename = 'accounts'), 'USAGE');  -- f
+   SELECT count(*) FROM accounts;                                                     -- 0
+   ```
+
+   The last one must be 0 although the seeded accounts exist: no company is set
+   on the connection. Any other answer means the policies are not enforced for
+   this user, and the deployment must not go live as it is.
+
 ### Rolling back
 
 `php artisan migrate:rollback --database=pgsql` drops the policies and disables
