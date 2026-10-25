@@ -33,7 +33,10 @@ class CompanyController extends Controller
      */
     public function create()
     {
-        return inertia('Company/Create', ['defaultSettings' => Settings::forCompany(null)]);
+        return inertia('Company/Create', [
+            'defaultSettings' => Settings::forCompany(null),
+            'moduleDefaults' => \App\Support\Modules::defaultsByBusinessType(),
+        ]);
     }
 
     /**

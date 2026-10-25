@@ -1,6 +1,21 @@
 <?php
 
 return [
+    // Switchable modules (config/modules.php).
+    'modules' => [
+        'hr' => 'بشري سرچینې',
+        'owners' => 'مالکان او اخیستنې',
+        'expenses' => 'لګښتونه',
+        'landed_costs' => 'بشپړ شوي لګښتونه',
+        'discount_rules' => 'د تخفیف قواعد',
+        'scm' => 'د اکمالاتو د زنځیر مدیریت',
+        'pos' => 'د پلور ځای (POS)',
+        'crm' => 'د پیرودونکو د اړیکو مدیریت',
+        'procurement' => 'تدارکات',
+        'projects' => 'د پروژې مدیریت او لګښت',
+        'fixed_assets' => 'ثابتې شتمنۍ',
+        'bi' => 'سوداګریز استخبارات او تحلیل',
+    ],
     'resource' => [
         'journal_class' => 'د ژورنال ټولګی',
         'account' => 'حساب',

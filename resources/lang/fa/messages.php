@@ -131,6 +131,7 @@ return [
 
     'errors' => [
         'unauthorized' => 'شما اجازه انجام این عملیات را ندارید.',
+        'module_disabled' => 'ماژول :module برای این کمپنی خاموش است. مدیر می‌تواند آن را در تنظیمات کمپنی روشن کند.',
         'unauthorized_company_update' => 'شما اجازه ویرایش این شرکت را ندارید.',
         'company_edit_active_only' => 'پیش از ویرایش، به این شرکت تغییر دهید.',
         'validation_failed' => 'اعتبارسنجی ناموفق بود.',

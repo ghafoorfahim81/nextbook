@@ -131,6 +131,7 @@ return [
 
     'errors' => [
         'unauthorized' => 'تاسو د دې کار اجازه نه لرئ.',
+        'module_disabled' => 'د :module ماډل د دې شرکت لپاره بند دی. مدیر یې د شرکت په تنظیماتو کې فعالولی شي.',
         'unauthorized_company_update' => 'تاسو د دې شرکت د سمولو اجازه نه لرئ.',
         'company_edit_active_only' => 'د سمون څخه مخکې دې شرکت ته ورشئ.',
         'validation_failed' => 'اعتبار سنجي ناکامه شوه.',

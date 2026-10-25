@@ -162,10 +162,7 @@ class PurchaseInventoryIntegrationTest extends TestCase
     /** Create documents as drafts, the way the preference toggle does. */
     private function asDraftOnCreate(): void
     {
-        $user = $this->ctx['user'];
-        $preferences = $user->preferences ?? [];
-        $preferences['transaction']['purchase_post_immediately'] = false;
-        $user->forceFill(['preferences' => $preferences])->save();
-        $this->actingAs($user->fresh());
+        // When a document posts is the company's setting (phase 6).
+        set_company_setting('transaction.purchase_post_immediately', false, $this->ctx['company']);
     }
 }

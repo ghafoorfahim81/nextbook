@@ -143,6 +143,7 @@ return [
 
     'errors' => [
         'unauthorized' => 'This action is unauthorized.',
+        'module_disabled' => 'The :module module is switched off for this company. An administrator can switch it on in the company settings.',
         'unauthorized_company_update' => 'Unauthorized to update this company.',
         'company_edit_active_only' => 'Switch to this company before editing it.',
         'validation_failed' => 'Validation failed.',

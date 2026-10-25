@@ -33,7 +33,13 @@ use Illuminate\Validation\Rule;
 
     public function rules(): array
     {
+        // Which modules are on (config/modules.php); only known modules.
+        $modules = array_keys((array) config('modules', []));
+
         return [
+            'modules' => 'sometimes|array:'.implode(',', $modules),
+            ...collect($modules)->mapWithKeys(fn ($module) => ["modules.{$module}" => 'sometimes|boolean'])->all(),
+
             // Appearance
             'appearance' => 'sometimes|array',
             'appearance.font_size' => 'sometimes|integer|min:10|max:24',

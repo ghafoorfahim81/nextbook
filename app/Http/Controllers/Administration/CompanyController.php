@@ -73,6 +73,7 @@ class CompanyController extends Controller
         return inertia('Company/Create', [
             'submitRoute' => 'companies.store',
             'defaultSettings' => \App\Support\Settings::forCompany(null),
+            'moduleDefaults' => \App\Support\Modules::defaultsByBusinessType(),
         ]);
     }
 

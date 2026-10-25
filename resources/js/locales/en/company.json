@@ -119,8 +119,10 @@
         "tabs": {
             "documents": "Documents",
             "posting": "Posting",
-            "formats": "Formats"
-        }
+            "formats": "Formats",
+            "modules": "Modules"
+        },
+        "modules_hint": "Switch off what this company does not use. A module that is off disappears from the menu and its pages are closed; its records are kept and come back when you switch it on."
     },
     "show": {
         "edit": "Edit company",
@@ -129,5 +131,19 @@
         "no_branches": "No branches yet.",
         "created_on": "Created on",
         "licence_none": "No licence recorded"
+    },
+    "modules": {
+        "hr": "Human Resources",
+        "owners": "Owners & Drawings",
+        "expenses": "Expenses",
+        "landed_costs": "Landed Costs",
+        "discount_rules": "Discount Rules",
+        "scm": "Supply Chain Management",
+        "pos": "Point of Sale",
+        "crm": "Customer Relationship Management",
+        "procurement": "Procurement",
+        "projects": "Project Management & Costing",
+        "fixed_assets": "Fixed Assets",
+        "bi": "Business Intelligence & Analytics"
     }
 }

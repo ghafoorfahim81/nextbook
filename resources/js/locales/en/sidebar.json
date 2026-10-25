@@ -141,5 +141,65 @@
         "opening": "Job Openings",
         "application": "Applications",
         "interview": "Interviews"
+    },
+    "all_modules": "All modules",
+    "modules_hint": "Pick an area to work in. The menu on the left then shows only that area's pages.",
+    "groups": {
+        "currencies": "Currencies",
+        "inventory_setup": "Setup",
+        "customers": "Customers",
+        "suppliers": "Suppliers",
+        "workspace": "Companies & branches",
+        "companies": "Companies",
+        "branches": "Branches"
+    },
+    "modules": {
+        "accounting": {
+            "title": "Accounting",
+            "description": "Chart of accounts, journal entries, receipts, payments and currencies."
+        },
+        "inventory": {
+            "title": "Inventory",
+            "description": "Items, stock, transfers, adjustments and pricing."
+        },
+        "sales": {
+            "title": "Sales",
+            "description": "Invoices, orders, quotations, returns and customers."
+        },
+        "purchase": {
+            "title": "Purchase",
+            "description": "Purchases, orders, quotations, returns and suppliers."
+        },
+        "hr": {
+            "title": "Human Resources",
+            "description": "Employees, attendance, leave, payroll and recruitment."
+        },
+        "expenses": {
+            "title": "Expenses",
+            "description": "Day-to-day expenses and their categories."
+        },
+        "owners": {
+            "title": "Owners",
+            "description": "Owners' accounts and drawings."
+        },
+        "reports": {
+            "title": "Reports",
+            "description": "Financial, stock, sales and purchase reports."
+        },
+        "settings": {
+            "title": "Settings & Administration",
+            "description": "Users, roles, companies, branches and system tools."
+        }
+    },
+    "switch_module": "Switch module",
+    "coming_soon": "Coming soon",
+    "planned": {
+        "scm": "Plan and follow goods from supplier to customer.",
+        "pos": "Fast counter sales with receipts and a cash drawer.",
+        "crm": "Leads, follow-ups and the history with each customer.",
+        "procurement": "Purchase requests, approvals and supplier bids.",
+        "projects": "Projects, tasks, budgets and what they really cost.",
+        "fixed_assets": "Asset register, depreciation and disposals.",
+        "bi": "Dashboards and analysis across your data."
     }
 }

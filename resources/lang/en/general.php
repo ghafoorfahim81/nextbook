@@ -1,6 +1,21 @@
 <?php
 
 return [
+    // Switchable modules (config/modules.php).
+    'modules' => [
+        'hr' => 'Human Resources',
+        'owners' => 'Owners & Drawings',
+        'expenses' => 'Expenses',
+        'landed_costs' => 'Landed Costs',
+        'discount_rules' => 'Discount Rules',
+        'scm' => 'Supply Chain Management',
+        'pos' => 'Point of Sale',
+        'crm' => 'Customer Relationship Management',
+        'procurement' => 'Procurement',
+        'projects' => 'Project Management & Costing',
+        'fixed_assets' => 'Fixed Assets',
+        'bi' => 'Business Intelligence & Analytics',
+    ],
     'resource' => [
         'journal_class' => 'Journal class',
         'account' => 'Account',

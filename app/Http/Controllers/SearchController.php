@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use App\Support\CompanyContext;
+use App\Support\Modules;
 
 class SearchController extends Controller
 {
@@ -915,14 +916,27 @@ class SearchController extends Controller
     public function globalIndex(Request $request): JsonResponse
     {
         $user     = Auth::user();
-        $branchId = $user?->branch_id ?? 'default';
-        $cacheKey = 'global_search_index_v4:' . $user?->id . ':' . $branchId;
+        // The company and branch the request acts in (phase 5), not the
+        // user's home branch: after a switch, the home branch's key would hand
+        // back the other company's records.
+        $cacheKey = 'global_search_index_v5:' . $user?->id . ':'
+            . (CompanyContext::companyId() ?? 'none') . ':' . (CompanyContext::branchId() ?? 'default');
 
         if ($request->boolean('refresh')) {
             Cache::forget($cacheKey);
         }
 
         $data = Cache::remember($cacheKey, now()->addMinutes(5), fn () => $this->buildGlobalIndex());
+
+        // Leave out what belongs to a module the company has switched off;
+        // after the cache, so switching one takes effect at once.
+        $disabledPaths = Modules::disabledPaths();
+        if ($disabledPaths !== []) {
+            $data = array_values(array_filter(
+                $data,
+                fn ($row) => ! Modules::blocksUrl((string) ($row['url'] ?? ''), $disabledPaths)
+            ));
+        }
 
         return response()->json(['data' => $data]);
     }

@@ -125,6 +125,9 @@ return [
 
         // Batch + expiry, prescription control, generic names.
         BusinessType::PHARMACY->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true]],
+
             'spec_label' => 'batch',
             'sections' => ['variants' => true, 'lots' => true],
             'defaults' => ['is_batch_tracked' => true, 'is_expiry_tracked' => true],
@@ -148,6 +151,9 @@ return [
 
         // Expiry with no batch code is the norm — milk, bread, yoghurt.
         BusinessType::SUPERMARKET->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true, 'scm' => true, 'procurement' => true, 'bi' => true]],
+
             'spec_label' => 'expiry',
             'sections' => ['variants' => true,'lots' => true],
             'defaults' => ['is_expiry_tracked' => true],
@@ -168,6 +174,9 @@ return [
         ],
 
         BusinessType::GROCERY->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['hr' => false, 'pos' => true]],
+
             'spec_label' => 'expiry',
             'sections' => ['lots' => true],
             'defaults' => ['is_expiry_tracked' => true],
@@ -184,6 +193,9 @@ return [
 
         // Size and colour variants, price tiers, import paperwork.
         BusinessType::CLOTHING->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true]],
+
             'sections' => ['variants' => true],
             'defaults' => ['has_variants' => true],
             'fields' => [
@@ -198,6 +210,9 @@ return [
 
         // IMEI per handset, warranty, storage/colour variants.
         BusinessType::MOBILE->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['hr' => false, 'pos' => true]],
+
             'sections' => ['variants' => true, 'pieces' => true],
             'defaults' => ['has_variants' => true, 'is_serial_tracked' => true],
             'fields' => [
@@ -212,6 +227,9 @@ return [
         ],
 
         BusinessType::COMPUTER->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true, 'crm' => true]],
+
             'sections' => ['variants' => true, 'pieces' => true],
             'defaults' => ['has_variants' => true, 'is_serial_tracked' => true],
             'fields' => [
@@ -226,6 +244,9 @@ return [
         ],
 
         BusinessType::ELECTRONICS->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true, 'crm' => true]],
+
             'sections' => ['variants' => true, 'pieces' => true],
             'defaults' => ['has_variants' => true],
             'fields' => [
@@ -242,6 +263,9 @@ return [
 
         // Sold by weight against a daily metal rate; each piece hallmarked.
         BusinessType::JEWELLERY->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true]],
+
             'sections' => ['variants' => true, 'pieces' => true],
             'defaults' => ['has_variants' => true, 'is_weighted' => true],
             'fields' => [
@@ -259,6 +283,9 @@ return [
 
         // Each piece has its own measured area, so its own cost and price.
         BusinessType::CARPET->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true]],
+
             'sections' => ['variants' => true, 'pieces' => true],
             'defaults' => ['has_variants' => true],
             'fields' => [
@@ -274,6 +301,9 @@ return [
         ],
 
         BusinessType::PLY_CARPET->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true]],
+
             'sections' => ['variants' => true, 'pieces' => true],
             'defaults' => ['has_variants' => true],
             'fields' => [
@@ -288,6 +318,9 @@ return [
 
         // Parts carry OEM references; vehicles carry a VIN.
         BusinessType::AUTOMOBILE->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true, 'crm' => true]],
+
             'sections' => ['variants' => true, 'pieces' => true],
             'defaults' => ['has_variants' => true],
             'fields' => [
@@ -307,6 +340,9 @@ return [
 
         // Edition and format are the variants; publisher sits in manufacturer.
         BusinessType::BOOK->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['hr' => false, 'pos' => true]],
+
             'sections' => ['variants' => true],
             'defaults' => ['has_variants' => true],
             'fields' => [
@@ -318,6 +354,9 @@ return [
         ],
 
         BusinessType::MANUFACTURING->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['scm' => true, 'procurement' => true, 'bi' => true, 'fixed_assets' => true]],
+
             'spec_label' => 'lot',
             'sections' => ['variants' => true, 'lots' => true],
             'defaults' => ['is_batch_tracked' => true],
@@ -340,6 +379,9 @@ return [
         ],
 
         BusinessType::PHARMA_MANUFACTURING->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['scm' => true, 'procurement' => true, 'bi' => true, 'fixed_assets' => true]],
+
             'spec_label' => 'batch',
             'sections' => ['variants' => true, 'lots' => true],
             'defaults' => ['is_batch_tracked' => true, 'is_expiry_tracked' => true],
@@ -363,6 +405,9 @@ return [
         ],
 
         BusinessType::RETAIL->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['pos' => true]],
+
             'sections' => ['variants' => true],
             'fields' => [
                 'rack_no'          => true,
@@ -373,6 +418,9 @@ return [
         ],
 
         BusinessType::HOTEL->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['landed_costs' => false, 'fixed_assets' => true]],
+
             'fields' => [
                 'rack_no'      => true,
                 'is_stockable' => true,
@@ -382,6 +430,9 @@ return [
 
         // Services only — no stock, no openings.
         BusinessType::ACCOUNTING->value => [
+            // Modules that differ from the defaults (config/modules.php).
+            'settings' => ['modules' => ['landed_costs' => false, 'discount_rules' => false, 'crm' => true, 'projects' => true]],
+
             'sections' => ['openings' => false],
             'fields' => [
                 'packing'       => false,

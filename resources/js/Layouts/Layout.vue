@@ -109,7 +109,9 @@ import Sonner from '@/Components/ui/sonner/Sonner.vue'
 import { toast } from 'vue-sonner'
 // @ts-ignore - Vue SFC default export shim
 import PageLoadingOverlay from '@/Components/next/PageLoadingOverlay.vue'
-import { HousePlug, ShoppingCart, Receipt as ReceiptIcon, Home } from 'lucide-vue-next'
+import { HousePlug, ShoppingCart, Receipt as ReceiptIcon, Home, LayoutGrid } from 'lucide-vue-next'
+// @ts-ignore - plain JS module
+import { buildAppModules, visibleModules, moduleForUrl, moduleTone } from '@/lib/appModules'
 // @ts-ignore - Vue SFC default export shim
 import NotificationDropdown from '@/Components/notifications/NotificationDropdown.vue'
 import ManualWelcomeDialog from '@/Components/Onboarding/ManualWelcomeDialog.vue'
@@ -183,7 +185,13 @@ function normalizePath(url: string): string {
 function isMenuItemActive(itemUrl: string): boolean {
     const currentPath = normalizePath(page.url)
     const targetPath = normalizePath(itemUrl)
-    return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
+    const matches = (path: string) => currentPath === path || currentPath.startsWith(`${path}/`)
+
+    if (!matches(targetPath)) return false
+
+    // A longer link that also matches is the real one: on /attendances/roster,
+    // "Daily roster", not "Attendance register" (/attendances).
+    return !allMenuPaths.value.some((path) => path.length > targetPath.length && matches(path))
 }
 
 // --- EXCLUSIVE COLLAPSIBLE LOGIC START ---
@@ -218,7 +226,9 @@ const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
 const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 
 // Allow parent pages to control initial sidebar state
-const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean; flush?: boolean }>(), {
+// launcher: the module list's bare frame, like Odoo's home: no sidebar, search,
+// switchers or quick links; only notifications, language and colour mode.
+const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean; flush?: boolean; launcher?: boolean }>(), {
     sidebarCollapsed: false,
     flush: false,
 })
@@ -486,226 +496,64 @@ onMounted(() => {
     )
 })
 
+// The menu lives in lib/appModules.js, one block per module; the sidebar
+// shows the block of the module the current page belongs to, under links that
+// are always there. A page that is in no module (home, dashboard, the modules
+// page) lists the modules themselves.
+const appModules = computed(() => buildAppModules(t))
+
+const pinnedNav = computed(() => [
+    { key: 'home', pinned: true, title: t('sidebar.main.home'), url: '/home', icon: Home },
+    { key: 'dashboard', title: t('sidebar.main.dashboard'), url: '/dashboard', icon: ChartNoAxesCombined },
+])
+
+const shownModules = computed(() => visibleModules(appModules.value, {
+    can,
+    isOff: moduleOff,
+    allowedMenus: selectedSidebarMenus.value,
+}))
+
+// From the page: a link, a search result or a bookmark into another module
+// brings its menu with it. Home and Dashboard belong to every module, so on
+// them the menu stays the one you came from (remembered in this browser).
+const LAST_MODULE_KEY = 'nextbook.last_module'
+const readLastModule = () => { try { return localStorage.getItem(LAST_MODULE_KEY) } catch { return null } }
+const lastModuleId = ref<string | null>(readLastModule())
+const pageModule = computed(() => moduleForUrl(appModules.value, page.url))
+watch(pageModule, (module: any) => {
+    if (!module) return
+    lastModuleId.value = module.id
+    try { localStorage.setItem(LAST_MODULE_KEY, module.id) } catch { /* private window */ }
+}, { immediate: true })
+
+const currentModule = computed(() => {
+    const id = pageModule.value?.id ?? lastModuleId.value
+    return id ? shownModules.value.find((shown) => shown.id === id) ?? null : null
+})
+
 const navMain = computed(() => [
-    {
-        key: 'home',
-        title: t('sidebar.main.home'),
-        url: '/home',
-        icon: Home,
-    },
-    {
-        key: 'dashboard',
-        title: t('sidebar.main.dashboard'),
-        url: '/dashboard',
-        icon: ChartNoAxesCombined,
-    },
-    {
-        key: 'account',
-        title: t('sidebar.main.account'),
-        url: '#',
-        icon: ChartColumn,
-        items: [
-            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts', permission: 'accounts.view_any' },
-            // { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view_any' },
-            { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view_any' },
-            { title: t('sidebar.journal_entry.journal_class'), url: '/journal-classes', icon: FileText, permission: 'journal_classes.view_any' },
-            { title: t('sidebar.journal_entry.journal_entry'), url: '/journal-entries', icon: FileText, permission: 'journal_entries.view_any' },
-        ],
-    },
+    ...pinnedNav.value,
+    ...(currentModule.value
+        ? currentModule.value.groups
+        : shownModules.value.map((module) => ({
+            key: `module:${module.id}`,
+            pinned: true,
+            title: module.title,
+            url: module.firstUrl,
+            icon: module.icon,
+        }))),
+])
 
-    {
-        key: 'inventory',
-        title: t('sidebar.main.inventory'),
-        url: '#',
-        icon: Database,
-        items: [
-            { title: t('sidebar.inventory.item'), url: '/items', permission: 'items.view_any' },
-            { title: t('discount_rule.discount_rules'), url: '/discount-rules', permission: 'discount_rules.view_any' },
-            { title: t('sidebar.inventory.landed_costs'), url: '/landed-costs', permission: 'landed_costs.view_any' },
-            { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry', permission: ['items.view_any', 'items.create'] },
-            { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening', permission: ['items.view_any', 'items.create'] },
-            { title: t('sidebar.inventory.barcode_print'), url: '/item-barcode-print', permission: 'items.view_any' },
-            { title: t('sidebar.inventory.item_transfer'), url: '/item-transfers', permission: 'item_transfers.view_any' },
-            { title: t('sidebar.inventory.stock_adjustment'), url: '/stock-adjustments', permission: 'stock_adjustment.view_any' },
-            { title: t('sidebar.inventory.pricing'), url: '/item-pricing', permission: 'items.view_any' },
-        ],
-    },
-    {
-        key: 'ledger',
-        title: t('sidebar.main.ledger'),
-        url: '#',
-        icon: UserCog,
-        items: [
-            { title: t('sidebar.ledger.customer'), url: '/customers', permission: 'customers.view_any' },
-            { title: t('sidebar.ledger.supplier'), url: '/suppliers', permission: 'suppliers.view_any' },
-        ],
-    },
-    {
-        key: 'hr',
-        title: t('sidebar.main.hr'),
-        url: '#',
-        icon: BriefcaseBusiness,
-        items: [
-            { title: t('sidebar.hr.employee'), url: '/employees', permission: 'employees.view_any' },
-            { title: t('sidebar.hr.contract'), url: '/employee-contracts', permission: 'employee_contracts.view_any' },
-            { title: t('sidebar.hr.document'), url: '/employee-documents', permission: 'employee_documents.view_any' },
-            { title: t('sidebar.hr.department'), url: '/departments', permission: 'departments.view_any' },
-            { title: t('sidebar.hr.designation'), url: '/designations', permission: 'designations.view_any' },
-        ],
-    },
-    {
-        key: 'attendance',
-        title: t('sidebar.main.attendance'),
-        url: '#',
-        icon: CalendarClock,
-        items: [
-            { title: t('sidebar.attendance.roster'), url: '/attendances/roster', permission: 'attendances.create' },
-            { title: t('sidebar.attendance.register'), url: '/attendances', permission: 'attendances.view_any' },
-            { title: t('sidebar.attendance.unmapped'), url: '/attendances/unmapped-punches', permission: 'attendances.view_any' },
-            { title: t('sidebar.attendance.device'), url: '/attendance-devices', permission: 'attendance_devices.view_any' },
-            { title: t('sidebar.attendance.shift'), url: '/shifts', permission: 'shifts.view_any' },
-            { title: t('sidebar.attendance.holiday'), url: '/holidays', permission: 'holidays.view_any' },
-            { title: t('sidebar.attendance.self_service'), url: '/my/attendance' },
-        ],
-    },
-    {
-        key: 'leave',
-        title: t('sidebar.main.leave'),
-        url: '#',
-        icon: CalendarDays,
-        items: [
-            { title: t('sidebar.leave.request'), url: '/leave-requests', permission: 'leave_applications.view_any' },
-            { title: t('sidebar.leave.allocation'), url: '/leave-allocations', permission: 'leaves.view_any' },
-            { title: t('sidebar.leave.type'), url: '/leave-types', permission: 'leave_types.view_any' },
-        ],
-    },
-    {
-        key: 'payroll',
-        title: t('sidebar.main.payroll'),
-        url: '#',
-        icon: Wallet,
-        items: [
-            { title: t('sidebar.payroll.payroll'), url: '/payrolls', permission: 'payrolls.view_any' },
-            { title: t('sidebar.payroll.salary_payment'), url: '/salary-payments', permission: 'salary_payments.view_any' },
-            { title: t('sidebar.payroll.loan'), url: '/employee-loans', permission: 'loans.view_any' },
-            { title: t('sidebar.payroll.structure'), url: '/salary-structures', permission: 'salary_structures.view_any' },
-            { title: t('sidebar.payroll.component'), url: '/salary-components', permission: 'salary_components.view_any' },
-            { title: t('sidebar.payroll.tax_table'), url: '/tax-bracket-sets', permission: 'tax_bracket_sets.view_any' },
-        ],
-    },
-    {
-        key: 'recruitment',
-        title: t('sidebar.main.recruitment'),
-        url: '#',
-        icon: UserPlus,
-        items: [
-            { title: t('sidebar.recruitment.opening'), url: '/job-openings', permission: 'job_openings.view_any' },
-            { title: t('sidebar.recruitment.application'), url: '/job-applications', permission: 'job_applications.view_any' },
-            { title: t('sidebar.recruitment.interview'), url: '/interviews', permission: 'interviews.view_any' },
-        ],
-    },
-    {
-        key: 'owners',
-        title: t('sidebar.owners.owners'),
-        url: '#',
-        icon: BookUser,
-        items: [
-            { title: t('sidebar.owners.owners'), url: '/owners', permission: 'owners.view_any' },
-            { title: t('sidebar.owners.drawing'), url: '/drawings', permission: 'drawings.view_any' },
-        ],
-    },
-    {
-        key: 'expense',
-        title: t('sidebar.main.expense'),
-        url: '#',
-        icon: Banknote,
-        items: [
-            { title: t('sidebar.expense.expense_category'), url: '/expense-categories', permission: 'expense_categories.view_any' },
-            { title: t('sidebar.expense.expense'), url: '/expenses', permission: 'expenses.view_any' },
-        ],
-    },
-    {
-        key: 'purchase',
-        title: t('sidebar.main.purchase'),
-        url: '#',
-        icon: ShoppingBasket,
-        items: [
-            { title: t('sidebar.purchase.purchase'), url: '/purchases', permission: 'purchases.view_any' },
-            { title: t('sidebar.purchase.purchase_order'), url: '/purchase-orders', permission: 'purchase_orders.view_any' },
-            { title: t('sidebar.purchase.purchase_quotation'), url: '/purchase-quotations', permission: 'purchase_quotations.view_any' },
-            { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns', permission: 'purchase_returns.view_any' },
-        ],
-    },
-    {
-        key: 'sale',
-        title: t('sidebar.main.sale'),
-        url: '#',
-        icon: ShoppingCart,
-        items: [
-            { title: t('sidebar.sale.sale'), url: '/sales', permission: 'sales.view_any' },
-            { title: t('sidebar.sale.sale_order'), url: '/sale-orders', permission: 'sale_orders.view_any' },
-            { title: t('sidebar.sale.sale_quotation'), url: '/sale-quotations', permission: 'sale_quotations.view_any' },
-            { title: t('sidebar.sale.sale_return'), url: '/sale-returns', permission: 'sale_returns.view_any' },
-        ],
-    },
+const allMenuPaths = computed<string[]>(() => appModules.value
+    .flatMap((module: any) => module.groups)
+    .flatMap((group: any) => (group.items ? group.items.map((item: any) => item.url) : [group.url]))
+    .filter((url: string) => url && url !== '#')
+    .map((url: string) => normalizePath(url)))
 
-    {
-        key: 'cash_transactions',
-        title: t('sidebar.main.cash_transactions'),
-        url: '#',
-        icon: ReceiptIcon,
-        items: [
-            { title: t('sidebar.main.receipt'), url: '/receipts', permission: 'receipts.view_any' },
-            { title: t('sidebar.main.payment'), url: '/payments', permission: 'payments.view_any' },
-            { title: t('sidebar.main.contra_settlement'), url: '/contra-settlements', permission: 'contra_settlements.view_any' },
-        ],
-    },
-
-    {
-        key: 'user_management',
-        title: t('sidebar.main.user_management'),
-        url: '#',
-        icon: UserRound,
-        items: [
-            { title: t('sidebar.user_management.user'), url: '/users', permission: 'users.view_any' },
-            { title: t('sidebar.user_management.role'), url: '/roles', permission: 'roles.view_any' },
-        ],
-    },
-    {
-        key: 'administration',
-        title: t('sidebar.main.administration'),
-        url: '#',
-        icon: SlidersHorizontal,
-        items: [
-            { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view_any' },
-            { title: t('sidebar.administration.customer_group'), url: '/customer-groups', permission: 'customer_groups.view_any' },
-            { title: t('sidebar.administration.payment_term'), url: '/payment-terms', permission: 'payment_terms.view_any' },
-            { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view_any' },
-            { title: t('sidebar.administration.currency_rate_update'), url: '/currency-rate-updates', permission: 'currencies.view_any' },
-            { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view_any' },
-            { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view_any' },
-            { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view_any' },
-            { title: t('sidebar.administration.warehouse'), url: '/warehouses', permission: 'warehouses.view_any' },
-            { title: t('sidebar.administration.landed_cost_category'), url: '/landed-cost-categories', permission: 'landed_cost_categories.view_any' },
-        ],
-    },
-
-    {
-        key: 'reports',
-        title: t('sidebar.main.reports'),
-        url: '/reports',
-        icon: FileChartLine,
-    },
-    {
-        key: 'system',
-        title: t('sidebar.main.system'),
-        url: '#',
-        icon: Settings2,
-        items: [
-            { title: t('sidebar.system.trash'), url: '/deleted-records', icon: Trash2, permission: 'deleted_records.view_any' },
-            { title: t('sidebar.system.activity_logs'), url: '/activity-logs', icon: History, permission: 'activity_logs.view_any' },
-        ],
-    },
+// The menu search looks through every module, not just the open one.
+const allModulesNav = computed(() => [
+    ...pinnedNav.value,
+    ...shownModules.value.flatMap((module) => module.groups),
 ])
 
 const selectedSidebarMenus = computed<Set<string> | null>(() => {
@@ -727,43 +575,21 @@ const selectedSidebarMenus = computed<Set<string> | null>(() => {
     return normalized
 })
 
+// Modules the company has switched off (config/modules.php): their links go,
+// and a group left with none goes with them.
+const moduleOff = (url: string) => {
+    const paths: string[] = page.props.modules?.disabled_paths ?? []
+    const path = String(url || '').split('?')[0]
+    return paths.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
+}
+
 const filteredNavMain = computed(() => {
     const allowedMenus = selectedSidebarMenus.value
+    const source = menuSearchQueryNormalized.value ? allModulesNav.value : navMain.value
 
-    return navMain.value
-        .map((item) => {
-            // Home menu has no permissions, always show
-            if (item.key === 'home') {
-                return item
-            }
-
-            if (allowedMenus && item.key && !allowedMenus.has(item.key)) {
-                return null
-            }
-
-            // Leaf item
-            if (!item.items) {
-                if (!item.permission || can(item.permission)) {
-                    return item
-                }
-                return null
-            }
-
-            // Parent with children
-            const visibleChildren = item.items.filter(
-                (child) => !child.permission || can(child.permission),
-            )
-
-            if (visibleChildren.length === 0) {
-                return null
-            }
-
-            return {
-                ...item,
-                items: visibleChildren,
-            }
-        })
-        .filter(Boolean)
+    // Module groups arrive already cut to what this user may open
+    // (visibleModules); only the dashboard link can still be hidden here.
+    return source.filter((item: any) => item.pinned || !allowedMenus || allowedMenus.has(item.menuKey ?? item.key))
 })
 
 const menuSearchQuery = ref('')
@@ -882,7 +708,7 @@ function logout() {
     <PageLoadingOverlay />
     <ManualWelcomeDialog />
     <SidebarProvider v-model:open="sidebarOpen" :default-open="!props.sidebarCollapsed">
-        <Sidebar collapsible="icon" :side="sidebarSide">
+        <Sidebar v-if="!launcher" collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
                 <!-- The company you are working in (phase 5). Clickable only when
                      there is somewhere to go: a second company, or a super-admin,
@@ -1215,9 +1041,9 @@ function logout() {
             <SidebarRail />
         </Sidebar>
         <SidebarInset class="flex h-svh min-h-0 flex-col overflow-hidden">
-            <header class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b bg-[hsl(var(--app-chrome-background))] text-[hsl(var(--app-chrome-foreground))] px-3 py-2 transition-[width,height] ease-linear lg:h-16 lg:flex-nowrap sm:px-4 lg:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:lg:h-12">
+            <header :class="launcher ? 'border-transparent !bg-transparent' : ''" class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b bg-[hsl(var(--app-chrome-background))] text-[hsl(var(--app-chrome-foreground))] px-3 py-2 transition-[width,height] ease-linear lg:h-16 lg:flex-nowrap sm:px-4 lg:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:lg:h-12">
                 <!-- Left: Sidebar trigger -->
-                <div class="flex shrink-0 items-center gap-2">
+                <div v-if="!launcher" class="flex shrink-0 items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
                     <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
                     <QuickLinks />
@@ -1235,7 +1061,7 @@ function logout() {
                 </div>
 
                 <!-- Center: connection status + global search side by side (no overlap) -->
-                <div class="flex min-w-0 flex-1 items-center justify-center gap-2 px-1 sm:gap-3 md:order-last md:basis-full md:flex-none lg:order-none lg:basis-auto lg:flex-1 lg:px-2">
+                <div v-if="!launcher" class="flex min-w-0 flex-1 items-center justify-center gap-2 px-1 sm:gap-3 md:order-last md:basis-full md:flex-none lg:order-none lg:basis-auto lg:flex-1 lg:px-2">
                     <div
                         v-show="connectionState !== 'online'"
                         class="hidden shrink-0 items-center md:inline-flex rtl:flex-row-reverse"
@@ -1255,7 +1081,27 @@ function logout() {
                 </div>
 
                 <!-- Right: actions -->
-                <div class="flex shrink-0 items-center gap-2 sm:gap-3 sm:pr-4">
+                <div class="flex shrink-0 items-center gap-2 sm:gap-3 sm:pr-4" :class="launcher ? 'ms-auto' : ''">
+
+                    <!-- The module list, from anywhere. -->
+                    <Link
+                        v-if="!launcher"
+                        :href="route('modules.index')"
+                        :title="t('sidebar.all_modules')"
+                        :aria-label="t('sidebar.all_modules')"
+                        class="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        :class="normalizePath(page.url) === '/modules' ? 'bg-primary/10 text-primary' : ''"
+                    >
+                        <LayoutGrid class="size-5" />
+                    </Link>
+                    <!-- The module you are in: plain text beside its switcher. -->
+                    <span
+                        v-if="!launcher && currentModule"
+                        class="hidden items-center gap-1.5 text-sm font-medium text-foreground sm:inline-flex"
+                    >
+                        <span class="size-2 rounded-full bg-gradient-to-br" :class="moduleTone(currentModule.id)" aria-hidden="true" />
+                        {{ currentModule.title }}
+                    </span>
 
                     <NotificationDropdown />
                     <LanguageSwitcher />
@@ -1276,7 +1122,7 @@ function logout() {
             >
                 <slot/>
             </div>
-            <footer class="border-t border-border/60 bg-[hsl(var(--app-chrome-background))] px-4 py-2 text-center text-[11px] text-[hsl(var(--app-chrome-foreground))]">
+            <footer v-if="!launcher" class="border-t border-border/60 bg-[hsl(var(--app-chrome-background))] px-4 py-2 text-center text-[11px] text-[hsl(var(--app-chrome-foreground))]">
                 {{ t('layout.footer_copyright') || 'Copyright © 2026 App Forest. All rights reserved. Nextbook v1' }}
             </footer>
         </SidebarInset>

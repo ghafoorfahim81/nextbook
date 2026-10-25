@@ -15,7 +15,7 @@
  * form has passed the same check, so it is never shown for a form the server
  * would turn away.
  */
-import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
@@ -48,6 +48,8 @@ const props = defineProps({
     submitRoute: { type: String, default: 'company.store' },
     // The company settings a new company starts from (phase 6).
     defaultSettings: { type: Object, default: () => ({}) },
+    // Each trade's module switches, applied when the trade is picked.
+    moduleDefaults: { type: Object, default: () => ({}) },
 
     mode: { type: String, default: 'create' },
     // edit: the company's values, as Administration\CompanyController::edit sends them.
@@ -106,7 +108,21 @@ const logoPreview = ref(seed.logo_url ?? null)
 // by CompanySettingsForm and posted as one JSON field.
 const initialSettings = isEdit ? props.settings : props.defaultSettings
 const companySettings = reactive(JSON.parse(JSON.stringify(initialSettings)))
-const settingsChanged = computed(() => JSON.stringify(companySettings) !== JSON.stringify(initialSettings))
+// What "unchanged" means: the starting settings, with the chosen trade's
+// modules once they are applied below.
+const settingsBaseline = ref(JSON.stringify(initialSettings))
+const settingsChanged = computed(() => JSON.stringify(companySettings) !== settingsBaseline.value)
+
+// A new company starts with its trade's modules on (business_profiles.php):
+// picking a trade applies them, until the user switches one themselves.
+watch(() => form.business_type, (type) => {
+    const defaults = props.moduleDefaults?.[type]
+    if (isEdit || !defaults) return
+    if (JSON.stringify(companySettings) !== settingsBaseline.value) return
+
+    companySettings.modules = { ...defaults }
+    settingsBaseline.value = JSON.stringify(companySettings)
+})
 const settingsLocked = isEdit && !props.canEditSettings
 // The server names them settings.<key>; the form wants <key>.
 const settingsErrors = computed(() => Object.fromEntries(

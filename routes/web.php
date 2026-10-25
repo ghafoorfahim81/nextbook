@@ -58,6 +58,10 @@ Route::middleware([
     Route::get('/profile', [ProfileController::class, 'show'])->name('user.profile');
 
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+    // The module list (the app launcher). Its tiles come from
+    // resources/js/lib/appModules.js and the shared props, so the page needs no data.
+    Route::inertia('/modules', 'Modules/Index')->name('modules.index');
     Route::post('/home/exchange', [HomeController::class, 'exchange'])->name('home.exchange');
     Route::post('/home/unit-convert', [HomeController::class, 'unitConvert'])->name('home.unit-convert');
     Route::get('/home/weather', [HomeController::class, 'weather'])->name('home.weather');

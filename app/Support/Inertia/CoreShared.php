@@ -120,6 +120,15 @@ final class CoreShared
                 'context_notice' => fn() => $request->session()->get('context_notice'),
             ],
             'user_preferences' => $userPreferences,
+            // Phase 6: the modules that exist, and the paths of those the
+            // company has switched off, which the sidebar leaves out.
+            'modules' => $user
+                ? [
+                    'available' => \App\Support\Modules::available(),
+                    // No company yet (sign-up): nothing is switched off.
+                    'disabled_paths' => CompanyContext::company() ? \App\Support\Modules::disabledPaths() : [],
+                ]
+                : null,
             // Which item fields, sections and tracking defaults this trade
             // uses. Cached per company: it derives from the company alone, and
             // since phase 5 a user's companies can be different trades.

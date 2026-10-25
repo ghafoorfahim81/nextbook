@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/composables/useAuth'
+// @ts-ignore - plain JS module
+import { buildAppModules, moduleForUrl, urlUnder } from '@/lib/appModules'
 import { Button } from '@/Components/ui/button'
 import {
   DropdownMenu,
@@ -18,6 +20,7 @@ import { Kbd, KbdGroup } from '@/Components/ui/kbd'
 
 const { t } = useI18n()
 const { can } = useAuth()
+const page = usePage<any>()
 
 /**
  * Quick-create targets, in the order the menu shows them.
@@ -96,12 +99,30 @@ const groups = computed(() => [
   },
 ])
 
-// Hide what the user cannot create rather than sending them into a 403.
+// Hide what the user cannot create rather than sending them into a 403, and
+// what belongs to a module the company switched off.
+const isOff = (url: string) => (page.props.modules?.disabled_paths ?? []).some((prefix: string) => urlUnder(url, prefix))
 const visibleGroups = computed(() =>
   groups.value
-    .map((group) => ({ ...group, items: group.items.filter((item) => can(item.permission)) }))
+    .map((group) => ({ ...group, items: group.items.filter((item) => can(item.permission) && !isOff(item.url)) }))
     .filter((group) => group.items.length > 0),
 )
+
+// The menu lists the open module's links only (by the module each link's page
+// belongs to); outside any module (home, dashboard) it lists them all. The
+// Alt shortcuts below keep working everywhere.
+const appModules = computed(() => buildAppModules(t))
+const currentModuleId = computed(() => moduleForUrl(appModules.value, page.url)?.id ?? null)
+const menuGroups = computed(() => {
+  if (!currentModuleId.value) return visibleGroups.value
+
+  return visibleGroups.value
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => moduleForUrl(appModules.value, item.url)?.id === currentModuleId.value),
+    }))
+    .filter((group) => group.items.length > 0)
+})
 
 const navigateTo = (url: string) => router.visit(url)
 
@@ -147,7 +168,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcuts))
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu v-if="menuGroups.length">
     <DropdownMenuTrigger as-child>
       <Button
         variant="outline"
@@ -159,7 +180,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcuts))
     </DropdownMenuTrigger>
 
     <DropdownMenuContent class="w-64 max-h-[70vh] overflow-y-auto" align="start">
-      <template v-for="(group, index) in visibleGroups" :key="group.label">
+      <template v-for="(group, index) in menuGroups" :key="group.label">
         <DropdownMenuSeparator v-if="index > 0" />
         <DropdownMenuLabel class="text-xs font-semibold text-muted-foreground">
           {{ group.label }}

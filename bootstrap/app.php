@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // Used by HandleInertiaRequests to compute branch-scoped data.
             SetActiveBranch::class,
             HandleInertiaRequests::class,
+            // Refuses the URLs of a module the company has switched off. After
+            // HandleInertiaRequests, so the Forbidden page has its shared props.
+            \App\Http\Middleware\EnsureModuleEnabled::class,
             // Refuses a write from a page opened in another company (a tab left
             // open across a company switch). After HandleInertiaRequests, so its
             // redirect passes back out through Inertia and becomes a 303.
@@ -47,7 +49,11 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (AuthorizationException $e, $request) {
+        // Typed on what Laravel turns an AuthorizationException into before it
+        // asks the render callbacks (Handler::prepareException); a callback
+        // typed on AuthorizationException itself was never called, and every
+        // denial showed the framework's bare 403 page.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e, $request) {
             // Laravel fills in its own untranslated English default when a
             // policy denies without a reason; show ours in the user's language.
             $message = $e->getMessage();

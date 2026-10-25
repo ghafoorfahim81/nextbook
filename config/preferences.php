@@ -80,9 +80,28 @@ return [
         'localization.timezone',
         'localization.number_format',
         'localization.first_day_of_week',
+
+        // Which modules are on (config/modules.php).
+        'modules',
     ],
 
     'defaults' => [
+        // On unless the business type or the company says otherwise. The
+        // planned ones (config/modules.php, available => false) start off.
+        'modules' => [
+            'hr' => true,
+            'owners' => true,
+            'expenses' => true,
+            'landed_costs' => true,
+            'discount_rules' => true,
+            'scm' => false,
+            'pos' => false,
+            'crm' => false,
+            'procurement' => false,
+            'projects' => false,
+            'fixed_assets' => false,
+            'bi' => false,
+        ],
         'onboarding' => [
             // Set once the user opens the manual or dismisses the welcome
             // prompt; while null, the first-login manual dialog is shown.

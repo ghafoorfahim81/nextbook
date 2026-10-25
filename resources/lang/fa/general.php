@@ -1,6 +1,21 @@
 <?php
 
 return [
+    // Switchable modules (config/modules.php).
+    'modules' => [
+        'hr' => 'منابع بشری',
+        'owners' => 'مالکان و برداشت‌ها',
+        'expenses' => 'مصارف',
+        'landed_costs' => 'هزینه‌های تمام‌شده',
+        'discount_rules' => 'قواعد تخفیف',
+        'scm' => 'مدیریت زنجیرهٔ تأمین',
+        'pos' => 'صندوق فروش (POS)',
+        'crm' => 'مدیریت ارتباط با مشتری',
+        'procurement' => 'تدارکات',
+        'projects' => 'مدیریت و هزینه‌یابی پروژه',
+        'fixed_assets' => 'دارایی‌های ثابت',
+        'bi' => 'هوش تجاری و تحلیل',
+    ],
     'resource' => [
         'journal_class' => 'کلاس ژورنال',
         'account' => 'حساب',

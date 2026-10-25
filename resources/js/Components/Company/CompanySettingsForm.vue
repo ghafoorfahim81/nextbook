@@ -8,6 +8,7 @@
  * by the company set-up wizard, where it starts from the defaults.
  */
 import { computed, ref } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { Input } from '@/Components/ui/input'
 import { Label } from '@/Components/ui/label'
@@ -27,6 +28,7 @@ const props = defineProps({
 const { t } = useI18n()
 
 const sections = [
+    { id: 'modules', label: 'company.settings.tabs.modules' },
     { id: 'documents', label: 'company.settings.tabs.documents' },
     { id: 'posting', label: 'company.settings.tabs.posting' },
     { id: 'stock_adjustment', label: 'preferences.tabs.stock_adjustment' },
@@ -36,7 +38,12 @@ const sections = [
     { id: 'security', label: 'preferences.tabs.security' },
     { id: 'backup', label: 'preferences.tabs.backup' },
 ]
-const active = ref('documents')
+const active = ref('modules')
+
+// Only modules that exist; planned ones (config/modules.php) stay out until
+// they are built.
+const page = usePage()
+const availableModules = computed(() => page.props.modules?.available ?? [])
 
 const documentTypes = [
     { key: 'sale', label: 'preferences.sale.types.sale' },
@@ -94,7 +101,7 @@ const sectionOf = {
     purchase: 'documents', purchase_order: 'documents', purchase_return: 'documents', purchase_quotation: 'documents',
     transaction: 'posting', stock_adjustment: 'stock_adjustment', receipt_payment: 'receipt_payment',
     tax_currency: 'tax_currency', appearance: 'formats', item_management: 'formats', localization: 'formats',
-    security: 'security', backup: 'backup',
+    security: 'security', backup: 'backup', modules: 'modules',
 }
 const sectionsWithErrors = computed(() => new Set(Object.keys(props.errors).map((key) => sectionOf[key.split('.')[0]])))
 const error = (key) => props.errors[key]
@@ -125,6 +132,21 @@ const error = (key) => props.errors[key]
         <!-- A disabled fieldset disables every input and button in it, the Select
              triggers and switches included: the view mode of the company page. -->
         <fieldset :disabled="disabled" class="min-w-0 disabled:opacity-80">
+            <!-- Modules: switched off is hidden and blocked, its data kept -->
+            <div v-show="active === 'modules'" class="space-y-3">
+                <p class="text-sm text-muted-foreground">{{ t('company.settings.modules_hint') }}</p>
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div v-for="module in availableModules" :key="module" class="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
+                        <Label :for="`company-module-${module}`" class="cursor-pointer font-medium">{{ t(`company.modules.${module}`) }}</Label>
+                        <Switch
+                            :id="`company-module-${module}`"
+                            :model-value="group('modules')[module] ?? false"
+                            @update:model-value="(v) => group('modules')[module] = v"
+                        />
+                    </div>
+                </div>
+            </div>
+
             <!-- Documents: numbering and terms -->
             <div v-show="active === 'documents'" class="space-y-6">
                 <div class="overflow-x-auto rounded-lg border border-border">
