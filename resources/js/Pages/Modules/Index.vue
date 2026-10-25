@@ -43,13 +43,13 @@ const preview = (module) => module.groups
 <template>
     <Head :title="t('sidebar.all_modules')" />
     <AppLayout launcher>
-        <div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
+        <div class="w-full px-4 py-6 sm:px-6">
             <div class="mb-6">
                 <h1 class="text-2xl font-semibold tracking-tight text-foreground">{{ t('sidebar.all_modules') }}</h1>
                 <p class="mt-1 text-sm text-muted-foreground">{{ t('sidebar.modules_hint') }}</p>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 <Link
                     v-for="module in modules"
                     :key="module.id"
