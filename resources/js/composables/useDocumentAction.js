@@ -41,7 +41,7 @@ export function useDocumentAction() {
             preserveState: true,
             ...options,
             headers: {
-                // The full-screen BookLoader is a *navigation* affordance. These
+                // The page loading bar is a *navigation* affordance. These
                 // actions go nowhere, so the overlay just covers the document the
                 // operator is looking at; the confirm button carries the spinner
                 // instead, exactly like deleting a record.

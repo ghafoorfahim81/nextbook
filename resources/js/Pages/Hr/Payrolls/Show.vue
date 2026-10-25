@@ -83,7 +83,7 @@ const submitTransition = (status, withReason = null) => {
         preserveState: true,
         // Posting or reversing a run stays on this page — only the status
         // changes. The button carries the spinner, so skip the full-screen
-        // BookLoader that would otherwise cover the run being acted on.
+        // page loading bar that would otherwise cover the run being acted on.
         headers: { 'X-Silent-Loader': '1' },
         onFinish: () => {
             processing.value = false;

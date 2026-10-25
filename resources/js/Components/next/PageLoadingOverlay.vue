@@ -1,19 +1,26 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+/**
+ * The page-change indicator: Inertia's own progress bar and spinner (NProgress,
+ * the library Inertia's progress uses) at the top of the screen. It replaced a
+ * full-screen book animation.
+ *
+ * Inertia's built-in progress (`progress` in app.js) stays off: it shows for
+ * every request, and Inertia 1.x has no way to skip one. This drives the same
+ * bar itself, so the rules below still keep it off for anything that does not
+ * leave the page (searches, in-place saves, deletes, dialog submits).
+ */
+import { onBeforeUnmount, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
-import { useI18n } from 'vue-i18n'
-import BookLoader from '@/Components/next/BookLoader.vue'
+// Inertia's own dependency (@inertiajs/core), so it is always installed.
+import NProgress from 'nprogress'
 
-const { t } = useI18n()
-const visible = ref(false)
+NProgress.configure({ showSpinner: true, minimum: 0.08, trickleSpeed: 200 })
 
-// Avoid flicker on fast navigations, and avoid an instant flash-hide once shown.
-const SHOW_DELAY_MS = 150
-const MIN_VISIBLE_MS = 400
+// Inertia's default: no bar for a navigation that finishes within this.
+const SHOW_DELAY_MS = 250
 
 let showTimer = null
-let hideTimer = null
-let shownAt = 0
+let started = false
 
 // The DataTable component tags its refreshes with an X-DataTable-Refresh
 // header. Its GETs are already covered by isSamePageRefresh; the header still
@@ -30,7 +37,7 @@ function isDataTableRefresh(event) {
 
 // Saving preferences (and the other mutations on that page) refreshes props in
 // place, and the Preferences page renders its own inline spinners for each
-// action. The full-screen BookLoader on top of that just double-loads, so skip
+// action. The page loading bar on top of that just double-loads, so skip
 // it for any non-GET request to a /preferences endpoint.
 function isPreferencesMutation(event) {
     try {
@@ -58,7 +65,7 @@ function isSilentVisit(event) {
 }
 
 // Deleting a record never navigates anywhere — the operator stays on the list
-// and the row simply leaves it. Covering the screen with a book loader hides
+// and the row simply leaves it. Covering the screen with a loading indicator hides
 // that, and hides the undo toast that follows. This is checked on the method so
 // it holds for every delete in the system, including pages that call
 // router.delete() directly rather than going through useDeleteResource().
@@ -115,65 +122,97 @@ function handleStart(event) {
         || isDialogSubmit(event)
     ) return
 
-    clearTimeout(hideTimer)
     clearTimeout(showTimer)
     showTimer = setTimeout(() => {
-        visible.value = true
-        shownAt = Date.now()
+        started = true
+        NProgress.start()
     }, SHOW_DELAY_MS)
+}
+
+// An upload reports how far it got; the bar follows it.
+function handleProgress(event) {
+    const percentage = event?.detail?.progress?.percentage
+    if (started && percentage) NProgress.set(Math.max(NProgress.status ?? 0, (percentage / 100) * 0.9))
 }
 
 function handleFinish() {
     clearTimeout(showTimer)
-    if (!visible.value) return
+    if (!started) return
 
-    const remaining = MIN_VISIBLE_MS - (Date.now() - shownAt)
-    if (remaining > 0) {
-        hideTimer = setTimeout(() => { visible.value = false }, remaining)
-    } else {
-        visible.value = false
-    }
+    started = false
+    NProgress.done()
 }
 
 let offStart
+let offProgress
 let offFinish
 
 onMounted(() => {
     offStart = router.on('start', handleStart)
+    offProgress = router.on('progress', handleProgress)
     offFinish = router.on('finish', handleFinish)
 })
 
 onBeforeUnmount(() => {
     clearTimeout(showTimer)
-    clearTimeout(hideTimer)
+    if (started) NProgress.done()
     offStart?.()
+    offProgress?.()
     offFinish?.()
 })
 </script>
 
 <template>
-    <Transition name="page-loader-fade">
-        <div
-            v-if="visible"
-            class="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-background/70 backdrop-blur-sm"
-            role="status"
-            aria-live="polite"
-            :aria-label="t('general.loading')"
-        >
-            <BookLoader :size="140" />
-            <span class="text-sm font-medium text-muted-foreground">{{ t('general.loading') }}</span>
-        </div>
-    </Transition>
+    <!-- NProgress draws its bar and spinner straight into the body. -->
 </template>
 
-<style scoped>
-.page-loader-fade-enter-active,
-.page-loader-fade-leave-active {
-    transition: opacity 0.15s ease;
+<style>
+/* Inertia's progress styles (its injected CSS), in the brand colour. */
+#nprogress {
+    pointer-events: none;
 }
-
-.page-loader-fade-enter-from,
-.page-loader-fade-leave-to {
-    opacity: 0;
+#nprogress .bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1031;
+    width: 100%;
+    height: 2px;
+    background: hsl(var(--primary));
+}
+#nprogress .peg {
+    position: absolute;
+    right: 0;
+    display: block;
+    width: 100px;
+    height: 100%;
+    box-shadow: 0 0 10px hsl(var(--primary)), 0 0 5px hsl(var(--primary));
+    opacity: 1;
+    transform: rotate(3deg) translate(0, -4px);
+}
+#nprogress .spinner {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1031;
+    display: block;
+}
+[dir='rtl'] #nprogress .spinner {
+    right: auto;
+    left: 15px;
+}
+#nprogress .spinner-icon {
+    box-sizing: border-box;
+    width: 18px;
+    height: 18px;
+    border: solid 2px transparent;
+    border-top-color: hsl(var(--primary));
+    border-left-color: hsl(var(--primary));
+    border-radius: 50%;
+    animation: nprogress-spinner 400ms linear infinite;
+}
+@keyframes nprogress-spinner {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>

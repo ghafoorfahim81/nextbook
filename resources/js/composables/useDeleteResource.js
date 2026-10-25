@@ -62,7 +62,7 @@ export function useDeleteResource() {
 
                     router.delete(route(routeName, id), {
                         // A delete leaves the operator on the same screen, so the
-                        // full-screen BookLoader has nothing to announce.
+                        // page loading bar has nothing to announce.
                         headers: { 'X-Silent-Loader': '1' },
                         onSuccess: (page) => {
                             // Check server flashed error (e.g., main branch or dependency)

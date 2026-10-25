@@ -113,7 +113,7 @@ watch(() => props.notifications, clearSelection)
 // --- Navigation ----------------------------------------------------------
 // Every server round-trip on this page is a background partial reload
 // (`only`). The `X-DataTable-Refresh` header tells PageLoadingOverlay to skip
-// the full-screen BookLoader for these in-place refreshes; `busy` drives a
+// the page loading bar for these in-place refreshes; `busy` drives a
 // light spinner over the table instead.
 const busy = ref(false)
 const PARTIAL = ['notifications', 'summary', 'notification_center']

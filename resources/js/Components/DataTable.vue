@@ -495,7 +495,7 @@ const statusBadgeClass = (status) => {
 }
 
 // Requests triggered from within the table (search, sort, filter, paginate)
-// carry this header so the global BookLoader overlay skips them — the table
+// carry this header so the page loading bar skips them — the table
 // renders its own skeleton loader for these in-place refreshes.
 const DATATABLE_REQUEST_HEADERS = { 'X-DataTable-Refresh': '1' }
 

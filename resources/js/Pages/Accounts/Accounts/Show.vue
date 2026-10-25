@@ -49,7 +49,7 @@ const performToggleActive = () => {
     togglingActive.value = true;
     router.patch(route('chart-of-accounts.toggle-active', accountData.value.id), {}, {
         preserveScroll: true,
-        // Skip the full-screen BookLoader — the button shows its own spinner.
+        // Skip the page loading bar — the button shows its own spinner.
         headers: { 'X-DataTable-Refresh': '1' },
         onSuccess: () => {
             const flashError = page.props.flash?.error;
