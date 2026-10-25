@@ -58,6 +58,17 @@ class CompanySettingsTest extends TestCase
         $this->assertFalse($settings['transaction']['sale_post_immediately']);
     }
 
+    public function test_the_company_page_shows_its_settings(): void
+    {
+        set_company_setting('sale.invoice_prefix', 'NB-', $this->ctx['company']);
+
+        $this->get(route('companies.show', $this->ctx['company']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Company/Show')
+                ->where('settings.sale.invoice_prefix', 'NB-'));
+    }
+
     public function test_changing_company_settings_needs_the_permission(): void
     {
         $clerk = $this->userWith(['preferences.update', 'companies.update']);

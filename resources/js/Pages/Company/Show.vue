@@ -4,11 +4,12 @@
  * its licence and its branches. Reached from the companies page; the edit page
  * is the same steps as the set-up wizard.
  */
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeft, Check, Home, Pencil, Star, Store } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
+import CompanySettingsForm from '@/Components/Company/CompanySettingsForm.vue'
 
 const props = defineProps({
     company: { type: Object, required: true },
@@ -23,7 +24,13 @@ const props = defineProps({
     calendarTypes: { type: Array, default: () => [] },
     workingStyles: { type: Array, default: () => [] },
     costingMethods: { type: Array, default: () => [] },
+    // The company's shared settings (phase 6), read-only here.
+    settings: { type: Object, default: () => ({}) },
+    cashAccounts: { type: Array, default: () => [] },
 })
+
+// The form edits in place; give it a copy so nothing here can touch the prop.
+const settingsView = reactive(JSON.parse(JSON.stringify(props.settings)))
 
 const { t } = useI18n()
 const logoBroken = ref(false)
@@ -139,6 +146,16 @@ const sections = computed(() => {
                                 </dd>
                             </div>
                         </dl>
+                    </section>
+
+                    <section class="rounded-2xl border border-border bg-card shadow-sm">
+                        <div class="border-b border-border px-5 py-3">
+                            <h2 class="text-sm font-semibold text-foreground">{{ t('company.settings.title') }}</h2>
+                            <p class="mt-0.5 text-xs text-muted-foreground">{{ t('company.settings.description') }}</p>
+                        </div>
+                        <div class="px-5 py-4">
+                            <CompanySettingsForm :settings="settingsView" :cash-accounts="cashAccounts" disabled />
+                        </div>
                     </section>
                 </div>
 

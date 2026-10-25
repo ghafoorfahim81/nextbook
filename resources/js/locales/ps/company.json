@@ -68,7 +68,9 @@
             "review": "بیاکتنه",
             "review_hint": "وګورئ او جوړ یې کړئ",
             "company_settings": "د شرکت تنظیمات",
-            "company_settings_hint": "شمېرنه، ثبت، بڼې"
+            "company_settings_hint": "شمېرنه، ثبت، بڼې",
+            "invoice": "د رسید ډیزاین",
+            "invoice_hint": "تم او بڼې"
         },
         "names": "د شرکت نوم",
         "names_hint": "انګلیسي نوم اړین دی؛ دري او پښتو نومونه د اسنادو د چاپ لپاره اضافه کړئ.",
@@ -127,9 +129,5 @@
         "no_branches": "تراوسه څانګې نشته.",
         "created_on": "د جوړېدو نېټه",
         "licence_none": "جواز نه دی ثبت شوی"
-    },
-    "steps": {
-        "invoice": "د رسید ډیزاین",
-        "invoice_hint": "تم او بڼې"
     }
 }

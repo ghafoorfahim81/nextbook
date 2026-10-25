@@ -133,6 +133,12 @@ class CompanyController extends Controller
             'canEdit' => $isActive && $user->can('update', $company),
             'branches' => $branches,
             'canViewBranches' => $isActive && $user->can('branches.view_any'),
+            // Phase 6: the settings everyone in the company shares, shown
+            // read-only. Account names are the active company's books only.
+            'settings' => \App\Support\Settings::forCompany($company),
+            'cashAccounts' => $isActive
+                ? \App\Models\Account\Account::query()->select('id', 'name')->where('is_active', true)->orderBy('name')->get()
+                : [],
         ]);
     }
 

@@ -68,7 +68,9 @@
             "review": "Review",
             "review_hint": "Check and create",
             "company_settings": "Company settings",
-            "company_settings_hint": "Numbering, posting, formats"
+            "company_settings_hint": "Numbering, posting, formats",
+            "invoice": "Invoice design",
+            "invoice_hint": "Theme and formats"
         },
         "names": "Company name",
         "names_hint": "The English name is required; add Dari and Pashto to print them on documents.",
@@ -127,9 +129,5 @@
         "no_branches": "No branches yet.",
         "created_on": "Created on",
         "licence_none": "No licence recorded"
-    },
-    "steps": {
-        "invoice": "Invoice design",
-        "invoice_hint": "Theme and formats"
     }
 }
