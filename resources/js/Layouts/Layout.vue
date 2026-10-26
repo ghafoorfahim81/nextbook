@@ -1083,6 +1083,14 @@ function logout() {
                 <!-- Right: actions -->
                 <div class="flex shrink-0 items-center gap-2 sm:gap-3 sm:pr-4" :class="launcher ? 'ms-auto' : ''">
 
+                    <!-- The module you are in: plain text, before its switcher. -->
+                    <span
+                        v-if="!launcher && currentModule"
+                        class="hidden items-center gap-1.5 text-sm font-medium text-foreground sm:inline-flex"
+                    >
+                        <span class="size-2 rounded-full bg-gradient-to-br" :class="moduleTone(currentModule.id)" aria-hidden="true" />
+                        {{ currentModule.title }}
+                    </span>
                     <!-- The module list, from anywhere. -->
                     <Link
                         v-if="!launcher"
@@ -1094,14 +1102,6 @@ function logout() {
                     >
                         <LayoutGrid class="size-5" />
                     </Link>
-                    <!-- The module you are in: plain text beside its switcher. -->
-                    <span
-                        v-if="!launcher && currentModule"
-                        class="hidden items-center gap-1.5 text-sm font-medium text-foreground sm:inline-flex"
-                    >
-                        <span class="size-2 rounded-full bg-gradient-to-br" :class="moduleTone(currentModule.id)" aria-hidden="true" />
-                        {{ currentModule.title }}
-                    </span>
 
                     <NotificationDropdown />
                     <LanguageSwitcher />
