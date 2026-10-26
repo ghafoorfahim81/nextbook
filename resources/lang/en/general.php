@@ -16,6 +16,10 @@ return [
         'fixed_assets' => 'Fixed Assets',
         'bi' => 'Business Intelligence & Analytics',
     ],
+    // Phase 7: financial dimensions.
+    'branch' => 'Branch',
+    'percentage' => 'Percentage',
+    'no_cost_center' => '(No cost center)',
     'resource' => [
         'journal_class' => 'Journal class',
         'account' => 'Account',
@@ -33,6 +37,8 @@ return [
         'designation' => 'Designation',
         'expense' => 'Expense',
         'expense_category' => 'Expense category',
+        'cost_center' => 'Cost center',
+        'allocation_rule' => 'Allocation rule',
         'item' => 'Item',
         'item_transfer' => 'Item transfer',
         'stock_adjustment' => 'Stock adjustment',

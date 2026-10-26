@@ -22,6 +22,8 @@ const accounts = computed(() => page.props.accounts?.data || [])
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const journalClasses = computed(() => page.props.journalClasses?.data || [])
+// Phase 7: an optional cost center per line.
+const costCenters = computed(() => page.props.costCenters || [])
 const { loading: lazyLoading } = useLazyProps(page.props, ['accounts', 'ledgers', 'currencies'])
 
 const form = useForm({
@@ -82,6 +84,7 @@ onMounted(() => {
     ledger: line.ledger ?? '',
     selected_ledger: ledgers.value.find(ledger => ledger.id === line.ledger_id) || null,
     journal_class_id: line.journal_class_id ?? '',
+    cost_center_id: line.cost_center_id ?? null,
     selected_journal_class: line.journal_class || null,
   }))
 
@@ -254,6 +257,7 @@ const saveFormRef = useSaveShortcut({ form });
               <th class="px-4 py-2">{{ t('general.remark') }}</th>
               <th class="px-4 py-2">{{ t('general.ledger') }}</th>
               <th class="px-4 py-2">{{ t('sidebar.journal_entry.journal_class') }}</th>
+              <th v-if="costCenters.length" class="px-4 py-2">{{ t('dimension.cost_center') }}</th>
               <th class="px-4 py-2 w-12"></th>
             </tr>
           </thead>
@@ -326,6 +330,17 @@ const saveFormRef = useSaveShortcut({ form });
                         :reduce="journalClass => journalClass"
                         :error="form.errors?.[`line.${index}.journal_class_id`]"
                         :searchable="true"
+                    />
+                </td>
+                <td v-if="costCenters.length" class="px-4 py-2 w-48">
+                    <NextSelect
+                        :options="costCenters"
+                        v-model="line.cost_center_id"
+                        label-key="name"
+                        value-key="id"
+                        :reduce="(center) => center.id"
+                        :clearable="true"
+                        :error="form.errors?.[`lines.${index}.cost_center_id`]"
                     />
                 </td>
 

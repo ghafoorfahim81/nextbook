@@ -467,6 +467,44 @@ const reportDefinitions = computed(() => ({
           { key: 'total_amount', label: t('report.columns.total_amount'), type: 'money', align: 'right' },
         ],
   },
+  // Phase 7: the income statement per branch, side by side. Shared costs are
+  // already split across branches on the ledger lines.
+  branch_comparison: {
+    label: t('report.reports.branch_comparison.label'),
+    description: t('report.reports.branch_comparison.description'),
+    filters: [],
+    group: 'financial',
+    icon: Layers,
+    summary: [
+      { key: 'total_revenue', label: t('report.summary.total_revenue'), type: 'money' },
+      { key: 'total_expenses', label: t('report.summary.total_expenses'), type: 'money' },
+      { key: 'net_profit', label: t('report.summary.net_profit'), type: 'money' },
+    ],
+    columns: [
+      { key: 'branch', label: t('report.columns.branch') },
+      { key: 'revenue', label: t('report.columns.revenue'), type: 'money', align: 'right' },
+      { key: 'cost_of_goods_sold', label: t('report.columns.cost_of_goods_sold'), type: 'money', align: 'right' },
+      { key: 'gross_profit', label: t('report.columns.gross_profit'), type: 'money', align: 'right' },
+      { key: 'expenses', label: t('report.columns.expenses'), type: 'money', align: 'right' },
+      { key: 'net_profit', label: t('report.columns.net_profit'), type: 'money', align: 'right' },
+      { key: 'net_margin', label: t('report.columns.net_margin'), align: 'right' },
+    ],
+  },
+  cost_center_report: {
+    label: t('report.reports.cost_center_report.label'),
+    description: t('report.reports.cost_center_report.description'),
+    filters: [],
+    group: 'expenses',
+    icon: SlidersHorizontal,
+    summary: [
+      { key: 'total_amount', label: t('report.summary.total_amount'), type: 'money' },
+    ],
+    columns: [
+      { key: 'cost_center', label: t('report.columns.cost_center') },
+      { key: 'transaction_count', label: t('report.columns.transaction_count'), type: 'integer', align: 'right' },
+      { key: 'amount', label: t('report.columns.amount'), type: 'money', align: 'right' },
+    ],
+  },
   expense_report: {
     label: t('report.reports.expense_report.label'),
     description: t('report.reports.expense_report.description'),

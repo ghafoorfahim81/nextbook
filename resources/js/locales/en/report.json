@@ -300,7 +300,16 @@
         "start_date": "Start date",
         "end_date": "End date",
         "days_remaining": "Days left",
-        "variant": "Variant"
+        "variant": "Variant",
+        "branch": "Branch",
+        "revenue": "Revenue",
+        "cost_of_goods_sold": "Cost of Goods Sold",
+        "gross_profit": "Gross Profit",
+        "expenses": "Expenses",
+        "net_profit": "Net Profit",
+        "net_margin": "Net Margin",
+        "cost_center": "Cost Center",
+        "transaction_count": "Entries"
     },
     "view_types": {
         "general": "General view",
@@ -478,6 +487,14 @@
         "contract_expiry_report": {
             "label": "Contract expiry",
             "description": "Contracts ending in the period, so renewals and notice periods are not missed."
+        },
+        "branch_comparison": {
+            "label": "Branch Comparison",
+            "description": "Revenue, costs and profit of every branch side by side, shared costs included."
+        },
+        "cost_center_report": {
+            "label": "Expenses by Cost Center",
+            "description": "What each cost center spent in the period."
         }
     },
     "user_activity": {

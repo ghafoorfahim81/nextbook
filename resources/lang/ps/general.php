@@ -16,6 +16,10 @@ return [
         'fixed_assets' => 'ثابتې شتمنۍ',
         'bi' => 'سوداګریز استخبارات او تحلیل',
     ],
+    // Phase 7: financial dimensions.
+    'branch' => 'څانګه',
+    'percentage' => 'سلنه',
+    'no_cost_center' => '(بې لګښت مرکز)',
     'resource' => [
         'journal_class' => 'د ژورنال ټولګی',
         'account' => 'حساب',
@@ -33,6 +37,8 @@ return [
         'designation' => 'دنده',
         'expense' => 'لګښت',
         'expense_category' => 'د لګښت کټګوري',
+        'cost_center' => 'د لګښت مرکز',
+        'allocation_rule' => 'د وېش قاعده',
         'item' => 'جنس',
         'item_transfer' => 'د جنس لېږد',
         'stock_adjustment' => 'د موجودۍ تعدیل',

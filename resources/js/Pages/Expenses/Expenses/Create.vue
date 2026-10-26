@@ -27,6 +27,9 @@ const props = defineProps({
     bankAccounts: { type: Object, required: true },
     currencies: { type: Object, required: true },
     homeCurrency: { type: Object, required: true },
+    // Phase 7: optional cost center, and a rule that splits the cost across branches.
+    costCenters: { type: Array, default: () => [] },
+    allocationRules: { type: Array, default: () => [] },
 });
 
 const expenseAccounts = computed(() => props.expenseAccounts.data || props.expenseAccounts);
@@ -40,6 +43,8 @@ const form = useForm({
     category_id: '',
     expense_account_id: '',
     bank_account_id: '',
+    cost_center_id: null,
+    allocation_rule_id: null,
     currency_id: '',
     rate: 1,
     remarks: '',
@@ -135,6 +140,8 @@ const handleSubmit = (createAndNew = false) => {
     formData.append('category_id', form.category_id);
     formData.append('expense_account_id', form.expense_account_id);
     formData.append('bank_account_id', form.bank_account_id);
+    if (form.cost_center_id) formData.append('cost_center_id', form.cost_center_id);
+    if (form.allocation_rule_id) formData.append('allocation_rule_id', form.allocation_rule_id);
     formData.append('currency_id', form.currency_id);
     formData.append('rate', form.rate);
     formData.append('remarks', form.remarks || '');
@@ -268,6 +275,31 @@ const saveFormRef = useSaveShortcut({ form })
                         :searchable="true"
                         resource-type="accounts"
                         :search-fields="['name', 'number', 'slug']"
+                    />
+                    <!-- Phase 7: where the cost belongs, and how a shared one splits across branches. -->
+                    <NextSelect
+                        v-if="costCenters.length"
+                        :options="costCenters"
+                        v-model="form.cost_center_id"
+                        label-key="name"
+                        value-key="id"
+                        :reduce="(center) => center.id"
+                        :floating-text="t('dimension.cost_center')"
+                        :clearable="true"
+                        :error="form.errors?.cost_center_id"
+                        :hint="t('dimension.cost_center_hint')"
+                    />
+                    <NextSelect
+                        v-if="allocationRules.length"
+                        :options="allocationRules"
+                        v-model="form.allocation_rule_id"
+                        label-key="name"
+                        value-key="id"
+                        :reduce="(rule) => rule.id"
+                        :floating-text="t('dimension.allocation_rule')"
+                        :clearable="true"
+                        :error="form.errors?.allocation_rule_id"
+                        :hint="t('dimension.allocation_rule_hint')"
                     />
                     <div class="grid grid-cols-2 gap-2">
                         <NextSelect

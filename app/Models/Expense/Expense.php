@@ -34,6 +34,9 @@ class Expense extends Model
         'date',
         'remarks',
         'category_id',
+        // Phase 7: where the cost belongs, and how a shared one is split.
+        'cost_center_id',
+        'allocation_rule_id',
         'status',
         'rate',
         'attachment',
@@ -65,6 +68,16 @@ class Expense extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'category_id');
+    }
+
+    public function costCenter(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Accounting\CostCenter::class);
+    }
+
+    public function allocationRule(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Accounting\AllocationRule::class);
     }
 
     public function details(): HasMany

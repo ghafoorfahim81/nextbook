@@ -36,6 +36,9 @@ class TransactionLineResource extends JsonResource
             'ledger' => $this->whenLoaded('ledger', fn () => new LedgerResource($this->ledger)),
             'journal_class_id' => $this->journal_class_id,
             'journal_class' => $this->whenLoaded('journalClass', fn () => new JournalClassResource($this->journalClass)),
+            // Phase 7.
+            'cost_center_id' => $this->cost_center_id,
+            'branch_id' => $this->branch_id,
         ];
     }
 }

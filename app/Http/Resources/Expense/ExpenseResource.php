@@ -27,11 +27,27 @@ class ExpenseResource extends JsonResource
                 'id' => $this->category->id,
                 'name' => $this->category->name,
             ]),
+            // Phase 7: where the cost belongs, and each branch's part of a
+            // shared one, as the ledger holds it.
+            'cost_center_id' => $this->cost_center_id,
+            'cost_center' => $this->costCenter?->only(['id', 'code', 'name']),
+            'allocation_rule_id' => $this->allocation_rule_id,
+            'allocation_rule' => $this->allocationRule?->only(['id', 'name']),
+            'allocation' => $this->allocation_rule_id
+                ? $this->transaction?->lines
+                    ?->filter(fn ($line) => $line->debit > 0 && $line->branch_id)
+                    ->map(fn ($line) => [
+                        'branch_id' => $line->branch_id,
+                        'branch' => \App\Models\Administration\Branch::withoutGlobalScopes()->whereKey($line->branch_id)->value('name'),
+                        'amount' => $line->debit,
+                    ])
+                    ->values()
+                : [],
             'currency_id' => $this->transaction?->currency_id,
             'currency' => $this->transaction?->currency,
-            'bank_account_id' => $this->transaction?->lines?->firstWhere(fn($line) => $line->credit > 0)?->account_id,
+            'bank_account_id' => $this->transaction?->lines?->last(fn ($line) => $line->credit > 0)?->account_id,
             'expense_account_id' => $this->transaction?->lines?->firstWhere(fn($line) => $line->debit > 0)?->account_id,
-            'bank_account' => new AccountResource($this->transaction?->lines?->firstWhere(fn($line) => $line->credit > 0)?->account),
+            'bank_account' => new AccountResource($this->transaction?->lines?->last(fn ($line) => $line->credit > 0)?->account),
             'expense_account' => new AccountResource($this->transaction?->lines?->firstWhere(fn($line) => $line->debit > 0)?->account),
             'rate' => $this->transaction?->rate,
             'attachment' => $this->attachment,

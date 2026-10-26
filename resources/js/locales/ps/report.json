@@ -300,7 +300,16 @@
         "end_date": "د پای نېټه",
         "days_remaining": "پاتې ورځې",
         "variant": "ډول",
-        "unit_measure": "د اندازه کولو واحد"
+        "unit_measure": "د اندازه کولو واحد",
+        "branch": "څانګه",
+        "revenue": "عاید",
+        "cost_of_goods_sold": "د پلور شویو توکو بیه",
+        "gross_profit": "ناخالصه ګټه",
+        "expenses": "لګښتونه",
+        "net_profit": "خالصه ګټه",
+        "net_margin": "د ګټې سلنه",
+        "cost_center": "د لګښت مرکز",
+        "transaction_count": "د اسنادو شمېر"
     },
     "view_types": {
         "general": "عمومي لید",
@@ -478,6 +487,14 @@
         "contract_expiry_report": {
             "label": "د قراردادونو پای",
             "description": "هغه قراردادونه چې په دې دوره کې پای ته رسیږي، ترڅو نوی کول او د خبرتیا موده هېره نه شي."
+        },
+        "branch_comparison": {
+            "label": "د څانګو پرتله",
+            "description": "د هرې څانګې عاید، لګښت او ګټه یو د بل تر څنګ، د ګډو لګښتونو برخې سره."
+        },
+        "cost_center_report": {
+            "label": "لګښتونه د لګښت مرکز له مخې",
+            "description": "هر لګښت مرکز په دې موده کې څومره لګښت کړی."
         }
     },
     "user_activity": {

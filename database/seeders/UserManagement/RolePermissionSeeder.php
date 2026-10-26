@@ -65,6 +65,9 @@ class RolePermissionSeeder extends Seeder
             'accounts',
             'account_transfers',
             'account_types',
+            // Phase 7: financial dimensions.
+            'cost_centers',
+            'allocation_rules',
             'journal_entries',
             'pos_transactions',
 

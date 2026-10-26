@@ -169,6 +169,10 @@ class AuthServiceProvider extends ServiceProvider
         Payment::class => PaymentPolicy::class,
         AccountTransfer::class => AccountTransferPolicy::class,
 
+        // Financial dimensions (phase 7)
+        \App\Models\Accounting\CostCenter::class => \App\Policies\CostCenterPolicy::class,
+        \App\Models\Accounting\AllocationRule::class => \App\Policies\AllocationRulePolicy::class,
+
         // Expenses
         ExpenseCategory::class => ExpenseCategoryPolicy::class,
         Expense::class => ExpensePolicy::class,

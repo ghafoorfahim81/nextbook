@@ -1,9 +1,18 @@
 <?php
 
 return [
+    // Phase 7: splitting a shared cost across branches.
+    'allocation' => [
+        'no_version_on_date' => 'این قاعدهٔ تقسیم برای تاریخ :date تقسیمی ندارد. نسخه‌ای اضافه کنید که از همین تاریخ یا قبل از آن شروع شود.',
+        'must_total_100' => 'مجموع سهم‌ها باید ۱۰۰٪ باشد؛ اکنون :total٪ است.',
+        'clearing_account_missing' => 'حساب «حساب بین شعبات» (۳۰۲۶) در چارت حساب‌ها نیست.',
+    ],
     'dependency' => [
         'cannot_delete_used_in' => 'این رکورد قابل حذف نیست، چون در :items استفاده شده است. لطفاً نخست آن رکوردها را حذف کنید.',
         'cannot_delete_generic' => 'این رکورد قابل حذف نیست، چون در بخش‌های دیگر استفاده شده است.',
+        'cost_center_has_children' => 'این مرکز هزینه مرکزهای هزینهٔ زیرمجموعه دارد.',
+        'cost_center_used' => 'این مرکز هزینه در اسناد ثبت‌شده استفاده شده است.',
+        'allocation_rule_used' => 'این قاعدهٔ تقسیم در مصارف استفاده شده است.',
         'cannot_delete_document' => 'این :document قابل حذف نیست، چون در بخش‌های دیگر استفاده شده است.',
         'list_separator' => '، ',
         'list_last_separator' => ' و ',

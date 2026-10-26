@@ -12,10 +12,19 @@
 */
 
 return [
+    // Phase 7: splitting a shared cost across branches.
+    'allocation' => [
+        'no_version_on_date' => 'This allocation rule has no split in force on :date. Add a version that starts on or before that date.',
+        'must_total_100' => 'The shares must add up to 100%; they add up to :total%.',
+        'clearing_account_missing' => 'The Inter-branch Clearing account (3026) is missing from the chart of accounts.',
+    ],
     'dependency' => [
         // :items is a list such as "2 items and 3 subcategories".
         'cannot_delete_used_in' => "Cannot delete this record because it's used in :items. Please delete those records first.",
         'cannot_delete_generic' => 'You cannot delete this record because it has dependencies.',
+        'cost_center_has_children' => 'This cost center has cost centers under it.',
+        'cost_center_used' => 'This cost center is used on posted entries.',
+        'allocation_rule_used' => 'This allocation rule is used on expenses.',
         'cannot_delete_document' => 'You cannot delete this :document because it has dependencies.',
         'list_separator' => ', ',
         'list_last_separator' => ' and ',

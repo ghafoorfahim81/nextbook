@@ -326,6 +326,7 @@ trait BuildsErpContext
             // Phase 4: a transfer to another branch, between send and receipt,
             // and what goes missing on the way.
             'goods-in-transit' => ['name' => 'Goods in Transit', 'type' => 'other-current-asset', 'number' => '3025'],
+            'inter-branch-clearing' => ['name' => 'Inter-branch Clearing', 'type' => 'other-current-asset', 'number' => '3026'],
             'inventory-shrinkage-and-wastage' => ['name' => 'Inventory Shrinkage and Wastage', 'type' => 'expense', 'number' => '9040'],
             // Realised exchange differences. Resolved by slug everywhere —
             // the names are localised into Dari and Pashto in production.

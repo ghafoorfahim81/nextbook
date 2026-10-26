@@ -151,7 +151,8 @@
         "suppliers": "عرضه کوونکي",
         "workspace": "شرکتونه او څانګې",
         "companies": "شرکتونه",
-        "branches": "څانګې"
+        "branches": "څانګې",
+        "dimensions": "مالي ابعاد"
     },
     "modules": {
         "accounting": {

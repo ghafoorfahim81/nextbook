@@ -29,6 +29,9 @@ class TransactionLine extends Model
         'account_id',
         'ledger_id',
         'journal_class_id',
+        // Phase 7: the line's own branch (null: the voucher's) and cost center.
+        'branch_id',
+        'cost_center_id',
         'currency_id',
         'rate',
         'debit',

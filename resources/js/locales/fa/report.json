@@ -300,7 +300,16 @@
         "start_date": "تاریخ شروع",
         "end_date": "تاریخ ختم",
         "days_remaining": "روزهای باقی",
-        "variant": "واریانت"
+        "variant": "واریانت",
+        "branch": "شعبه",
+        "revenue": "درآمد",
+        "cost_of_goods_sold": "بهای تمام‌شدهٔ فروش",
+        "gross_profit": "سود ناخالص",
+        "expenses": "مصارف",
+        "net_profit": "سود خالص",
+        "net_margin": "حاشیهٔ سود",
+        "cost_center": "مرکز هزینه",
+        "transaction_count": "تعداد اسناد"
     },
     "view_types": {
         "general": "عمومی",
@@ -478,6 +487,14 @@
         "contract_expiry_report": {
             "label": "ختم قراردادها",
             "description": "قراردادهایی که در این دوره ختم می‌شوند تا تمدید و مهلت اطلاع فراموش نشود."
+        },
+        "branch_comparison": {
+            "label": "مقایسهٔ شعبه‌ها",
+            "description": "درآمد، هزینه و سود هر شعبه کنار هم، با سهم هزینه‌های مشترک."
+        },
+        "cost_center_report": {
+            "label": "مصارف به تفکیک مرکز هزینه",
+            "description": "هر مرکز هزینه در این دوره چقدر مصرف کرده است."
         }
     },
     "user_activity": {

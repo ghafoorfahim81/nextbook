@@ -81,6 +81,7 @@ class JournalEntryController extends Controller
             'accounts' => AccountResource::collection(Account::query()->orderBy('created_at', 'desc')->get()),
             'ledgers' => LedgerResource::collection(Ledger::query()->orderBy('created_at', 'desc')->get()),
             'journalClasses' => JournalClass::all(),
+            'costCenters' => \App\Models\Accounting\CostCenter::query()->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
             'latestNumber' => $latestNumber,
         ]);
     }
@@ -121,6 +122,7 @@ class JournalEntryController extends Controller
                     'remark_fa'   => $line['remark'] ?? $validated['remarks'],
                     'remark_ps'   => $line['remark'] ?? $validated['remarks'],
                     'journal_class_id' => $line['journal_class_id'] ?? null,
+                    'cost_center_id' => $line['cost_center_id'] ?? null,
                 ])
                 ->toArray();
             $totalDebit = collect($lines)->sum('debit');
@@ -198,6 +200,7 @@ class JournalEntryController extends Controller
             'accounts' => AccountResource::collection(Account::all()),
             'ledgers' => LedgerResource::collection(Ledger::all()),
             'journalClasses' => JournalClassResource::collection(JournalClass::all()),
+            'costCenters' => \App\Models\Accounting\CostCenter::query()->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
         ]);
     }
 
@@ -264,6 +267,7 @@ class JournalEntryController extends Controller
                 'remark_fa'   => $line['remark'] ?? $validated['remarks'],
                 'remark_ps'   => $line['remark'] ?? $validated['remarks'],
                 'journal_class_id' => $line['journal_class_id'] ?? null,
+                'cost_center_id' => $line['cost_center_id'] ?? null,
             ])
             ->toArray();
             $totalDebit = collect($lines)->sum('debit');

@@ -26,6 +26,8 @@ const props = defineProps({
     currencies: { type: Array, required: true },
     homeCurrency: { type: Object, required: true },
     journalClasses: { type: Array, required: true },
+    // Phase 7: an optional cost center per line.
+    costCenters: { type: Array, default: () => [] },
     latestNumber: { type: String, default: '' },
 });
 
@@ -216,6 +218,7 @@ const handleSubmit = (createAndNew = false) => {
         formData.append(`lines[${index}][remark]`, detail.remark);
         formData.append(`lines[${index}][ledger_id]`, detail.ledger_id);
         formData.append(`lines[${index}][journal_class_id]`, detail.journal_class_id);
+        formData.append(`lines[${index}][cost_center_id]`, detail.cost_center_id || '');
     });
 
     if (createAndNew) {
@@ -368,6 +371,7 @@ const saveFormRef = useSaveShortcut({ form })
                             <th class="px-4 py-2 ">{{ t('general.remark') }} </th>
                             <th class="px-4 py-2 ">{{ t('general.ledger') }} </th>
                             <th class="px-4 py-2 ">{{ t('sidebar.journal_entry.journal_class') }} </th>
+                            <th v-if="costCenters.length" class="px-4 py-2 ">{{ t('dimension.cost_center') }}</th>
                             <th class="px-4 py-2 w-12"></th>
                         </tr>
                     </thead>
@@ -443,6 +447,17 @@ const saveFormRef = useSaveShortcut({ form })
                                     :searchable="true"
                                     resource-type="journal_classes"
                                     :search-fields="['name', 'code', 'description']"
+                                />
+                            </td>
+                            <td v-if="costCenters.length" class="px-4 py-2 w-48">
+                                <NextSelect
+                                    :options="costCenters"
+                                    v-model="line.cost_center_id"
+                                    label-key="name"
+                                    value-key="id"
+                                    :reduce="(center) => center.id"
+                                    :clearable="true"
+                                    :error="form.errors?.[`lines.${index}.cost_center_id`]"
                                 />
                             </td>
 

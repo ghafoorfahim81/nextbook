@@ -152,7 +152,8 @@
         "suppliers": "تأمین‌کنندگان",
         "workspace": "کمپنی‌ها و شعبه‌ها",
         "companies": "کمپنی‌ها",
-        "branches": "شعبه‌ها"
+        "branches": "شعبه‌ها",
+        "dimensions": "ابعاد مالی"
     },
     "modules": {
         "accounting": {

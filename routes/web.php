@@ -489,6 +489,10 @@ Route::middleware([
     Route::delete('/journal-entries/{journalEntry}/force-delete', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'forceDelete'])
         ->name('journal-entries.force-delete')
         ->withTrashed();
+    // Financial dimensions (phase 7): cost centers, and how shared costs split across branches.
+    Route::resource('/cost-centers', \App\Http\Controllers\Accounting\CostCenterController::class)->except(['create', 'edit']);
+    Route::resource('/allocation-rules', \App\Http\Controllers\Accounting\AllocationRuleController::class);
+
     Route::resource('/journal-classes', \App\Http\Controllers\JournalEntry\JournalClassController::class)->except(['create', 'edit']);
     Route::patch('/journal-classes/{journalClass}/restore', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'restore'])->name('journal-classes.restore')->withTrashed();
     Route::delete('/journal-classes/{journalClass}/force-delete', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'forceDelete'])

@@ -151,7 +151,8 @@
         "suppliers": "Suppliers",
         "workspace": "Companies & branches",
         "companies": "Companies",
-        "branches": "Branches"
+        "branches": "Branches",
+        "dimensions": "Financial Dimensions"
     },
     "modules": {
         "accounting": {

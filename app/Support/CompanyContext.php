@@ -54,6 +54,7 @@ final class CompanyContext
         'item-transfer-expense',
         // Between sending stock to another branch and its receipt there.
         'goods-in-transit',
+        'inter-branch-clearing',
         'contra-clearing',
         // Realised exchange differences and unapplied money, both resolved by
         // slug only — the names are localised into Dari and Pashto, so any

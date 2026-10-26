@@ -16,12 +16,16 @@ use App\Services\AttachmentService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Http\Resources\Account\AccountResource;
 use App\Services\ActivityLogService;
 use App\Enums\TransactionStatus;
+use App\Models\Accounting\AllocationRule;
+use App\Models\Accounting\CostCenter;
+use App\Services\CostAllocationService;
 
 class ExpenseController extends Controller
 {
@@ -73,6 +77,7 @@ class ExpenseController extends Controller
         $latestNumber = (string) Expense::nextNumber();
         return inertia('Expenses/Expenses/Create', [
             'latestNumber' => $latestNumber,
+            ...$this->dimensionOptions(),
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
@@ -105,6 +110,8 @@ class ExpenseController extends Controller
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
+                'cost_center_id' => $validated['cost_center_id'] ?? null,
+                'allocation_rule_id' => $validated['allocation_rule_id'] ?? null,
                 'status' => $documentStatus,
             ]);
 
@@ -129,24 +136,7 @@ class ExpenseController extends Controller
                     'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,
                     'status' => $documentStatus,
                 ],
-                lines: [
-                    [
-                        'account_id' => $validated['expense_account_id'],
-                        'debit' => $total,
-                        'credit' => 0,
-                        'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
-                        'remark_fa' => 'مصرف بابت' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
-                        'remark_ps' => 'د'. ' '. $expense->category->name.' '.'  مصرف ',
-                    ],
-                    [
-                        'account_id' => $validated['bank_account_id'],
-                        'debit' => 0,
-                        'credit' => $total,
-                        'remark' => 'Expense: ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
-                        'remark_fa' => 'مصرف بابت' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
-                        'remark_ps' => 'د'. ' '. $expense->category->name.' '.' مصرف ',
-                    ],
-                ],
+                lines: $this->postingLines($expense, $validated, (string) $total, (string) $date),
             );
 
             $activityLogService->logCreate(
@@ -244,6 +234,7 @@ class ExpenseController extends Controller
         // dd($expense);
         return inertia('Expenses/Expenses/Edit', [
             'expense' => new ExpenseResource($expense),
+            ...$this->dimensionOptions(),
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
@@ -293,6 +284,8 @@ class ExpenseController extends Controller
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
+                'cost_center_id' => $validated['cost_center_id'] ?? null,
+                'allocation_rule_id' => $validated['allocation_rule_id'] ?? null,
                 'status' => TransactionStatus::DRAFT->value,
             ]);
 
@@ -319,24 +312,7 @@ class ExpenseController extends Controller
                     'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
                     'status' => TransactionStatus::DRAFT->value,
                 ],
-                lines: [
-                    [
-                        'account_id' => $validated['expense_account_id'],
-                        'debit' => $total,
-                        'credit' => 0,
-                        'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
-                        'remark_fa' => 'مصرف بابت' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
-                        'remark_ps' => 'د'. ' '. $expense->category->name.' '.'  مصرف ',
-                    ],
-                    [
-                        'account_id' => $validated['bank_account_id'],
-                        'debit' => 0,
-                        'credit' => $total,
-                        'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
-                        'remark_fa' => 'مصرف بابت' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
-                        'remark_ps' => 'د'. ' '. $expense->category->name.' '.' مصرف ',
-                    ],
-                ],
+                lines: $this->postingLines($expense, $validated, (string) $total, (string) $date),
             );
 
             $activityLogService->logUpdate(
@@ -497,5 +473,92 @@ class ExpenseController extends Controller
             ],
             'rows' => $rows,
         ]);
+    }
+
+    /** The active cost centers and allocation rules, for the expense form. */
+    private function dimensionOptions(): array
+    {
+        return [
+            'costCenters' => CostCenter::query()->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
+            'allocationRules' => AllocationRule::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+        ];
+    }
+
+    /**
+     * The ledger lines an expense posts: its cost to the expense account,
+     * paid from the cash or bank account.
+     *
+     * With an allocation rule (phase 7) the cost is split across branches by
+     * the shares in force on the expense's date. The payment stays in the
+     * expense's own branch. Its own part is a plain debit and credit; another
+     * branch's part goes through Inter-branch Clearing, so each branch's books
+     * balance on their own:
+     *
+     *   Herat: Dr Rent 9,000            Cr Inter-branch Clearing 9,000
+     *   Kabul: Dr Inter-branch Clearing 9,000    Cr Cash 9,000
+     *
+     * Every pair carries the same amount, so the voucher also balances to the
+     * last decimal in base currency. A cost center, if chosen, goes on every
+     * cost line.
+     */
+    private function postingLines(Expense $expense, array $validated, string $total, string $date): array
+    {
+        $category = $expense->category->name;
+        $remarks = [
+            'remark' => 'Expense for ' . $category . ' - ' . $expense->remarks,
+            'remark_fa' => 'مصرف بابت' . ' ' . $category . ' - ' . $expense->remarks,
+            'remark_ps' => 'د' . ' ' . $category . ' ' . ' مصرف ',
+        ];
+
+        $rule = ! empty($validated['allocation_rule_id'])
+            ? AllocationRule::query()->findOrFail($validated['allocation_rule_id'])
+            : null;
+
+        $parts = $rule
+            ? app(CostAllocationService::class)->split($rule, $date, $total)
+            : [['branch_id' => null, 'amount' => $total]];
+
+        $homeBranchId = (string) ($expense->branch_id ?? CompanyContext::branchId());
+        $clearingId = $rule
+            ? CompanyContext::glAccounts((string) $expense->company_id)['inter-branch-clearing'] ?? null
+            : null;
+
+        if ($rule && ! $clearingId) {
+            throw ValidationException::withMessages([
+                'allocation_rule_id' => [__('messages.allocation.clearing_account_missing')],
+            ]);
+        }
+
+        $lines = [];
+        foreach ($parts as $part) {
+            $elsewhere = $part['branch_id'] !== null && $part['branch_id'] !== $homeBranchId;
+
+            // The cost, where it belongs.
+            $lines[] = [
+                'account_id' => $validated['expense_account_id'],
+                'branch_id' => $part['branch_id'],
+                'cost_center_id' => $validated['cost_center_id'] ?? null,
+                'debit' => $part['amount'],
+                'credit' => 0,
+                ...$remarks,
+            ];
+
+            if ($elsewhere) {
+                // The carrying branch owes the paying one…
+                $lines[] = ['account_id' => $clearingId, 'branch_id' => $part['branch_id'], 'debit' => 0, 'credit' => $part['amount'], ...$remarks];
+                // …which is owed by it.
+                $lines[] = ['account_id' => $clearingId, 'debit' => $part['amount'], 'credit' => 0, ...$remarks];
+            }
+
+            // The payment, from the expense's own branch.
+            $lines[] = [
+                'account_id' => $validated['bank_account_id'],
+                'debit' => 0,
+                'credit' => $part['amount'],
+                ...$remarks,
+            ];
+        }
+
+        return $lines;
     }
 }

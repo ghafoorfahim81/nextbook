@@ -31,7 +31,9 @@ final class DomainShared
                 $cacheDuration,
                 fn() => AccountResource::collection(
                     Account::query()
-                        ->with(['accountType', 'branch'])
+                        // No 'branch': accounts belong to the company, and the
+                        // model has had no branch relation since they moved up.
+                        ->with(['accountType'])
                         ->withStatementTotals()
                         ->orderBy('id')
                         ->limit(1000)

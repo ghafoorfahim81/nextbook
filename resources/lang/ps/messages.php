@@ -1,9 +1,18 @@
 <?php
 
 return [
+    // Phase 7: splitting a shared cost across branches.
+    'allocation' => [
+        'no_version_on_date' => 'دا د وېش قاعده د :date لپاره وېش نه لري. داسې نسخه زیاته کړئ چې په همدې نېټه یا مخکې پیل شي.',
+        'must_total_100' => 'د برخو مجموعه باید ۱۰۰٪ وي؛ اوس :total٪ ده.',
+        'clearing_account_missing' => 'د «څانګو ترمنځ حساب» (۳۰۲۶) د حسابونو په چارټ کې نشته.',
+    ],
     'dependency' => [
         'cannot_delete_used_in' => 'دا ریکارډ نشي ړنګېدای، ځکه چې په :items کې کارول شوی دی. مهرباني وکړئ لومړی هغه ریکارډونه ړنګ کړئ.',
         'cannot_delete_generic' => 'دا ریکارډ نشي ړنګېدای، ځکه چې په نورو برخو کې کارول شوی دی.',
+        'cost_center_has_children' => 'د دې لګښت مرکز لاندې نور لګښت مرکزونه شته.',
+        'cost_center_used' => 'دا لګښت مرکز په ثبت شویو اسنادو کې کارول شوی.',
+        'allocation_rule_used' => 'دا د وېش قاعده په لګښتونو کې کارول شوې.',
         'cannot_delete_document' => 'دا :document نشي ړنګېدای، ځکه چې په نورو برخو کې کارول شوی دی.',
         'list_separator' => '، ',
         'list_last_separator' => ' او ',

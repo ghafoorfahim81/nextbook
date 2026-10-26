@@ -86,6 +86,7 @@ class ReportController extends Controller
             'view_type' => ['nullable', 'string', Rule::in(['general', 'itemwise'])],
             'category_id' => ['nullable', 'string', 'exists:expense_categories,id'],
             'expense_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'cost_center_id' => ['nullable', 'string', 'exists:cost_centers,id'],
             'employee_id' => ['nullable', 'string', 'exists:employees,id'],
             'department_id' => ['nullable', 'string', 'exists:departments,id'],
             'designation_id' => ['nullable', 'string', 'exists:designations,id'],

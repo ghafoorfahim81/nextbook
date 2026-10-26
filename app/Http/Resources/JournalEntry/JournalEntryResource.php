@@ -90,6 +90,7 @@ class JournalEntryResource extends JsonResource
                 'ledger' => $ledger ? (new LedgerResource($ledger))->resolve() : null,
                 'journal_class_id' => $line['journal_class_id'] ?? null,
                 'journal_class' => $journalClass ? (new JournalClassResource($journalClass))->resolve() : null,
+                'cost_center_id' => $line['cost_center_id'] ?? null,
             ];
         });
     }

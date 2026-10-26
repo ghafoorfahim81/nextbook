@@ -478,6 +478,20 @@ class Account extends Model
                 'is_main' => true,
             ],
             [
+                // Phase 7: what one branch owes another when it carries a
+                // cost paid by the other (a shared expense split across
+                // branches). Keeps each branch's own books balanced; nets to
+                // zero over the company.
+                'name' => 'Inter-branch Clearing',
+                'local_name' => 'حساب بین شعبات',
+                'number' => '3026',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'inter-branch-clearing',
+                'remark' => 'Between branches of the company; nets to zero',
+                'is_main' => true,
+            ],
+            [
                 'name' => 'Landed Costs Clearing',
                 'local_name' => 'تسویه انتقالات و گمرک',
                 'number' => '3060',

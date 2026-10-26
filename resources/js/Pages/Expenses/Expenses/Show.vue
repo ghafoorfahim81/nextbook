@@ -117,6 +117,19 @@ const statusLabel = (status) => {
                         <span class="text-muted-foreground">{{ t('expense.bank_account') }}:</span>
                         <span class="ml-2 font-medium">{{ expense.bank_account?.name }}</span>
                     </div>
+                    <!-- Phase 7 -->
+                    <div v-if="expense.cost_center">
+                        <span class="text-muted-foreground">{{ t('dimension.cost_center') }}:</span>
+                        <span class="ml-2 font-medium">{{ expense.cost_center.name }}</span>
+                    </div>
+                    <div v-if="expense.allocation?.length" class="sm:col-span-2">
+                        <span class="text-muted-foreground">{{ t('dimension.allocation') }} ({{ expense.allocation_rule?.name }}):</span>
+                        <span class="ml-2 inline-flex flex-wrap gap-1.5 align-middle">
+                            <span v-for="part in expense.allocation" :key="part.branch_id" class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                                {{ part.branch }} · {{ Number(part.amount).toLocaleString() }}
+                            </span>
+                        </span>
+                    </div>
                     <div>
                         <span class="text-muted-foreground">{{ t('admin.currency.currency') }}:</span>
                         <span class="ml-2 font-medium">{{ expense.currency?.code }}</span>

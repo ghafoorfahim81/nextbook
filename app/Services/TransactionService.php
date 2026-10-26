@@ -145,6 +145,8 @@ class TransactionService
                     'account_id'       => $line['account_id'],
                     'ledger_id'        => $line['ledger_id'],
                     'journal_class_id' => $line['journal_class_id'],
+                    'branch_id'        => $line['branch_id'],
+                    'cost_center_id'   => $line['cost_center_id'],
                     'currency_id'      => $line['currency_id'],
                     'rate'             => $line['rate'],
                     'debit'            => $line['debit'],
@@ -154,9 +156,9 @@ class TransactionService
                     'remark'           => $line['remark'],
                     'remark_fa'        => $line['remark_fa'],
                     'remark_ps'        => $line['remark_ps'],
-                    // No created_by/branch_id here: transaction_lines has
-                    // neither column. Who posted the entry, and which branch it
-                    // belongs to, are carried once on the voucher header.
+                    // No created_by here: who posted the entry is carried once
+                    // on the voucher. The line's branch is null unless the line
+                    // belongs to another branch than the voucher's (phase 7).
                 ]);
             }
 
@@ -202,6 +204,8 @@ class TransactionService
                     'account_id'       => $line['account_id'],
                     'ledger_id'        => $line['ledger_id'],
                     'journal_class_id' => $line['journal_class_id'],
+                    'branch_id'        => $line['branch_id'],
+                    'cost_center_id'   => $line['cost_center_id'],
                     'currency_id'      => $line['currency_id'],
                     'rate'             => $line['rate'],
                     'debit'            => $line['debit'],
@@ -211,9 +215,9 @@ class TransactionService
                     'remark'           => $line['remark'],
                     'remark_fa'        => $line['remark_fa'],
                     'remark_ps'        => $line['remark_ps'],
-                    // No created_by/branch_id here: transaction_lines has
-                    // neither column. Who posted the entry, and which branch it
-                    // belongs to, are carried once on the voucher header.
+                    // No created_by here: who posted the entry is carried once
+                    // on the voucher. The line's branch is null unless the line
+                    // belongs to another branch than the voucher's (phase 7).
                 ]);
             }
 
@@ -257,6 +261,10 @@ class TransactionService
                 'account_id'       => $line['account_id'],
                 'ledger_id'        => $line['ledger_id'] ?? null,
                 'journal_class_id' => $line['journal_class_id'] ?? null,
+                // Phase 7: a line may name its own branch (an allocated expense
+                // spread over several) and a cost center; neither is required.
+                'branch_id'        => $line['branch_id'] ?? null,
+                'cost_center_id'   => $line['cost_center_id'] ?? null,
                 'currency_id'      => $currencyId,
                 'rate'             => $rate,
                 'debit'            => $debit,
@@ -534,6 +542,8 @@ class TransactionService
                 'lines.*.base_debit'       => 'nullable|numeric|min:0',
                 'lines.*.base_credit'      => 'nullable|numeric|min:0',
                 'lines.*.journal_class_id' => 'nullable|exists:journal_classes,id',
+                'lines.*.branch_id'        => 'nullable|exists:branches,id',
+                'lines.*.cost_center_id'   => 'nullable|exists:cost_centers,id',
                 'lines.*.remark'           => 'nullable|string',
                 'lines.*.remark_fa'        => 'nullable|string',
                 'lines.*.remark_ps'        => 'nullable|string',
@@ -571,6 +581,10 @@ class TransactionService
                 'account_id'       => $line->account_id,
                 'ledger_id'        => $line->ledger_id,
                 'journal_class_id' => $line->journal_class_id,
+                // A reversal undoes each branch's and cost center's part
+                // where it was booked.
+                'branch_id'        => $line->branch_id,
+                'cost_center_id'   => $line->cost_center_id,
                 'currency_id'      => $line->currency_id,
                 'rate'             => $line->rate,
                 'debit'            => $line->credit,

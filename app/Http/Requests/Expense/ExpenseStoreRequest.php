@@ -21,6 +21,9 @@ class ExpenseStoreRequest extends FormRequest
             'date' => ['required', 'date'],
             'remarks' => ['nullable', 'string'],
             'category_id' => ['required', 'string', 'exists:expense_categories,id'],
+            // Phase 7: optional dimensions.
+            'cost_center_id' => ['nullable', 'string', 'exists:cost_centers,id'],
+            'allocation_rule_id' => ['nullable', 'string', 'exists:allocation_rules,id'],
             'expense_account_id' => ['required', 'string', 'exists:accounts,id'],
             'bank_account_id' => ['required', 'string', 'exists:accounts,id'],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],

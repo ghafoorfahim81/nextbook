@@ -16,6 +16,10 @@ return [
         'fixed_assets' => 'دارایی‌های ثابت',
         'bi' => 'هوش تجاری و تحلیل',
     ],
+    // Phase 7: financial dimensions.
+    'branch' => 'شعبه',
+    'percentage' => 'فیصدی',
+    'no_cost_center' => '(بدون مرکز هزینه)',
     'resource' => [
         'journal_class' => 'کلاس ژورنال',
         'account' => 'حساب',
@@ -33,6 +37,8 @@ return [
         'designation' => 'سمت/وظیفه',
         'expense' => 'مصرف',
         'expense_category' => 'دسته‌بندی مصرف',
+        'cost_center' => 'مرکز هزینه',
+        'allocation_rule' => 'قاعدهٔ تقسیم',
         'item' => 'آیتم',
         'item_transfer' => 'انتقال آیتم',
         'stock_adjustment' => 'تعدیل موجودی',

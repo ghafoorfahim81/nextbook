@@ -18,6 +18,7 @@ use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 use App\Models\User;
 use App\Services\Accounting\SettlementService;
+use App\Services\UserAccessService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Query\Builder;
@@ -82,6 +83,9 @@ class ReportService
         'journal_book_report',
         'user_activity',
         'expense_report',
+        // Phase 7: financial dimensions.
+        'branch_comparison',
+        'cost_center_report',
         // Human resources.
         'payroll_register',
         'payslip_summary',
@@ -238,6 +242,8 @@ class ReportService
             'journal_book_report' => $this->getJournalBookReport($filters),
             'user_activity' => $this->getUserActivity($filters),
             'expense_report' => $this->getExpenseReport($filters),
+            'branch_comparison' => $this->getBranchComparison($filters),
+            'cost_center_report' => $this->getCostCenterReport($filters),
             'payroll_register' => $this->getPayrollRegister($filters),
             'payslip_summary' => $this->getPayslipSummary($filters),
             'tax_withholding_report' => $this->getTaxWithholdingReport($filters),
@@ -268,7 +274,7 @@ class ReportService
         $balances = DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->whereRaw('COALESCE(tl.branch_id, t.branch_id) = ?', [$filters['branch_id']])
                     ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
@@ -2332,7 +2338,7 @@ class ReportService
         $query = DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->whereRaw('COALESCE(tl.branch_id, t.branch_id) = ?', [$filters['branch_id']])
                     ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
@@ -2442,7 +2448,7 @@ class ReportService
         return DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->whereRaw('COALESCE(tl.branch_id, t.branch_id) = ?', [$filters['branch_id']])
                     ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
@@ -2629,7 +2635,7 @@ class ReportService
         return DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->whereRaw('COALESCE(tl.branch_id, t.branch_id) = ?', [$filters['branch_id']])
                     ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
@@ -2645,7 +2651,7 @@ class ReportService
         return DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->whereRaw('COALESCE(tl.branch_id, t.branch_id) = ?', [$filters['branch_id']])
                     ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
@@ -2761,6 +2767,137 @@ class ReportService
                     ['key' => 'expenses', 'label' => __('general.expenses'), 'rows' => $expenses],
                 ],
             ],
+        ];
+    }
+
+    /**
+     * Branch comparison (phase 7): the income statement, one row per branch
+     * the user may work in, side by side.
+     *
+     * A line's branch is its own when it has one (a shared expense split across
+     * branches), the voucher's otherwise, so each branch carries its share of
+     * the shared costs. Revenue, cost of goods sold and expenses only: the
+     * inter-branch clearing lines sit on an asset account and drop out.
+     */
+    public function getBranchComparison(array $filters): array
+    {
+        $user = Auth::user();
+        $branchIds = $user instanceof User
+            ? app(UserAccessService::class)->allowedBranchIds($user, $filters['company_id'])
+            : [$filters['branch_id']];
+
+        $branches = Branch::withoutGlobalScopes()
+            ->whereIn('id', $branchIds)
+            ->orderByDesc('is_main')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $query = DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
+                    ->whereNull('t.deleted_at');
+            })
+            ->join('accounts as a', function ($join) use ($filters) {
+                $join->on('a.id', '=', 'tl.account_id')
+                    ->where('a.company_id', '=', $filters['company_id']);
+            })
+            ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->whereNull('tl.deleted_at')
+            ->whereIn('at.slug', ['income', 'cost-of-goods-sold', 'expense'])
+            ->whereIn(DB::raw('COALESCE(tl.branch_id, t.branch_id)'), $branches->pluck('id')->all())
+            ->groupByRaw('COALESCE(tl.branch_id, t.branch_id), at.slug')
+            ->selectRaw('COALESCE(tl.branch_id, t.branch_id) as branch_id')
+            ->selectRaw('at.slug as type_slug')
+            ->selectRaw('COALESCE(SUM(tl.base_debit - tl.base_credit), 0) as raw_balance');
+
+        $this->applyDateFilter($query, 't.date', $filters);
+
+        $totals = $query->get()->groupBy('branch_id');
+
+        $rows = $branches->map(function ($branch) use ($totals) {
+            $byType = collect($totals->get($branch->id, []))->keyBy('type_slug');
+            $revenue = $this->moneyValue(-1 * (float) ($byType->get('income')->raw_balance ?? 0));
+            $costOfGoodsSold = $this->moneyValue((float) ($byType->get('cost-of-goods-sold')->raw_balance ?? 0));
+            $expenses = $this->moneyValue((float) ($byType->get('expense')->raw_balance ?? 0));
+            $grossProfit = $this->moneyValue($revenue - $costOfGoodsSold);
+            $netProfit = $this->moneyValue($grossProfit - $expenses);
+
+            return [
+                'branch' => $branch->name,
+                'revenue' => $revenue,
+                'cost_of_goods_sold' => $costOfGoodsSold,
+                'gross_profit' => $grossProfit,
+                'expenses' => $expenses,
+                'net_profit' => $netProfit,
+                'net_margin' => abs($revenue) > 0.0001 ? round($netProfit / $revenue * 100, 1) . '%' : '—',
+            ];
+        });
+
+        return [
+            'rows' => $rows->values()->all(),
+            'pagination' => $this->singlePagePagination(),
+            'summary' => [
+                'total_revenue' => $this->moneyValue($rows->sum('revenue')),
+                'total_expenses' => $this->moneyValue($rows->sum('expenses') + $rows->sum('cost_of_goods_sold')),
+                'net_profit' => $this->moneyValue($rows->sum('net_profit')),
+            ],
+            'meta' => [],
+        ];
+    }
+
+    /**
+     * Expenses by cost center (phase 7), over the branches the user may work
+     * in. Expense lines with no cost center are one row of their own, so the
+     * total matches the income statement's expenses.
+     */
+    public function getCostCenterReport(array $filters): array
+    {
+        $user = Auth::user();
+        $branchIds = $user instanceof User
+            ? app(UserAccessService::class)->allowedBranchIds($user, $filters['company_id'])
+            : [$filters['branch_id']];
+
+        $query = DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->whereIn('t.status', self::LEDGER_STATUSES)
+                    ->whereNull('t.deleted_at');
+            })
+            ->join('accounts as a', function ($join) use ($filters) {
+                $join->on('a.id', '=', 'tl.account_id')
+                    ->where('a.company_id', '=', $filters['company_id']);
+            })
+            ->join('account_types as at', fn ($join) => $join->on('at.id', '=', 'a.account_type_id')->where('at.slug', '=', 'expense'))
+            ->leftJoin('cost_centers as cc', 'cc.id', '=', 'tl.cost_center_id')
+            ->whereNull('tl.deleted_at')
+            ->whereIn(DB::raw('COALESCE(tl.branch_id, t.branch_id)'), $branchIds)
+            ->when($filters['cost_center_id'] ?? null, fn ($builder, $id) => $builder->where('tl.cost_center_id', $id))
+            ->groupBy('tl.cost_center_id', 'cc.code', 'cc.name')
+            ->selectRaw('tl.cost_center_id')
+            ->selectRaw('cc.code as cost_center_code')
+            ->selectRaw('cc.name as cost_center_name')
+            ->selectRaw('COUNT(DISTINCT t.id) as transaction_count')
+            ->selectRaw('COALESCE(SUM(tl.base_debit - tl.base_credit), 0) as amount')
+            ->orderByRaw('cc.name NULLS LAST');
+
+        $this->applyDateFilter($query, 't.date', $filters);
+
+        $rows = $query->get()->map(fn ($row) => [
+            'cost_center' => $row->cost_center_id
+                ? trim(($row->cost_center_code ? $row->cost_center_code . ' — ' : '') . $row->cost_center_name)
+                : __('general.no_cost_center'),
+            'transaction_count' => (int) $row->transaction_count,
+            'amount' => $this->moneyValue($row->amount),
+        ]);
+
+        return [
+            'rows' => $rows->values()->all(),
+            'pagination' => $this->singlePagePagination(),
+            'summary' => [
+                'total_amount' => $this->moneyValue($rows->sum('amount')),
+            ],
+            'meta' => [],
         ];
     }
 
@@ -2889,7 +3026,7 @@ class ReportService
         return DB::table('transaction_lines as tl')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
-                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->whereRaw('COALESCE(tl.branch_id, t.branch_id) = ?', [$filters['branch_id']])
                     ->whereIn('t.status', self::LEDGER_STATUSES)
                     ->whereNull('t.deleted_at');
             })
@@ -4508,6 +4645,7 @@ class ReportService
             'balance_type' => $this->normalizeBalanceType($filters['balance_type'] ?? null),
             'category_id' => $this->nullableString($filters['category_id'] ?? null),
             'expense_account_id' => $this->nullableString($filters['expense_account_id'] ?? null),
+            'cost_center_id' => $this->nullableString($filters['cost_center_id'] ?? null),
             'employee_id' => $this->nullableString($filters['employee_id'] ?? null),
             'department_id' => $this->nullableString($filters['department_id'] ?? null),
             'designation_id' => $this->nullableString($filters['designation_id'] ?? null),

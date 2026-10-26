@@ -45,6 +45,14 @@ export function buildAppModules(t) {
                     ],
                 },
                 {
+                    // Phase 7.
+                    key: 'dimensions', menuKey: 'account', title: t('sidebar.groups.dimensions'), icon: SlidersHorizontal,
+                    items: [
+                        { title: t('dimension.cost_centers'), url: '/cost-centers', permission: 'cost_centers.view_any' },
+                        { title: t('dimension.allocation_rules'), url: '/allocation-rules', permission: 'allocation_rules.view_any' },
+                    ],
+                },
+                {
                     key: 'currencies', menuKey: 'administration', title: t('sidebar.groups.currencies'), icon: Coins,
                     items: [
                         { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view_any' },
