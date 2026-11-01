@@ -1022,6 +1022,12 @@ function logout() {
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem as-child>
+                                        <Link :href="route('user-manual') + '#getting-started'" class="flex w-full items-center">
+                                            <Rocket class="text-primary hover:text-white" />
+                                            {{ t('layout.getting_started') }}
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem as-child>
                                         <Link :href="route('user-manual')" class="flex w-full items-center">
                                             <BookOpen class="text-primary hover:text-white" />
                                             {{ t('layout.user_manual') }}

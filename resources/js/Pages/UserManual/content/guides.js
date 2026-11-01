@@ -8,6 +8,7 @@
  * locale file. A guide missing from a locale simply falls back to English.
  */
 export const GUIDE_META = [
+    { id: 'getting-started', icon: 'Rocket', accent: 'emerald' },
     { id: 'overview', icon: 'Compass', accent: 'violet' },
     { id: 'sales', icon: 'ShoppingCart', accent: 'emerald' },
     { id: 'purchases', icon: 'Truck', accent: 'sky' },

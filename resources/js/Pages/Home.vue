@@ -9,7 +9,7 @@ import { Input } from '@/Components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import { Badge } from '@/Components/ui/badge'
 import {
-  LayoutDashboard, BookOpen, FileText, Package,
+  LayoutDashboard, BookOpen, FileText, Package, Rocket,
   ShoppingCart, ShoppingBag, Receipt, CreditCard,
   ArrowLeftRight, Loader2, RefreshCw,
   CircleDollarSign, Scale, CalendarDays,
@@ -1024,6 +1024,12 @@ function nextTerm() {
             <Link href="/reports">
               <FileText class="h-4 w-4" />
               {{ t('home.hero.open_reports') }}
+            </Link>
+          </Button>
+          <Button as-child size="sm" variant="outline">
+            <Link :href="route('user-manual') + '#getting-started'">
+              <Rocket class="h-4 w-4" />
+              {{ t('home.hero.getting_started') }}
             </Link>
           </Button>
         </div>

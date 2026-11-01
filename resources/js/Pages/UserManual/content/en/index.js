@@ -1,3 +1,4 @@
+import gettingStarted from './getting-started'
 import overview from './overview'
 import sales from './sales'
 import purchases from './purchases'
@@ -23,6 +24,7 @@ export default {
             'Pick a module from the list below to open its full guide. If you are new to the system, start with “Getting started & overview”. Each guide has its own table of contents and can be read on its own.',
     },
     guides: [
+        gettingStarted,
         overview,
         sales,
         purchases,

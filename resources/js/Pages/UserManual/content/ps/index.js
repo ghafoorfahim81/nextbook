@@ -1,3 +1,4 @@
+import gettingStarted from './getting-started'
 import overview from './overview'
 import sales from './sales'
 import purchases from './purchases'
@@ -23,6 +24,7 @@ export default {
             'د خپل لارښود لپاره لاندې لړلیک څخه یو ماژول وټاکئ. که نوی یاست، له «پیل او عمومي کتنه» پیل وکړئ. هر لارښود خپل د څپرکو فهرست لري او په یوازې توګه لوستل کېږي.',
     },
     guides: [
+        gettingStarted,
         overview,
         sales,
         purchases,

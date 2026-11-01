@@ -1,3 +1,4 @@
+import gettingStarted from './getting-started'
 import overview from './overview'
 import sales from './sales'
 import purchases from './purchases'
@@ -23,6 +24,7 @@ export default {
             'یک ماژول را از فهرست زیر انتخاب کنید تا راهنمای کامل آن باز شود. اگر تازه با سیستم کار می‌کنید، از «شروع کار و نمای کلی» آغاز کنید. هر راهنما فهرست فصل‌های خودش را دارد و مستقل قابل خواندن است.',
     },
     guides: [
+        gettingStarted,
         overview,
         sales,
         purchases,

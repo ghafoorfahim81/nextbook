@@ -23,6 +23,7 @@ import {
     List,
     Palmtree,
     ReceiptText,
+    Rocket,
     Search,
     SearchX,
     Sigma,
@@ -44,6 +45,7 @@ const { t, locale } = useI18n()
 const STORAGE_KEY = 'nextbook.user-manual.locale'
 
 const ICONS = {
+    Rocket,
     Compass,
     ShoppingCart,
     Truck,
