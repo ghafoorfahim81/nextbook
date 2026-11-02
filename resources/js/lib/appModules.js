@@ -264,7 +264,6 @@ export function buildAppModules(t) {
                     items: [
                         { title: t('sidebar.groups.companies'), url: '/workspace/companies', permission: 'companies.view' },
                         { title: t('sidebar.groups.branches'), url: '/workspace/branches', permission: 'branches.view_any' },
-                        { title: t('sidebar.main.preferences'), url: '/preferences' },
                     ],
                 },
                 {
@@ -274,8 +273,15 @@ export function buildAppModules(t) {
                         { title: t('sidebar.system.activity_logs'), url: '/activity-logs', icon: History, permission: 'activity_logs.view_any' },
                     ],
                 },
+                {
+                    key: 'platform', menuKey: 'system', title: t('platform.platform'), icon: Building2,
+                    items: [
+                        { title: t('platform.customers'), url: '/platform/subscriptions', platformOnly: true },
+                        { title: t('platform.packages'), url: '/platform/packages', platformOnly: true },
+                    ],
+                },
             ],
-            paths: ['/companies', '/branches', '/company', '/workspace', '/users', '/roles'],
+            paths: ['/companies', '/branches', '/company', '/workspace', '/preferences', '/subscription', '/users', '/roles', '/platform'],
         },
     ]
 }
@@ -343,9 +349,10 @@ export function urlUnder(url, prefix) {
  * @param can          (permission) => bool
  * @param isOff        (url) => bool, true under a module the company switched off
  * @param allowedMenus Set of menu keys the user keeps, or null for all
+ * @param platformAdmin whether the user runs the platform (links flagged platformOnly)
  */
-export function visibleModules(modules, { can, isOff, allowedMenus = null }) {
-    const allowed = (link) => (!link.permission || can(link.permission)) && !isOff(link.url)
+export function visibleModules(modules, { can, isOff, allowedMenus = null, platformAdmin = false }) {
+    const allowed = (link) => (!link.platformOnly || platformAdmin) && (!link.permission || can(link.permission)) && !isOff(link.url)
 
     return modules
         .map((module) => {

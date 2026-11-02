@@ -40,6 +40,9 @@ class BranchController extends Controller
 
     public function store(BranchStoreRequest $request)
     {
+        // The package's branch limit (phase 10).
+        app(\App\Services\SubscriptionService::class)->assertCanAddBranch(CompanyContext::companyId());
+
         // The branch and its ~200 default records land together or not at all.
         // A failure part-way through used to leave a branch that could not trade,
         // with no way to finish provisioning it from the UI.

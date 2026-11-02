@@ -117,6 +117,7 @@ import NotificationDropdown from '@/Components/notifications/NotificationDropdow
 import ManualWelcomeDialog from '@/Components/Onboarding/ManualWelcomeDialog.vue'
 import GlobalSearch from '@/Components/GlobalSearch.vue'
 import QuickLinks from '@/Components/next/QuickLinks.vue'
+import SubscriptionBanner from '@/Components/next/SubscriptionBanner.vue'
 const { t } = useI18n()
 const { locale } = useI18n()
 const { user } = useAuth()
@@ -511,6 +512,7 @@ const shownModules = computed(() => visibleModules(appModules.value, {
     can,
     isOff: moduleOff,
     allowedMenus: selectedSidebarMenus.value,
+    platformAdmin: !!page.props.auth?.user?.is_platform_admin,
 }))
 
 // From the page: a link, a search result or a bookmark into another module
@@ -1011,9 +1013,11 @@ function logout() {
                                             {{ t('layout.account') }}
                                         </Link>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <CreditCard class="text-primary hover:text-white" />
-                                        {{ t('layout.billing') }}
+                                    <DropdownMenuItem v-if="can('companies.view')" as-child>
+                                        <Link :href="route('subscription.show')" class="flex w-full items-center">
+                                            <CreditCard class="text-primary hover:text-white" />
+                                            {{ t('platform.my_subscription') }}
+                                        </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem as-child>
                                         <Link href="/notifications" class="flex w-full items-center">
@@ -1121,6 +1125,7 @@ function logout() {
                 </div>
 <!--                </div>-->
             </header>
+            <SubscriptionBanner />
             <div
                 data-scroll-region
                 class="flex min-h-0 min-w-0 flex-1 flex-col"

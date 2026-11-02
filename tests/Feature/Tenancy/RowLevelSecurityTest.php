@@ -59,6 +59,13 @@ class RowLevelSecurityTest extends TestCase
         // super-admins in the application. See 2026_10_22_000002.
         'user_company_access',
         'user_branch_access',
+        // Phase 10: the platform's billing. The /platform panel lists every
+        // company's subscription at once, which a policy keyed on the acting
+        // company would hide; EnsurePlatformAdmin keeps it to the platform
+        // admin. See 2026_11_02_000001.
+        'subscriptions',
+        'subscription_invoices',
+        'subscription_payments',
     ];
 
     /**

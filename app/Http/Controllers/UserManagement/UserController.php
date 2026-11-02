@@ -105,6 +105,9 @@ class UserController extends Controller
 
     public function store(UserStoreRequest $request)
     {
+        // The package's user limit (phase 10).
+        app(\App\Services\SubscriptionService::class)->assertCanAddUser(CompanyContext::companyId());
+
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
         $data['status'] = UserStatus::ACTIVE->value;

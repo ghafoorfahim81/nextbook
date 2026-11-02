@@ -489,6 +489,31 @@ Route::middleware([
     Route::delete('/journal-entries/{journalEntry}/force-delete', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'forceDelete'])
         ->name('journal-entries.force-delete')
         ->withTrashed();
+    // What a company sees of its own subscription (phase 10).
+    Route::get('/subscription', [\App\Http\Controllers\Administration\MySubscriptionController::class, 'show'])->name('subscription.show');
+
+    // The platform panel (phase 10): packages, and every company's subscription,
+    // invoices and payments. Whoever runs the platform only (EnsurePlatformAdmin).
+    Route::middleware('platform.admin')->prefix('platform')->name('platform.')->group(function () {
+        $platform = '\App\Http\Controllers\Platform';
+
+        Route::get('/packages', [$platform.'\PackageController', 'index'])->name('packages.index');
+        Route::post('/packages', [$platform.'\PackageController', 'store'])->name('packages.store');
+        Route::put('/packages/{package}', [$platform.'\PackageController', 'update'])->name('packages.update');
+        Route::delete('/packages/{package}', [$platform.'\PackageController', 'destroy'])->name('packages.destroy');
+
+        Route::get('/subscriptions', [$platform.'\SubscriptionController', 'index'])->name('subscriptions.index');
+        Route::get('/subscriptions/{company}', [$platform.'\SubscriptionController', 'show'])->name('subscriptions.show');
+        Route::put('/subscriptions/{company}', [$platform.'\SubscriptionController', 'update'])->name('subscriptions.update');
+        Route::post('/subscriptions/{company}/renew', [$platform.'\SubscriptionController', 'renew'])->name('subscriptions.renew');
+        Route::post('/subscriptions/{company}/block', [$platform.'\SubscriptionController', 'block'])->name('subscriptions.block');
+        Route::post('/subscriptions/{company}/unblock', [$platform.'\SubscriptionController', 'unblock'])->name('subscriptions.unblock');
+        Route::post('/subscriptions/{company}/invoices', [$platform.'\SubscriptionController', 'storeInvoice'])->name('subscriptions.invoices.store');
+        Route::post('/subscriptions/{company}/invoices/{invoice}/void', [$platform.'\SubscriptionController', 'voidInvoice'])->name('subscriptions.invoices.void');
+        Route::post('/subscriptions/{company}/invoices/{invoice}/payments', [$platform.'\SubscriptionController', 'storePayment'])->name('subscriptions.payments.store');
+        Route::delete('/subscriptions/{company}/payments/{payment}', [$platform.'\SubscriptionController', 'destroyPayment'])->name('subscriptions.payments.destroy');
+    });
+
     // Financial dimensions (phase 7): cost centers, and how shared costs split across branches.
     Route::resource('/cost-centers', \App\Http\Controllers\Accounting\CostCenterController::class)->except(['create', 'edit']);
     Route::resource('/allocation-rules', \App\Http\Controllers\Accounting\AllocationRuleController::class);

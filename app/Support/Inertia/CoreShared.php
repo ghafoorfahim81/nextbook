@@ -102,6 +102,10 @@ final class CoreShared
                     'roles' => $roles,
                     'role_slugs' => $roleSlugs,
                     'calendar_type' => CompanyContext::company()?->calendar_type,
+                    // Whoever runs the platform, not a customer's super-admin;
+                    // can() cannot tell them apart, since it says yes to a
+                    // super-admin for every permission.
+                    'is_platform_admin' => (bool) $user->is_platform_admin && config('platform.panel_enabled'),
                     // Drives the one-time "check the user manual" dialog. True
                     // only for a user who belongs to a company and has never
                     // opened the manual or dismissed the prompt.
@@ -124,11 +128,17 @@ final class CoreShared
             // company has switched off, which the sidebar leaves out.
             'modules' => $user
                 ? [
-                    'available' => \App\Support\Modules::available(),
+                    // The modules the company's package includes (all of them
+                    // when it has no subscription): what its settings can switch.
+                    'available' => \App\Support\Modules::availableFor(CompanyContext::company()),
                     // No company yet (sign-up): nothing is switched off.
                     'disabled_paths' => CompanyContext::company() ? \App\Support\Modules::disabledPaths() : [],
                 ]
                 : null,
+            // Phase 10: the subscription, only when it needs saying: running
+            // out soon, expired, or blocked. Null otherwise, and for a company
+            // that has none.
+            'subscription' => $user ? app(\App\Services\SubscriptionService::class)->banner(CompanyContext::company()) : null,
             // Which item fields, sections and tracking defaults this trade
             // uses. Cached per company: it derives from the company alone, and
             // since phase 5 a user's companies can be different trades.

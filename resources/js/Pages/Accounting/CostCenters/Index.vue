@@ -120,7 +120,7 @@ const remove = (id) => deleteResource('cost-centers.destroy', id, {
                 />
                 <NextTextarea v-model="form.description" :label="t('dimension.description')" :error="form.errors.description" />
                 <div class="flex items-center gap-2">
-                    <Switch id="cost_center_active" v-model:checked="form.is_active" />
+                    <Switch id="cost_center_active" v-model="form.is_active" />
                     <Label for="cost_center_active">{{ t('dimension.active') }}</Label>
                 </div>
             </form>

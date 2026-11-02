@@ -76,7 +76,7 @@ const shareError = (index, field) => form.errors[`shares.${index}.${field}`]
                 <div class="grid gap-4 sm:grid-cols-2">
                     <NextInput v-model="form.name" is-required :label="t('dimension.name')" :error="form.errors.name" />
                     <div class="flex items-center gap-2 sm:pt-6">
-                        <Switch id="rule_active" v-model:checked="form.is_active" />
+                        <Switch id="rule_active" v-model="form.is_active" />
                         <Label for="rule_active">{{ t('dimension.active') }}</Label>
                     </div>
                 </div>

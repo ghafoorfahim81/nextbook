@@ -36,21 +36,48 @@ class Modules
         return array_keys(array_filter(self::all(), fn (array $module) => $module['available'] ?? false));
     }
 
+    /**
+     * The modules this company's package includes (phase 10): every module that
+     * exists, unless its subscription's package leaves some out. A company with
+     * no subscription is not limited.
+     *
+     * @return list<string>
+     */
+    public static function availableFor(?Company $company = null): array
+    {
+        $company ??= CompanyContext::company();
+        $included = app(\App\Services\SubscriptionService::class)->allowedModules($company);
+
+        return $included === null
+            ? self::available()
+            : array_values(array_intersect(self::available(), $included));
+    }
+
+    /** On for the company: in its package, and switched on in its settings. */
     public static function isEnabled(string $module, ?Company $company = null): bool
     {
         $company ??= CompanyContext::company();
 
-        return in_array($module, self::available(), true)
+        return in_array($module, self::availableFor($company), true)
             && (bool) (Settings::forCompany($company)['modules'][$module] ?? false);
     }
 
-    /** The available modules that are off. @return list<string> */
+    /**
+     * The modules that exist and are off for the company: switched off in its
+     * settings, or not in its package.
+     *
+     * @return list<string>
+     */
     public static function disabled(?Company $company = null): array
     {
         $company ??= CompanyContext::company();
         $switches = (array) (Settings::forCompany($company)['modules'] ?? []);
+        $included = self::availableFor($company);
 
-        return array_values(array_filter(self::available(), fn (string $module) => ! ($switches[$module] ?? false)));
+        return array_values(array_filter(
+            self::available(),
+            fn (string $module) => ! in_array($module, $included, true) || ! ($switches[$module] ?? false),
+        ));
     }
 
     /**

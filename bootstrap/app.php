@@ -33,6 +33,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // Refuses the URLs of a module the company has switched off. After
             // HandleInertiaRequests, so the Forbidden page has its shared props.
             \App\Http\Middleware\EnsureModuleEnabled::class,
+            // A company whose subscription expired or was blocked can read but
+            // not write (phase 10). Needs the company, so after SetActiveCompany.
+            \App\Http\Middleware\EnforceSubscription::class,
             // Refuses a write from a page opened in another company (a tab left
             // open across a company switch). After HandleInertiaRequests, so its
             // redirect passes back out through Inertia and becomes a 303.
@@ -40,6 +43,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // One activity log entry per request, not one per saved row.
             \App\Http\Middleware\BatchActivityLog::class,
         ]);
+
+        // The /platform panel (phase 10): whoever runs the platform only.
+        $middleware->alias(['platform.admin' => \App\Http\Middleware\EnsurePlatformAdmin::class]);
 
         // Route model binding reads a protected table, so Postgres has to know
         // the company first; appended to the group, these would run after

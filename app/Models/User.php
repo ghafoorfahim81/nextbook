@@ -75,6 +75,12 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\Administration\UserBranchAccess::class);
     }
 
+    /** Runs the platform (phase 10), as opposed to a customer's own super-admin. Never mass-assigned. */
+    public function isPlatformAdmin(): bool
+    {
+        return (bool) $this->is_platform_admin;
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->roles->contains('slug', 'super-admin');
@@ -119,6 +125,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'preferences' => 'array',
             'status' => UserStatus::class,
+            'is_platform_admin' => 'boolean',
         ];
     }
 

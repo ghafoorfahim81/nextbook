@@ -12,6 +12,21 @@
 */
 
 return [
+    // Phase 10: what a company's subscription allows.
+    'subscription' => [
+        'ends_before_start' => 'The end date cannot be before the start date.',
+        'renewed' => 'The subscription was renewed.',
+        'blocked_done' => 'The company is blocked; it can only be read until you unblock it.',
+        'unblocked_done' => 'The company is unblocked.',
+        'invoice_voided' => 'The invoice was voided.',
+        'payment_recorded' => 'The payment was recorded.',
+        'user_limit' => 'Your package (:package) allows :limit users, and they are all in use. Ask the platform to upgrade your package.',
+        'branch_limit' => 'Your package (:package) allows :limit branches, and they are all in use. Ask the platform to upgrade your package.',
+        'blocked' => 'This company is blocked and can only be read, not changed. Reason: :reason. Contact the platform to have it opened again.',
+        'expired' => 'This company\'s subscription ended on :date, so it can only be read, not changed. Renew it to continue.',
+        'invoice_void' => 'This invoice is void; no payment can be recorded on it.',
+        'overpayment' => 'The payment is more than what is left to pay (:balance).',
+    ],
     // Phase 7: splitting a shared cost across branches.
     'allocation' => [
         'no_version_on_date' => 'This allocation rule has no split in force on :date. Add a version that starts on or before that date.',
@@ -23,6 +38,7 @@ return [
         'cannot_delete_used_in' => "Cannot delete this record because it's used in :items. Please delete those records first.",
         'cannot_delete_generic' => 'You cannot delete this record because it has dependencies.',
         'cost_center_has_children' => 'This cost center has cost centers under it.',
+        'package_used' => 'This package is used by subscriptions, so it cannot be deleted. Switch it off instead.',
         'cost_center_used' => 'This cost center is used on posted entries.',
         'allocation_rule_used' => 'This allocation rule is used on expenses.',
         'cannot_delete_document' => 'You cannot delete this :document because it has dependencies.',

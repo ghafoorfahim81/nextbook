@@ -28,6 +28,7 @@ const modules = computed(() => visibleModules(buildAppModules(t), {
     can,
     isOff: (url) => (page.props.modules?.disabled_paths ?? []).some((prefix) => urlUnder(url, prefix)),
     allowedMenus: allowedMenus.value,
+    platformAdmin: !!page.props.auth?.user?.is_platform_admin,
 }))
 
 const tone = moduleTone
