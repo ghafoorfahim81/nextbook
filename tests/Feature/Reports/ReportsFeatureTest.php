@@ -104,14 +104,9 @@ class ReportsFeatureTest extends TestCase
         $response->assertOk();
         $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
-        $xlsx = $response->streamedContent();
-        $tmpPath = tempnam(sys_get_temp_dir(), 'report_xlsx_');
-        $this->assertNotFalse($tmpPath);
-
-        file_put_contents($tmpPath, $xlsx);
-
+        // The export is a file download (BinaryFileResponse), not a stream.
         $zip = new \ZipArchive();
-        $this->assertTrue($zip->open($tmpPath));
+        $this->assertTrue($zip->open($response->baseResponse->getFile()->getPathname()) === true);
 
         $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
         $this->assertNotFalse($sheetXml);
@@ -119,7 +114,6 @@ class ReportsFeatureTest extends TestCase
         $this->assertTrue(str_contains($sheetXml, 'Average cost'));
 
         $zip->close();
-        @unlink($tmpPath);
     }
 
     public function test_group_summary_report_falls_back_to_slug_when_account_type_nature_is_missing(): void

@@ -504,10 +504,11 @@ class DiscountRuleTest extends TestCase
     }
 
     /**
-     * Deleting a rule is final. There is no restore endpoint and the rule never
-     * shows up in Trash, so the screen must not offer an undo it cannot honour.
+     * A deleted rule has no restore endpoint of its own, so the list does not
+     * offer an Undo toast; it lands in Trash (since the trash learned about
+     * discount rules), and Trash is where it comes back from.
      */
-    public function test_a_deleted_rule_cannot_be_restored(): void
+    public function test_a_deleted_rule_can_only_be_restored_from_trash(): void
     {
         $rule = DiscountRule::factory()->create([
             'company_id' => $this->ctx['company']->id,
@@ -525,11 +526,16 @@ class DiscountRuleTest extends TestCase
             'A discount rule delete is not reversible; adding a restore route would make the Undo toast the right call instead.'
         );
 
-        // Nor does the rule turn up in Trash, where it could be restored by hand.
+        // It is in Trash…
         $this->get(route('deleted-records.index'))
             ->assertInertia(fn ($page) => $page
                 ->where('records.data', fn ($records) => collect($records)
-                    ->doesntContain(fn ($record) => ($record['record_id'] ?? null) === $rule->id)));
+                    ->contains(fn ($record) => ($record['record_id'] ?? null) === $rule->id)));
+
+        // …and comes back from there.
+        $this->patch(route('deleted-records.restore', ['module' => 'discount_rules', 'record' => $rule->id]))
+            ->assertSessionHasNoErrors();
+        $this->assertNotSoftDeleted('discount_rules', ['id' => $rule->id]);
     }
 
     /**

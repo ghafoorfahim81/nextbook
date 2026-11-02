@@ -57,7 +57,8 @@
         "leave_type": "Leave type",
         "employment_type": "Employment type",
         "employment_status": "Employment status",
-        "variant": "Variant"
+        "variant": "Variant",
+        "cost_center": "Cost center"
     },
     "balance_types": {
         "all": "All",

@@ -92,6 +92,7 @@ function normalizeFilters(filters) {
     balance_type: filters.balance_type || 'all',
     category_id: filters.category_id || '',
     expense_account_id: filters.expense_account_id || '',
+    cost_center_id: filters.cost_center_id || '',
     employee_id: filters.employee_id || '',
     department_id: filters.department_id || '',
     designation_id: filters.designation_id || '',
@@ -493,7 +494,7 @@ const reportDefinitions = computed(() => ({
   cost_center_report: {
     label: t('report.reports.cost_center_report.label'),
     description: t('report.reports.cost_center_report.description'),
-    filters: [],
+    filters: ['cost_center_id'],
     group: 'expenses',
     icon: SlidersHorizontal,
     summary: [
@@ -1272,6 +1273,7 @@ function resetFilters() {
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
+    cost_center_id: '',
     employee_id: '',
     department_id: '',
     designation_id: '',
@@ -1310,6 +1312,7 @@ function selectReport(reportKey) {
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
+    cost_center_id: '',
     employee_id: '',
     department_id: '',
     designation_id: '',

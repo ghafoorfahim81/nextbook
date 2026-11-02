@@ -28,7 +28,7 @@ class SidebarMenuPreferencesTest extends TestCase
         $this->from(route('preferences.index'))
             ->put(route('preferences.update'), [
                 'appearance' => [
-                    'sidebar_menus' => ['dashboard', 'sale', 'preferences'],
+                    'sidebar_menus' => ['dashboard', 'sale', 'reports'],
                 ],
             ])
             ->assertRedirect();
@@ -37,7 +37,7 @@ class SidebarMenuPreferencesTest extends TestCase
 
         // The stored subset must survive verbatim - no leftover default tail.
         sort($menus);
-        $this->assertSame(['dashboard', 'preferences', 'sale'], $menus);
+        $this->assertSame(['dashboard', 'reports', 'sale'], $menus);
     }
 
     public function test_legacy_menu_keys_are_folded_into_current_ones(): void
@@ -47,7 +47,7 @@ class SidebarMenuPreferencesTest extends TestCase
         $user->forceFill([
             'preferences' => [
                 'appearance' => [
-                    'sidebar_menus' => ['dashboard', 'receipt', 'payment', 'transfer', 'sale'],
+                    'sidebar_menus' => ['dashboard', 'receipt', 'payment', 'transfer', 'preferences', 'sale'],
                 ],
             ],
         ])->saveQuietly();
@@ -58,5 +58,7 @@ class SidebarMenuPreferencesTest extends TestCase
         $this->assertNotContains('receipt', $menus);
         $this->assertNotContains('payment', $menus);
         $this->assertNotContains('transfer', $menus);
+        // Settings live in the user menu now, not in the sidebar's list.
+        $this->assertNotContains('preferences', $menus);
     }
 }

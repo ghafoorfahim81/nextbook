@@ -4791,6 +4791,15 @@ class ReportService
                 ['id' => 'debtor', 'name' => $this->reportTranslation('balance_types.debtor', 'Debtor')],
                 ['id' => 'creditor', 'name' => $this->reportTranslation('balance_types.creditor', 'Creditor')],
             ],
+            'cost_centers' => $report === 'cost_center_report'
+                ? DB::table('cost_centers')
+                    ->where('company_id', $companyId)
+                    ->whereNull('deleted_at')
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                    ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                    ->all()
+                : [],
             'expense_categories' => DB::table('expense_categories')
                 ->whereNull('deleted_at')
                 ->orderBy('name')

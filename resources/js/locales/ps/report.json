@@ -57,7 +57,8 @@
         "leave_type": "د رخصتۍ ډول",
         "employment_type": "د دندې ډول",
         "employment_status": "د دندې حالت",
-        "variant": "ډول"
+        "variant": "ډول",
+        "cost_center": "د لګښت مرکز"
     },
     "balance_types": {
         "all": "ټول",

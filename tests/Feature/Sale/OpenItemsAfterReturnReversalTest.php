@@ -143,25 +143,35 @@ class OpenItemsAfterReturnReversalTest extends TestCase
     }
 
     /**
-     * The credit a return leaves behind is not applied to the invoice it came
-     * from, so while the return stands the list still offers the invoice in
-     * full. That is a separate, older gap from the reversal one — recorded
-     * here so a change in either direction is noticed, not asserted as
-     * correct.
+     * The credit a return leaves behind is applied to the invoice it came
+     * from, so while the return stands the list offers only what is still
+     * owed. This was a known gap, held here as a test that failed the day it
+     * closed (the list offered the invoice in full, 200, against a balance of
+     * 100); now it holds the fix.
      */
-    public function test_documents_the_unapplied_credit_note_gap(): void
+    public function test_the_credit_note_is_applied_to_its_invoice(): void
     {
         $sale = $this->sell(20, 10);
         $this->returnSale($sale, 10);
 
         $this->assertEqualsWithDelta(100.0, $this->ledgerBalance(), 0.01);
 
+        $open = $this->openItems();
+
         $this->assertEqualsWithDelta(
-            200.0,
-            $this->openItems()['total'],
+            $this->ledgerBalance(),
+            $open['total'],
             0.01,
-            'If this now equals the balance, the credit note is being applied and this note can go.',
+            'The receipt form must offer what the customer owes. Rows: '
+            . $open['rows']->map(
+                fn ($r) => $r['document_type'] . ' ' . $r['document_number'] . ' = ' . $r['remaining_amount']
+            )->implode(' | '),
         );
+
+        // One invoice, half of it settled by the return: not the return as a
+        // second claim, and not the invoice in full.
+        $this->assertCount(1, $open['rows']);
+        $this->assertEqualsWithDelta(100.0, (float) $open['rows']->first()['remaining_amount'], 0.01);
     }
 
     public function test_a_reversal_voucher_is_not_offered_as_an_invoice_to_settle(): void

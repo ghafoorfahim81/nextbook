@@ -89,10 +89,11 @@ class CashPositionByCurrencyReportTest extends TestCase
         return ['rows' => $result['rows'], 'summary' => $result['summary']];
     }
 
-    public function test_it_returns_one_line_per_currency(): void
+    public function test_it_lists_each_cash_account_under_its_currency(): void
     {
-        // Two separate USD drawers plus an AFN one: the report must fold the
-        // dollar accounts into a single USD line.
+        // Two separate USD drawers plus an AFN one. The report lists a line per
+        // account, grouped by currency with the home currency first; the
+        // summary still counts currencies, not accounts.
         $secondUsdCash = Account::factory()->create([
             'company_id' => $this->ctx['company']->id,
             'name' => 'Bank USD',
@@ -107,19 +108,24 @@ class CashPositionByCurrencyReportTest extends TestCase
 
         ['rows' => $rows, 'summary' => $summary] = $this->report();
 
-        $this->assertCount(2, $rows);
+        $this->assertCount(3, $rows);
 
         // Home currency first.
         $this->assertSame('AFN', $rows[0]['currency']);
         $this->assertSame(5000.0, (float) $rows[0]['amount']);
         $this->assertSame(5000.0, (float) $rows[0]['home_equivalent']);
 
-        // Both dollar accounts on one line, in dollars.
-        $this->assertSame('USD', $rows[1]['currency']);
+        // Then the dollar accounts by name, each in dollars.
+        $this->assertSame(['USD', 'USD'], [$rows[1]['currency'], $rows[2]['currency']]);
         $this->assertSame('US Dollar', $rows[1]['currency_name']);
-        $this->assertSame(1200.0, (float) $rows[1]['amount']);
-        $this->assertSame(78000.0, (float) $rows[1]['home_equivalent']);
+        $this->assertStringContainsString('Bank USD', $rows[1]['account_name']);
+        $this->assertSame(200.0, (float) $rows[1]['amount']);
+        $this->assertSame(13000.0, (float) $rows[1]['home_equivalent']);
+        $this->assertStringContainsString('Cash In Hand USD', $rows[2]['account_name']);
+        $this->assertSame(1000.0, (float) $rows[2]['amount']);
+        $this->assertSame(65000.0, (float) $rows[2]['home_equivalent']);
 
+        // Two currencies over three accounts; the total is the same either way.
         $this->assertSame(2, $summary['currency_count']);
         $this->assertSame(83000.0, (float) $summary['total_home_equivalent']);
     }

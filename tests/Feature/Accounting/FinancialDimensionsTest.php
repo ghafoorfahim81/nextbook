@@ -175,6 +175,46 @@ class FinancialDimensionsTest extends TestCase
         $this->assertSame($center->id, $transaction->lines->firstWhere('debit', '>', 0)->cost_center_id);
     }
 
+    public function test_the_cost_center_report_filters_by_cost_center(): void
+    {
+        $headOffice = CostCenter::create(['name' => 'Head office', 'is_active' => true]);
+        $transport = CostCenter::create(['name' => 'Transport', 'is_active' => true]);
+
+        $this->postExpense(1000, '2026-03-01', null, $headOffice);
+        $this->postExpense(400, '2026-03-02', null, $transport);
+        $this->postExpense(50, '2026-03-03');
+
+        $filters = [
+            'report' => 'cost_center_report',
+            'branch_id' => $this->kabul->id,
+            'company_id' => $this->ctx['company']->id,
+            'date_from' => '2026-01-01',
+            'date_to' => '2026-12-31',
+        ];
+
+        // Without a filter: each cost center, and the expenses with none.
+        $all = app(ReportService::class)->getReportData($filters);
+        $this->assertEqualsCanonicalizing(
+            [1000.0, 400.0, 50.0],
+            collect($all['rows'])->pluck('amount')->map(fn ($amount) => (float) $amount)->all(),
+        );
+
+        // With one: only that cost center.
+        $one = app(ReportService::class)->getReportData($filters + ['cost_center_id' => $transport->id]);
+        $this->assertCount(1, $one['rows']);
+        $this->assertSame(400.0, (float) $one['rows'][0]['amount']);
+        $this->assertSame(400.0, (float) $one['summary']['total_amount']);
+    }
+
+    public function test_the_cost_center_picker_is_offered_to_its_report(): void
+    {
+        CostCenter::create(['name' => 'Head office', 'is_active' => true]);
+
+        $this->get(route('reports.index', ['report' => 'cost_center_report', 'date_from' => '2026-01-01', 'date_to' => '2026-12-31']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('filterOptions.cost_centers', 1));
+    }
+
     public function test_the_branch_comparison_gives_each_branch_its_share(): void
     {
         $rule = $this->rule(['2026-01-01' => [50, 30, 20]]);

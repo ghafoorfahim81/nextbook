@@ -57,7 +57,8 @@
         "leave_type": "نوع رخصتی",
         "employment_type": "نوع استخدام",
         "employment_status": "وضعیت استخدام",
-        "variant": "واریانت"
+        "variant": "واریانت",
+        "cost_center": "مرکز هزینه"
     },
     "balance_types": {
         "all": "همه",

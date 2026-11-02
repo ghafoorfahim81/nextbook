@@ -30,6 +30,7 @@ const showReason = computed(() => props.activeDefinition.filters.includes('reaso
 const showBalanceType = computed(() => props.activeDefinition.filters.includes('balance_type'))
 const showExpenseCategory = computed(() => props.activeDefinition.filters.includes('category_id'))
 const showExpenseAccount = computed(() => props.activeDefinition.filters.includes('expense_account_id'))
+const showCostCenter = computed(() => props.activeDefinition.filters.includes('cost_center_id'))
 const showEmployee = computed(() => props.activeDefinition.filters.includes('employee_id'))
 const showDepartment = computed(() => props.activeDefinition.filters.includes('department_id'))
 const showDesignation = computed(() => props.activeDefinition.filters.includes('designation_id'))
@@ -88,6 +89,7 @@ const balanceTypeOptions = computed(() => props.options.balance_types || [
 ])
 const expenseCategoryOptions = computed(() => withPlaceholder(props.options.expense_categories, t('report.filters.expense_category')))
 const expenseAccountOptions = computed(() => withPlaceholder(props.options.expense_accounts, t('report.filters.expense_account')))
+const costCenterOptions = computed(() => withPlaceholder(props.options.cost_centers, t('report.filters.cost_center')))
 const employeeOptions = computed(() => withPlaceholder(props.options.employees, t('report.filters.employee')))
 const departmentOptions = computed(() => withPlaceholder(props.options.departments, t('report.filters.department')))
 const designationOptions = computed(() => withPlaceholder(props.options.designations, t('report.filters.designation')))
@@ -136,6 +138,7 @@ function setReport(report) {
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
+    cost_center_id: '',
     warehouse_id: '',
     reason: '',
     employee_id: '',
@@ -327,6 +330,16 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('expense_account_id', $event)"
+          />
+        </div>
+        <div v-if="showCostCenter">
+          <NextSelect
+            :floating-text="t('report.filters.cost_center')"
+            :model-value="filters.cost_center_id"
+            :options="costCenterOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('cost_center_id', $event)"
           />
         </div>
         <div v-if="showEmployee">
