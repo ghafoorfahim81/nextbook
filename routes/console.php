@@ -104,3 +104,18 @@ Schedule::command('hr:reminders')
     ->dailyAt('07:30')
     ->withoutOverlapping()
     ->onOneServer();
+
+// The control center (phase 10): fetch each connected company's licence several
+// times a day, so a renewal or a block reaches it within hours, and report its
+// usage once a day. A company that cannot be reached keeps the licence it has.
+Schedule::command('license:pull')
+    ->name('license:pull')
+    ->everyFourHours()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+Schedule::command('license:usage')
+    ->name('license:usage')
+    ->dailyAt('03:15')
+    ->withoutOverlapping()
+    ->onOneServer();

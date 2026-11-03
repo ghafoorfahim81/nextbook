@@ -28,7 +28,14 @@ class SubscriptionService
     {
         $id = $company instanceof Company ? $company->id : $company;
 
-        return $id ? Subscription::query()->with('package')->where('company_id', $id)->first() : null;
+        if (! $id) {
+            return null;
+        }
+
+        // The control center's licence decides when the company has one;
+        // the subscription tables here are what is used until it is connected.
+        return app(\App\Services\Control\LicenseStore::class)->effective($id)
+            ?? Subscription::query()->with('package')->where('company_id', $id)->first();
     }
 
     /**
