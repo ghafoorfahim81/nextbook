@@ -23,6 +23,21 @@ use Illuminate\Support\Facades\Http;
  */
 class LicenseClient
 {
+    /**
+     * The company's token goes with every call, so in production the address
+     * must be HTTPS: over plain HTTP anyone on the way could read it. Elsewhere
+     * (development, tests) a plain address is allowed. No call follows a
+     * redirect either, since a redirect is a way to send the token elsewhere.
+     */
+    private function insecureAddress(): ?string
+    {
+        $url = (string) config('control.url');
+
+        return app()->environment('production') && ! str_starts_with(strtolower($url), 'https://')
+            ? 'CONTROL_URL must start with https:// in production: the access token would cross the network in the clear.'
+            : null;
+    }
+
     /** @return array{ok: bool, message: string} */
     public function pull(string $companyId): array
     {
@@ -41,9 +56,12 @@ class LicenseClient
             if (! config('control.url') || ! config('control.public_key')) {
                 return $fail('CONTROL_URL and CONTROL_PUBLIC_KEY must be set.');
             }
+            if ($insecure = $this->insecureAddress()) {
+                return $fail($insecure);
+            }
 
             try {
-                $response = Http::withToken($row->api_token)->acceptJson()
+                $response = Http::withToken($row->api_token)->acceptJson()->withoutRedirecting()
                     ->timeout((int) config('control.timeout'))
                     ->get(rtrim((string) config('control.url'), '/').'/api/license');
             } catch (ConnectionException) {
@@ -110,8 +128,12 @@ class LicenseClient
                 return ['ok' => false, 'message' => $message];
             };
 
+            if ($insecure = $this->insecureAddress()) {
+                return $fail($insecure);
+            }
+
             try {
-                $response = Http::withToken($row->api_token)->acceptJson()
+                $response = Http::withToken($row->api_token)->acceptJson()->withoutRedirecting()
                     ->timeout((int) config('control.timeout'))
                     ->get(rtrim((string) config('control.url'), '/').'/api/invoices');
             } catch (ConnectionException) {
@@ -168,10 +190,14 @@ class LicenseClient
                 return ['ok' => false, 'message' => 'This company is not connected.'];
             }
 
+            if ($insecure = $this->insecureAddress()) {
+                return ['ok' => false, 'message' => $insecure];
+            }
+
             $usage = app(SubscriptionService::class)->usage($companyId);
 
             try {
-                $response = Http::withToken($row->api_token)->acceptJson()
+                $response = Http::withToken($row->api_token)->acceptJson()->withoutRedirecting()
                     ->timeout((int) config('control.timeout'))
                     ->post(rtrim((string) config('control.url'), '/').'/api/usage', [
                         'users' => $usage['users'],

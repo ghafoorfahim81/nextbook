@@ -532,6 +532,55 @@ class ControlLicenseTest extends TestCase
         $this->get(route('subscription.show'))->assertInertia(fn ($page) => $page->has('invoices', 0));
     }
 
+    // --- The token must not cross the network in the clear -----------------
+
+    public function test_in_production_an_address_that_is_not_https_is_refused_by_every_call_and_nothing_is_sent(): void
+    {
+        $this->hold();
+        $this->app->detectEnvironment(fn () => 'production');
+        config(['control.url' => 'http://control.test']);
+        $this->fakeHttp(['*' => Http::response(['payload' => [], 'signature' => 'x', 'invoices' => []])]);
+
+        $client = app(LicenseClient::class);
+        foreach ([$client->pull($this->companyId()), $client->pullInvoices($this->companyId()), $client->reportUsage($this->companyId())] as $result) {
+            $this->assertFalse($result['ok']);
+            $this->assertStringContainsString('must start with https://', $result['message']);
+        }
+
+        Http::assertNothingSent();
+        $this->assertStringContainsString('https://', CompanyLicense::query()->firstOrFail()->last_error);
+    }
+
+    public function test_https_is_accepted_in_production_whatever_its_case_and_a_plain_address_is_fine_in_development(): void
+    {
+        $this->connect();
+        $payload = $this->payload();
+        $this->fakeControl($payload);
+
+        $this->app->detectEnvironment(fn () => 'production');
+        config(['control.url' => 'HTTPS://control.test']);
+        $this->assertTrue(app(LicenseClient::class)->pull($this->companyId())['ok']);
+
+        $this->app->detectEnvironment(fn () => 'local');
+        config(['control.url' => 'http://control.test']);
+        $this->assertTrue(app(LicenseClient::class)->pull($this->companyId())['ok'], 'plain http is allowed outside production');
+    }
+
+    public function test_a_redirect_is_not_followed_so_the_token_cannot_be_sent_elsewhere(): void
+    {
+        $this->connect();
+        $this->fakeHttp([
+            'control.test/api/license' => Http::response('', 302, ['Location' => 'https://elsewhere.test/steal']),
+            'elsewhere.test/*' => Http::response(['payload' => [], 'signature' => 'x']),
+        ]);
+
+        $result = app(LicenseClient::class)->pull($this->companyId());
+
+        $this->assertFalse($result['ok']);
+        Http::assertSentCount(1);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'elsewhere.test'));
+    }
+
     // --- Reporting usage ---------------------------------------------------
 
     public function test_usage_is_reported_with_the_token_and_only_counters(): void
