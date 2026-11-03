@@ -36,6 +36,14 @@ class LicensePull extends Command
                 $result = $client->pull($company->id);
                 $failed += $result['ok'] ? 0 : 1;
                 $this->line(($result['ok'] ? '  ok   ' : '  FAIL ')."{$company->name_en}: {$result['message']}");
+
+                // The invoices are for display only, so they are fetched once
+                // the licence itself is in hand, and a failure here is shown but
+                // never makes the licence pull look as if it failed.
+                if ($result['ok']) {
+                    $invoices = $client->pullInvoices($company->id);
+                    $this->line(($invoices['ok'] ? '  ok   ' : '  warn ')."{$company->name_en}: {$invoices['message']}");
+                }
             });
 
         return $failed ? self::FAILURE : self::SUCCESS;

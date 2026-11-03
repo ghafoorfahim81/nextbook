@@ -257,7 +257,7 @@ class ControlLicenseTest extends TestCase
 
         $this->assertSame(0, Artisan::call('license:pull'));
         $this->assertNotNull(CompanyLicense::query()->firstOrFail()->payload);
-        Http::assertSentCount(1);
+        Http::assertSentCount(2); // the licence, then the invoices; only for the one connected company
     }
 
     // --- Enforcement from the licence -------------------------------------
@@ -395,6 +395,141 @@ class ControlLicenseTest extends TestCase
 
         $this->assertSame(0, CompanyLicense::query()->count(), 'row level security hides it');
         $this->assertNull(app(SubscriptionService::class)->forCompany($this->companyId()));
+    }
+
+    // --- Invoices for the "My subscription" page ---------------------------
+
+    private function feed(): array
+    {
+        return [
+            [
+                'number' => 'SUB-2026-0002', 'issued_on' => '2026-03-01', 'due_on' => '2026-03-15', 'period_from' => '2026-03-01', 'period_to' => '2027-03-01',
+                'amount' => 1000, 'discount' => 100, 'currency' => 'AFN', 'description' => 'Year 1', 'state' => 'partial', 'paid' => 300, 'balance' => 600,
+                'payments' => [['paid_on' => '2026-03-05', 'amount' => 300, 'method' => 'hawala', 'reference' => 'HW-1']],
+            ],
+            ['number' => 'SUB-2026-0001', 'issued_on' => '2026-01-01', 'amount' => 50, 'currency' => 'AFN', 'state' => 'void', 'paid' => 0, 'balance' => 50],
+        ];
+    }
+
+    public function test_invoices_are_fetched_and_only_what_a_row_can_show_is_kept(): void
+    {
+        $this->hold();
+        $junk = ['hello' => 'world'];
+        $this->fakeHttp(['control.test/api/invoices' => Http::response(['invoices' => array_merge($this->feed(), [$junk, ['number' => 'no-amount']])])]);
+
+        $result = app(LicenseClient::class)->pullInvoices($this->companyId());
+
+        $this->assertTrue($result['ok']);
+        $row = CompanyLicense::query()->firstOrFail();
+        $this->assertCount(2, $row->invoices, 'rows missing a number, an amount or a date are dropped');
+        $this->assertSame('partial', $row->invoices[0]['state']);
+        $this->assertSame('hawala', $row->invoices[0]['payments'][0]['method']);
+        $this->assertNotNull($row->invoices_fetched_at);
+        Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer tok-123') && $request->url() === 'https://control.test/api/invoices');
+    }
+
+    public function test_an_unknown_state_in_an_invoice_is_not_trusted_as_paid(): void
+    {
+        $this->hold();
+        $this->fakeHttp(['control.test/api/invoices' => Http::response(['invoices' => [
+            ['number' => 'X-1', 'issued_on' => '2026-01-01', 'amount' => 10, 'state' => 'definitely-paid'],
+        ]])]);
+
+        app(LicenseClient::class)->pullInvoices($this->companyId());
+
+        $this->assertSame('unpaid', CompanyLicense::query()->firstOrFail()->invoices[0]['state']);
+    }
+
+    public function test_a_failed_invoice_pull_keeps_the_ones_held_and_says_why(): void
+    {
+        $this->hold([], ['invoices' => [['number' => 'KEEP-1', 'issued_on' => '2026-01-01', 'amount' => 1, 'currency' => 'AFN', 'state' => 'paid', 'paid' => 1, 'balance' => 0, 'payments' => []]]]);
+
+        $this->fakeHttp(['control.test/*' => Http::response([], 500)]);
+        $this->assertFalse(app(LicenseClient::class)->pullInvoices($this->companyId())['ok']);
+
+        $this->fakeHttp(['control.test/*' => Http::response(['invoices' => 'not a list'])]);
+        $this->assertFalse(app(LicenseClient::class)->pullInvoices($this->companyId())['ok']);
+
+        $row = CompanyLicense::query()->firstOrFail();
+        $this->assertSame('KEEP-1', $row->invoices[0]['number']);
+        $this->assertStringStartsWith('Invoices:', $row->last_error);
+    }
+
+    public function test_the_pull_command_fetches_the_invoices_after_the_licence_and_not_when_the_licence_failed(): void
+    {
+        $this->connect();
+        $payload = $this->payload();
+        $this->fakeHttp([
+            'control.test/api/license' => Http::response(['payload' => $payload, 'signature' => $this->sign($payload), 'grace_days' => 7]),
+            'control.test/api/invoices' => Http::response(['invoices' => $this->feed()]),
+        ]);
+
+        $this->assertSame(0, Artisan::call('license:pull'));
+        $this->assertCount(2, CompanyLicense::query()->firstOrFail()->invoices);
+        Http::assertSentCount(2);
+
+        // The licence itself failing: the invoices are not even asked for.
+        $this->fakeHttp(['control.test/api/license' => Http::response([], 500)]);
+        $this->assertSame(1, Artisan::call('license:pull'));
+        Http::assertSentCount(1);
+    }
+
+    public function test_an_invoice_problem_does_not_make_the_licence_pull_fail(): void
+    {
+        $this->connect();
+        $payload = $this->payload();
+        $this->fakeHttp([
+            'control.test/api/license' => Http::response(['payload' => $payload, 'signature' => $this->sign($payload), 'grace_days' => 7]),
+            'control.test/api/invoices' => Http::response([], 500),
+        ]);
+
+        $this->assertSame(0, Artisan::call('license:pull'));
+        $this->assertNotNull(CompanyLicense::query()->firstOrFail()->payload);
+    }
+
+    public function test_my_subscription_shows_the_control_centers_invoices_not_the_old_local_ones(): void
+    {
+        // An old local invoice that must not show once the company is connected.
+        $package = Package::create(['code' => 'local', 'name' => 'Local', 'modules' => [], 'price' => 1, 'currency' => 'AFN', 'period_months' => 12, 'is_active' => true]);
+        $local = Subscription::create(['company_id' => $this->companyId(), 'package_id' => $package->id, 'starts_on' => '2026-01-01', 'ends_on' => now()->addYear()->toDateString()]);
+        app(SubscriptionService::class)->invoice($local, ['issued_on' => '2026-02-01', 'amount' => 777]);
+
+        $this->hold([], ['invoices' => $this->feed()]);
+
+        $this->get(route('subscription.show'))->assertOk()->assertInertia(fn ($page) => $page
+            ->component('Workspace/Subscription')
+            ->has('invoices', 2)
+            ->where('invoices.0.number', 'SUB-2026-0002')
+            ->where('invoices.0.state', 'partial')
+            ->where('invoices.0.balance', 600)
+            ->where('invoices.0.payments.0.method', 'hawala')
+            ->where('invoices.1.state', 'void'));
+    }
+
+    public function test_the_feed_is_used_only_while_the_licence_itself_is_accepted(): void
+    {
+        $package = Package::create(['code' => 'local', 'name' => 'Local', 'modules' => [], 'price' => 1, 'currency' => 'AFN', 'period_months' => 12, 'is_active' => true]);
+        $local = Subscription::create(['company_id' => $this->companyId(), 'package_id' => $package->id, 'starts_on' => '2026-01-01', 'ends_on' => now()->addYear()->toDateString()]);
+        app(SubscriptionService::class)->invoice($local, ['issued_on' => '2026-02-01', 'amount' => 777]);
+
+        $row = $this->hold([], ['invoices' => $this->feed()]);
+        $tampered = $row->payload;
+        $tampered['max_users'] = 999;
+        $row->forceFill(['payload' => $tampered])->save(); // the signature no longer matches
+
+        // The licence is ignored (the local subscription applies), so the local invoices are shown, not the feed.
+        $this->get(route('subscription.show'))->assertInertia(fn ($page) => $page
+            ->has('invoices', 1)->where('invoices.0.amount', 777)->where('plan.package', 'Local'));
+    }
+
+    public function test_a_connected_company_whose_invoices_are_not_fetched_yet_sees_none_rather_than_the_old_ones(): void
+    {
+        $package = Package::create(['code' => 'local', 'name' => 'Local', 'modules' => [], 'price' => 1, 'currency' => 'AFN', 'period_months' => 12, 'is_active' => true]);
+        $local = Subscription::create(['company_id' => $this->companyId(), 'package_id' => $package->id, 'starts_on' => '2026-01-01', 'ends_on' => now()->addYear()->toDateString()]);
+        app(SubscriptionService::class)->invoice($local, ['issued_on' => '2026-02-01', 'amount' => 777]);
+        $this->hold(); // licence held, invoices never fetched
+
+        $this->get(route('subscription.show'))->assertInertia(fn ($page) => $page->has('invoices', 0));
     }
 
     // --- Reporting usage ---------------------------------------------------

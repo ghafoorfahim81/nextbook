@@ -89,6 +89,76 @@ class LicenseClient
         });
     }
 
+    /**
+     * Fetches the company's invoices and payments for the "My subscription"
+     * page. They are for display and are not signed; a failure leaves the ones
+     * already held and says why.
+     *
+     * @return array{ok: bool, message: string}
+     */
+    public function pullInvoices(string $companyId): array
+    {
+        return CompanyDatabaseContext::runFor($companyId, function () use ($companyId) {
+            $row = CompanyLicense::query()->where('company_id', $companyId)->first();
+            if (! $row || ! $row->api_token || ! config('control.url')) {
+                return ['ok' => false, 'message' => 'This company is not connected.'];
+            }
+
+            $fail = function (string $message) use ($row): array {
+                $row->forceFill(['last_attempt_at' => now(), 'last_error' => 'Invoices: '.$message])->save();
+
+                return ['ok' => false, 'message' => $message];
+            };
+
+            try {
+                $response = Http::withToken($row->api_token)->acceptJson()
+                    ->timeout((int) config('control.timeout'))
+                    ->get(rtrim((string) config('control.url'), '/').'/api/invoices');
+            } catch (ConnectionException) {
+                return $fail('The control center could not be reached.');
+            }
+
+            if (! $response->successful()) {
+                return $fail("The control center answered {$response->status()}.");
+            }
+
+            $invoices = $response->json('invoices');
+            if (! is_array($invoices)) {
+                return $fail('The reply was not a list of invoices.');
+            }
+
+            // Keep only what a row of the page can show; anything else in the
+            // reply is dropped rather than stored.
+            $clean = collect($invoices)
+                ->filter(fn ($invoice) => is_array($invoice) && isset($invoice['number'], $invoice['amount'], $invoice['issued_on']))
+                ->map(fn (array $invoice) => [
+                    'number' => (string) $invoice['number'],
+                    'issued_on' => (string) $invoice['issued_on'],
+                    'due_on' => $invoice['due_on'] ?? null,
+                    'period_from' => $invoice['period_from'] ?? null,
+                    'period_to' => $invoice['period_to'] ?? null,
+                    'amount' => (float) $invoice['amount'],
+                    'discount' => (float) ($invoice['discount'] ?? 0),
+                    'currency' => (string) ($invoice['currency'] ?? ''),
+                    'description' => $invoice['description'] ?? null,
+                    'state' => in_array($invoice['state'] ?? null, ['unpaid', 'partial', 'paid', 'void'], true) ? $invoice['state'] : 'unpaid',
+                    'paid' => (float) ($invoice['paid'] ?? 0),
+                    'balance' => (float) ($invoice['balance'] ?? 0),
+                    'payments' => collect($invoice['payments'] ?? [])->filter(fn ($p) => is_array($p) && isset($p['amount'], $p['paid_on']))
+                        ->map(fn (array $p) => [
+                            'paid_on' => (string) $p['paid_on'],
+                            'amount' => (float) $p['amount'],
+                            'method' => (string) ($p['method'] ?? 'other'),
+                            'reference' => $p['reference'] ?? null,
+                        ])->values()->all(),
+                ])->values()->all();
+
+            $row->forceFill(['invoices' => $clean, 'invoices_fetched_at' => now()])->save();
+
+            return ['ok' => true, 'message' => count($clean).' invoice(s) received.'];
+        });
+    }
+
     /** @return array{ok: bool, message: string} */
     public function reportUsage(string $companyId): array
     {

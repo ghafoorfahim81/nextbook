@@ -27,6 +27,8 @@ class CompanyLicense extends Model
         return [
             'api_token' => 'encrypted',
             'payload' => 'array',
+            'invoices' => 'array',
+            'invoices_fetched_at' => 'datetime',
             'license_version' => 'integer',
             'grace_days' => 'integer',
             'fetched_at' => 'datetime',
