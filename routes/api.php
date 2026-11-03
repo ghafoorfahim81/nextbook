@@ -7,6 +7,13 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+// The control center creating a company for one of its customers. Not behind
+// a login: the request is signed instead (see VerifyControlSignature), and the
+// route answers 404 unless CONTROL_PROVISIONING is on.
+Route::post('/control/provision', App\Http\Controllers\Api\ControlProvisionController::class)
+    ->middleware(['throttle:30,1', App\Http\Middleware\VerifyControlSignature::class])
+    ->name('api.control.provision');
+
 // Public routes (if any)
 // Route::get('/public/search', ...);
 

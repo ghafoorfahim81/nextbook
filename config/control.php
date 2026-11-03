@@ -20,4 +20,13 @@ return [
     // could not be reached. A stale licence is still honoured, and its end date
     // is stretched by the grace days it came with, no further.
     'stale_after_hours' => (int) env('CONTROL_STALE_AFTER_HOURS', 36),
+
+    // Lets the control center create a company here (POST /api/control/provision),
+    // with an administrator able to act in it. Off unless this is set: the
+    // route answers 404 and creates nothing. A request is accepted only when it
+    // is signed by the control center's private key (checked with the public
+    // key above), is no older than this many seconds, and has not been seen
+    // before. In production it must also arrive over HTTPS.
+    'provisioning' => (bool) env('CONTROL_PROVISIONING', false),
+    'provisioning_window_seconds' => (int) env('CONTROL_PROVISIONING_WINDOW', 300),
 ];
