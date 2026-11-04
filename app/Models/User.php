@@ -25,6 +25,12 @@ class User extends Authenticatable
 
     use TwoFactorAuthenticatable, HasProfilePhoto;
 
+    // Only the routing half of Notifiable (notify(), routeNotificationFor()):
+    // the password reset mail needs it, and without it "forgot password" ended
+    // in an error for everyone. Notifiable as a whole also adds a notifications()
+    // relation, which would replace this model's own.
+    use \Illuminate\Notifications\RoutesNotifications;
+
 
     /**
      * The attributes that are mass assignable.

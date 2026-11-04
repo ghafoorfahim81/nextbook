@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use RuntimeException;
 use Tests\Support\BuildsErpContext;
 use Tests\TestCase;
@@ -182,6 +184,20 @@ class ControlProvisioningTest extends TestCase
         foreach (['password', 'Password1', 'ahmad@kabul-traders.test', 'Kabul Traders', ''] as $guess) {
             $this->assertFalse(Hash::check($guess, $user->password));
         }
+    }
+
+    public function test_the_administrator_can_be_sent_a_password_reset_link_to_choose_a_password(): void
+    {
+        $this->send($this->body())->assertCreated();
+        Notification::fake();
+
+        $status = Password::broker()->sendResetLink(['email' => 'ahmad@kabul-traders.test']);
+
+        $this->assertSame(Password::RESET_LINK_SENT, $status);
+        Notification::assertSentTo(
+            User::query()->where('email', 'ahmad@kabul-traders.test')->firstOrFail(),
+            \Illuminate\Auth\Notifications\ResetPassword::class,
+        );
     }
 
     public function test_the_company_is_invisible_to_every_other_company(): void
