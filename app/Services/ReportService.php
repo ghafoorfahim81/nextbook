@@ -916,7 +916,7 @@ class ReportService
         $netSql = "($documentNetSql * COALESCE(t.rate, 1))";
 
         $query = DB::table('sales as s')
-            ->leftJoin('ledgers as l', function ($join) use ($branchId) {
+            ->leftJoin('ledgers as l', function ($join) use ($companyId) {
                 $join->on('l.id', '=', 's.customer_id')
                     ->where('l.company_id', '=', $companyId)
                     ->whereNull('l.deleted_at');
@@ -1111,7 +1111,7 @@ class ReportService
                     ->where('t.status', '=', TransactionStatus::POSTED->value)
                     ->whereNull('t.deleted_at');
             })
-            ->leftJoin('ledgers as l', function ($join) use ($branchId) {
+            ->leftJoin('ledgers as l', function ($join) use ($companyId) {
                 $join->on('l.id', '=', 'p.supplier_id')
                     ->where('l.company_id', '=', $companyId)
                     ->whereNull('l.deleted_at');
@@ -1507,6 +1507,7 @@ class ReportService
                     ->where('s.branch_id', '=', $filters['branch_id'])
                     ->whereNull('s.deleted_at');
             })
+            ->leftJoin('item_variants as iv', 'iv.id', '=', 'sm.variant_id')
             ->leftJoin('unit_measures as u', function ($join) use ($filters) {
                 $join->on('u.id', '=', 'sm.unit_measure_id')
                     // ->where('u.branch_id', '=', $filters['branch_id'])
@@ -1532,6 +1533,9 @@ class ReportService
             ->selectRaw('sm.id as id')
             ->selectRaw('sm.date')
             ->selectRaw('i.name as item')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('iv.name as variant_name')
+            ->selectRaw('iv.attributes as variant_attributes')
             ->selectRaw('w.name as warehouse')
             ->selectRaw('u.name as unit_measure')
             // Fetch movement_type as the raw enum value, and fetch the translated movement_type using a CASE statement or helper mapping
@@ -1568,6 +1572,7 @@ class ReportService
                 'id' => $row->id,
                 'date' => $this->displayDate($row->date),
                 'item' => $row->item,
+                'variant' => $row->variant_name || $row->variant_attributes ? $this->variantRowLabel($row) : null,
                 'warehouse' => $row->warehouse,
                 'movement_type' => $row->movement_type,
                 'unit_measure' => $row->unit_measure,
@@ -4391,7 +4396,7 @@ class ReportService
                 ? ['date', 'number', 'supplier', 'type', 'status', 'amount']
                 : ['date', 'purchase_number', 'supplier', 'item', 'variant', 'quantity', 'unit_price', 'discount', 'total_amount'],
             'inventory_stock' => ['item', 'warehouse', 'quantity', 'average_cost', 'total_value'],
-            'stock_movement' => ['date', 'item', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
+            'stock_movement' => ['date', 'item', 'variant', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
             'stock_adjustment_report' => ['date', 'reference', 'item', 'warehouse', 'type', 'reason', 'quantity', 'unit_measure', 'unit_cost', 'total_cost', 'batch', 'expire_date', 'status', 'notes'],
             'low_stock' => ['item', 'warehouse', 'quantity', 'reorder_level'],
             'inventory_valuation' => ['item', 'quantity', 'average_cost', 'total_value'],
