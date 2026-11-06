@@ -118,12 +118,27 @@ class Payment extends Model
     /** What was paid, in the voucher's own currency. */
     public function paidAmount(): float
     {
-        return (float) ($this->cashLine()?->credit ?? 0);
+        return (float) ($this->cashLine()?->credit ?? $this->draftPayload('amount', 0));
     }
 
     public function bankAccount()
     {
-        return $this->cashLine()?->account;
+        if ($line = $this->cashLine()) {
+            return $line->account;
+        }
+
+        $accountId = $this->draftPayload('settlement_voucher.cash_account_id');
+
+        return $accountId ? \App\Models\Account\Account::find($accountId) : null;
+    }
+
+    /**
+     * A draft has no lines yet — what the user entered waits in the draft
+     * transaction's posting_payload until the document is posted.
+     */
+    private function draftPayload(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->transaction?->posting_payload, $key, $default);
     }
 
     protected function getRelationships(): array

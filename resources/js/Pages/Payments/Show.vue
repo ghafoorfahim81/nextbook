@@ -10,10 +10,12 @@ import { useI18n } from 'vue-i18n'
 import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3'
 import { useAuth } from '@/composables/useAuth'
+import { useDeleteResource } from '@/composables/useDeleteResource'
 
 const { t } = useI18n()
 const { submit, processing } = useDocumentAction()
 const { can } = useAuth()
+const { deleteResource } = useDeleteResource()
 
 const props = defineProps({
     payment: { type: Object, required: true },
@@ -22,6 +24,14 @@ const props = defineProps({
 
 const payment = computed(() => props.payment?.data ?? props.payment ?? {})
 const number = computed(() => payment.value.number)
+
+// Only a draft can be removed; a posted document is reversed instead.
+function deleteDraft() {
+    deleteResource('payments.destroy', payment.value.id, {
+        title: t('general.delete', { name: t('payment.payment') }),
+        name: t('payment.payment'),
+    })
+}
 
 const postDialogOpen = ref(false)
 const reverseDialogOpen = ref(false)
@@ -51,9 +61,9 @@ const statusClass = (status) => {
 
 const statusLabel = (status) => {
     switch (status) {
-        case 'draft':    return t('general.draft')
-        case 'posted':   return t('general.posted')
-        case 'reversed': return t('general.reversed')
+        case 'draft':    return t('general.status_draft')
+        case 'posted':   return t('general.status_posted')
+        case 'reversed': return t('general.status_reversed')
         default:         return status || '-'
     }
 }
@@ -74,6 +84,14 @@ const statusLabel = (status) => {
                 @click="postDialogOpen = true"
             >
                 {{ t('general.post') }}
+            </Button>
+            <Button
+                v-if="payment.status === 'draft' && can('payments.update')"
+                size="sm"
+                variant="destructive"
+                @click="deleteDraft"
+            >
+                {{ t('datatable.delete') }}
             </Button>
             <Button
                 v-if="payment.status === 'posted' && can('payments.update')"

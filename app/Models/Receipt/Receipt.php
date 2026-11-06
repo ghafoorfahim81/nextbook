@@ -129,12 +129,27 @@ class Receipt extends Model
     /** What was received, in the voucher's own currency. */
     public function receivedAmount(): float
     {
-        return (float) ($this->cashLine()?->debit ?? 0);
+        return (float) ($this->cashLine()?->debit ?? $this->draftPayload('amount', 0));
     }
 
     public function bankAccount()
     {
-        return $this->cashLine()?->account;
+        if ($line = $this->cashLine()) {
+            return $line->account;
+        }
+
+        $accountId = $this->draftPayload('settlement_voucher.cash_account_id');
+
+        return $accountId ? \App\Models\Account\Account::find($accountId) : null;
+    }
+
+    /**
+     * A draft has no lines yet — what the user entered waits in the draft
+     * transaction's posting_payload until the document is posted.
+     */
+    private function draftPayload(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->transaction?->posting_payload, $key, $default);
     }
 
     protected function getRelationships(): array

@@ -10,10 +10,12 @@ import { useI18n } from 'vue-i18n'
 import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router } from '@inertiajs/vue3'
 import { useAuth } from '@/composables/useAuth'
+import { useDeleteResource } from '@/composables/useDeleteResource'
 
 const { t } = useI18n()
 const { submit, processing } = useDocumentAction()
 const { can } = useAuth()
+const { deleteResource } = useDeleteResource()
 
 const props = defineProps({
     receipt: { type: Object, required: true },
@@ -22,6 +24,14 @@ const props = defineProps({
 
 const receipt = computed(() => props.receipt?.data ?? props.receipt ?? {})
 const number = computed(() => receipt.value.number)
+
+// Only a draft can be removed; a posted document is reversed instead.
+function deleteDraft() {
+    deleteResource('receipts.destroy', receipt.value.id, {
+        title: t('general.delete', { name: t('receipt.receipt') }),
+        name: t('receipt.receipt'),
+    })
+}
 
 const postDialogOpen = ref(false)
 const reverseDialogOpen = ref(false)
@@ -51,9 +61,9 @@ const statusClass = (status) => {
 
 const statusLabel = (status) => {
     switch (status) {
-        case 'draft':    return t('general.draft')
-        case 'posted':   return t('general.posted')
-        case 'reversed': return t('general.reversed')
+        case 'draft':    return t('general.status_draft')
+        case 'posted':   return t('general.status_posted')
+        case 'reversed': return t('general.status_reversed')
         default:         return status || '-'
     }
 }
@@ -74,6 +84,14 @@ const statusLabel = (status) => {
                 @click="postDialogOpen = true"
             >
                 {{ t('general.post') }}
+            </Button>
+            <Button
+                v-if="receipt.status === 'draft' && can('receipts.update')"
+                size="sm"
+                variant="destructive"
+                @click="deleteDraft"
+            >
+                {{ t('datatable.delete') }}
             </Button>
             <Button
                 v-if="receipt.status === 'posted' && can('receipts.update')"
