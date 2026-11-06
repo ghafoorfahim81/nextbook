@@ -313,5 +313,6 @@
   "attachment_unsupported_file": "د فایل ډول نه ملاتړ کېږي. ملاتړ شوي ډولونه: {extensions}.",
   "attachment": "ضمیمه",
   "delete_blocked_title": "اړوند معلومات وموندل شول!",
-  "status_change_blocked_title": "حالت بدل نه شو"
+  "status_change_blocked_title": "حالت بدل نه شو",
+  "account_opening_locked": "پرانیستی پاتې نور نشي بدلېدای، ځکه چې په دې حساب کې معاملې ثبت شوې دي."
 }

@@ -311,5 +311,6 @@
   "status_update_failed": "Failed to update status.",
   "please_add_at_least_one_item_to_update_sale": "Please add at least one item to update the sale",
   "delete_blocked_title": "Related records found!",
-  "status_change_blocked_title": "Status could not be changed"
+  "status_change_blocked_title": "Status could not be changed",
+  "account_opening_locked": "The opening balance can no longer be changed because transactions have been recorded on this account."
 }

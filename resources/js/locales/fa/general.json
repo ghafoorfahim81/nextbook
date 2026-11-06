@@ -314,5 +314,6 @@
   "status_update_failed": "به‌روزرسانی وضعیت ناموفق بود.",
   "please_add_at_least_one_item_to_update_sale": "لطفاً برای به‌روزرسانی فروش، حداقل یک جنس اضافه کنید",
   "delete_blocked_title": "داده‌های مرتبط پیدا شد!",
-  "status_change_blocked_title": "تغییر وضعیت انجام نشد"
+  "status_change_blocked_title": "تغییر وضعیت انجام نشد",
+  "account_opening_locked": "موجودی اولیه دیگر قابل تغییر نیست، زیرا برای این حساب تراکنش ثبت شده است."
 }
