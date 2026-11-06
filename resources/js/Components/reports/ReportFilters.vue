@@ -26,6 +26,8 @@ const showAccount = computed(() => props.activeDefinition.filters.includes('acco
 const showWarehouse = computed(() => props.activeDefinition.filters.includes('warehouse_id'))
 const showCurrency = computed(() => props.activeDefinition.filters.includes('currency_id'))
 const showType = computed(() => props.activeDefinition.filters.includes('type'))
+const showStatus = computed(() => props.activeDefinition.filters.includes('status'))
+const showReturnStatus = computed(() => props.activeDefinition.filters.includes('return_status'))
 const showReason = computed(() => props.activeDefinition.filters.includes('reason'))
 const showBalanceType = computed(() => props.activeDefinition.filters.includes('balance_type'))
 const showExpenseCategory = computed(() => props.activeDefinition.filters.includes('category_id'))
@@ -81,6 +83,9 @@ const accountOptions = computed(() => withPlaceholder(props.options.cash_account
 const warehouseOptions = computed(() => withPlaceholder(props.options.warehouses, t('report.filters.warehouse')))
 const currencyOptions = computed(() => withPlaceholder(props.options.currencies, t('report.filters.currency')))
 const typeOptions = computed(() => withPlaceholder(props.options.sale_types, t('report.filters.type')))
+// No blank entry: an unset status means posted, so the picker always shows what applies.
+const statusOptions = computed(() => props.options.document_statuses || [])
+const returnStatusOptions = computed(() => withPlaceholder(props.options.return_statuses, t('report.filters.return_status')))
 const reasonOptions = computed(() => withPlaceholder(props.options.stock_adjustment_reasons, t('report.filters.reason')))
 const balanceTypeOptions = computed(() => props.options.balance_types || [
   { id: 'all', name: t('report.balance_types.all') },
@@ -141,6 +146,8 @@ function setReport(report) {
     cost_center_id: '',
     warehouse_id: '',
     reason: '',
+    status: '',
+    return_status: '',
     employee_id: '',
     department_id: '',
     designation_id: '',
@@ -269,6 +276,27 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('type', $event)"
+          />
+        </div>
+        <div v-if="showStatus">
+          <NextSelect
+            :floating-text="t('report.filters.status')"
+            :model-value="filters.status || 'posted'"
+            :options="statusOptions"
+            label-key="name"
+            value-key="id"
+            :clearable="false"
+            @update:modelValue="setFilter('status', $event === 'posted' ? '' : $event)"
+          />
+        </div>
+        <div v-if="showReturnStatus">
+          <NextSelect
+            :floating-text="t('report.filters.return_status')"
+            :model-value="filters.return_status"
+            :options="returnStatusOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('return_status', $event)"
           />
         </div>
         <div v-if="showReason">

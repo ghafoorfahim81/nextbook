@@ -88,6 +88,8 @@ function normalizeFilters(filters) {
     currency_id: filters.currency_id || '',
     warehouse_id: filters.warehouse_id || '',
     type: filters.type || '',
+    status: filters.status || '',
+    return_status: filters.return_status || '',
     reason: filters.reason || '',
     balance_type: filters.balance_type || 'all',
     category_id: filters.category_id || '',
@@ -394,8 +396,8 @@ const reportDefinitions = computed(() => ({
     label: t('report.reports.sales_report.label'),
     description: t('report.reports.sales_report.description'),
     filters: localFilters.value.view_type === 'general'
-      ? ['customer_id', 'type', 'currency_id', 'warehouse_id']
-      : ['item_id', 'variant_id', 'warehouse_id'],
+      ? ['customer_id', 'type', 'status', 'return_status', 'currency_id', 'warehouse_id']
+      : ['item_id', 'variant_id', 'warehouse_id', 'status', 'return_status'],
     group: 'operations',
     icon: ShoppingCart,
     summary: localFilters.value.view_type === 'general'
@@ -414,6 +416,7 @@ const reportDefinitions = computed(() => ({
           { key: 'customer', label: t('report.columns.customer') },
           { key: 'type', label: t('report.columns.type') },
           { key: 'status', label: t('report.columns.status') },
+          { key: 'return_status', label: t('report.columns.return_status') },
           { key: 'payment_status', label: t('report.columns.payment_status') },
           { key: 'amount', label: t('report.columns.amount'), type: 'money', align: 'right' },
         ]
@@ -434,8 +437,8 @@ const reportDefinitions = computed(() => ({
     label: t('report.reports.purchase_report.label'),
     description: t('report.reports.purchase_report.description'),
     filters: localFilters.value.view_type === 'general'
-      ? ['supplier_id', 'type', 'currency_id', 'warehouse_id']
-      : ['item_id', 'variant_id', 'warehouse_id'],
+      ? ['supplier_id', 'type', 'status', 'return_status', 'currency_id', 'warehouse_id']
+      : ['item_id', 'variant_id', 'warehouse_id', 'status', 'return_status'],
     group: 'operations',
     icon: ClipboardList,
     summary: localFilters.value.view_type === 'general'
@@ -454,6 +457,7 @@ const reportDefinitions = computed(() => ({
           { key: 'supplier', label: t('report.columns.supplier') },
           { key: 'type', label: t('report.columns.type') },
           { key: 'status', label: t('report.columns.status') },
+          { key: 'return_status', label: t('report.columns.return_status') },
           { key: 'amount', label: t('report.columns.amount'), type: 'money', align: 'right' },
         ]
       : [
@@ -1270,6 +1274,8 @@ function resetFilters() {
     currency_id: '',
     warehouse_id: '',
     type: '',
+    status: '',
+    return_status: '',
     reason: '',
     balance_type: 'all',
     category_id: '',
@@ -1309,6 +1315,8 @@ function selectReport(reportKey) {
     currency_id: '',
     warehouse_id: '',
     type: '',
+    status: '',
+    return_status: '',
     reason: '',
     balance_type: 'all',
     category_id: '',

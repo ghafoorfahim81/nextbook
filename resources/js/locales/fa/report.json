@@ -28,6 +28,8 @@
         "hr_description": "معاشات، حاضری، رخصتی و کارمندان."
     },
     "filters": {
+        "status": "وضعیت",
+        "return_status": "برگشتی",
         "title": "فیلترها",
         "report": "گزارش",
         "branch": "شعبه",
@@ -158,6 +160,7 @@
         "expired_count": "منقضی شده"
     },
     "columns": {
+        "return_status": "وضعیت برگشت",
         "no": "شماره",
         "section": "بخش",
         "account_name": "نام حساب",
@@ -316,6 +319,16 @@
         "net_margin": "حاشیهٔ سود",
         "cost_center": "مرکز هزینه",
         "transaction_count": "تعداد اسناد"
+    },
+    "document_statuses": {
+        "posted": "ثبت شده",
+        "draft": "پیش‌نویس",
+        "reversed": "باطل شده"
+    },
+    "return_statuses": {
+        "full": "کاملاً برگشت شده",
+        "partial": "برگشت جزئی",
+        "none": "برگشت نشده"
     },
     "view_types": {
         "general": "عمومی",

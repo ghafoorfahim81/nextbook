@@ -28,6 +28,8 @@
         "hr_description": "Payroll, attendance, leave and staffing."
     },
     "filters": {
+        "status": "Status",
+        "return_status": "Returns",
         "title": "Filters",
         "report": "Report",
         "branch": "Branch",
@@ -158,6 +160,7 @@
         "expired_count": "Already expired"
     },
     "columns": {
+        "return_status": "Return status",
         "no": "No.",
         "section": "Section",
         "account_name": "Account Name",
@@ -316,6 +319,16 @@
         "net_margin": "Net Margin",
         "cost_center": "Cost Center",
         "transaction_count": "Entries"
+    },
+    "document_statuses": {
+        "posted": "Posted",
+        "draft": "Draft",
+        "reversed": "Reversed"
+    },
+    "return_statuses": {
+        "full": "Fully returned",
+        "partial": "Partially returned",
+        "none": "Not returned"
     },
     "view_types": {
         "general": "General view",
