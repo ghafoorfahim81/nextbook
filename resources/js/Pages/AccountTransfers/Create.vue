@@ -15,10 +15,12 @@ import { useAccountTransferBalances } from '@/composables/useAccountTransferBala
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { useSaveShortcut } from '@/composables/useSaveShortcut'
+import { todayValueForCalendar } from '@/utils/dateDefaults'
 
 const { t } = useI18n()
 
 const page = usePage()
+const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const bankAccounts = computed(() => page.props.bankAccounts?.data ?? page.props.bankAccounts ?? [])
@@ -51,16 +53,33 @@ const { fromAccountBalanceText, toAccountBalanceText } = useAccountTransferBalan
 const handleCancel = () => {
   router.visit(route('account-transfers.index'))
 }
+// Home currency and its rate are the defaults on a fresh form.
+function applyBaseCurrency() {
+  const base = currencies.value.find(c => c.is_base_currency)
+  if (base) {
+    form.selected_currency = base
+    form.currency_id = base.id
+    form.rate = base.exchange_rate
+  }
+}
+
 watch(currencies, (list) => {
   if (list && list.length && !form.currency_id) {
-    const base = list.find(c => c.is_base_currency)
-    if (base) {
-      form.selected_currency = base
-      form.currency_id = base.id
-      form.rate = base.exchange_rate
-    }
+    applyBaseCurrency()
   }
 }, { immediate: true })
+
+// "Create and new" lands back on this page with a freshly computed number;
+// a plain reset() would restore the stale one and drop the default currency,
+// rate and date.
+function resetForNext() {
+  form.reset()
+  form.clearErrors()
+  form.number = page.props.latestNumber ?? ''
+  form.date = todayValueForCalendar(calendarType.value)
+  form.attachments = []
+  applyBaseCurrency()
+}
 
 function handleSelectChange(field, value) {
   form[field] = value
@@ -82,8 +101,8 @@ const handleSubmitAction = (createAndNew = false) => {
                 class: 'bg-green-600',
             });
             if (isCreateAndNew) {
-                form.reset();
                 form.transform((d) => d); // Reset transform to identity
+                resetForNext();
             }
         },
         // Any shared callbacks like onError can go here
