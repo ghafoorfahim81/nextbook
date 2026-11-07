@@ -496,7 +496,7 @@ function expiryBadgeDate(dateStr) {
                     :has-add-button="false"
                 />
                 <div class="flex items-end gap-2">
-                    <Button type="button" class="h-10 shrink-0 gap-1.5" @click="applyScope">
+                    <Button type="button" variant="outline" class="h-10 shrink-0 gap-1.5 border-primary text-primary hover:bg-primary hover:text-white" @click="applyScope">
                         <Filter class="size-4" />
                         {{ t('item.pricing_apply_filter') }}
                     </Button>
@@ -552,8 +552,8 @@ function expiryBadgeDate(dateStr) {
                     </div>
                     <Button
                         type="button"
-                        variant="secondary"
-                        class="h-10 shrink-0 gap-1.5"
+                        variant="outline"
+                        class="h-10 shrink-0 gap-1.5 border-primary text-primary hover:bg-primary hover:text-white"
                         :disabled="!canEdit"
                         @click="applyBulk"
                     >

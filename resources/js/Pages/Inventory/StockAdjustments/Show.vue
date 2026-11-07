@@ -73,7 +73,20 @@ const postAdjustment = () => {
 const reverseAdjustment = (reason) => {
     submit(route('stock-adjustments.reverse', adjustmentData.value.id), { reason }, {
         preserveScroll: true,
-        onSuccess: () => { reverseDialogOpen.value = false },
+        onSuccess: () => {
+            // A refused reversal (e.g. the added stock was already sold)
+            // redirects back with a flash error: say why and leave the dialog open.
+            const flashError = page.props.flash?.error
+            if (flashError) {
+                toast({
+                    title: t('general.error') ?? 'Error',
+                    description: flashError,
+                    variant: 'destructive',
+                })
+                return
+            }
+            reverseDialogOpen.value = false
+        },
     })
 }
 </script>

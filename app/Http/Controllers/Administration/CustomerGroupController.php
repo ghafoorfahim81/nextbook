@@ -37,7 +37,7 @@ class CustomerGroupController extends Controller
     public function store(CustomerGroupRequest $request)
     {
         CustomerGroup::create($request->validated());
-        return back()->with('success', __('general.created_successfully'));
+        return back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.customer_group')]));
     }
 
     /**
@@ -62,7 +62,7 @@ class CustomerGroupController extends Controller
     public function update(CustomerGroupRequest $request, CustomerGroup $customerGroup)
     {
         $customerGroup->update($request->validated());
-        return back()->with('success', __('general.updated_successfully'));
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.customer_group')]));
     }
 
     /**
@@ -71,6 +71,6 @@ class CustomerGroupController extends Controller
     public function destroy(CustomerGroup $customerGroup)
     {
         $customerGroup->delete();
-        return back()->with('success', __('general.deleted_successfully'));
+        return back()->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.customer_group')]));
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\CompanySpecific;
+use App\Traits\HasCompany;
 use App\Traits\HasSearch;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -11,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PaymentTerm extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasUserAuditable, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasUserAuditable, HasCompany, CompanySpecific, SoftDeletes;
 
     protected $fillable = ['name', 'days', 'type', 'company_id', 'created_by', 'updated_by'];
 

@@ -37,7 +37,7 @@ class PaymentTermController extends Controller
     public function store(PaymentTermRequest $request)
     {
         PaymentTerm::create($request->validated());
-        return back()->with('success', __('general.created_successfully'));
+        return back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment_term')]));
     }
 
     /**
@@ -62,7 +62,7 @@ class PaymentTermController extends Controller
     public function update(PaymentTermRequest $request, PaymentTerm $paymentTerm)
     {
         $paymentTerm->update($request->validated());
-        return back()->with('success', __('general.updated_successfully'));
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment_term')]));
     }
 
     /**
@@ -71,6 +71,6 @@ class PaymentTermController extends Controller
     public function destroy(PaymentTerm $paymentTerm)
     {
         $paymentTerm->delete();
-        return back()->with('success', __('general.deleted_successfully'));
+        return back()->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.payment_term')]));
     }
 }
