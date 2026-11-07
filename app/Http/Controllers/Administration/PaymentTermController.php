@@ -61,6 +61,7 @@ class PaymentTermController extends Controller
      */
     public function update(PaymentTermRequest $request, PaymentTerm $paymentTerm)
     {
+        $this->ensureOwn($paymentTerm);
         $paymentTerm->update($request->validated());
         return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment_term')]));
     }
@@ -68,8 +69,22 @@ class PaymentTermController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    /**
+     * The standard list every company shares is read-only: a company changes
+     * only the entries it added itself.
+     */
+    private function ensureOwn(PaymentTerm $paymentTerm): void
+    {
+        if ($paymentTerm->isShared()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'name' => __('general.shared_reference_readonly'),
+            ]);
+        }
+    }
+
     public function destroy(PaymentTerm $paymentTerm)
     {
+        $this->ensureOwn($paymentTerm);
         $paymentTerm->delete();
         return back()->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.payment_term')]));
     }

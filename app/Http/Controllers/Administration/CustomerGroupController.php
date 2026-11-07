@@ -61,6 +61,7 @@ class CustomerGroupController extends Controller
      */
     public function update(CustomerGroupRequest $request, CustomerGroup $customerGroup)
     {
+        $this->ensureOwn($customerGroup);
         $customerGroup->update($request->validated());
         return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.customer_group')]));
     }
@@ -68,8 +69,22 @@ class CustomerGroupController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    /**
+     * The standard list every company shares is read-only: a company changes
+     * only the entries it added itself.
+     */
+    private function ensureOwn(CustomerGroup $customerGroup): void
+    {
+        if ($customerGroup->isShared()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'name_en' => __('general.shared_reference_readonly'),
+            ]);
+        }
+    }
+
     public function destroy(CustomerGroup $customerGroup)
     {
+        $this->ensureOwn($customerGroup);
         $customerGroup->delete();
         return back()->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.customer_group')]));
     }

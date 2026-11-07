@@ -79,6 +79,7 @@ return [
     'attachment_too_large' => 'حجم :name از محدودیت :size مگابایت بیشتر است.',
 
     'created_successfully' => ':resource با موفقیت ایجاد شد.',
+    'shared_reference_readonly' => 'این مورد استاندارد و مشترک بین همهٔ شرکت‌هاست و قابل تغییر نیست. مورد خودتان را اضافه کنید.',
     'reversed_successfully' => ':resource با موفقیت باطل شد.',
     'updated_successfully' => ':resource با موفقیت به‌روزرسانی شد.',
     'deleted_successfully' => ':resource با موفقیت حذف شد.',

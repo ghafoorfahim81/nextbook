@@ -79,6 +79,7 @@ return [
     'attachment_too_large' => ':name د :size MB له حد څخه اوړي.',
 
     'created_successfully' => ':resource په بریالیتوب سره جوړ شو.',
+    'shared_reference_readonly' => 'دا معیاري توکی دی چې د ټولو شرکتونو ترمنځ ګډ دی او بدلېدای نشي. خپل ځانګړی اضافه کړئ.',
     'reversed_successfully' => ':resource په بریالیتوب سره باطل شو.',
     'updated_successfully' => ':resource په بریالیتوب سره تازه شو.',
     'deleted_successfully' => ':resource په بریالیتوب سره ړنګ شو.',

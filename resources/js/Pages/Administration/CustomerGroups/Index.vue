@@ -32,6 +32,8 @@ const deleteItem = (id) => {
         <CreateEditModal :is-dialog-open="isDialogOpen" :editing-item="editingItem" @update:is-dialog-open="isDialogOpen = $event" @saved="editingItem = null" />
         <DataTable
             can="customer_groups"
+            :can-edit-item="(row) => !!row.company_id"
+            :can-delete-item="(row) => !!row.company_id"
             :items="customerGroups"
             :columns="columns"
             :title="t('admin.customer_group.customer_groups')"

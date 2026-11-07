@@ -99,6 +99,31 @@ class ListScreensRenderTest extends TestCase
         $this->assertSoftDeleted('customer_groups', ['id' => $group->id]);
     }
 
+    public function test_the_shared_seeded_list_is_visible_but_read_only(): void
+    {
+        $sharedId = (string) \Illuminate\Support\Str::ulid();
+        // Written as the owner, the way the seeder does it.
+        $this->asSchemaOwner(fn () => \Illuminate\Support\Facades\DB::table('customer_groups')->insert([
+            'id' => $sharedId,
+            'company_id' => null,
+            'name_en' => 'Seeded Wholesale',
+            'local_name' => 'عمده',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]));
+        $shared = CustomerGroup::query()->findOrFail($sharedId);
+
+        $this->get(route('customer-groups.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('customerGroups.data.0.name_en', 'Seeded Wholesale'));
+
+        $this->patch(route('customer-groups.update', $shared->id), ['name_en' => 'Hacked', 'local_name' => 'x'])
+            ->assertSessionHasErrors('name_en');
+        $this->delete(route('customer-groups.destroy', $shared->id))->assertSessionHasErrors('name_en');
+
+        $this->assertSame('Seeded Wholesale', $shared->fresh()->name_en);
+    }
+
     public function test_the_payment_terms_list_renders_with_usable_pagination(): void
     {
         $this->get(route('payment-terms.index'))

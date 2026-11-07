@@ -79,6 +79,7 @@ return [
     'attachment_too_large' => ':name exceeds the :size MB limit.',
 
     'created_successfully' => ':resource created successfully.',
+    'shared_reference_readonly' => 'This is a standard entry shared by all companies and cannot be changed. Add your own instead.',
     'reversed_successfully' => ':resource reversed successfully.',
     'updated_successfully' => ':resource updated successfully.',
     'deleted_successfully' => ':resource deleted successfully.',

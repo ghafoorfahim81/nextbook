@@ -26,6 +26,6 @@ const deleteItem = (id) => deleteResource('payment-terms.destroy', id, {
 <template>
     <AppLayout :title="t('admin.payment_term.payment_terms')">
         <CreateEditModal :is-dialog-open="isDialogOpen" :editing-item="editingItem" @update:is-dialog-open="isDialogOpen = $event" @saved="editingItem = null" />
-        <DataTable can="payment_terms" :items="paymentTerms" :columns="columns" :title="t('admin.payment_term.payment_terms')" url="payment-terms.index" :show-add-button="true" :add-title="t('admin.payment_term.payment_term')" add-action="modal" @add="isDialogOpen = true" @edit="editItem" @delete="deleteItem" />
+        <DataTable can="payment_terms" :can-edit-item="(row) => !!row.company_id" :can-delete-item="(row) => !!row.company_id" :items="paymentTerms" :columns="columns" :title="t('admin.payment_term.payment_terms')" url="payment-terms.index" :show-add-button="true" :add-title="t('admin.payment_term.payment_term')" add-action="modal" @add="isDialogOpen = true" @edit="editItem" @delete="deleteItem" />
     </AppLayout>
 </template>
