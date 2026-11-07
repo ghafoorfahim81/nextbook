@@ -916,16 +916,16 @@ class ReportService
         $netSql = "($documentNetSql * COALESCE(t.rate, 1))";
 
         $query = DB::table('sales as s')
-            ->leftJoin('ledgers as l', function ($join) use ($branchId) {
+            ->leftJoin('ledgers as l', function ($join) use ($companyId) {
                 $join->on('l.id', '=', 's.customer_id')
                     ->where('l.company_id', '=', $companyId)
                     ->whereNull('l.deleted_at');
             })
-            ->join('transactions as t', function ($join) use ($branchId) {
+            ->join('transactions as t', function ($join) use ($branchId, $filters) {
                 $join->on('t.reference_id', '=', 's.id')
                     ->where('t.reference_type', Sale::class)
                     ->where('t.branch_id', $branchId)
-                    ->where('t.status', TransactionStatus::POSTED->value)
+                    ->when($this->postedOnly($filters), fn ($j) => $j->where('t.status', '=', TransactionStatus::POSTED->value))
                     ->whereNull('t.deleted_at');
             })
             ->where('s.branch_id', $branchId)
@@ -934,6 +934,7 @@ class ReportService
             // Important: filter by currency on the joined transactions table, not sales
             ->when($filters['currency_id'], fn ($q, $v) => $q->where('t.currency_id', $v))
             ->when($filters['type'], fn ($q, $v) => $q->where('s.type', $v))
+            ->tap(fn ($q) => $this->applyDocumentStatusFilters($q, $filters, 's', 'sale'))
             ->when($filters['warehouse_id'], fn ($q, $v) => $q->whereExists(function ($sub) use ($v) {
                 $sub->select(DB::raw('1'))
                     ->from('sale_items as si_w')
@@ -959,6 +960,7 @@ class ReportService
             ->selectRaw('s.type')
             ->selectRaw('s.status')
             ->selectRaw('s.payment_status')
+            ->selectRaw($this->returnStatusSql('sale', 's') . ' as return_status')
             ->selectRaw("$netSql as amount");
 
 
@@ -972,6 +974,7 @@ class ReportService
                 'type'           => \App\Enums\SalePurchaseType::tryFrom((string) $row->type)?->getLabel() ?? (string) $row->type,
                 'status'         => \App\Enums\TransactionStatus::tryFrom((string) $row->status)?->getLabel() ?? (string) $row->status,
                 'payment_status' => \App\Enums\PaymentStatus::tryFrom((string) $row->payment_status)?->getLabel() ?? (string) $row->payment_status,
+                'return_status'  => $this->returnStatusLabel($row->return_status),
                 'payment_status_value' => (string) $row->payment_status,
                 'amount'         => $this->moneyValue($row->amount),
             ],
@@ -1001,7 +1004,7 @@ class ReportService
                 $join->on('t.reference_id', '=', 's.id')
                     ->where('t.reference_type', '=', Sale::class)
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->when($this->postedOnly($filters), fn ($j) => $j->where('t.status', '=', TransactionStatus::POSTED->value))
                     ->whereNull('t.deleted_at');
             })
             ->join('sale_items as si', function ($join) use ($filters) {
@@ -1030,7 +1033,8 @@ class ReportService
             ->where('s.branch_id', $filters['branch_id'])
             ->whereNull('s.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('si.item_id', $itemId))
-            ->when($filters['warehouse_id'], fn ($q, $v) => $q->where('si.warehouse_id', $v));
+            ->when($filters['warehouse_id'], fn ($q, $v) => $q->where('si.warehouse_id', $v))
+            ->tap(fn ($q) => $this->applyDocumentStatusFilters($q, $filters, 's', 'sale'));
 
         $this->applyVariantFilter($query, $filters, 'si.variant_id');
         $this->applyDateFilter($query, 's.date', $filters);
@@ -1104,14 +1108,14 @@ class ReportService
         $netSql = "($documentNetSql * COALESCE(t.rate, 1))";
 
         $query = DB::table('purchases as p')
-            ->leftJoin('transactions as t', function ($join) use ($branchId) {
+            ->leftJoin('transactions as t', function ($join) use ($branchId, $filters) {
                 $join->on('t.reference_id', '=', 'p.id')
                     ->where('t.reference_type', '=', Purchase::class)
                     ->where('t.branch_id', '=', $branchId)
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->when($this->postedOnly($filters), fn ($j) => $j->where('t.status', '=', TransactionStatus::POSTED->value))
                     ->whereNull('t.deleted_at');
             })
-            ->leftJoin('ledgers as l', function ($join) use ($branchId) {
+            ->leftJoin('ledgers as l', function ($join) use ($companyId) {
                 $join->on('l.id', '=', 'p.supplier_id')
                     ->where('l.company_id', '=', $companyId)
                     ->whereNull('l.deleted_at');
@@ -1123,6 +1127,7 @@ class ReportService
             // Change currency_id filter to use t.currency_id not p.currency_id:
             ->when($filters['currency_id'], fn ($q, $v) => $q->where('t.currency_id', $v))
             ->when($filters['type'], fn ($q, $v) => $q->where('p.type', $v))
+            ->tap(fn ($q) => $this->applyDocumentStatusFilters($q, $filters, 'p', 'purchase'))
             ->when($filters['warehouse_id'], fn ($q, $v) => $q->whereExists(function ($sub) use ($v) {
                 $sub->select(DB::raw('1'))
                     ->from('purchase_items as pi_w')
@@ -1148,6 +1153,7 @@ class ReportService
             ->selectRaw("COALESCE(l.name, '-') as supplier")
             ->selectRaw('p.type')
             ->selectRaw('p.status')
+            ->selectRaw($this->returnStatusSql('purchase', 'p') . ' as return_status')
             ->selectRaw("$netSql as amount");
 
         return $this->paginateReport(
@@ -1159,6 +1165,7 @@ class ReportService
                 'supplier' => $row->supplier,
                 'type'     => \App\Enums\SalePurchaseType::tryFrom((string) $row->type)?->getLabel() ?? (string) $row->type,
                 'status'   => \App\Enums\TransactionStatus::tryFrom((string) $row->status)?->getLabel() ?? (string) $row->status,
+                'return_status' => $this->returnStatusLabel($row->return_status),
                 'amount'   => $this->moneyValue($row->amount),
             ],
             [
@@ -1184,7 +1191,7 @@ class ReportService
                 $join->on('t.reference_id', '=', 'p.id')
                     ->where('t.reference_type', '=', Purchase::class)
                     ->where('t.branch_id', '=', $filters['branch_id'])
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->when($this->postedOnly($filters), fn ($j) => $j->where('t.status', '=', TransactionStatus::POSTED->value))
                     ->whereNull('t.deleted_at');
             })
             ->join('purchase_items as pi', function ($join) use ($filters) {
@@ -1208,7 +1215,8 @@ class ReportService
             ->where('p.branch_id', $filters['branch_id'])
             ->whereNull('p.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('pi.item_id', $itemId))
-            ->when($filters['warehouse_id'], fn ($q, $v) => $q->where('pi.warehouse_id', $v));
+            ->when($filters['warehouse_id'], fn ($q, $v) => $q->where('pi.warehouse_id', $v))
+            ->tap(fn ($q) => $this->applyDocumentStatusFilters($q, $filters, 'p', 'purchase'));
 
         $this->applyVariantFilter($query, $filters, 'pi.variant_id');
         $this->applyDateFilter($query, 'p.date', $filters);
@@ -1507,6 +1515,7 @@ class ReportService
                     ->where('s.branch_id', '=', $filters['branch_id'])
                     ->whereNull('s.deleted_at');
             })
+            ->leftJoin('item_variants as iv', 'iv.id', '=', 'sm.variant_id')
             ->leftJoin('unit_measures as u', function ($join) use ($filters) {
                 $join->on('u.id', '=', 'sm.unit_measure_id')
                     // ->where('u.branch_id', '=', $filters['branch_id'])
@@ -1532,6 +1541,9 @@ class ReportService
             ->selectRaw('sm.id as id')
             ->selectRaw('sm.date')
             ->selectRaw('i.name as item')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('iv.name as variant_name')
+            ->selectRaw('iv.attributes as variant_attributes')
             ->selectRaw('w.name as warehouse')
             ->selectRaw('u.name as unit_measure')
             // Fetch movement_type as the raw enum value, and fetch the translated movement_type using a CASE statement or helper mapping
@@ -1568,6 +1580,7 @@ class ReportService
                 'id' => $row->id,
                 'date' => $this->displayDate($row->date),
                 'item' => $row->item,
+                'variant' => $row->variant_name || $row->variant_attributes ? $this->variantRowLabel($row) : null,
                 'warehouse' => $row->warehouse,
                 'movement_type' => $row->movement_type,
                 'unit_measure' => $row->unit_measure,
@@ -3905,6 +3918,59 @@ class ReportService
     }
 
     /**
+     * Sales and purchases report posted documents only, unless the user asks for
+     * drafts or reversed ones: a draft's transaction is not posted yet and a
+     * reversed document's is marked reversed, so the join must not insist on it.
+     */
+    protected function postedOnly(array $filters): bool
+    {
+        return in_array($filters['status'] ?? 'posted', ['', 'posted'], true);
+    }
+
+    /**
+     * Document-level filters shared by the sales and purchase reports: the
+     * document's own status, and how much of it came back as a return.
+     */
+    protected function applyDocumentStatusFilters(Builder $query, array $filters, string $alias, string $kind): Builder
+    {
+        $status = $filters['status'] ?? null;
+
+        if (in_array($status, ['draft', 'reversed'], true)) {
+            $query->where("{$alias}.status", $status);
+        }
+
+        if (in_array($filters['return_status'] ?? null, ['full', 'partial', 'none'], true)) {
+            $query->whereRaw($this->returnStatusSql($kind, $alias) . ' = ?', [$filters['return_status']]);
+        }
+
+        return $query;
+    }
+
+    /**
+     * none / partial / full: posted returns against a document's lines compared
+     * with what the document sold or bought.
+     */
+    protected function returnStatusSql(string $kind, string $alias): string
+    {
+        [$items, $returnItems, $returns, $fk, $lineFk] = $kind === 'sale'
+            ? ['sale_items', 'sale_return_items', 'sale_returns', 'sale_id', 'sale_item_id']
+            : ['purchase_items', 'purchase_return_items', 'purchase_returns', 'purchase_id', 'purchase_item_id'];
+
+        $total = "(SELECT COALESCE(SUM(x.quantity), 0) FROM {$items} x WHERE x.{$fk} = {$alias}.id AND x.deleted_at IS NULL)";
+        $returned = "(SELECT COALESCE(SUM(ri.quantity), 0) FROM {$returnItems} ri"
+            . " JOIN {$returns} r ON r.id = ri.{$kind}_return_id"
+            . " JOIN {$items} x ON x.id = ri.{$lineFk}"
+            . " WHERE x.{$fk} = {$alias}.id AND r.status = 'posted' AND r.deleted_at IS NULL AND ri.deleted_at IS NULL)";
+
+        return "(CASE WHEN {$returned} <= 0 THEN 'none' WHEN {$returned} >= {$total} THEN 'full' ELSE 'partial' END)";
+    }
+
+    protected function returnStatusLabel(?string $status): string
+    {
+        return $this->reportTranslation('return_statuses.' . ($status ?: 'none'), (string) $status);
+    }
+
+    /**
      * Narrow a report to one variant, when the filters name one.
      *
      * Every stock and line table carries variant_id, so the only thing that
@@ -4385,13 +4451,13 @@ class ReportService
             'cash_book' => ['date', 'reference', 'description', 'currency', 'rate', 'debit', 'credit', 'running_balance', 'running_balance_label'],
             'cash_position_by_currency' => ['currency', 'currency_name', 'account_name', 'amount', 'home_equivalent'],
             'sales_report' => $viewType === 'general'
-                ? ['date', 'number', 'customer', 'type', 'status', 'payment_status', 'amount']
+                ? ['date', 'number', 'customer', 'type', 'status', 'return_status', 'payment_status', 'amount']
                 : ['date', 'sale_number', 'customer', 'item', 'variant', 'quantity', 'unit_price', 'discount', 'total_amount'],
             'purchase_report' => $viewType === 'general'
-                ? ['date', 'number', 'supplier', 'type', 'status', 'amount']
+                ? ['date', 'number', 'supplier', 'type', 'status', 'return_status', 'amount']
                 : ['date', 'purchase_number', 'supplier', 'item', 'variant', 'quantity', 'unit_price', 'discount', 'total_amount'],
             'inventory_stock' => ['item', 'warehouse', 'quantity', 'average_cost', 'total_value'],
-            'stock_movement' => ['date', 'item', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
+            'stock_movement' => ['date', 'item', 'variant', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
             'stock_adjustment_report' => ['date', 'reference', 'item', 'warehouse', 'type', 'reason', 'quantity', 'unit_measure', 'unit_cost', 'total_cost', 'batch', 'expire_date', 'status', 'notes'],
             'low_stock' => ['item', 'warehouse', 'quantity', 'reorder_level'],
             'inventory_valuation' => ['item', 'quantity', 'average_cost', 'total_value'],
@@ -4642,6 +4708,8 @@ class ReportService
             'warehouse_id' => $this->nullableString($filters['warehouse_id'] ?? null),
             'reason' => $this->nullableString($filters['reason'] ?? null),
             'type' => $this->nullableString($filters['type'] ?? null),
+            'status' => in_array($filters['status'] ?? '', ['posted', 'draft', 'reversed'], true) ? $filters['status'] : 'posted',
+            'return_status' => in_array($filters['return_status'] ?? '', ['full', 'partial', 'none'], true) ? $filters['return_status'] : null,
             'balance_type' => $this->normalizeBalanceType($filters['balance_type'] ?? null),
             'category_id' => $this->nullableString($filters['category_id'] ?? null),
             'expense_account_id' => $this->nullableString($filters['expense_account_id'] ?? null),
@@ -4780,6 +4848,16 @@ class ReportService
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
+            'document_statuses' => [
+                ['id' => 'posted', 'name' => $this->reportTranslation('document_statuses.posted', 'Posted')],
+                ['id' => 'draft', 'name' => $this->reportTranslation('document_statuses.draft', 'Draft')],
+                ['id' => 'reversed', 'name' => $this->reportTranslation('document_statuses.reversed', 'Reversed')],
+            ],
+            'return_statuses' => [
+                ['id' => 'full', 'name' => $this->reportTranslation('return_statuses.full', 'Fully returned')],
+                ['id' => 'partial', 'name' => $this->reportTranslation('return_statuses.partial', 'Partially returned')],
+                ['id' => 'none', 'name' => $this->reportTranslation('return_statuses.none', 'Not returned')],
+            ],
             'sale_types' => collect(\App\Enums\SalePurchaseType::cases())
                 ->map(fn ($case) => ['id' => $case->value, 'name' => $case->getLabel()])
                 ->all(),

@@ -82,6 +82,8 @@ class ReportController extends Controller
             'variant_id' => ['nullable', 'string', 'exists:item_variants,id'],
             'reason' => ['nullable', 'string', Rule::in(\App\Enums\StockAdjustmentReason::values())],
             'type' => ['nullable', 'string'],
+            'status' => ['nullable', 'string', Rule::in(['posted', 'draft', 'reversed'])],
+            'return_status' => ['nullable', 'string', Rule::in(['full', 'partial', 'none'])],
             'balance_type' => ['nullable', 'string', Rule::in(['all', 'debtor', 'creditor'])],
             'view_type' => ['nullable', 'string', Rule::in(['general', 'itemwise'])],
             'category_id' => ['nullable', 'string', 'exists:expense_categories,id'],

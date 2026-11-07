@@ -18,6 +18,8 @@ const accounts = computed(() => page.props.accounts?.data || [])
 const account = computed(() => page.props.account?.data || {})
 const accountTypes = computed(() => page.props.accountTypes?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
+// The opening balance is frozen once another transaction has touched the account.
+const openingLocked = computed(() => Boolean(page.props.openingLocked))
 const homeCurrency = computed(() => page.props.homeCurrency || {})
 const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
 
@@ -165,8 +167,11 @@ const saveFormRef = useSaveShortcut({ form });
                 <div class="md:col-span-3 mt-4" v-if="form?.selected_account_type?.allows_opening">
                     <div class="pt-2">
                         <span class="font-bold">{{ t('item.opening') }}  </span>
+                        <p v-if="openingLocked" class="mt-1 text-sm text-muted-foreground">
+                            {{ t('general.account_opening_locked') }}
+                        </p>
                         <div class="mt-3">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2" :class="{ 'pointer-events-none opacity-60': openingLocked }">
                                 <NextSelect
                                 :options="currencies"
                                 v-model="form.selected_currency"
@@ -180,7 +185,7 @@ const saveFormRef = useSaveShortcut({ form });
                                 resource-type="currencies"
                                 :search-fields="['name', 'code', 'symbol']"
                                  />
-                                <NextInput :placeholder="t('general.rate')" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                                <NextInput :placeholder="t('general.rate')" :disabled="openingLocked || form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
                                 <NextSelect
                                 :options="transactionTypeOptions"
                                 v-model="form.transaction_type"

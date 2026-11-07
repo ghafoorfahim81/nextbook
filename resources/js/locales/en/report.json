@@ -28,6 +28,8 @@
         "hr_description": "Payroll, attendance, leave and staffing."
     },
     "filters": {
+        "status": "Status",
+        "return_status": "Returns",
         "title": "Filters",
         "report": "Report",
         "branch": "Branch",
@@ -158,6 +160,7 @@
         "expired_count": "Already expired"
     },
     "columns": {
+        "return_status": "Return status",
         "no": "No.",
         "section": "Section",
         "account_name": "Account Name",
@@ -222,6 +225,11 @@
         "reorder_level": "Reorder level",
         "reference_number": "Reference number",
         "expire_date": "Expire date",
+        "measure_short": "Measure",
+        "price_short": "Price",
+        "source_short": "Source",
+        "expiry_short": "Expiry",
+        "reference_short": "Reference #",
         "batch": "Batch",
         "number": "Number",
         "type": "Type",
@@ -311,6 +319,16 @@
         "net_margin": "Net Margin",
         "cost_center": "Cost Center",
         "transaction_count": "Entries"
+    },
+    "document_statuses": {
+        "posted": "Posted",
+        "draft": "Draft",
+        "reversed": "Reversed"
+    },
+    "return_statuses": {
+        "full": "Fully returned",
+        "partial": "Partially returned",
+        "none": "Not returned"
     },
     "view_types": {
         "general": "General view",

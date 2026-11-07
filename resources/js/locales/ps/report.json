@@ -28,6 +28,8 @@
         "hr_description": "معاشونه، حاضري، رخصتي او کارکوونکي."
     },
     "filters": {
+        "status": "حالت",
+        "return_status": "بیرته ګرځېدنه",
         "title": "فلټرونه",
         "report": "راپور",
         "branch": "څانګه",
@@ -158,6 +160,7 @@
         "expired_count": "پای ته رسېدلي"
     },
     "columns": {
+        "return_status": "د بیرته ګرځېدو حالت",
         "no": "شماره",
         "section": "بخش",
         "account_name": "نام حساب",
@@ -221,6 +224,11 @@
         "reorder_level": "د بیا فرمایش کچه",
         "reference_number": "د مرجع شماره",
         "expire_date": "د ختمېدو نېټه",
+        "measure_short": "واحد",
+        "price_short": "قیمت",
+        "source_short": "سرچینه",
+        "expiry_short": "پای",
+        "reference_short": "# مرجع",
         "batch": "د بچ شماره",
         "number": "شمېره",
         "type": "ډول",
@@ -311,6 +319,16 @@
         "net_margin": "د ګټې سلنه",
         "cost_center": "د لګښت مرکز",
         "transaction_count": "د اسنادو شمېر"
+    },
+    "document_statuses": {
+        "posted": "ثبت شوی",
+        "draft": "مسوده",
+        "reversed": "باطل شوی"
+    },
+    "return_statuses": {
+        "full": "بشپړ بیرته ګرځول شوی",
+        "partial": "یوه برخه بیرته ګرځول شوې",
+        "none": "بیرته نه دی ګرځول شوی"
     },
     "view_types": {
         "general": "عمومي لید",

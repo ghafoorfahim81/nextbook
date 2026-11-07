@@ -547,10 +547,26 @@ class AccountController extends Controller
         $chart_of_account->load(['accountType','opening', 'opening.transaction.currency','opening.transaction.lines', 'parent']);
         return inertia('Accounts/Accounts/Edit', [
             'account' => new AccountResource($chart_of_account),
+            'openingLocked' => $this->openingIsLocked($chart_of_account),
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
             'accountTypes' => AccountTypeResource::collection(AccountType::orderBy('created_at','asc')->get()),
         ]);
+    }
+
+    /**
+     * The opening balance can be corrected only until the account is used: once
+     * any other transaction has touched it, re-posting the opening would quietly
+     * rewrite the history those entries were booked against.
+     */
+    private function openingIsLocked(Account $account): bool
+    {
+        $openingTransactionId = $account->opening?->transaction_id;
+
+        return TransactionLine::query()
+            ->where('account_id', $account->id)
+            ->when($openingTransactionId, fn ($q) => $q->where('transaction_id', '!=', $openingTransactionId))
+            ->exists();
     }
 
     public function update(AccountUpdateRequest $request, Account $chart_of_account)
@@ -558,9 +574,15 @@ class AccountController extends Controller
         $validated = $request->validated();
         $validated['slug'] = Str::slug($validated['name']);
 
-        DB::transaction(function () use ($chart_of_account, $validated) {
+        $openingLocked = $this->openingIsLocked($chart_of_account);
+
+        DB::transaction(function () use ($chart_of_account, $validated, $openingLocked) {
             $chart_of_account->update($validated);
             $chart_of_account->unsetRelation('accountType');
+
+            if ($openingLocked) {
+                return;
+            }
 
             // The opening is re-posted from the form, so drop the old one first.
             if ($chart_of_account->opening) {
