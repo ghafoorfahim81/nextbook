@@ -71,8 +71,8 @@
     "customer_groups": "گروه‌های مشتری",
     "deleted_records": "رکوردهای حذف‌شده",
     "discount_rules": "قوانین تخفیف",
-    "landed_costs": "هزینه‌های ورود",
-    "landed_cost_categories": "دسته‌های هزینه ورود",
+    "landed_costs": "مصارف اجناس",
+    "landed_cost_categories": "دسته‌های مصارف اجناس",
     "payment_terms": "شرایط پرداخت",
     "activity_logs": "فعالیت کاربران"
 }

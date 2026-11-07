@@ -407,6 +407,7 @@
             "receipt": "رسید",
             "payment": "تادیه",
             "account_transfer": "د حساب انتقال",
+            "landed_cost": "د اجناسو لګښت",
             "item_transfer": "د جنس انتقال",
             "stock_adjustment": "د موجودۍ تعدیل",
             "drawing": "برداشت",

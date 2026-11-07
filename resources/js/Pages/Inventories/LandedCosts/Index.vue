@@ -15,12 +15,13 @@ const props = defineProps({
 });
 
 const columns = computed(() => ([
+  { key: 'number', label: t('landed_cost.number'), sortable: false },
   { key: 'purchase_number', label: t('landed_cost.purchase_order'), sortable: false },
   { key: 'date', label: t('general.date'), sortable: true },
   { key: 'total_cost', label: t('landed_cost.total_additional_cost'), sortable: true },
   { key: 'allocated_total', label: t('landed_cost.allocated_amount'), sortable: true },
   { key: 'allocation_method', label: t('landed_cost.allocation_method') },
-  { key: 'status', label: t('general.status') },
+  { key: 'status_label', label: t('general.status') },
   { key: 'actions', label: t('general.actions') },
 ]));
 
@@ -60,8 +61,8 @@ const showItem = (id) => {
 
 const deleteItem = (id) => {
   deleteResource('landed-costs.destroy', id, {
-    title: t('general.delete', { name: t('landed_cost.title') }),
-    name: t('landed_cost.title'),
+    title: t('general.delete', { name: t('landed_cost.singular') }),
+    name: t('landed_cost.singular'),
   });
 };
 </script>
@@ -83,7 +84,7 @@ const deleteItem = (id) => {
       @show="showItem"
       @edit="editItem"
       @delete="deleteItem"
-      :addTitle="t('landed_cost.title')"
+      :addTitle="t('landed_cost.singular')"
       :addAction="'redirect'"
       :addRoute="'landed-costs.create'"
     />

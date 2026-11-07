@@ -26,6 +26,7 @@ class LandedCostResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'purchase_id' => $this->purchase_id,
             'purchase_ids' => $this->whenLoaded('purchases', fn () => $this->purchases->pluck('id')->values()->all(), $this->purchase_id ? [$this->purchase_id] : []),
@@ -44,6 +45,12 @@ class LandedCostResource extends JsonResource
             'rate' => $this->whenLoaded('transaction', fn () => $this->transaction?->rate),
             'transaction_id' => $this->whenLoaded('transaction', fn () => $this->transaction?->id),
             'transaction_status' => $this->whenLoaded('transaction', fn () => $this->transaction?->status),
+            'transaction_status_label' => $this->whenLoaded('transaction', function () {
+                $txnStatus = $this->transaction?->status;
+                $txnStatus = $txnStatus instanceof \BackedEnum ? $txnStatus->value : (string) $txnStatus;
+
+                return \App\Enums\TransactionStatus::tryFrom($txnStatus)?->getLabel();
+            }),
             'category_allocations' => $this->whenLoaded('categoryAllocations', fn () => $this->categoryAllocations->map(fn ($row) => [
                 'id' => $row->id,
                 'landed_cost_category_id' => $row->landed_cost_category_id,
@@ -55,7 +62,10 @@ class LandedCostResource extends JsonResource
             'allocated_total' => $this->allocated_total,
             'allocation_method' => $allocationMethod?->getLabel() ?? $this->allocation_method,
             'allocation_method_id' => $allocationMethod?->value ?? $this->allocation_method,
-            'status' => $status?->getLabel() ?? $this->status,
+            // Raw value so the list can colour the pill and lock edit/delete
+            // on posted rows; the translated text travels as status_label.
+            'status' => $status?->value ?? $this->status,
+            'status_label' => $status?->getLabel() ?? $this->status,
             'status_id' => $status?->value ?? $this->status,
             'notes' => $this->notes,
             'items' => LandedCostItemResource::collection($this->whenLoaded('items')),

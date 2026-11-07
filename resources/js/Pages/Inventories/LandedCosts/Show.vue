@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useI18n } from 'vue-i18n';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
+import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { useAuth } from '@/composables/useAuth';
 import {
@@ -87,9 +88,17 @@ const statusBadgeClasses = computed(() => ({
   draft: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
   allocated: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300',
   posted: 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300',
+  reversed: 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
 }[record.value?.status_id] || 'border-border bg-muted text-foreground'));
 
-const canEdit = computed(() => record.value?.status_id !== 'posted' && can('landed_costs.update'));
+const isFinal = computed(() => ['posted', 'reversed'].includes(record.value?.status_id));
+const canEdit = computed(() => !isFinal.value && can('landed_costs.update'));
+const canReverse = computed(() => record.value?.status_id === 'posted' && can('landed_costs.post'));
+const txnBadgeClasses = computed(() => ({
+  draft: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  posted: 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300',
+  reversed: 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
+}[record.value?.transaction_status] || 'border-border bg-muted text-foreground'));
 
 const purchaseNumbersLabel = computed(() => {
   const numbers = record.value?.purchase_numbers?.length
@@ -154,12 +163,32 @@ const allocationDifference = computed(() => Number(record.value?.total_cost || 0
 const isFullyAllocated = computed(() => Math.abs(allocationDifference.value) <= 0.01);
 
 const canPost = computed(() =>
-  record.value?.status_id !== 'posted' && can('landed_costs.post') && isFullyAllocated.value
+  !isFinal.value && can('landed_costs.post') && isFullyAllocated.value
 );
 
 const posting = ref(false);
+const reversing = ref(false);
+const confirmPostOpen = ref(false);
+const confirmReverseOpen = ref(false);
+
+const notify = (ok, description) => toast({
+  title: ok ? t('general.success') : t('general.error'),
+  description,
+  variant: ok ? 'success' : 'destructive',
+  class: ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white',
+});
+
+// The post/reverse endpoints answer with a slimmer record (no creator, currency
+// or purchases), so reload the page props instead of swapping it in.
+const reloadRecord = () => router.reload({ only: ['landedCost'] });
+
+const errorMessage = (error, fallback) => error?.response?.data?.message
+  || Object.values(error?.response?.data?.errors || {})[0]?.[0]
+  || fallback;
 
 const postLandedCost = async () => {
+  confirmPostOpen.value = false;
+
   if (!record.value?.id || !canPost.value || posting.value) {
     return;
   }
@@ -167,29 +196,39 @@ const postLandedCost = async () => {
   posting.value = true;
 
   try {
-    const { data } = await axios.post(`/api/landed-costs/${record.value.id}/post`);
-    refreshRecord(data?.data);
-    toast({
-      title: t('general.success'),
-      description: t('general.completed_successfully', { resource: t('landed_cost.title') }),
-      variant: 'success',
-      class: 'bg-green-600 text-white',
-    });
+    await axios.post(`/api/landed-costs/${record.value.id}/post`);
+    reloadRecord();
+    notify(true, t('landed_cost.posted_success'));
   } catch (error) {
-    toast({
-      title: t('general.error'),
-      description: t('landed_cost.unable_to_post'),
-      variant: 'destructive',
-      class: 'bg-red-600 text-white',
-    });
+    notify(false, errorMessage(error, t('landed_cost.unable_to_post')));
   } finally {
     posting.value = false;
+  }
+};
+
+const reverseLandedCost = async () => {
+  confirmReverseOpen.value = false;
+
+  if (!record.value?.id || !canReverse.value || reversing.value) {
+    return;
+  }
+
+  reversing.value = true;
+
+  try {
+    await axios.post(`/api/landed-costs/${record.value.id}/reverse`);
+    reloadRecord();
+    notify(true, t('landed_cost.reversed_success'));
+  } catch (error) {
+    notify(false, errorMessage(error, t('general.error')));
+  } finally {
+    reversing.value = false;
   }
 };
 </script>
 
 <template>
-  <AppLayout :title="`${t('landed_cost.title')} #${record.number || record.id}`">
+  <AppLayout :title="`${t('landed_cost.singular')} #${record.number || record.id}`">
     <div class="space-y-6">
       <!-- Page header -->
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -203,7 +242,7 @@ const postLandedCost = async () => {
             size="sm"
             class="bg-green-600 text-white hover:bg-green-700"
             :disabled="posting"
-            @click="postLandedCost"
+            @click="confirmPostOpen = true"
           >
             <Truck class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
             {{ t('landed_cost.post') }}
@@ -218,16 +257,45 @@ const postLandedCost = async () => {
             <SquarePen class="h-4 w-4" />
             {{ t('datatable.edit') }}
           </Button>
+          <Button
+            v-if="canReverse"
+            variant="outline"
+            size="sm"
+            class="border-red-500 text-red-600 hover:bg-red-600 hover:text-white"
+            :disabled="reversing"
+            @click="confirmReverseOpen = true"
+          >
+            {{ t('landed_cost.reverse') }}
+          </Button>
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        :open="confirmPostOpen"
+        :title="t('landed_cost.post')"
+        :description="t('landed_cost.post_confirm')"
+        :cancel-text="t('general.cancel')"
+        :continue-text="t('general.confirm')"
+        @update:open="(v) => confirmPostOpen = v"
+        @confirm="postLandedCost"
+      />
+      <ConfirmDeleteDialog
+        :open="confirmReverseOpen"
+        :title="t('landed_cost.reverse')"
+        :description="t('landed_cost.reverse_confirm')"
+        :cancel-text="t('general.cancel')"
+        :continue-text="t('general.confirm')"
+        @update:open="(v) => confirmReverseOpen = v"
+        @confirm="reverseLandedCost"
+      />
 
       <!-- Info card -->
       <fieldset class="rounded-xl border border-border bg-card px-5 pb-5 pt-3 text-card-foreground shadow-sm">
         <legend class="px-2 flex items-center gap-1.5">
           <span class="text-sm font-semibold text-violet-500">
-            {{ t('landed_cost.title') }} #{{ record.number || record.id }}
+            {{ t('landed_cost.singular') }} #{{ record.number || record.id }}
           </span>
-          <Badge :class="statusBadgeClasses">{{ record.status }}</Badge>
+          <Badge :class="statusBadgeClasses">{{ record.status_label || record.status }}</Badge>
         </legend>
         <div class="mb-4 flex items-center gap-2">
           <FileText class="h-5 w-5 text-violet-500" />
@@ -274,15 +342,15 @@ const postLandedCost = async () => {
           </div>
           <div class="space-y-1.5">
             <div class="flex items-center gap-2 text-xs text-muted-foreground"><FileText class="h-3 w-3" />{{ t('landed_cost.transaction_status') }}</div>
-            <div class="text-sm font-medium text-foreground">{{ record.transaction_status || '-' }}</div>
+            <div><Badge v-if="record.transaction_status" :class="txnBadgeClasses">{{ record.transaction_status_label || record.transaction_status }}</Badge><span v-else>-</span></div>
           </div>
           <div class="space-y-1.5">
             <div class="flex items-center gap-2 text-xs text-muted-foreground"><User class="h-3 w-3" />{{ t('general.created_by') }}</div>
-            <div class="text-sm font-medium text-foreground">{{ record.created_by?.name || '-' }}</div>
+            <div class="text-sm font-medium text-foreground">{{ record.created_by?.data?.name || record.created_by?.name || '-' }}</div>
           </div>
           <div class="space-y-1.5">
             <div class="flex items-center gap-2 text-xs text-muted-foreground"><User class="h-3 w-3" />{{ t('general.updated_by') }}</div>
-            <div class="text-sm font-medium text-foreground">{{ record.updated_by?.name || '-' }}</div>
+            <div class="text-sm font-medium text-foreground">{{ record.updated_by?.data?.name || record.updated_by?.name || '-' }}</div>
           </div>
           <div class="space-y-1.5">
             <div class="flex items-center gap-2 text-xs text-muted-foreground"><Calendar class="h-3 w-3" />{{ t('general.updated_at') }}</div>
@@ -297,7 +365,7 @@ const postLandedCost = async () => {
 
       <!-- Allocation mismatch warning -->
       <div
-        v-if="record.status_id !== 'posted' && !isFullyAllocated"
+        v-if="!isFinal && !isFullyAllocated"
         class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
       >
         {{ allocationDifference > 0

@@ -192,6 +192,7 @@ Route::middleware([
         ->parameters(['discount-rules' => 'discount_rule'])
         ->except(['create', 'edit', 'show']);
     Route::patch('/discount-rules/{discount_rule}/toggle-status', [\App\Http\Controllers\Inventory\DiscountRuleController::class, 'toggleStatus'])->name('discount-rules.toggle-status');
+    Route::post('/landed-costs/{landedCost}/reverse', [\App\Http\Controllers\Inventory\LandedCostController::class, 'reverse'])->name('landed-costs.reverse');
     Route::resource('/landed-costs', \App\Http\Controllers\Inventory\LandedCostController::class);
     Route::get('/stock-adjustments/export', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'export'])->name('stock-adjustments.export');
     Route::resource('/stock-adjustments', \App\Http\Controllers\Inventory\StockAdjustmentController::class)

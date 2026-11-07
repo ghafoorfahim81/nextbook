@@ -61,7 +61,7 @@ return [
             'stock_movements' => 'حرکت موجودی',
             'stock_balances' => 'بیلانس موجودی',
             'sale_items' => 'قلم فروش',
-            'landed_cost_items' => 'قلم هزینه ورودی',
+            'landed_cost_items' => 'قلم مصرف جنس',
             'purchases' => 'خرید',
             'journal_entries' => 'سند ژورنال',
         ],

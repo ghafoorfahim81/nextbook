@@ -5,6 +5,7 @@ namespace App\Models\Inventory;
 use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Models\Account\Account;
+use App\Models\Concerns\HasSequentialNumber;
 use App\Models\Purchase\Purchase;
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LandedCost extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, HasDynamicFilters, CompanySpecific, BranchSpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes, HasSequentialNumber;
 
     protected $table = 'landed_costs';
     protected $keyType = 'string';
@@ -37,6 +38,7 @@ class LandedCost extends Model
 
     protected $fillable = [
         'company_id',
+        'number',
         'date',
         'purchase_id',
         'bank_account_id',
@@ -73,6 +75,7 @@ class LandedCost extends Model
     {
         return [
             'notes',
+            'number',
             'status',
             'allocation_method',
             'purchase.number',

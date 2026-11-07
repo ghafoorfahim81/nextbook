@@ -77,6 +77,7 @@ return [
     'attachment_too_large' => ':name د :size MB له حد څخه اوړي.',
 
     'created_successfully' => ':resource په بریالیتوب سره جوړ شو.',
+    'reversed_successfully' => ':resource په بریالیتوب سره باطل شو.',
     'updated_successfully' => ':resource په بریالیتوب سره تازه شو.',
     'deleted_successfully' => ':resource په بریالیتوب سره ړنګ شو.',
     'restored_successfully' => ':resource په بریالیتوب سره بیرته راوړل شو.',

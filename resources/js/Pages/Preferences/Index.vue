@@ -781,6 +781,7 @@ const confirmSaveModules = [
     { key: 'expense', label: 'preferences.transaction.modules.expense' },
     { key: 'journal_entry', label: 'preferences.transaction.modules.journal_entry' },
     { key: 'account_transfer', label: 'preferences.transaction.modules.account_transfer' },
+    { key: 'landed_cost', label: 'preferences.transaction.modules.landed_cost' },
     { key: 'item_transfer', label: 'preferences.transaction.modules.item_transfer' },
     { key: 'drawing', label: 'preferences.transaction.modules.drawing' },
     { key: 'stock_adjustment', label: 'preferences.transaction.modules.stock_adjustment' },

@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
+import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -209,7 +210,9 @@ const round = (value, precision = 2) => {
 
 const rowKey = (row) => `${row?.purchase_item_id || ''}:${row?.item_id || ''}`;
 
-const calculatePreviewRows = (rows, totalCost, method) => {
+// `rate` converts the allocation (in the landed cost's currency) into the home
+// currency the item costs are kept in.
+const calculatePreviewRows = (rows, totalCost, method, rate = 1) => {
   const prepared = (rows || [])
     .filter((row) => !!row?.item_id)
     .map((row) => {
@@ -246,7 +249,7 @@ const calculatePreviewRows = (rows, totalCost, method) => {
   if (method === 'manual') {
     const rowsOut = prepared.map((row) => {
       const allocation = round(Number(row.allocated_amount || 0), 2);
-      const itemCostAfter = round(row.item_cost_before + allocation, 2);
+      const itemCostAfter = round(row.item_cost_before + (allocation * rate), 2);
 
       return {
         ...row,
@@ -286,7 +289,7 @@ const calculatePreviewRows = (rows, totalCost, method) => {
     remaining = round(remaining - allocation, 2);
     allocatedTotal = round(allocatedTotal + allocation, 2);
 
-    const itemCostAfter = round(row.item_cost_before + allocation, 2);
+    const itemCostAfter = round(row.item_cost_before + (allocation * rate), 2);
     const landedUnitCost = row.quantity > 0
       ? round(itemCostAfter / row.quantity, 4)
       : round(row.unit_cost, 4);
@@ -310,6 +313,7 @@ const previewState = computed(() => calculatePreviewRows(
   form.items,
   Number(form.total_cost || 0),
   form.allocation_method,
+  Number(form.rate) > 0 ? Number(form.rate) : 1,
 ));
 
 const previewRows = computed(() => previewState.value.rows);
@@ -468,7 +472,9 @@ const saveDraft = (createAndNew = false) => {
   const options = {
     onSuccess: () => {
       toast.success(t('general.success'), {
-        description: isEditMode.value ? t('landed_cost.update_success') : t('landed_cost.save_success'),
+        description: isEditMode.value
+          ? t('general.update_success', { name: t('landed_cost.singular') })
+          : t('general.create_success', { name: t('landed_cost.singular') }),
       });
 
       if (createAndNew) {
@@ -478,8 +484,8 @@ const saveDraft = (createAndNew = false) => {
     onError: () => {
       toast.error(t('general.error'), {
         description: isEditMode.value
-          ? t('general.update_error', { name: t('landed_cost.title') })
-          : t('general.create_error', { name: t('landed_cost.title') }),
+          ? t('general.update_error', { name: t('landed_cost.singular') })
+          : t('general.create_error', { name: t('landed_cost.singular') }),
       });
     },
   };
@@ -517,7 +523,8 @@ const fetchPurchaseItems = async (purchase) => {
       item_name: row.item_name || row.item?.name || '',
       item_code: row.item_code || row.item?.code || '',
       quantity: row.quantity,
-      unit_cost: row.unit_price,
+      // Home currency: the purchase's own rate turns its price into the currency stock is costed in.
+      unit_cost: Number(row.unit_price || 0) * (Number(purchaseData.rate) > 0 ? Number(purchaseData.rate) : 1),
       warehouse_id: row.warehouse_id || purchaseData.warehouse_id || '',
       batch: row.batch,
       expire_date: row.expire_date,
@@ -530,7 +537,7 @@ const fetchPurchaseItems = async (purchase) => {
 };
 
 const seedManualAllocations = (method = 'by_value') => {
-  const preview = calculatePreviewRows(form.items, Number(form.total_cost || 0), method);
+  const preview = calculatePreviewRows(form.items, Number(form.total_cost || 0), method, Number(form.rate) > 0 ? Number(form.rate) : 1);
   form.items.forEach((row) => {
     const match = preview.rows.find((previewRow) => rowKey(previewRow) === rowKey(row));
     row.allocated_amount = match?.allocated_amount ?? 0;
@@ -565,7 +572,11 @@ const selectPurchases = async (purchases) => {
   await loadSelectedPurchaseItems(selected);
 };
 
+const confirmPostOpen = ref(false);
+
 const postLandedCost = async () => {
+  confirmPostOpen.value = false;
+
   if (!currentRecord.value?.id) {
     toast.error(t('landed_cost.save_draft_first'));
     return;
@@ -579,7 +590,7 @@ const postLandedCost = async () => {
   try {
     const { data } = await axios.post(`/api/landed-costs/${currentRecord.value.id}/post`);
     setRecordFromResponse(data?.data);
-    toast.success(t('general.completed_successfully', { resource: t('landed_cost.title') }));
+    toast.success(t('landed_cost.posted_success'));
   } catch (error) {
     const message = error?.response?.data?.message
       || error?.response?.data?.errors?.allocated_total?.[0]
@@ -646,7 +657,7 @@ const saveFormRef = useSaveShortcut({ form });
 
 <template>
   <AppLayout :title="pageTitle" :sidebar-collapsed="true">
-    <FormPageToolbar back-route="landed-costs.index" module="landed_cost" />
+    <FormPageToolbar confirm-module="landed_cost" back-route="landed-costs.index" module="landed_cost" />
     <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
       <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
@@ -883,10 +894,11 @@ const saveFormRef = useSaveShortcut({ form });
       <div class="flex flex-wrap items-center gap-3">
       <div class="flex flex-wrap items-center gap-2">
         <SubmitButtons
-          :create-label="isEditMode ? t('general.update') : t('general.create', { name: t('landed_cost.title') })"
+          module="landed_cost"
+          :create-label="isEditMode ? t('general.update') : t('general.create', { name: t('landed_cost.singular') })"
           :create-and-new-label="t('general.create_and_new')"
           :cancel-label="t('general.cancel')"
-          :creating-label="isEditMode ? t('general.updating', { name: t('landed_cost.title') }) : t('general.creating', { name: t('landed_cost.title') })"
+          :creating-label="isEditMode ? t('general.updating', { name: t('landed_cost.singular') }) : t('general.creating', { name: t('landed_cost.singular') })"
           :create-loading="createLoading"
           :create-and-new-loading="createAndNewLoading"
           :show-create-and-new="!isEditMode"
@@ -899,13 +911,14 @@ const saveFormRef = useSaveShortcut({ form });
           type="button"
           class="rounded-md border border-green-600 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-50 disabled:opacity-50"
           :disabled="!canPost"
-          @click="postLandedCost"
+          @click="confirmPostOpen = true"
         >
           {{ t('landed_cost.post') }}
         </button>
       </div>
       </div>
     </form>
+<ConfirmDeleteDialog      :open="confirmPostOpen"      :title="t('landed_cost.post')"      :description="t('landed_cost.post_confirm')"      :cancel-text="t('general.cancel')"      :continue-text="t('general.confirm')"      @update:open="(v) => confirmPostOpen = v"      @confirm="postLandedCost"    />
   </AppLayout>
 </template>
 

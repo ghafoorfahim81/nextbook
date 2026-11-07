@@ -1,9 +1,19 @@
 {
   "title": "Landed Costs",
+  "singular": "Landed cost",
+  "posted_success": "Landed cost posted successfully.",
+  "reversed_success": "Landed cost reversed successfully.",
+  "number": "Number",
+  "reverse": "Reverse",
+  "reverse_reason": "Reason for reversal (optional)",
+  "reverse_confirm": "Reverse this landed cost? The posted entry is cancelled and the allocated cost is taken back out of item costs.",
+  "post_confirm": "Post this landed cost? Item costs will be updated and the entry posted.",
+  "reversed_cannot_edit": "A reversed landed cost cannot be edited.",
+  "home_currency_note": "Cost columns are in the home currency",
   "create_title": "Create Landed Cost",
   "edit_title": "Edit Landed Cost",
-  "purchase_order": "Purchase Order",
-  "purchase_orders": "Purchase Orders",
+  "purchase_order": "Purchase Bill",
+  "purchase_orders": "Purchase Bills",
   "date": "Date",
   "total_additional_cost": "Total Additional Cost",
   "allocation_method": "Allocation Method",
@@ -26,7 +36,7 @@
   "line_total": "Line Total",
   "quantity": "Quantity",
   "item": "Item",
-  "select_purchase_first": "Select a purchase order to load items.",
+  "select_purchase_first": "Select a purchase bill to load items.",
   "save_draft_first": "Save the landed cost first, then post it.",
   "preview_updated": "Allocation preview updated.",
   "failed_to_load_purchase_items": "Failed to load purchase items.",
@@ -44,5 +54,5 @@
   "item_cost_after": "Cost After",
   "share_of_total": "Share of Total",
   "no_category_breakdown": "No category breakdown was recorded for this landed cost.",
-  "purchase_already_has_landed_cost": "This purchase order already has a landed cost."
+  "purchase_already_has_landed_cost": "This purchase bill already has a landed cost."
 }

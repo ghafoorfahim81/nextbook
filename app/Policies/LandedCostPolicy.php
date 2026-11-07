@@ -44,6 +44,12 @@ class LandedCostPolicy extends BasePolicy
             && $this->sameBranch($user, $landedCost);
     }
 
+    public function reverse(User $user, LandedCost $landedCost): bool
+    {
+        return $this->hasPermission($user, 'landed_costs.post')
+            && $this->sameBranch($user, $landedCost);
+    }
+
     public function post(User $user, LandedCost $landedCost): bool
     {
         return $this->hasPermission($user, 'landed_costs.post')

@@ -92,6 +92,7 @@ class LandedCostController extends Controller
     {
         $landedCost = DB::transaction(function () use ($request, $service, $attachmentService) {
             $landedCost = LandedCost::create([
+                'number' => LandedCost::nextNumber(),
                 'date' => $request->validated('date'),
                 'purchase_id' => $request->validated('purchase_id'),
                 'bank_account_id' => $request->validated('bank_account_id'),
@@ -166,7 +167,7 @@ class LandedCostController extends Controller
 
     public function update(LandedCostRequest $request, LandedCost $landedCost, LandedCostService $service, AttachmentService $attachmentService)
     {
-        if (($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status) === LandedCostStatus::Posted->value) {
+        if (in_array($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status, [LandedCostStatus::Posted->value, LandedCostStatus::Reversed->value], true)) {
             throw ValidationException::withMessages([
                 'landed_cost' => __('general.landed_cost_posted_cannot_be_edited'),
             ]);
@@ -210,7 +211,7 @@ class LandedCostController extends Controller
 
     public function destroy(Request $request, LandedCost $landedCost)
     {
-        if (($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status) === LandedCostStatus::Posted->value) {
+        if (in_array($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status, [LandedCostStatus::Posted->value, LandedCostStatus::Reversed->value], true)) {
             throw ValidationException::withMessages([
                 'landed_cost' => __('general.landed_cost_posted_cannot_be_deleted'),
             ]);
@@ -240,7 +241,7 @@ class LandedCostController extends Controller
     {
         $this->authorize('allocate', $landedCost);
 
-        if (($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status) === LandedCostStatus::Posted->value) {
+        if (in_array($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status, [LandedCostStatus::Posted->value, LandedCostStatus::Reversed->value], true)) {
             throw ValidationException::withMessages([
                 'landed_cost' => __('general.landed_cost_posted_cannot_be_reallocated'),
             ]);
@@ -264,6 +265,21 @@ class LandedCostController extends Controller
             'data' => new LandedCostResource($result['landed_cost']),
             'transaction_id' => $result['transaction']->id,
         ]);
+    }
+
+    public function reverse(Request $request, LandedCost $landedCost, LandedCostService $service)
+    {
+        $this->authorize('reverse', $landedCost);
+
+        $validated = $request->validate(['reason' => ['nullable', 'string', 'max:500']]);
+
+        $landedCost = $service->reverse($landedCost, $validated['reason'] ?? null);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => new LandedCostResource($landedCost->load(['purchases', 'items.item', 'transaction.currency', 'createdBy', 'updatedBy']))]);
+        }
+
+        return back()->with('success', __('general.reversed_successfully', ['resource' => __('general.resource.landed_cost')]));
     }
 
     private function landedCostCategoryOptions()

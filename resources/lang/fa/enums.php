@@ -406,6 +406,7 @@ return [
         'draft' => 'پیش‌نویس',
         'allocated' => 'تخصیص شده',
         'posted' => 'ثبت شده',
+        'reversed' => 'باطل شده',
     ],
     'landed_cost_allocation_method' => [
         'by_value' => 'بر اساس ارزش',

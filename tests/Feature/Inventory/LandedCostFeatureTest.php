@@ -351,6 +351,103 @@ class LandedCostFeatureTest extends TestCase
             ));
     }
 
+    public function test_a_posted_landed_cost_can_be_reversed_and_gives_the_cost_back(): void
+    {
+        $purchase = $this->createPostedPurchase([[
+            'item_id' => $this->ctx['item']->id,
+            'batch' => 'BT-R',
+            'expire_date' => '2027-03-01',
+            'quantity' => 10,
+            'unit_price' => 30,
+        ]]);
+
+        $landedCost = $this->storeLandedCost($purchase, 50);
+        $this->assertNotEmpty($landedCost->number);
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+        $this->assertEquals(35.0, (float) $this->purchaseMovement($purchase)->unit_cost);
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')->assertOk();
+
+        $this->assertEquals(LandedCostStatus::Reversed, $landedCost->fresh()->status);
+        $this->assertEquals(30.0, (float) $this->purchaseMovement($purchase)->unit_cost);
+        $this->assertEquals(30.0, (float) $this->ctx['item']->fresh()->avg_cost);
+
+        // A reversed record is final: it cannot be edited, deleted or reversed twice.
+        $this->delete(route('landed-costs.destroy', $landedCost->id))->assertSessionHasErrors('landed_cost');
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')->assertStatus(422);
+    }
+
+    public function test_a_draft_cannot_be_reversed(): void
+    {
+        $purchase = $this->createPostedPurchase([[
+            'item_id' => $this->ctx['item']->id,
+            'batch' => 'BT-D',
+            'expire_date' => '2027-03-01',
+            'quantity' => 10,
+            'unit_price' => 30,
+        ]]);
+
+        $landedCost = $this->storeLandedCost($purchase, 50);
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')->assertStatus(422);
+    }
+
+    public function test_a_foreign_currency_cost_reaches_stock_at_its_rate(): void
+    {
+        $foreign = \App\Models\Administration\Currency::factory()->create([
+            'company_id' => $this->ctx['company']->id,
+            'is_base_currency' => false,
+        ]);
+
+        $purchase = $this->createPostedPurchase([[
+            'item_id' => $this->ctx['item']->id,
+            'batch' => 'BT-F',
+            'expire_date' => '2027-03-01',
+            'quantity' => 10,
+            'unit_price' => 30,
+        ]]);
+
+        // 10 units of foreign currency at 70 home per unit = 700 home over 10 pieces.
+        $landedCost = $this->storeLandedCost($purchase, 10, ['currency_id' => $foreign->id, 'rate' => 70]);
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+
+        $this->assertEquals(100.0, (float) $this->purchaseMovement($purchase)->unit_cost);
+    }
+
+    private function purchaseMovement(Purchase $purchase): StockMovement
+    {
+        return StockMovement::query()
+            ->where('reference_type', Purchase::class)
+            ->where('reference_id', $purchase->id)
+            ->where('movement_type', StockMovementType::IN)
+            ->where('source', StockSourceType::PURCHASE)
+            ->firstOrFail();
+    }
+
+    private function storeLandedCost(Purchase $purchase, float $totalCost, array $overrides = []): LandedCost
+    {
+        $purchaseItem = $purchase->items()->firstOrFail();
+
+        $this->post(route('landed-costs.store'), array_merge($this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: $totalCost,
+            method: LandedCostAllocationMethod::ByValue->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $purchaseItem->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => $purchaseItem->quantity,
+                'unit_cost' => $purchaseItem->unit_price,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => $purchaseItem->batch,
+                'expire_date' => $purchaseItem->expire_date?->toDateString(),
+            ]],
+        ), $overrides))->assertRedirect(route('landed-costs.index'));
+
+        return LandedCost::query()->latest()->firstOrFail();
+    }
+
     private function landedCostPayload(Purchase $purchase, float $totalCost, string $method, array $items): array
     {
         return [

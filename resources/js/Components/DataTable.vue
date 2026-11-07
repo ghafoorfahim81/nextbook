@@ -480,6 +480,8 @@ const statusBadgeClass = (status) => {
         case 'draft':
         case 'pending':
             return 'border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-300'
+        case 'allocated':
+            return 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300'
         case 'posted':
         case 'completed':
         case 'approved':

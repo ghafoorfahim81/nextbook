@@ -138,6 +138,7 @@ return [
         'draft' => 'Draft',
         'allocated' => 'Allocated',
         'posted' => 'Posted',
+        'reversed' => 'Reversed',
     ],
     'landed_cost_allocation_method' => [
         'by_value' => 'By Value',

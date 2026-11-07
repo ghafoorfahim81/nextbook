@@ -407,6 +407,7 @@ return [
         'draft' => 'مسوده',
         'allocated' => 'تخصیص شوی',
         'posted' => 'ثبت شوی',
+        'reversed' => 'باطل شوی',
     ],
     'landed_cost_allocation_method' => [
         'by_value' => 'د ارزښت له مخې',

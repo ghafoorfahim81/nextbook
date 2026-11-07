@@ -185,7 +185,22 @@ class LandedCostService
         $totalCost = (float) data_get($payload, 'total_cost', $landedCost->total_cost);
         $method = $this->resolveMethod(data_get($payload, 'allocation_method', $landedCost->allocation_method?->value ?? $landedCost->allocation_method));
 
-        return $this->calculatePreview($rows, $totalCost, $method);
+        $rate = (float) (data_get($payload, 'rate') ?: $landedCost->transaction?->rate ?: 1);
+
+        return $this->calculatePreview($rows, $totalCost, $method, $rate > 0 ? $rate : 1.0);
+    }
+
+    /**
+     * The landed cost's own exchange rate: home-currency units per one unit of
+     * the currency the extra cost was paid in. Amounts on a landed cost (total,
+     * allocations) are in that currency, while stock costs are kept in the home
+     * currency, so every allocation is multiplied by this before it touches stock.
+     */
+    private function homeRate(LandedCost $landedCost): float
+    {
+        $rate = (float) ($landedCost->transaction?->rate ?: 1);
+
+        return $rate > 0 ? $rate : 1.0;
     }
 
     public function allocate(LandedCost $landedCost, array $payload = []): LandedCost
@@ -268,7 +283,8 @@ class LandedCostService
                     'allocated_percentage' => (float) $item->allocated_percentage,
                 ]),
                 (float) $landedCost->total_cost,
-                $method
+                $method,
+                $this->homeRate($landedCost)
             );
 
             $this->assertAllocationMatchesTotalCost((float) $landedCost->total_cost, (float) $preview['allocated_total']);
@@ -276,7 +292,7 @@ class LandedCostService
             $landedCost->items()->forceDelete();
             $this->syncItems($landedCost, $preview['rows']);
 
-            $this->applyInventoryAdjustments($landedCost, collect($preview['rows']));
+            $this->applyInventoryAdjustments($landedCost, collect($preview['rows']), $this->homeRate($landedCost));
 
             $landedCost->update([
                 'allocated_total' => $preview['allocated_total'],
@@ -300,7 +316,7 @@ class LandedCostService
      * @param array<int, array<string, mixed>> $rows
      * @return array{rows: array<int, array<string, mixed>>, allocated_total: float}
      */
-    private function calculatePreview(array|Collection $rows, float $totalCost, LandedCostAllocationMethod $method): array
+    private function calculatePreview(array|Collection $rows, float $totalCost, LandedCostAllocationMethod $method, float $rate = 1.0): array
     {
         $rows = collect($rows)
             ->filter(fn ($row) => filled(data_get($row, 'item_id')))
@@ -346,7 +362,7 @@ class LandedCostService
         if ($method === LandedCostAllocationMethod::Manual) {
             $allocatedTotal = 0.0;
 
-            $rowsOut = $prepared->values()->map(function (array $row) use ($totalCost, &$allocatedTotal) {
+            $rowsOut = $prepared->values()->map(function (array $row) use ($totalCost, $rate, &$allocatedTotal) {
                 $allocation = round((float) $row['allocated_amount'], 2);
                 $allocatedTotal = round($allocatedTotal + $allocation, 2);
 
@@ -354,7 +370,7 @@ class LandedCostService
                     ? round(($allocation / $totalCost) * 100, 4)
                     : 0;
                 $row['allocated_amount'] = $allocation;
-                $row['item_cost_after'] = round($row['item_cost_before'] + $allocation, 2);
+                $row['item_cost_after'] = round($row['item_cost_before'] + ($allocation * $rate), 2);
 
                 unset($row['basis_value']);
 
@@ -379,7 +395,7 @@ class LandedCostService
         $allocatedTotal = 0.0;
         $lastIndex = $prepared->count() - 1;
 
-        $rowsOut = $prepared->values()->map(function (array $row, int $index) use (&$remaining, $basisTotal, $totalCost, $lastIndex, &$allocatedTotal) {
+        $rowsOut = $prepared->values()->map(function (array $row, int $index) use (&$remaining, $basisTotal, $totalCost, $lastIndex, $rate, &$allocatedTotal) {
             $allocation = $index === $lastIndex
                 ? round($remaining, 2)
                 : round(($totalCost * $row['basis_value']) / $basisTotal, 2);
@@ -389,7 +405,7 @@ class LandedCostService
 
             $row['allocated_percentage'] = round(($row['basis_value'] / $basisTotal) * 100, 4);
             $row['allocated_amount'] = $allocation;
-            $row['item_cost_after'] = round($row['item_cost_before'] + $allocation, 2);
+            $row['item_cost_after'] = round($row['item_cost_before'] + ($allocation * $rate), 2);
 
             unset($row['basis_value']);
 
@@ -455,7 +471,7 @@ class LandedCostService
         }
 
         $purchases = Purchase::query()
-            ->with(['items.item', 'items.purchase'])
+            ->with(['items.item', 'items.purchase', 'transaction'])
             ->whereIn('id', $purchaseIds->all())
             ->get();
 
@@ -471,7 +487,8 @@ class LandedCostService
                     'purchase_item_id' => $item->id,
                     'item_id' => $item->item_id,
                     'quantity' => (float) $item->quantity,
-                    'unit_cost' => (float) $item->unit_price,
+                    // Home currency, like the stock cost the allocation lands on.
+                    'unit_cost' => (float) $item->unit_price * max((float) ($purchase->transaction?->rate ?: 1), 0.0000001),
                     'weight' => 0,
                     'volume' => 0,
                     'warehouse_id' => $item->warehouse_id,
@@ -501,12 +518,59 @@ class LandedCostService
     }
 
 
-    private function applyInventoryAdjustments(LandedCost $landedCost, Collection $rows): void
+    /**
+     * Undo a posted landed cost: reverse its GL entry and take the allocated
+     * cost back out of the purchase stock layers it was added to.
+     */
+    public function reverse(LandedCost $landedCost, ?string $reason = null): LandedCost
+    {
+        return DB::transaction(function () use ($landedCost, $reason) {
+            $landedCost->loadMissing(['items', 'transaction']);
+
+            $status = $landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status;
+
+            if ($status !== LandedCostStatus::Posted->value) {
+                throw ValidationException::withMessages([
+                    'status' => [__('messages.document.only_posted_can_be_reversed')],
+                ]);
+            }
+
+            $transaction = $landedCost->transaction;
+
+            if (! $transaction) {
+                throw ValidationException::withMessages([
+                    'landed_cost' => __('general.landed_cost_related_transaction_not_found'),
+                ]);
+            }
+
+            $rows = $landedCost->items->map(fn (LandedCostItem $item) => [
+                'purchase_item_id' => $item->purchase_item_id,
+                'item_id' => $item->item_id,
+                'warehouse_id' => $item->warehouse_id,
+                'batch' => $item->batch,
+                'expire_date' => $item->expire_date?->toDateString(),
+                'allocated_amount' => (float) $item->allocated_amount,
+            ]);
+
+            $this->applyInventoryAdjustments($landedCost, $rows, $this->homeRate($landedCost), -1);
+
+            $this->transactionService->reverse($transaction, $reason, (string) $landedCost->number, $landedCost->getMorphClass());
+
+            $landedCost->update(['status' => LandedCostStatus::Reversed->value]);
+
+            return $landedCost->fresh(['purchases.items.item', 'items.item', 'transaction']);
+        });
+    }
+
+    /**
+     * @param  int  $direction  1 adds the allocation to the stock layers, -1 takes it back out.
+     */
+    private function applyInventoryAdjustments(LandedCost $landedCost, Collection $rows, float $rate = 1.0, int $direction = 1): void
     {
         $itemIds = [];
 
-        $rows->each(function (array $row) use ($landedCost, &$itemIds) {
-            $allocation = round((float) data_get($row, 'allocated_amount', 0), 4);
+        $rows->each(function (array $row) use ($landedCost, $rate, $direction, &$itemIds) {
+            $allocation = round((float) data_get($row, 'allocated_amount', 0) * $rate, 4) * $direction;
 
             if ($allocation == 0.0) {
                 return;

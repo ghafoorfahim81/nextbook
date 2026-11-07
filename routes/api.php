@@ -63,4 +63,5 @@ Route::middleware([
     Route::delete('/landed-costs/{landedCost}', [App\Http\Controllers\Inventory\LandedCostController::class, 'destroy']);
     Route::post('/landed-costs/{landedCost}/allocate', [App\Http\Controllers\Inventory\LandedCostController::class, 'allocate']);
     Route::post('/landed-costs/{landedCost}/post', [App\Http\Controllers\Inventory\LandedCostController::class, 'post']);
+    Route::post('/landed-costs/{landedCost}/reverse', [App\Http\Controllers\Inventory\LandedCostController::class, 'reverse']);
 });

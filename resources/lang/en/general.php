@@ -77,6 +77,7 @@ return [
     'attachment_too_large' => ':name exceeds the :size MB limit.',
 
     'created_successfully' => ':resource created successfully.',
+    'reversed_successfully' => ':resource reversed successfully.',
     'updated_successfully' => ':resource updated successfully.',
     'deleted_successfully' => ':resource deleted successfully.',
     'restored_successfully' => ':resource restored successfully.',
@@ -129,7 +130,7 @@ return [
 
     'error_occurred_while_creating' => 'An error occurred while creating :resource.',
     'error_occurred_while_updating' => 'An error occurred while updating :resource.',
-    'landed_cost_select_purchase_and_add_item' => 'Select a purchase order and add at least one item.',
+    'landed_cost_select_purchase_and_add_item' => 'Select a purchase bill and add at least one item.',
     'landed_cost_allocated_total_cannot_exceed_total_cost' => 'Allocated total cannot exceed total cost.',
     'landed_cost_save_draft_first' => 'Save the landed cost draft first, then allocate it.',
     'landed_cost_posted_cannot_be_edited' => 'Posted landed costs cannot be edited.',
@@ -145,7 +146,7 @@ return [
     'landed_cost_home_currency_could_not_be_resolved' => 'Home currency could not be resolved.',
     'landed_cost_related_stock_movement_not_found' => 'No related purchase stock movement was found to apply the landed cost.',
     'landed_cost_allocation_must_match_total_cost' => 'Allocated amount must equal the total additional cost before posting.',
-    'landed_cost_purchase_already_allocated' => 'Purchase order :number already has a landed cost.',
+    'landed_cost_purchase_already_allocated' => 'Purchase bill :number already has a landed cost.',
     'add_to_account' => 'Add to Account',
     'cheque_no' => 'Cheque No',
     'narration' => 'Narration',

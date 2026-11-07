@@ -20,7 +20,7 @@ const { t } = useI18n();
     :landed-cost-categories="landedCostCategories"
     :bank-accounts="bankAccounts"
     :currencies="currencies"
-    :page-title="t('general.create', { name: t('landed_cost.title') })"
+    :page-title="t('general.create', { name: t('landed_cost.singular') })"
     submit-route-name="landed-costs.store"
     submit-method="post"
   />

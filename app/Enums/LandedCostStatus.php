@@ -7,6 +7,7 @@ enum LandedCostStatus: string
     case Draft = 'draft';
     case Allocated = 'allocated';
     case Posted = 'posted';
+    case Reversed = 'reversed';
 
     public function getLabel(): string
     {
@@ -14,6 +15,7 @@ enum LandedCostStatus: string
             self::Draft => __('enums.landed_cost_status.draft'),
             self::Allocated => __('enums.landed_cost_status.allocated'),
             self::Posted => __('enums.landed_cost_status.posted'),
+            self::Reversed => __('enums.landed_cost_status.reversed'),
         };
     }
 

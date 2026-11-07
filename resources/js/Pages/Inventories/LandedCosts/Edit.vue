@@ -22,7 +22,7 @@ const { t } = useI18n();
     :landed-cost-categories="landedCostCategories"
     :bank-accounts="bankAccounts"
     :currencies="currencies"
-    :page-title="t('general.edit', { name: t('landed_cost.title') })"
+    :page-title="t('general.edit', { name: t('landed_cost.singular') })"
     submit-route-name="landed-costs.update"
     submit-method="put"
   />

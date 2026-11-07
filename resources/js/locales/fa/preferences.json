@@ -362,6 +362,7 @@
             "receipt": "رسید",
             "payment": "پرداخت",
             "account_transfer": "انتقال حساب",
+            "landed_cost": "مصرف جنس",
             "item_transfer": "انتقال جنس",
             "stock_adjustment": "تعدیل موجودی",
             "drawing": "برداشت",

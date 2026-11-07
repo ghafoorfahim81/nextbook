@@ -362,6 +362,7 @@
             "receipt": "Receipt",
             "payment": "Payment",
             "account_transfer": "Account Transfer",
+            "landed_cost": "Landed Cost",
             "item_transfer": "Item Transfer",
             "stock_adjustment": "Stock Adjustment",
             "drawing": "Drawing",
