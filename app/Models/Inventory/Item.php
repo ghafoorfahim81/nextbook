@@ -86,9 +86,11 @@ class Item extends Model
 
         'description',
         'weight',
+        'weight_unit_id',
         'length',
         'width',
         'height',
+        'dimension_unit_id',
 
         'manufacturer',
         'model',
@@ -150,6 +152,8 @@ class Item extends Model
             'costing_method' => CostingMethod::class,
             'pricing_method' => PricingMethod::class,
 
+            'weight_unit_id' => 'string',
+            'dimension_unit_id' => 'string',
             'weight' => 'decimal:4',
             'length' => 'decimal:4',
             'width' => 'decimal:4',
@@ -238,6 +242,16 @@ class Item extends Model
                 });
             },
         ];
+    }
+
+    public function weightUnit(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\UnitMeasure::class, 'weight_unit_id');
+    }
+
+    public function dimensionUnit(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\UnitMeasure::class, 'dimension_unit_id');
     }
 
     public function unitMeasure(): BelongsTo

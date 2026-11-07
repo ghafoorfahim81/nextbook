@@ -166,6 +166,39 @@ class ItemVariant extends Model
         return $this->hasMany(StockBalance::class, 'variant_id');
     }
 
+    /**
+     * Tables whose lines point at a variant. Any row here means the variant
+     * has been used in a document, so its identity can no longer change.
+     */
+    private const LINE_TABLES = [
+        'purchase_items', 'purchase_return_items', 'purchase_order_items', 'purchase_quotation_items',
+        'sale_items', 'sale_return_items', 'sale_order_items', 'sale_quotation_items',
+        'item_transfer_items', 'stock_adjustment_items', 'landed_cost_items',
+    ];
+
+    /**
+     * Whether anything other than the opening balance has touched this variant:
+     * a document line or a stock movement. Once it has, deleting or re-keying the
+     * variant would orphan those lines or move stock to a different product.
+     */
+    public function hasTransactions(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        foreach (self::LINE_TABLES as $table) {
+            if (\Illuminate\Support\Facades\DB::table($table)->where('variant_id', $this->id)->exists()) {
+                return true;
+            }
+        }
+
+        return \Illuminate\Support\Facades\DB::table('stock_movements')
+            ->where('variant_id', $this->id)
+            ->where('source', '!=', \App\Enums\StockSourceType::OPENING->value)
+            ->exists();
+    }
+
     public function onHand(): float
     {
         return (float) $this->stockBalances()->sum('quantity');

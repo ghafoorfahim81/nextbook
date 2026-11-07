@@ -84,6 +84,9 @@ const initialVariants = props.item.data.variants?.length
         maximum_stock: v.maximum_stock ?? '',
         is_default: Boolean(v.is_default),
         is_active: v.is_active !== false,
+        weight: v.weight ?? '',
+        // Variants that already have transactions keep their identity.
+        is_locked: Boolean(v.is_locked),
         sort_order: v.sort_order ?? index,
     }))
     : [{

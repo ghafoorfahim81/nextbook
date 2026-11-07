@@ -30,7 +30,18 @@ class ItemVariantResource extends JsonResource
             'sort_order' => $this->sort_order,
             'is_default' => (bool) $this->is_default,
             'is_active' => (bool) $this->is_active,
+            'is_locked' => $this->hasTransactions(),
             'on_hand' => $this->whenLoaded('stockBalances', fn () => (float) $this->stockBalances->sum('quantity')),
+            // Per-warehouse split, e.g. White: Main 12, Second 10.
+            'warehouse_stock' => $this->whenLoaded('stockBalances', fn () => $this->stockBalances
+                ->groupBy('warehouse_id')
+                ->map(fn ($rows, $warehouseId) => [
+                    'warehouse_id' => $warehouseId,
+                    'warehouse_name' => $rows->first()->warehouse?->name,
+                    'quantity' => (float) $rows->sum('quantity'),
+                ])
+                ->filter(fn ($row) => $row['quantity'] != 0)
+                ->values()),
         ];
     }
 }

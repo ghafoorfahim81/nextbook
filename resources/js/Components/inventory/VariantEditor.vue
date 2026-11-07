@@ -31,6 +31,10 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
+// Once any variant has transactions the attribute set is frozen: renaming,
+// dropping or adding an attribute would re-key variants that documents point at.
+const attributesLocked = computed(() => props.modelValue.some((variant) => variant.is_locked))
+
 const variants = computed({
     get: () => props.modelValue,
     set: (value) => emit('update:modelValue', value),
@@ -51,7 +55,7 @@ const newAttributeName = ref('')
 
 const addAttribute = () => {
     const name = newAttributeName.value.trim().toLowerCase()
-    if (!name || attributeNames.value.includes(name)) return
+    if (attributesLocked.value || !name || attributeNames.value.includes(name)) return
 
     const next = props.modelValue.map((variant) => ({
         ...variant,
@@ -63,6 +67,7 @@ const addAttribute = () => {
 }
 
 const removeAttribute = (name) => {
+    if (attributesLocked.value) return
     variants.value = props.modelValue.map((variant) => {
         const attributes = { ...(variant.attributes ?? {}) }
         delete attributes[name]
@@ -294,6 +299,7 @@ const variantLabel = (variant) => {
             <!-- Attribute columns -->
             <div class="flex flex-wrap items-center gap-2 py-3">
                 <span class="text-xs text-muted-foreground">{{ t('item.variant_attributes') }}:</span>
+                <span v-if="attributesLocked" class="text-xs text-amber-600">{{ t('item.variant_locked') }}</span>
 
                 <Badge
                     v-for="name in attributeNames"
@@ -303,7 +309,7 @@ const variantLabel = (variant) => {
                 >
                     {{ name }}
                     <button
-                        v-if="!disabled"
+                        v-if="!disabled && !attributesLocked"
                         type="button"
                         class="ms-1 text-muted-foreground hover:text-red-500"
                         @click="removeAttribute(name)"
@@ -312,7 +318,7 @@ const variantLabel = (variant) => {
                     </button>
                 </Badge>
 
-                <div v-if="!disabled" class="flex items-center gap-1">
+                <div v-if="!disabled && !attributesLocked" class="flex items-center gap-1">
                     <input
                         v-model="newAttributeName"
                         :placeholder="t('item.add_attribute_placeholder')"
@@ -381,7 +387,7 @@ const variantLabel = (variant) => {
                             <td v-for="name in attributeNames" :key="name" class="px-1 py-1">
                                 <input
                                     :value="variant.attributes?.[name] ?? ''"
-                                    :disabled="disabled"
+                                    :disabled="disabled || variant.is_locked"
                                     class="h-8 w-full rounded border border-border bg-background px-2"
                                     @input="(e) => setAttribute(index, name, e.target.value)"
                                 />
@@ -390,7 +396,7 @@ const variantLabel = (variant) => {
                             <td class="px-1 py-1">
                                 <input
                                     :value="variant.sku ?? ''"
-                                    :disabled="disabled"
+                                    :disabled="disabled || variant.is_locked"
                                     class="h-8 w-28 rounded border border-border bg-background px-2"
                                     :class="{ 'border-red-500': errorFor(index, 'sku') }"
                                     @input="(e) => setField(index, 'sku', e.target.value)"
@@ -400,7 +406,7 @@ const variantLabel = (variant) => {
                                 <div class="flex items-center gap-1">
                                     <input
                                         :value="variant.barcode ?? ''"
-                                        :disabled="disabled"
+                                        :disabled="disabled || variant.is_locked"
                                         class="h-8 w-32 rounded border border-border bg-background px-2"
                                         :class="{ 'border-red-500': errorFor(index, 'barcode') }"
                                         @input="(e) => setField(index, 'barcode', e.target.value)"
@@ -482,7 +488,8 @@ const variantLabel = (variant) => {
                             <td class="px-2 py-1.5 text-center">
                                 <button
                                     type="button"
-                                    :disabled="disabled || modelValue.length <= 1"
+                                    :disabled="disabled || variant.is_locked || modelValue.length <= 1"
+                                    :title="variant.is_locked ? t('item.variant_locked') : null"
                                     class="text-muted-foreground hover:text-red-500 disabled:opacity-30"
                                     @click="removeVariant(index)"
                                 >

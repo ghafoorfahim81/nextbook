@@ -156,6 +156,8 @@ const form = useForm({
 
     description: '',
     weight: '',
+    weight_unit_id: null,
+    dimension_unit_id: null,
     length: '',
     width: '',
     height: '',

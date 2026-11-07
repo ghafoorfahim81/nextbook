@@ -12,6 +12,7 @@
  */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { usePage } from '@inertiajs/vue3'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import { Checkbox } from '@/Components/ui/checkbox'
@@ -43,6 +44,22 @@ const shows = (field) => Boolean(props.visibleFields?.[field])
 const anyOf = (fields) => fields.some(shows)
 
 const showPhysical = computed(() => anyOf(['weight', 'dimensions']))
+
+// Weight takes a unit from the "weight" category, dimensions one from "length".
+const page = usePage()
+const allUnits = computed(() => {
+    const list = page.props.unitMeasures
+    return list?.data ?? list ?? []
+})
+const unitsOf = (slug) => allUnits.value.filter((u) => (u.quantity?.slug ?? u.quantity_slug) === slug)
+const weightUnits = computed(() => unitsOf('weight'))
+const lengthUnits = computed(() => unitsOf('length'))
+const unitModel = (field, options) => computed({
+    get: () => options.value.find((u) => u.id === props.form[field]) ?? null,
+    set: (v) => { props.form[field] = v?.id ?? null },
+})
+const weightUnit = unitModel('weight_unit_id', weightUnits)
+const dimensionUnit = unitModel('dimension_unit_id', lengthUnits)
 
 const showCompliance = computed(() => anyOf([
     'manufacturer', 'model', 'country_of_origin', 'hs_code', 'warranty_months',
@@ -96,6 +113,17 @@ const behaviourFlags = computed(() => ([
                     :error="form.errors?.weight"
                     :hint="t('item.hint.weight')"
                 />
+                <NextSelect
+                    v-if="shows('weight')"
+                    v-model="weightUnit"
+                    :options="weightUnits"
+                    label-key="name"
+                    value-key="id"
+                    :reduce="(u) => u"
+                    :floating-text="t('item.weight_unit')"
+                    :disabled="disabled"
+                    :error="form.errors?.weight_unit_id"
+                />
                 <template v-if="shows('dimensions')">
                     <NextInput
                         :label="t('item.length')"
@@ -120,6 +148,16 @@ const behaviourFlags = computed(() => ([
                         v-model="form.height"
                         :disabled="disabled"
                         :error="form.errors?.height"
+                    />
+                    <NextSelect
+                        v-model="dimensionUnit"
+                        :options="lengthUnits"
+                        label-key="name"
+                        value-key="id"
+                        :reduce="(u) => u"
+                        :floating-text="t('item.dimension_unit')"
+                        :disabled="disabled"
+                        :error="form.errors?.dimension_unit_id"
                     />
                 </template>
             </div>

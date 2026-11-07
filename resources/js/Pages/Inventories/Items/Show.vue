@@ -82,7 +82,8 @@ const filled = (value) => value !== null && value !== undefined && value !== '' 
 
 const dimensions = computed(() => {
     const { length, width, height } = itemData.value || {};
-    return [length, width, height].some(filled) ? `${length ?? '—'} × ${width ?? '—'} × ${height ?? '—'}` : null;
+    const unit = itemData.value?.dimension_unit_name ? ` ${itemData.value.dimension_unit_name}` : '';
+    return [length, width, height].some(filled) ? `${length ?? '—'} × ${width ?? '—'} × ${height ?? '—'}${unit}` : null;
 });
 
 const sourcingDetails = computed(() => [
@@ -94,7 +95,7 @@ const sourcingDetails = computed(() => [
     { label: t('item.shelf_life_days'), value: itemData.value?.shelf_life_days, icon: CalendarClock },
     { label: t('item.min_shelf_life_percent'), value: itemData.value?.min_shelf_life_percent, icon: CalendarClock },
     { label: t('item.storage_zone'), value: itemData.value?.storage_zone ? t(`item.storage_zones.${itemData.value.storage_zone}`) : null, icon: Boxes },
-    { label: t('item.weight'), value: itemData.value?.weight, icon: Scale },
+    { label: t('item.weight'), value: filled(itemData.value?.weight) ? `${itemData.value.weight}${itemData.value.weight_unit_name ? ' ' + itemData.value.weight_unit_name : ''}` : null, icon: Scale },
     { label: t('item.dimensions'), value: dimensions.value, icon: Ruler },
 ].filter((row) => filled(row.value)));
 
@@ -548,6 +549,7 @@ onMounted(() => {
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.maximum_stock') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.weight') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('general.on_hand') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.stock_by_warehouse') }}</th>
                                     <th class="py-2 px-3 text-center font-medium whitespace-nowrap">{{ t('general.status') }}</th>
                                 </tr>
                             </thead>
@@ -568,8 +570,14 @@ onMounted(() => {
                                     <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatMoney(variant.avg_cost) }}</td>
                                     <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.minimum_stock) }}</td>
                                     <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.maximum_stock) }}</td>
-                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.weight) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatOptionalQty(variant.weight) }}<span v-if="variant.weight && itemData?.weight_unit_name"> {{ itemData.weight_unit_name }}</span></td>
                                     <td class="py-2 px-3 text-end whitespace-nowrap font-semibold text-foreground">{{ formatQty(variant.on_hand) }}</td>
+                                    <td class="py-2 px-3 text-start">
+                                        <div class="flex flex-wrap gap-1">
+                                            <span v-for="w in variant.warehouse_stock || []" :key="w.warehouse_id" class="rounded-md border border-border bg-muted/50 px-2 py-0.5 text-xs whitespace-nowrap">{{ w.warehouse_name || '—' }}: <b>{{ formatQty(w.quantity) }}</b></span>
+                                            <span v-if="!(variant.warehouse_stock || []).length" class="text-muted-foreground">—</span>
+                                        </div>
+                                    </td>
                                     <td class="py-2 px-3 text-center whitespace-nowrap">
                                         <span
                                             class="rounded-full border px-2 py-0.5 text-xs"
@@ -599,6 +607,7 @@ onMounted(() => {
                                 <tr class="bg-muted/60 text-muted-foreground">
                                     <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('general.on_hand') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.stock_by_warehouse') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.reserved') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.available') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.stock_value') }}</th>

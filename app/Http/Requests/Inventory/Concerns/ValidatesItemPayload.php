@@ -126,6 +126,8 @@ trait ValidatesItemPayload
 
             // --- Physical --------------------------------------------------
             'weight' => ['nullable', 'numeric', 'min:0'],
+            'weight_unit_id' => ['nullable', 'string', 'exists:unit_measures,id'],
+            'dimension_unit_id' => ['nullable', 'string', 'exists:unit_measures,id'],
             'length' => ['nullable', 'numeric', 'min:0'],
             'width' => ['nullable', 'numeric', 'min:0'],
             'height' => ['nullable', 'numeric', 'min:0'],

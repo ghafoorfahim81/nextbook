@@ -78,7 +78,7 @@ final class DomainShared
                 CacheKey::forCompanyBranchLocale($request, 'items'),
                 $cacheDuration,
                 fn() => ItemResource::collection(
-                    Item::query()->orderBy('id')->limit(10)->get()
+                    Item::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
                 )
             )),
             'roles' => Inertia::lazy(fn() => Cache::remember(

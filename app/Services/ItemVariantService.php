@@ -27,6 +27,17 @@ class ItemVariantService
         foreach ($payload as $index => $row) {
             $variant = $this->resolve($item, $existing, $row);
 
+            // A variant that has been used keeps the attributes, name, SKU and
+            // barcode its documents were written against. Prices, thresholds
+            // and the default flag stay editable.
+            if ($variant->hasTransactions()) {
+                $row['attributes'] = (array) $variant->getAttribute('attributes');
+                $row['name'] = $variant->name;
+                $row['sku'] = $variant->sku;
+                $row['barcode'] = $variant->barcode;
+                $row['is_active'] = true;
+            }
+
             $variant->fill([
                 'attributes' => (object) ($row['attributes'] ?? []),
                 'name' => $row['name'] ?? null,
@@ -180,6 +191,11 @@ class ItemVariantService
         $existing
             ->reject(fn (ItemVariant $variant) => in_array($variant->id, $kept, true))
             ->each(function (ItemVariant $variant) {
+                // Used in a document: it can be neither deleted nor retired.
+                if ($variant->hasTransactions()) {
+                    return;
+                }
+
                 if ($variant->canBeDeleted()) {
                     $variant->delete();
 

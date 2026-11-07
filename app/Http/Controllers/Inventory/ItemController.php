@@ -247,7 +247,7 @@ class ItemController extends Controller
         $item->load(
             'assetAccount', 'incomeAccount', 'costAccount',
             'createdBy', 'updatedBy', 'brand', 'stocks', 'attachments',
-            'variants.stockBalances', 'unitMeasure', 'category', 'defaultWarehouse',
+            'variants.stockBalances.warehouse', 'unitMeasure', 'weightUnit', 'dimensionUnit', 'category', 'defaultWarehouse',
         );
 
         if ($request->expectsJson()) {
@@ -451,7 +451,7 @@ class ItemController extends Controller
     public function edit(Request $request, Item $item)
     {
         $item = Item::with(
-            'unitMeasure', 'brand', 'category',
+            'unitMeasure', 'weightUnit', 'dimensionUnit', 'brand', 'category',
             'assetAccount', 'incomeAccount', 'costAccount',
             'openings.warehouse', 'openings.variant', 'attachments',
             'variants',

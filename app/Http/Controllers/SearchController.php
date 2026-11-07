@@ -285,7 +285,7 @@ class SearchController extends Controller
         }
 
         // Use Eloquent so ItemResource receives models (not stdClass) and can access relations
-        $query = Item::query()
+        $query = Item::query()->where('is_active', true)
             ->with($relations)
             ->where(function ($q) use ($searchTerm, $fields, $withVariants) {
                 foreach ($fields as $field) {
@@ -387,7 +387,7 @@ class SearchController extends Controller
     {
         $searchableFields = ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'];
 
-        $query = Item::query()
+        $query = Item::query()->where('is_active', true)
             ->select([
                 'id', 'name', 'code', 'generic_name', 'packing', 'barcode',
                 'unit_measure_id', 'brand_id', 'category_id',
