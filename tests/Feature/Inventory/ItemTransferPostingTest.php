@@ -357,6 +357,46 @@ class ItemTransferPostingTest extends TestCase
         }
     }
 
+    public function test_a_transfer_gets_a_number_and_its_entries_carry_the_reference(): void
+    {
+        $this->seedStock(10, 15);
+
+        $transfer = $this->createTransfer(quantity: 4, unitPrice: 15, extra: [
+            'has_transfer_cost' => true,
+            'transfer_cost' => 250,
+            'bank_account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+        ]);
+
+        $this->assertNotEmpty($transfer->number);
+
+        $this->patch(route('item-transfers.complete', $transfer))->assertRedirect();
+
+        $references = Transaction::query()
+            ->where('reference_type', ItemTransfer::class)
+            ->where('reference_id', $transfer->id)
+            ->pluck('voucher_number');
+
+        $this->assertNotEmpty($references);
+        $references->each(fn ($ref) => $this->assertSame('Item Transfer #'.$transfer->number, $ref));
+    }
+
+    public function test_the_home_currency_rate_is_forced_to_one(): void
+    {
+        $this->seedStock(10, 15);
+
+        $transfer = $this->createTransfer(quantity: 4, unitPrice: 15, extra: [
+            'has_transfer_cost' => true,
+            'transfer_cost' => 250,
+            'bank_account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 70,
+        ]);
+
+        $this->assertEquals(1.0, (float) $transfer->rate);
+    }
+
     private function seedStock(float $quantity, float $unitCost): void
     {
         app(StockService::class)->post([

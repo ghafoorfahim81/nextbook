@@ -1,5 +1,8 @@
 {
   "item_transfer": "Item Transfer",
+  "duplicate_item": "This item (same variant and batch) is already on another line.",
+  "warehouse_changed": "Source warehouse changed: item details were refreshed from the new warehouse; batches were cleared.",
+  "rows_removed": "These items have no stock in the new warehouse and were removed: {items}",
   "item_transfers": "Item Transfers",
   "from_store": "From Store",
   "to_store": "To Store",

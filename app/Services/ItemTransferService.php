@@ -48,6 +48,7 @@ class ItemTransferService
             // Create transfer record
             $transfer = ItemTransfer::create([
                 'company_id' => $source?->company_id,
+                'number' => ItemTransfer::nextNumber(),
                 'branch_id' => $source?->branch_id,
                 // Phase 4: a different branch here makes it a send-and-receive.
                 'to_branch_id' => $this->branchOfWarehouse($data['to_warehouse_id']),
@@ -484,6 +485,7 @@ class ItemTransferService
                 'rate' => 1,
                 'date' => $receiving ? now()->toDateString() : $this->dateConversionService->toGregorian($transfer->date),
                 'remark' => $remark[0],
+                'voucher_number' => $this->voucherReference($transfer),
                 'reference_type' => ItemTransfer::class,
                 'reference_id' => $transfer->id,
                 'status' => TransactionStatus::POSTED->value,
@@ -672,15 +674,29 @@ class ItemTransferService
             ];
         }
 
+        $currencyId = $data['currency_id'] ?? CompanyContext::homeCurrency()?->id;
+
         return [
             'has_transfer_cost' => true,
             'transfer_cost' => $data['transfer_cost'] ?? null,
             'bank_account_id' => $data['bank_account_id'] ?? null,
             'expense_account_id' => $data['expense_account_id']
                 ?? CompanyContext::glAccount('item-transfer-expense'),
-            'currency_id' => $data['currency_id'] ?? CompanyContext::homeCurrency()?->id,
-            'rate' => $data['rate'] ?? 1,
+            'currency_id' => $currencyId,
+            // The home currency is worth exactly one of itself: its rate is
+            // fixed, whatever the request says.
+            'rate' => $this->isHomeCurrency($currencyId) ? 1 : ($data['rate'] ?? 1),
         ];
+    }
+
+    private function isHomeCurrency(?string $currencyId): bool
+    {
+        if (! $currencyId) {
+            return true;
+        }
+
+        return $currencyId === CompanyContext::homeCurrency()?->id
+            || (bool) \App\Models\Administration\Currency::query()->whereKey($currencyId)->value('is_base_currency');
     }
 
     /**
@@ -744,6 +760,7 @@ class ItemTransferService
                 // The header has no per-language columns, so it carries the
                 // English wording; the lines below are what the ledger shows.
                 'remark' => 'Transfer cost for item transfer ' . $route,
+                'voucher_number' => $this->voucherReference($transfer),
                 'reference_type' => ItemTransfer::class,
                 'reference_id' => $transfer->id,
                 'status' => TransactionStatus::POSTED->value,
@@ -768,6 +785,14 @@ class ItemTransferService
                 ],
             ],
         );
+    }
+
+    /**
+     * The reference its ledger entries carry, e.g. "Item Transfer #12".
+     */
+    private function voucherReference(ItemTransfer $transfer): ?string
+    {
+        return filled($transfer->number) ? 'Item Transfer #' . $transfer->number : null;
     }
 
     /**
@@ -798,7 +823,7 @@ class ItemTransferService
             $quantity = is_array($item) ? $item['quantity'] : $item->quantity;
 
             // dd($quantity);
-            $stockLevel = $this->stockService->getStockLevel($itemId, $fromWarehouseId, $item['batch'] ?? null, $item['expire_date'] ?? null);
+            $stockLevel = $this->stockService->getStockLevel($itemId, $fromWarehouseId, $item['batch'] ?? null, $item['expire_date'] ?? null, $item['variant_id'] ?? null);
             if ($stockLevel['available'] < $quantity) {
                 $itemModel = \App\Models\Inventory\Item::find($itemId);
                 $itemName = $itemModel->name ?? 'Unknown';

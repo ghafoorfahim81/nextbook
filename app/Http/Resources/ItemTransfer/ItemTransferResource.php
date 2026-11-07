@@ -21,6 +21,7 @@ class ItemTransferResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'number' => $this->number,
             'date' => $dateConversionService->toDisplay($this->date),
             'from_warehouse_id' => $this->from_warehouse_id,
             'from_warehouse' => $this->whenLoaded('fromWarehouse', fn() => [

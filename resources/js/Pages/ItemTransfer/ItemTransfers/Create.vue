@@ -16,7 +16,8 @@ import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
-import { pickDefaultVariant, resolveVariantOnHand } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantOnHand, batchOptionsForRow } from '@/composables/useVariantLine'
+import { refreshRowsForWarehouse } from '@/composables/useTransferWarehouseRefresh'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { Switch } from '@/Components/ui/switch'
 import { Label } from '@/Components/ui/label'
@@ -142,13 +143,72 @@ const applyCreateDefaults = () => {
   applyTransferCostDefaults()
 }
 
-watch(() => form.from_warehouse_id, (warehouseId) => {
+watch(() => form.from_warehouse_id, async (warehouseId, previousId) => {
   if (!warehouseId) {
     itemOptions.value = []
     return
   }
   loadItemOptions(warehouseId)
+
+  // A change of source warehouse (not the first default) leaves the filled
+  // lines showing the old warehouse's batches and stock: refresh them.
+  if (previousId && previousId !== warehouseId) {
+    const { refreshed, removed } = await refreshRowsForWarehouse({
+      rows: form.items,
+      warehouseId,
+      createEmptyRow,
+      reprice: repriceRow,
+    })
+
+    if (refreshed || removed.length) {
+      toast({
+        title: t('general.info'),
+        description: [
+          refreshed ? t('item_transfer.warehouse_changed') : null,
+          removed.length ? t('item_transfer.rows_removed', { items: removed.join(', ') }) : null,
+        ].filter(Boolean).join(' '),
+        class: 'bg-amber-600 text-white',
+      })
+    }
+  }
 }, { immediate: true });
+
+/**
+ * The same item, variant, batch and expiry on two lines is nearly always a slip
+ * — the stock check sees each line alone, so both would pass and together ask
+ * for more than is there.
+ */
+const isDuplicateRow = (index) => {
+  const row = form.items[index]
+  if (!row?.item_id) return false
+
+  return form.items.some((other, i) => i !== index
+    && other.item_id === row.item_id
+    && (other.variant_id || null) === (row.variant_id || null)
+    && (other.batch || '') === (row.batch || '')
+    && (other.expire_date || '') === (row.expire_date || ''))
+}
+
+const warnIfDuplicate = (index) => {
+  if (!isDuplicateRow(index)) return
+  toast({
+    title: t('general.warning'),
+    description: t('item_transfer.duplicate_item'),
+    variant: 'destructive',
+    class: 'bg-amber-600 text-white',
+  })
+}
+
+// Bumped after "create and new" so the whole grid is rebuilt from scratch.
+const formKey = ref(0)
+
+// The home currency's rate is fixed at 1.
+const isHomeCurrency = computed(() => Boolean(
+  form.currency_id && (
+    form.currency_id === homeCurrency.value?.id
+    || currencies.value.find(c => c.id === form.currency_id)?.is_base_currency
+  )
+))
 
 /**
  * Turning the switch off clears everything behind it, so a cost that was typed
@@ -181,7 +241,7 @@ const applyTransferCostDefaults = () => {
       || null
     form.selected_currency = preferred
     form.currency_id = preferred?.id || ''
-    form.rate = Number(preferred?.exchange_rate) || 1
+    form.rate = preferred?.is_base_currency ? 1 : (Number(preferred?.exchange_rate) || 1)
   }
 }
 
@@ -190,7 +250,7 @@ watch(() => form.has_transfer_cost, applyTransferCostDefaults)
 const handleCurrencyChange = (currency) => {
   form.selected_currency = currency || null
   form.currency_id = currency?.id || ''
-  form.rate = Number(currency?.exchange_rate) || 1
+  form.rate = currency?.is_base_currency ? 1 : (Number(currency?.exchange_rate) || 1)
 }
 
 const sameWarehouseError = computed(() => {
@@ -238,6 +298,7 @@ const handleItemChange = (index, selectedItem) => {
   row.batch = ''
   row.expire_date = ''
   repriceRow(row)
+  warnIfDuplicate(index)
 }
 
 /**
@@ -274,8 +335,12 @@ const handleVariantChange = (index, variant) => {
   if (!row) return
   row.selected_variant = variant || null
   row.variant_id = variant?.id || null
-  // Switching variant moves both the on-hand shown and the cost used with it.
+  // The batch belongs to the previous variant's stock.
+  row.selected_batch = null
+  row.batch = ''
+  row.expire_date = ''
   repriceRow(row)
+  warnIfDuplicate(index)
 }
 
 function handleBatchChange(index, batch){
@@ -283,6 +348,7 @@ function handleBatchChange(index, batch){
     if (!row) return
     row.batch = batch?.batch || ''
     row.expire_date = batch?.expire_date || ''
+    warnIfDuplicate(index)
     // A batch carries its own on-hand, which onhand(index) now reads straight
     // off selected_batch; the stale row.on_hand copy it used to write was
     // passed the row instead of its index and always came back empty.
@@ -392,10 +458,19 @@ function handleSubmit(createAndNew = false) {
       })
 
       if (createAndNew) {
+        // Start from a clean sheet: reset the fields, then rebuild the grid
+        // (and the form around it) so no row keeps a stale item, batch or
+        // selection from the transfer just saved.
+        form.transform((d) => d)
         form.reset()
+        form.clearErrors()
         form.items = defaultTransferRows()
         form.attachments = []
+        form.selected_to_warehouse = null
+        form.to_warehouse_id = ''
+        form.remarks = ''
         applyCreateDefaults()
+        formKey.value += 1
       }
     },
     onError: (errors) => {
@@ -438,7 +513,7 @@ const saveFormRef = useSaveShortcut({ form })
 <template>
   <AppLayout :title="t('general.create', { name: t('item_transfer.item_transfer') })" :sidebar-collapsed="true">
     <FormPageToolbar confirm-module="item_transfer" back-route="item-transfers.index" module="transfer" />
-    <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
+    <form :key="formKey" ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
       <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('item_transfer.item_transfer') }) }}
@@ -514,6 +589,7 @@ const saveFormRef = useSaveShortcut({ form })
           />
           <NextInput
             v-model="form.rate"
+            :disabled="isHomeCurrency"
             type="number"
             step="any"
             inputmode="decimal"
@@ -583,7 +659,7 @@ const saveFormRef = useSaveShortcut({ form })
             </tr>
           </thead>
           <tbody class="p-2">
-            <tr v-for="(item, index) in form.items" :key="item.id || index" class="hover:bg-muted/40 transition-colors">
+            <tr v-for="(item, index) in form.items" :key="`${formKey}-${index}`" class="hover:bg-muted/40 transition-colors" :class="{ 'bg-amber-500/10': isDuplicateRow(index) }" :title="isDuplicateRow(index) ? t('item_transfer.duplicate_item') : null">
               <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
@@ -615,7 +691,7 @@ const saveFormRef = useSaveShortcut({ form })
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
-                    :options="item.selected_item?.batches"
+                    :options="batchOptionsForRow(item)"
                     v-model="item.selected_batch"
                     label-key="batch"
                     :placeholder="t('general.search_or_select')"

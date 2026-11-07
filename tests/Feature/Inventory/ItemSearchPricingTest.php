@@ -55,6 +55,45 @@ class ItemSearchPricingTest extends TestCase
         return $row;
     }
 
+    public function test_the_same_batch_under_two_variants_is_listed_apart(): void
+    {
+        $item = $this->ctx['item'];
+
+        $variants = app(\App\Services\ItemVariantService::class)->sync($item, [
+            ['attributes' => ['color' => 'white'], 'is_default' => true],
+            ['attributes' => ['color' => 'orange']],
+        ]);
+        $white = $variants->firstWhere('variant_key', \App\Models\Inventory\ItemVariant::makeKey(['color' => 'white']));
+        $orange = $variants->firstWhere('variant_key', \App\Models\Inventory\ItemVariant::makeKey(['color' => 'orange']));
+
+        foreach ([[$white, 12], [$orange, 5]] as [$variant, $qty]) {
+            app(\App\Services\StockService::class)->post([
+                'item_id' => $item->id,
+                'variant_id' => $variant->id,
+                'movement_type' => \App\Enums\StockMovementType::IN->value,
+                'unit_measure_id' => $this->ctx['unit_measure']->id,
+                'quantity' => $qty,
+                'source' => \App\Enums\StockSourceType::PURCHASE->value,
+                'unit_cost' => 10,
+                'status' => \App\Enums\StockStatus::POSTED->value,
+                'date' => '2026-03-10',
+                'batch' => 'A1',
+                'expire_date' => '2027-01-01',
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'branch_id' => $this->ctx['branch']->id,
+                'reference_type' => null,
+                'reference_id' => null,
+            ]);
+        }
+
+        $payload = $this->searchPayload();
+        $byVariant = collect($payload['variant_batches'])->keyBy('variant_id');
+
+        $this->assertEquals(12, $byVariant[$white->id]['on_hand']);
+        $this->assertEquals(5, $byVariant[$orange->id]['on_hand']);
+        $this->assertSame('A1', $byVariant[$orange->id]['batch']);
+    }
+
     public function test_a_variant_carries_its_sale_price_so_a_sale_form_can_fill_it(): void
     {
         $variant = $this->variant(['sale_price' => 250, 'purchase_price' => 90, 'avg_cost' => 80]);

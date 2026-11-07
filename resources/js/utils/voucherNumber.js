@@ -9,6 +9,7 @@ const PATTERNS = [
     { re: /^Purchase #(.*)$/i, key: 'purchase', hash: true },
     { re: /^Receipt #(.*)$/i, key: 'receipt', hash: true },
     { re: /^Payment #(.*)$/i, key: 'payment', hash: true },
+    { re: /^Item Transfer #(.*)$/i, key: 'item_transfer', hash: true },
     { re: /^Transfer #(.*)$/i, key: 'transfer', hash: true },
     { re: /^Adjustment #(.*)$/i, key: 'adjustment', hash: true },
     { re: /^journal #(.*)$/i, key: 'journal', hash: true },

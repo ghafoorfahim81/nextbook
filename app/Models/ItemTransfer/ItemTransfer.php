@@ -17,16 +17,18 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Concerns\HasSequentialNumber;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransfer extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
+    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, CompanySpecific, HasCompany, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes, HasSequentialNumber;
 
     protected $table = 'item_transfers';
 
     protected $fillable = [
         'company_id',
+        'number',
         'date',
         'from_warehouse_id',
         'to_warehouse_id',
@@ -72,6 +74,7 @@ class ItemTransfer extends Model
         return [
             'date',
             'status',
+            'number',
             'remarks',
             'fromWarehouse.name',
             'toWarehouse.name',

@@ -52,6 +52,7 @@ const showItem = (id) => {
 }
 
 const columns = computed(() => ([
+  { key: 'number', label: t('general.number') },
   { key: 'date', label: t('general.date'), sortable: true },
   { key: 'from_warehouse.name', label: t('item_transfer.from_warehouse') },
   { key: 'to_warehouse.name', label: t('item_transfer.to_warehouse') },

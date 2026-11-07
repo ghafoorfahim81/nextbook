@@ -88,8 +88,24 @@ export function repriceRow(row, variant, direction) {
  * back to the item's total on-hand.
  */
 export function resolveVariantOnHand(row) {
-  const variantOnHand = (!row.selected_batch && row.selected_variant?.has_stock)
-    ? row.selected_variant.on_hand
+  const variants = row.item_variants?.length ? row.item_variants : (row.selected_item?.item_variants || [])
+  const variant = row.selected_variant
+
+  // On an item with several variants, one that has no stock of its own recorded
+  // must not fall back to the item's total — that total is the other variants'
+  // stock. Only the default variant inherits what carries no variant at all
+  // (stock from before variants existed): the total less every variant's share.
+  if (!row.selected_batch && variant && variants.length > 1 && !variant.has_stock) {
+    if (!variant.is_default) return 0
+
+    const itemTotal = Number(row.selected_item?.on_hand) || 0
+    const recorded = variants.reduce((sum, v) => sum + (v.has_stock ? Number(v.on_hand) || 0 : 0), 0)
+
+    return Math.max(0, itemTotal - recorded)
+  }
+
+  const variantOnHand = (!row.selected_batch && variant?.has_stock)
+    ? variant.on_hand
     : null
   const fallback = row?.selected_batch?.on_hand ?? row.selected_item?.on_hand
   const value = variantOnHand ?? fallback
@@ -107,4 +123,29 @@ export function resolveVariantOnHand(row) {
  */
 export function resolveVariantAverageCost(item, variant) {
   return positive(variant?.avg_cost) ?? positive(item?.avg_cost) ?? 0
+}
+
+/**
+ * The batches a row may pick from: only the selected variant's own.
+ *
+ * The item's merged `batches` list adds a batch's stock up across variants, so a
+ * white phone and an orange phone from the same lot would each show the combined
+ * figure. `variant_batches` keeps them apart. Stock recorded before variants
+ * existed has no variant and counts for the default one. Payloads without
+ * `variant_batches` (older cached responses) fall back to the merged list.
+ */
+export function batchOptionsForRow(row) {
+  const item = row?.selected_item
+  const split = item?.variant_batches
+
+  if (!Array.isArray(split)) return item?.batches || []
+
+  const variantId = row.selected_variant?.id ?? item.default_variant_id ?? null
+  const defaultId = item.default_variant_id ?? null
+
+  return split
+    .filter((b) => b.batch && (b.variant_id === variantId || (!b.variant_id && variantId === defaultId)))
+    .map(({ batch, expire_date, on_hand, reserved_out, available, avg_cost }) => ({
+      batch, expire_date, on_hand, reserved_out, available, avg_cost,
+    }))
 }

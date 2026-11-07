@@ -980,10 +980,13 @@ class StockService
         return $item->effectiveCostingMethod()->value;
     }
 
-    public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null): array
+    public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null, ?string $variantId = null): array
     {
         $totalStock = StockBalance::where('item_id', $itemId)
             ->where('warehouse_id', $warehouseId)
+            // Stock recorded before variants existed carries no variant, and
+            // belongs to whichever variant is asked for.
+            ->when($variantId, fn ($query) => $query->where(fn ($q) => $q->where('variant_id', $variantId)->orWhereNull('variant_id')))
             ->when($batch, function($query) use ($batch) {
                 return $query->where('batch', $batch);
             })

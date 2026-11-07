@@ -14,6 +14,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
 import axios from 'axios'
 import { pickDefaultVariant, resolveVariantOnHand } from '@/composables/useVariantLine'
+import { refreshRowsForWarehouse } from '@/composables/useTransferWarehouseRefresh'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { Switch } from '@/Components/ui/switch'
 import { Label } from '@/Components/ui/label'
@@ -168,7 +169,63 @@ const ensureTrailingBlankRow = () => {
   }
 }
 
-watch(() => form.from_warehouse_id, (warehouseId) => loadItemOptions(warehouseId), { immediate: true })
+watch(() => form.from_warehouse_id, async (warehouseId, previousId) => {
+  await loadItemOptions(warehouseId)
+
+  // Changing the source warehouse leaves each line showing the old warehouse's
+  // stock and batches: re-read them from the new one.
+  if (previousId && warehouseId && previousId !== warehouseId) {
+    const { refreshed, removed } = await refreshRowsForWarehouse({
+      rows: form.items,
+      warehouseId,
+      createEmptyRow,
+      reprice: repriceRow,
+    })
+
+    if (refreshed || removed.length) {
+      toast({
+        title: t('general.info'),
+        description: [
+          refreshed ? t('item_transfer.warehouse_changed') : null,
+          removed.length ? t('item_transfer.rows_removed', { items: removed.join(', ') }) : null,
+        ].filter(Boolean).join(' '),
+        class: 'bg-amber-600 text-white',
+      })
+    }
+
+    ensureTrailingBlankRow()
+  }
+}, { immediate: true })
+
+/** The same item, variant and batch on two lines is nearly always a slip. */
+const isDuplicateRow = (index) => {
+  const row = form.items[index]
+  if (!row?.item_id) return false
+
+  return form.items.some((other, i) => i !== index
+    && other.item_id === row.item_id
+    && (other.variant_id || null) === (row.variant_id || null)
+    && (other.batch || '') === (row.batch || '')
+    && (other.expire_date || '') === (row.expire_date || ''))
+}
+
+const warnIfDuplicate = (index) => {
+  if (!isDuplicateRow(index)) return
+  toast({
+    title: t('general.warning'),
+    description: t('item_transfer.duplicate_item'),
+    variant: 'destructive',
+    class: 'bg-amber-600 text-white',
+  })
+}
+
+// The home currency's rate is fixed at 1.
+const isHomeCurrency = computed(() => Boolean(
+  form.currency_id && (
+    form.currency_id === homeCurrency.value?.id
+    || currencies.value.find(c => c.id === form.currency_id)?.is_base_currency
+  )
+))
 
 /**
  * Turning the switch off clears everything behind it, so a cost that was typed
@@ -200,7 +257,7 @@ const applyTransferCostDefaults = () => {
       || null
     form.selected_currency = preferred
     form.currency_id = preferred?.id || ''
-    form.rate = Number(preferred?.exchange_rate) || 1
+    form.rate = preferred?.is_base_currency ? 1 : (Number(preferred?.exchange_rate) || 1)
   }
 }
 
@@ -209,7 +266,7 @@ watch(() => form.has_transfer_cost, applyTransferCostDefaults)
 const handleCurrencyChange = (currency) => {
   form.selected_currency = currency || null
   form.currency_id = currency?.id || ''
-  form.rate = Number(currency?.exchange_rate) || 1
+  form.rate = currency?.is_base_currency ? 1 : (Number(currency?.exchange_rate) || 1)
 }
 
 const sameWarehouseError = computed(() => {
@@ -256,6 +313,7 @@ const handleItemChange = (index, selectedItem) => {
   row.selected_variant = pickDefaultVariant(row.item_variants)
   row.variant_id = row.selected_variant?.id || null
   repriceRow(row)
+  warnIfDuplicate(index)
 
   if (index === form.items.length - 1) {
     addRow()
@@ -312,6 +370,7 @@ const handleVariantChange = (index, variant) => {
   row.variant_id = variant?.id || null
   // Switching variant moves both the on-hand shown and the cost used with it.
   repriceRow(row)
+  warnIfDuplicate(index)
 }
 
 const isRowEnabled = (index) => {
@@ -516,6 +575,7 @@ const saveFormRef = useSaveShortcut({ form })
           />
           <NextInput
             v-model="form.rate"
+            :disabled="isHomeCurrency"
             type="number"
             step="any"
             inputmode="decimal"
@@ -585,7 +645,7 @@ const saveFormRef = useSaveShortcut({ form })
             </tr>
           </thead>
           <tbody class="p-2">
-            <tr v-for="(item, index) in form.items" :key="item.id || index" class="hover:bg-muted/40 transition-colors">
+            <tr v-for="(item, index) in form.items" :key="item.id || index" class="hover:bg-muted/40 transition-colors" :class="{ 'bg-amber-500/10': isDuplicateRow(index) }" :title="isDuplicateRow(index) ? t('item_transfer.duplicate_item') : null">
               <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect

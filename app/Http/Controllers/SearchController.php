@@ -458,6 +458,7 @@ class SearchController extends Controller
         $batchSummaries = [];
         $expirySummaries = [];
         $variantIdSummaries = [];
+        $variantBatchSummaries = [];
         $nonBatchOnHand = 0;
         $nonBatchReservedOut = 0;
         $nonBatchReservedIn = 0;
@@ -487,6 +488,22 @@ class SearchController extends Controller
             }
 
             $batchKey = trim((string) ($balance->batch ?? ''));
+
+            // The same batch code can exist under several variants (the white
+            // and the orange phone both from lot "A1"), each with its own
+            // stock. The merged `batches` list below cannot tell them apart,
+            // so keep a per-variant copy for forms that pick a variant first.
+            if ($batchKey !== '' || $balance->expire_date) {
+                $variantBatchKey = ($balance->variant_id ?? '') . '|' . $batchKey . '|' . (string) $balance->expire_date;
+                $variantBatchSummaries[$variantBatchKey] = [
+                    'variant_id' => $balance->variant_id,
+                    'batch' => $batchKey,
+                    'expire_date' => $balance->expire_date,
+                    'on_hand' => ($variantBatchSummaries[$variantBatchKey]['on_hand'] ?? 0) + $onHand,
+                    'reserved_out' => ($variantBatchSummaries[$variantBatchKey]['reserved_out'] ?? 0) + $reservedOut,
+                ];
+            }
+
             if ($batchKey !== '') {
                 $hasBatch = true;
                 $summary = $batchSummaries[$batchKey] ?? [
@@ -599,6 +616,18 @@ class SearchController extends Controller
             'fast_search' => $item->fast_search,
             'batches' => array_values($batches ?? []),
             'expiry_batches' => array_values($expiryBatches ?? []),
+            // Batch / expiry stock split by variant: each row is one variant's
+            // own figure for that batch, so on-hand is never the sum across
+            // variants.
+            'variant_batches' => collect($variantBatchSummaries)->map(fn ($row) => [
+                'variant_id' => $row['variant_id'],
+                'batch' => $row['batch'],
+                'expire_date' => $row['expire_date'],
+                'on_hand' => round($row['on_hand'], 2),
+                'reserved_out' => round($row['reserved_out'], 2),
+                'available' => $availableFor((float) $row['on_hand'], (float) $row['reserved_out']),
+                'avg_cost' => $item->avg_cost,
+            ])->values()->all(),
             'has_variants' => $item->variants->count() > 1,
             // The real item_variants rows — every item has at least one.
             // Built without ItemVariant::displayName() to avoid an N+1: that
