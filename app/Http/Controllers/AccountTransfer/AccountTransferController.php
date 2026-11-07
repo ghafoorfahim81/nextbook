@@ -74,7 +74,7 @@ class AccountTransferController extends Controller
     {
         $latestNumber = (string) AccountTransfer::nextNumber();
         return inertia('AccountTransfers/Create', [
-            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+            'bankAccounts' => AccountResource::collection(Account::where('is_active', true)->whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
             )->orderBy('created_at','desc')->get()),
             'latestNumber' => $latestNumber,
@@ -242,7 +242,7 @@ class AccountTransferController extends Controller
         $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy', 'attachments']);
         return inertia('AccountTransfers/Edit', [
             'data' => new AccountTransferResource($accountTransfer),
-            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+            'bankAccounts' => AccountResource::collection(Account::where('is_active', true)->whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
             )->get()),
         ]);

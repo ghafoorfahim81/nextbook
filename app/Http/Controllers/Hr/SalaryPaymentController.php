@@ -189,7 +189,7 @@ class SalaryPaymentController extends Controller
     {
         return [
             'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name', 'local_name']),
-            'bankAccounts' => Account::query()
+            'bankAccounts' => Account::query()->where('is_active', true)
                 ->whereHas('accountType', fn ($query) => $query->where('slug', 'cash-or-bank'))
                 ->orderBy('name')
                 ->get(['id', 'name']),

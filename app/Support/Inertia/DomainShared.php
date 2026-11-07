@@ -30,7 +30,7 @@ final class DomainShared
                 CacheKey::forCompanyBranchLocale($request, 'accounts'),
                 $cacheDuration,
                 fn() => AccountResource::collection(
-                    Account::query()
+                    Account::query()->where('is_active', true)
                         // No 'branch': accounts belong to the company, and the
                         // model has had no branch relation since they moved up.
                         ->with(['accountType'])

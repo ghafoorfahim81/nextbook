@@ -102,6 +102,7 @@
     "opening_locked_cannot_update": "This opening balance cannot be updated because it has been used in transactions.",
     "opening_locked_issued": "Stock has been issued from this opening.",
     "opening_locked_posted": "This opening has already been posted.",
+    "opening_locked_used": "This item already has other stock transactions, so its opening cannot be changed.",
     "batch_warning": "If you enable batch tracking, you can't edit it once it is created.",
     "expiry_warning": "If you enable expiry tracking, you can't edit it once it is created.",
     "opening_warning": {

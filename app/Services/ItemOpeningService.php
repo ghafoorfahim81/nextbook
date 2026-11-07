@@ -89,6 +89,18 @@ class ItemOpeningService
             return 'item.opening_locked_issued';
         }
 
+        // Once the item has any stock movement of its own — a purchase, a
+        // transfer, an adjustment — the opening is part of its history and
+        // re-posting it would shift every balance and cost built on top.
+        $hasOtherMovement = StockMovement::query()
+            ->where('item_id', $opening->item_id)
+            ->where('source', '!=', StockSourceType::OPENING->value)
+            ->exists();
+
+        if ($hasOtherMovement) {
+            return 'item.opening_locked_used';
+        }
+
         // Anything left that is not a live draft — voided, cancelled, or posted
         // without a matching draw-down — has still been through the ledger.
         if ($this->statusValue($opening->status) !== StockStatus::DRAFT->value) {

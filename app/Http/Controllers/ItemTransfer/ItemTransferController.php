@@ -86,12 +86,12 @@ class ItemTransferController extends Controller
     {
         return [
             'bankAccounts' => AccountResource::collection(
-                Account::whereHas('accountType', fn ($q) => $q->where('slug', 'cash-or-bank'))
+                Account::where('is_active', true)->whereHas('accountType', fn ($q) => $q->where('slug', 'cash-or-bank'))
                     ->orderBy('name')
                     ->get()
             ),
             'expenseAccounts' => AccountResource::collection(
-                Account::whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
+                Account::where('is_active', true)->whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
                     ->orderBy('name')
                     ->get()
             ),

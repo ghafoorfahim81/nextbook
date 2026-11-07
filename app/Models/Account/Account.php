@@ -377,7 +377,7 @@ class Account extends Model
     public function getAccountsByAccountTypeSlug(string $slug)
     {
         $locale = app()->getLocale();
-        return $this->withoutGlobalScopes()->whereHas('accountType', function ($query) use ($slug, $locale) {
+        return $this->withoutGlobalScopes()->where('is_active', true)->whereHas('accountType', function ($query) use ($slug, $locale) {
             $query->where('slug', $slug);
         })->get()->map(function ($account) use ($locale) {
             return [

@@ -97,6 +97,7 @@ export function projectRealBalance(account, delta) {
 
 export function useAccountTransferBalances(form, bankAccounts) {
   const amount = toRef(form, 'amount')
+  const rate = toRef(form, 'rate')
   const fromAccountId = toRef(form, 'from_account_id')
   const toAccountId = toRef(form, 'to_account_id')
   const selectedFromAccount = toRef(form, 'selected_from_account')
@@ -115,7 +116,12 @@ export function useAccountTransferBalances(form, bankAccounts) {
     return selectedAccount
   }
 
-  const transferAmount = computed(() => parseNumeric(amount.value))
+  // Account balances are carried in the home currency, so a transfer made in
+  // another currency moves them by amount x rate.
+  const transferAmount = computed(() => {
+    const parsedRate = parseNumeric(rate.value)
+    return parseNumeric(amount.value) * (parsedRate > 0 ? parsedRate : 1)
+  })
 
   const fromAccountBalanceText = computed(() => {
     const account = resolveAccount(fromAccountId.value, selectedFromAccount.value)

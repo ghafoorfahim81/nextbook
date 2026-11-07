@@ -312,5 +312,9 @@
   "please_add_at_least_one_item_to_update_sale": "Please add at least one item to update the sale",
   "delete_blocked_title": "Related records found!",
   "status_change_blocked_title": "Status could not be changed",
-  "account_opening_locked": "The opening balance can no longer be changed because transactions have been recorded on this account."
+  "account_opening_locked": "The opening balance can no longer be changed because transactions have been recorded on this account.",
+  "voucher_prefix": {
+    "account_opening_balance": "Account Opening Balance", "opening_balance": "Opening Balance", "sale_return": "Sale Return", "sale": "Sale", "purchase_return": "Purchase Return", "purchase": "Purchase", "receipt": "Receipt", "payment": "Payment", "transfer": "Transfer", "adjustment": "Adjustment", "journal": "Journal", "reversal": "Reversal of"
+  },
+  "account_identity_locked": "The account number and type can no longer be changed because transactions have been recorded on this account."
 }

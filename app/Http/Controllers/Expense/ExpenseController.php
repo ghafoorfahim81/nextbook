@@ -81,10 +81,10 @@ class ExpenseController extends Controller
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
-            'expenseAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+            'expenseAccounts' => AccountResource::collection(Account::where('is_active', true)->whereHas('accountType', fn($q) =>
                 $q->where('slug', 'expense')
                 )->get()),
-            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+            'bankAccounts' => AccountResource::collection(Account::where('is_active', true)->whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
             )->get()),
         ]);
@@ -238,10 +238,10 @@ class ExpenseController extends Controller
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
-           'expenseAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+           'expenseAccounts' => AccountResource::collection(Account::where('is_active', true)->whereHas('accountType', fn($q) =>
                 $q->where('slug', 'expense')
             )->get()),
-            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+            'bankAccounts' => AccountResource::collection(Account::where('is_active', true)->whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
             )->get()),
         ]);

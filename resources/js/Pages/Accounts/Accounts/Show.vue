@@ -1,4 +1,5 @@
 <script setup>
+import { translateVoucherNumber } from '@/utils/voucherNumber';
 import AppLayout from '@/Layouts/Layout.vue';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -103,7 +104,7 @@ const transactionTableRows = computed(() =>
     transactionRows.value.map((row) => ({
         id: row.id,
         date: row.date,
-        reference_number: row.transaction_number,
+        reference_number: translateVoucherNumber(row.transaction_number, t),
         description: row.description || row.remark || '-',
         status: row.status,
         // Amounts stay in the currency they were posted in; `rate` is its own

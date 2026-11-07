@@ -108,6 +108,9 @@ const saveFormRef = useSaveShortcut({ form });
                     {{ t('general.update', { name: t('account.account') }) }}
                 </div>
 
+                <p v-if="openingLocked" class="mt-1 text-sm text-muted-foreground">
+                    {{ t('general.account_identity_locked') }}
+                </p>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput
                         is-required
@@ -125,14 +128,14 @@ const saveFormRef = useSaveShortcut({ form });
                     <NextInput
                         is-required
                         :label="t('general.number')"
-                        v-model="form.number"
+                        v-model="form.number" :disabled="openingLocked"
                         :error="form.errors?.number"
                         :placeholder="t('general.enter', { text: t('general.number') })"
                     />
 
                     <NextSelect
                         :options="accountTypes"
-                        v-model="form.selected_account_type"
+                        v-model="form.selected_account_type" :disabled="openingLocked"
                         @update:modelValue="(value) => handleSelectChange('account_type_id', value)"
                         label-key="name"
                         value-key="id"

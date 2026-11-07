@@ -576,6 +576,13 @@ class AccountController extends Controller
 
         $openingLocked = $this->openingIsLocked($chart_of_account);
 
+        // Once the account has been used, its number and type are part of how
+        // those entries read; changing them invites misreading the books.
+        if ($openingLocked) {
+            $validated['number'] = $chart_of_account->number;
+            $validated['account_type_id'] = $chart_of_account->account_type_id;
+        }
+
         DB::transaction(function () use ($chart_of_account, $validated, $openingLocked) {
             $chart_of_account->update($validated);
             $chart_of_account->unsetRelation('accountType');

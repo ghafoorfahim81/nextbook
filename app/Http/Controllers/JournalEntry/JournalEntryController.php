@@ -78,7 +78,7 @@ class JournalEntryController extends Controller
     {
         $latestNumber = (string) JournalEntry::nextNumber();
         return inertia('JournalEntry/JournalEntries/Create', [
-            'accounts' => AccountResource::collection(Account::query()->orderBy('created_at', 'desc')->get()),
+            'accounts' => AccountResource::collection(Account::query()->where('is_active', true)->orderBy('created_at', 'desc')->get()),
             'ledgers' => LedgerResource::collection(Ledger::query()->orderBy('created_at', 'desc')->get()),
             'journalClasses' => JournalClass::all(),
             'costCenters' => \App\Models\Accounting\CostCenter::query()->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
@@ -197,7 +197,7 @@ class JournalEntryController extends Controller
         $journalEntry->load(['transaction.currency', 'transaction.lines.account', 'transaction.lines.journalClass','transaction.lines.ledger', 'attachments']);
         return inertia('JournalEntry/JournalEntries/Edit', [
             'journalEntry' => new JournalEntryResource($journalEntry),
-            'accounts' => AccountResource::collection(Account::all()),
+            'accounts' => AccountResource::collection(Account::where('is_active', true)->get()),
             'ledgers' => LedgerResource::collection(Ledger::all()),
             'journalClasses' => JournalClassResource::collection(JournalClass::all()),
             'costCenters' => \App\Models\Accounting\CostCenter::query()->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),

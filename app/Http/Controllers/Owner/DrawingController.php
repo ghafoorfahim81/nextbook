@@ -212,7 +212,7 @@ class DrawingController extends Controller
                     ->get()
             ),
             'bankAccounts' => AccountResource::collection(
-                Account::query()
+                Account::query()->where('is_active', true)
                     ->whereHas('accountType', fn ($query) => $query->whereIn('slug', ['cash-or-bank']))
                     ->with(['opening.transaction.currency', 'opening.transaction.lines.account'])
                     ->orderBy('name')
