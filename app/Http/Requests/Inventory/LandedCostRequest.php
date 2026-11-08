@@ -65,6 +65,8 @@ class LandedCostRequest extends FormRequest
                 $validator->errors()->add('allocated_total', __('general.landed_cost_allocated_total_cannot_exceed_total_cost'));
             }
 
+            $this->assertRowsBelongToSelectedPurchases($validator, $items);
+
             $items->each(function ($item, $index) use ($validator) {
                 if (blank(data_get($item, 'quantity'))) {
                     $validator->errors()->add("items.$index.quantity", __('messages.validation.quantity_required'));
@@ -110,6 +112,41 @@ class LandedCostRequest extends FormRequest
                 }
             }
         });
+    }
+
+    /**
+     * Every row must be a line of one of the selected purchase bills.
+     *
+     * The form only ever builds rows from the picked bills, but the request is
+     * open to anyone with API access: without this a row could name any
+     * purchase line of the company — one already carrying a landed cost, or one
+     * of a bill that was never picked — and move its stock cost.
+     */
+    private function assertRowsBelongToSelectedPurchases($validator, $items): void
+    {
+        $purchaseIds = collect($this->input('purchase_ids', []))
+            ->when(blank($this->input('purchase_ids', [])), fn ($ids) => collect([$this->input('purchase_id')]))
+            ->filter()
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        $lines = \App\Models\Purchase\PurchaseItem::query()
+            ->whereIn('id', $items->pluck('purchase_item_id')->filter()->unique()->all())
+            ->get(['id', 'purchase_id', 'item_id'])
+            ->keyBy('id');
+
+        $invalid = $items->contains(function ($row) use ($lines, $purchaseIds) {
+            $line = $lines->get((string) data_get($row, 'purchase_item_id'));
+
+            return $line === null
+                || ! in_array((string) $line->purchase_id, $purchaseIds, true)
+                || (string) $line->item_id !== (string) data_get($row, 'item_id');
+        });
+
+        // One message on `items`, where the form shows it, however many rows are wrong.
+        if ($invalid) {
+            $validator->errors()->add('items', __('general.landed_cost_row_must_be_purchase_line'));
+        }
     }
 
     /**

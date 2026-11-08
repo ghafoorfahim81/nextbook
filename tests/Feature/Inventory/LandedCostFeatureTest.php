@@ -538,6 +538,90 @@ class LandedCostFeatureTest extends TestCase
         $this->assertEquals(30.0, (float) $this->purchaseMovement($purchase)->unit_cost);
     }
 
+    public function test_a_row_from_a_purchase_that_was_not_selected_is_refused(): void
+    {
+        $selected = $this->purchaseWithOneItem('BT-S1');
+        $this->purchaseWithOneItem('BT-S2');
+
+        // createPostedPurchase() returns `latest()`, which ties for two bills
+        // made in the same second — so the second one is found by exclusion.
+        $other = Purchase::query()->whereKeyNot($selected->id)->firstOrFail();
+        $otherLine = $other->items()->firstOrFail();
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $selected,
+            totalCost: 50,
+            method: LandedCostAllocationMethod::ByValue->value,
+            items: [[
+                'purchase_id' => $other->id,
+                'purchase_item_id' => $otherLine->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => 'BT-S2',
+                'expire_date' => '2027-03-01',
+            ]],
+        ))->assertSessionHasErrors('items');
+
+        $this->assertSame(0, LandedCost::query()->count());
+    }
+
+    public function test_quantity_and_cost_come_from_the_purchase_line_not_the_request(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-Q');
+        $line = $purchase->items()->firstOrFail();
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 50,
+            method: LandedCostAllocationMethod::ByValue->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $line->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 999,
+                'unit_cost' => 1,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => 'BT-Q',
+                'expire_date' => '2027-03-01',
+            ]],
+        ))->assertRedirect(route('landed-costs.index'));
+
+        $row = LandedCost::query()->latest()->firstOrFail()->items()->firstOrFail();
+
+        $this->assertEquals(10.0, (float) $row->quantity);
+        $this->assertEquals(30.0, (float) $row->unit_cost);
+    }
+
+    public function test_reallocating_rebuilds_the_voucher_so_the_gl_matches_the_new_total(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-AL');
+        $landedCost = $this->storeLandedCost($purchase, 50);
+        $line = $purchase->items()->firstOrFail();
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/allocate', $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 80,
+            method: LandedCostAllocationMethod::ByValue->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $line->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => 'BT-AL',
+                'expire_date' => '2027-03-01',
+            ]],
+        ))->assertOk();
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+
+        $this->assertEquals(38.0, (float) $this->purchaseMovement($purchase)->unit_cost);
+        $this->assertEquals(80.0, (float) $landedCost->fresh()->transaction->lines()->sum('debit'));
+    }
+
     private function purchaseMovement(Purchase $purchase): StockMovement
     {
         return StockMovement::query()

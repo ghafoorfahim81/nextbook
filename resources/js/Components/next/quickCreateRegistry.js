@@ -182,6 +182,16 @@ export const quickCreateRegistry = {
     ],
   },
 
+  landed_cost_categories: {
+    titleKey: 'admin.landed_cost_category.landed_cost_category',
+    endpointType: 'landed_cost_categories',
+    fields: [
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'local_name', labelKey: 'admin.shared.local_name', type: 'text' },
+      { key: 'remark', labelKey: 'admin.shared.remark', type: 'textarea' },
+    ],
+  },
+
   journal_classes: {
     titleKey: 'sidebar.journal_entry.journal_class',
     endpointType: 'journal_classes',

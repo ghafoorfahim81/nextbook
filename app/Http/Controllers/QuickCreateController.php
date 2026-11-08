@@ -70,6 +70,7 @@ class QuickCreateController extends Controller
                 'sizes' => $this->createSize($request),
                 'unit_measures' => $this->createUnitMeasure($request),
                 'expense_categories' => $this->createExpenseCategory($request),
+                'landed_cost_categories' => $this->createLandedCostCategory($request),
                 'accounts' => $this->createAccount($request),
                 'items' => $this->createItem($request),
                 'ledgers' => $this->createLedger($request),
@@ -218,6 +219,24 @@ class QuickCreateController extends Controller
         return response()->json([
             'success' => true,
             'data' => (new SizeResource($size))->resolve(),
+        ]);
+    }
+
+    private function createLandedCostCategory(Request $request): JsonResponse
+    {
+        Gate::authorize('create', \App\Models\Administration\LandedCostCategory::class);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:150', $this->uniqueInCompany('landed_cost_categories')],
+            'local_name' => ['nullable', 'string', 'max:150'],
+            'remark' => ['nullable', 'string'],
+        ]);
+
+        $category = \App\Models\Administration\LandedCostCategory::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => (new \App\Http\Resources\Administration\LandedCostCategoryResource($category))->resolve(),
         ]);
     }
 

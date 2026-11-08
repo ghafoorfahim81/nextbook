@@ -13,13 +13,16 @@ import { useForm, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
-import { Plus, Trash2, AlertCircle } from 'lucide-vue-next';
+import { Plus, Trash2, AlertCircle, ChevronDown } from 'lucide-vue-next';
+import QuickCreateModal from '@/Components/next/QuickCreateModal.vue';
+import { useAuth } from '@/composables/useAuth';
 import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import { todayValueForCalendar } from '@/utils/dateDefaults';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { useSaveShortcut } from '@/composables/useSaveShortcut';
 
 const { t } = useI18n();
+const { can } = useAuth();
 const page = usePage();
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian');
 
@@ -175,6 +178,21 @@ const categoryAllocationsTotal = computed(() => categoryAllocations.value.reduce
   (sum, row) => sum + (Number(row.amount) || 0),
   0,
 ));
+
+const categoriesOpen = ref(true);
+const quickCategoryOpen = ref(false);
+
+// A category created from this page joins the breakdown straight away.
+const onCategoryCreated = (created) => {
+  if (!created?.id || categoryAllocations.value.some((row) => row.id === created.id)) {
+    return;
+  }
+
+  categoryAllocations.value = [
+    ...categoryAllocations.value,
+    { id: created.id, name: created.localized_name || created.name, amount: '' },
+  ];
+};
 
 const removeCategoryAllocation = (id) => {
   categoryAllocations.value = categoryAllocations.value.filter((row) => row.id !== id);
@@ -786,45 +804,67 @@ const saveFormRef = useSaveShortcut({ form });
         </div>
       </div>
 
-      <div v-if="categoryAllocations.length" class="mb-5 rounded-xl border border-violet-500 bg-card shadow-sm overflow-x-auto">
-        <div class="p-4 border-b">
-          <h3 class="font-semibold text-violet-500">{{ t('landed_cost.category_breakdown') }}</h3>
+      <!-- Additional costs: compact grid, entered first because their sum is the amount shared across the items below -->
+      <div class="mb-4 rounded-xl border border-violet-500 bg-card shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 p-3" :class="categoriesOpen ? 'border-b' : ''">
+          <button type="button" class="flex items-center gap-2 text-left" @click="categoriesOpen = !categoriesOpen">
+            <ChevronDown class="h-4 w-4 text-violet-500 transition-transform" :class="categoriesOpen ? '' : '-rotate-90'" />
+            <h3 class="font-semibold text-violet-500">{{ t('landed_cost.category_breakdown') }}</h3>
+          </button>
+          <p class="order-last w-full text-xs leading-5 text-muted-foreground md:order-none md:w-auto md:flex-1 md:px-3">
+            {{ t('landed_cost.category_breakdown_hint') }}
+          </p>
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-muted-foreground">
+              {{ t('landed_cost.total_assigned') }}:
+              <span class="font-semibold text-violet-500 tabular-nums">{{ categoryAllocationsTotal.toFixed(2) }}</span>
+            </span>
+            <button
+              v-if="can('landed_cost_categories.create')"
+              type="button"
+              :disabled="isPosted"
+              class="flex items-center gap-1 rounded-md border border-violet-500 px-2.5 py-1 text-sm text-violet-600 hover:bg-violet-500/10 disabled:opacity-50"
+              @click="quickCategoryOpen = true"
+            >
+              <Plus class="h-4 w-4" />
+              {{ t('general.create', { name: t('admin.landed_cost_category.landed_cost_category') }) }}
+            </button>
+          </div>
         </div>
-        <table class="w-full">
-          <thead>
-            <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
-              <th class="px-3 py-2 text-left">{{ t('landed_cost.category') }}</th>
-              <th class="px-3 py-2 text-left w-48">{{ t('general.amount') }}</th>
-              <th class="px-3 py-2 w-12"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in categoryAllocations" :key="row.id" class="border-t">
-              <td class="px-3 py-2">{{ row.name }}</td>
-              <td class="px-3 py-2">
-                <NextInput v-model="row.amount" type="number" step="any" :disabled="isPosted" />
-              </td>
-              <td class="px-3 py-2 text-center">
-                <button
-                  type="button"
-                  :disabled="isPosted"
-                  class="text-destructive hover:opacity-70 disabled:opacity-40"
-                  @click="removeCategoryAllocation(row.id)"
-                >
-                  <Trash2 class="h-4 w-4" />
-                </button>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="border-t font-semibold">
-              <td class="px-3 py-2">{{ t('landed_cost.total_assigned') }}</td>
-              <td class="px-3 py-2 text-violet-500">{{ categoryAllocationsTotal.toFixed(2) }}</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
+
+        <div v-show="categoriesOpen" class="p-3">
+          <p v-if="!categoryAllocations.length" class="text-sm text-muted-foreground">
+            {{ t('landed_cost.no_categories_hint') }}
+          </p>
+          <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div v-for="row in categoryAllocations" :key="row.id" class="flex items-center gap-1">
+              <NextInput
+                v-model="row.amount"
+                type="number"
+                step="any"
+                :label="row.name"
+                :disabled="isPosted"
+                class="flex-1"
+              />
+              <button
+                type="button"
+                :disabled="isPosted"
+                class="p-1 text-destructive/70 hover:text-destructive disabled:opacity-40"
+                @click="removeCategoryAllocation(row.id)"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+          <p v-if="form.errors?.category_allocations" class="mt-2 text-sm text-destructive">{{ form.errors.category_allocations }}</p>
+        </div>
       </div>
+
+      <QuickCreateModal
+        v-model:open="quickCategoryOpen"
+        resource-type="landed_cost_categories"
+        @created="onCategoryCreated"
+      />
 
       <div class="rounded-xl border border-violet-500 bg-card shadow-sm overflow-x-auto">
         <div class="p-4 border-b">

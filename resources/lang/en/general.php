@@ -150,6 +150,7 @@ return [
     'landed_cost_related_stock_movement_not_found' => 'No related purchase stock movement was found to apply the landed cost.',
     'landed_cost_allocation_must_match_total_cost' => 'Allocated amount must equal the total additional cost before posting.',
     'landed_cost_purchase_already_allocated' => 'Purchase bill :number already has a landed cost.',
+    'landed_cost_row_must_be_purchase_line' => 'Every row must be an item line of one of the selected purchase bills.',
     'landed_cost_purchase_not_posted' => 'Purchase bill :number is not posted, so it cannot carry a landed cost.',
     'landed_cost_reversed_cannot_be_posted' => 'A reversed landed cost cannot be posted again. Create a new one instead.',
     'landed_cost_items_missing_weight' => 'The cost cannot be split by weight because these items have no weight: :items. Enter their weight on the item, or choose another method.',

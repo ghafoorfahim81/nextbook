@@ -181,6 +181,7 @@ return [
     'landed_cost_related_stock_movement_not_found' => 'د ورودي لګښت د پلي کولو لپاره د پېرود اړوند د موجودۍ حرکت ونه موندل شو.',
     'landed_cost_allocation_must_match_total_cost' => 'د ثبت نه مخکې تخصیص شوی مبلغ باید له ټول اضافي لګښت سره مساوي وي.',
     'landed_cost_purchase_already_allocated' => 'د پیرود امر :number لپاره لا دمخه راوړل شوی لګښت شتون لري.',
+    'landed_cost_row_must_be_purchase_line' => 'هره کرښه باید د ټاکل شویو پېرود بلونو له اقلامو څخه وي.',
     'landed_cost_purchase_not_posted' => 'د پیرود بل :number پوسټ شوی نه دی، نو راوړل شوی لګښت نشي ترلاسه کولی.',
     'landed_cost_reversed_cannot_be_posted' => 'باطل شوی راوړل شوی لګښت بیا نشي پوسټ کیدی. نوی جوړ کړئ.',
     'landed_cost_items_missing_weight' => 'سیسټم نشي کولی لګښت د وزن له مخې وویشي، ځکه دا توکي وزن نلري: :items. وزن یې په توکي کې ولیکئ یا بله طریقه غوره کړئ.',

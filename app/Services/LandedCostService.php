@@ -217,12 +217,23 @@ class LandedCostService
                 'date' => data_get($payload, 'date', $landedCost->date),
                 'total_cost' => data_get($payload, 'total_cost', $landedCost->total_cost),
                 'allocated_total' => $preview['allocated_total'],
+                'bank_account_id' => data_get($payload, 'bank_account_id', $landedCost->bank_account_id),
                 'allocation_method' => data_get($payload, 'allocation_method', $landedCost->allocation_method?->value ?? $landedCost->allocation_method),
                 'status' => LandedCostStatus::Allocated->value,
                 'notes' => data_get($payload, 'notes', $landedCost->notes),
             ]);
 
             $this->syncItems($landedCost, $preview['rows']);
+
+            // The voucher post() will book carries the amount, account, currency
+            // and rate it was built with. Changing the total here without
+            // rebuilding it left a posted GL entry at the old figure.
+            $this->syncDraftTransaction($landedCost, [
+                'bank_account_id' => $landedCost->bank_account_id,
+                'currency_id' => data_get($payload, 'currency_id', $landedCost->transaction?->currency_id),
+                'rate' => (float) data_get($payload, 'rate', $landedCost->transaction?->rate ?: 1),
+                'date' => $landedCost->date?->toDateString() ?? (string) data_get($payload, 'date'),
+            ]);
 
             return $landedCost->fresh(['purchases.items.item', 'items.item']);
         });
@@ -504,6 +515,8 @@ class LandedCostService
             ->values();
 
         if ($normalizedRows->isNotEmpty()) {
+            $normalizedRows = $this->withPurchaseFigures($normalizedRows);
+
             return $normalizedRows->map(function (array $row) {
                 return [
                     'purchase_item_id' => data_get($row, 'purchase_item_id'),
@@ -573,6 +586,42 @@ class LandedCostService
                 ];
             });
         })->values()->all();
+    }
+
+    /**
+     * Quantity, cost, warehouse, batch and expiry of a row that points at a
+     * purchase line come from that line, never from the request: the client
+     * only chooses which lines take part and, for a manual split, how much each
+     * gets. Otherwise a hand-made request could skew the split or point the
+     * cost at stock the picked bills never received.
+     */
+    private function withPurchaseFigures(Collection $rows): Collection
+    {
+        $lines = PurchaseItem::query()
+            ->with(['purchase.transaction'])
+            ->whereIn('id', $rows->pluck('purchase_item_id')->filter()->unique()->all())
+            ->get()
+            ->keyBy('id');
+
+        return $rows->map(function ($row) use ($lines) {
+            $line = $lines->get((string) data_get($row, 'purchase_item_id'));
+
+            if ($line === null) {
+                return $row;
+            }
+
+            $rate = max((float) ($line->purchase?->transaction?->rate ?: 1), 0.0000001);
+
+            return array_merge((array) $row, [
+                'purchase_id' => $line->purchase_id,
+                'item_id' => $line->item_id,
+                'quantity' => (float) $line->quantity,
+                'unit_cost' => (float) $line->unit_price * $rate,
+                'warehouse_id' => $line->warehouse_id,
+                'batch' => $line->batch,
+                'expire_date' => $line->expire_date?->toDateString(),
+            ]);
+        });
     }
 
     private function resolveMethod(string|LandedCostAllocationMethod|null $method): LandedCostAllocationMethod

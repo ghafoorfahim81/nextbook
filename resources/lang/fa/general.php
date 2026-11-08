@@ -150,6 +150,7 @@ return [
     'landed_cost_related_stock_movement_not_found' => 'حرکت موجودی مرتبط با خرید برای اعمال مصرف جنس یافت نشد.',
     'landed_cost_allocation_must_match_total_cost' => 'قبل از ثبت، مبلغ تخصیص‌یافته باید با مجموع هزینه اضافی برابر باشد.',
     'landed_cost_purchase_already_allocated' => 'برای بیل خرید :number قبلاً مصرف جنس ثبت شده است.',
+    'landed_cost_row_must_be_purchase_line' => 'هر ردیف باید یکی از اقلام بیل‌های خرید انتخاب‌شده باشد.',
     'landed_cost_purchase_not_posted' => 'بیل خرید :number ثبت نهایی (post) نشده است، بنابراین نمی‌تواند مصارف اجناس داشته باشد.',
     'landed_cost_reversed_cannot_be_posted' => 'مصرف جنس باطل‌شده دوباره قابل ثبت نیست. یک مورد جدید ایجاد کنید.',
     'landed_cost_items_missing_weight' => 'سیستم نمی‌تواند هزینه را بر اساس وزن تقسیم کند، زیرا این اجناس وزن ندارند: :items. وزن آن‌ها را در جنس وارد کنید یا میتود دیگری انتخاب کنید.',
