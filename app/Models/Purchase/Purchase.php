@@ -129,6 +129,26 @@ class Purchase extends Model
     }
 
     /**
+     * Posted purchase bills that can still carry a landed cost.
+     *
+     * Draft and reversed bills hold no stock to add cost to. A bill whose
+     * landed cost was reversed is free again, so only live (non-reversed)
+     * landed costs count as taking it; the one being edited never does.
+     */
+    public function scopeAvailableForLandedCost($query, ?string $exceptLandedCostId = null)
+    {
+        return $query
+            ->where('status', \App\Enums\TransactionStatus::POSTED->value)
+            ->whereDoesntHave('landedCosts', function ($landedCosts) use ($exceptLandedCostId): void {
+                $landedCosts->where('landed_costs.status', '!=', \App\Enums\LandedCostStatus::Reversed->value);
+
+                if ($exceptLandedCostId) {
+                    $landedCosts->whereKeyNot($exceptLandedCostId);
+                }
+            });
+    }
+
+    /**
      * Net purchase amount (goods − item discounts − bill discount), mirroring the
      * calculation in PurchaseResource. Requires the `items` relation loaded.
      */

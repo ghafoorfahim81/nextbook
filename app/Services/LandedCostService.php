@@ -9,6 +9,7 @@ use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
+use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
 use App\Models\Account\Account;
 use App\Models\Inventory\Item;
@@ -241,11 +242,22 @@ class LandedCostService
     public function post(LandedCost $landedCost): array
     {
         return DB::transaction(function () use ($landedCost) {
+            // Lock and re-read the row: two posts arriving together both saw
+            // 'draft' and each added the cost to the stock layers.
+            $landedCost = $this->lockFresh($landedCost);
             $landedCost->loadMissing(['purchases.items.item', 'items.item', 'transaction']);
 
-            if (($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status) === LandedCostStatus::Posted->value) {
+            $currentStatus = $landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status;
+
+            if ($currentStatus === LandedCostStatus::Posted->value) {
                 throw ValidationException::withMessages([
                     'landed_cost' => __('general.landed_cost_already_posted'),
+                ]);
+            }
+
+            if ($currentStatus === LandedCostStatus::Reversed->value) {
+                throw ValidationException::withMessages([
+                    'landed_cost' => __('general.landed_cost_reversed_cannot_be_posted'),
                 ]);
             }
 
@@ -328,6 +340,8 @@ class LandedCostService
             ]);
         }
 
+        $rows = $this->withShippingBasis($rows, $method);
+
         $prepared = $rows->map(function (array|LandedCostItem $row) use ($method) {
             $quantity = (float) data_get($row, 'quantity', 0);
             $unitCost = (float) data_get($row, 'unit_cost', 0);
@@ -336,8 +350,9 @@ class LandedCostService
 
             $basisValue = match ($method) {
                 LandedCostAllocationMethod::ByQuantity => $quantity,
-                LandedCostAllocationMethod::ByWeight => $weight > 0 ? $weight : $quantity,
-                LandedCostAllocationMethod::ByVolume => $volume > 0 ? $volume : $quantity,
+                // withShippingBasis() has already refused any row without a weight/volume.
+                LandedCostAllocationMethod::ByWeight => $weight,
+                LandedCostAllocationMethod::ByVolume => $volume,
                 LandedCostAllocationMethod::Equal => 1,
                 LandedCostAllocationMethod::Manual => 0,
                 default => $quantity * $unitCost,
@@ -416,6 +431,67 @@ class LandedCostService
             'rows' => $rowsOut,
             'allocated_total' => $allocatedTotal,
         ];
+    }
+
+    /**
+     * For a by-weight or by-volume split, set each row's total weight/volume
+     * (quantity x the item's own figure) from the item record.
+     *
+     * Never falls back to quantity: that split looks like a weight split but
+     * is not, so an item with no weight/volume stops the allocation with a
+     * message naming it. Mixed units (kg next to g, cm next to m) stop it too,
+     * because the figures could not be added up.
+     */
+    private function withShippingBasis(Collection $rows, LandedCostAllocationMethod $method): Collection
+    {
+        if (! in_array($method, [LandedCostAllocationMethod::ByWeight, LandedCostAllocationMethod::ByVolume], true)) {
+            return $rows;
+        }
+
+        $byWeight = $method === LandedCostAllocationMethod::ByWeight;
+        $items = Item::query()->whereIn('id', $rows->pluck('item_id')->filter()->unique()->all())->get()->keyBy('id');
+
+        $missing = [];
+        $units = [];
+
+        $rows = $rows->map(function ($row) use ($items, $byWeight, &$missing, &$units) {
+            $item = $items->get((string) data_get($row, 'item_id'));
+            $quantity = (float) data_get($row, 'quantity', 0);
+
+            $figure = $byWeight
+                ? (float) $item?->weight
+                : (float) $item?->length * (float) $item?->width * (float) $item?->height;
+
+            if ($item === null || $figure <= 0) {
+                $missing[$item?->id ?? (string) data_get($row, 'item_id')] = $item?->name ?? (string) data_get($row, 'item_id');
+
+                return $row;
+            }
+
+            $units[(string) ($byWeight ? $item->weight_unit_id : $item->dimension_unit_id)] = true;
+
+            $row = $row instanceof LandedCostItem ? $row->toArray() : (array) $row;
+            $row[$byWeight ? 'weight' : 'volume'] = $figure * $quantity;
+
+            return $row;
+        });
+
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'allocation_method' => __(
+                    $byWeight ? 'general.landed_cost_items_missing_weight' : 'general.landed_cost_items_missing_volume',
+                    ['items' => implode('، ', array_values($missing))]
+                ),
+            ]);
+        }
+
+        if (count($units) > 1) {
+            throw ValidationException::withMessages([
+                'allocation_method' => __($byWeight ? 'general.landed_cost_weight_units_differ' : 'general.landed_cost_dimension_units_differ'),
+            ]);
+        }
+
+        return $rows;
     }
 
     /**
@@ -508,6 +584,15 @@ class LandedCostService
         return LandedCostAllocationMethod::tryFrom((string) $method) ?? LandedCostAllocationMethod::ByValue;
     }
 
+    /** The row, re-read under a write lock so a concurrent post/reverse waits and then sees the new status. */
+    private function lockFresh(LandedCost $landedCost): LandedCost
+    {
+        return LandedCost::query()
+            ->whereKey($landedCost->getKey())
+            ->lockForUpdate()
+            ->firstOrFail();
+    }
+
     private function resolveInventoryStockAccountId(): string
     {
         return data_get(CompanyContext::glAccounts(), 'inventory-stock')
@@ -525,6 +610,7 @@ class LandedCostService
     public function reverse(LandedCost $landedCost, ?string $reason = null): LandedCost
     {
         return DB::transaction(function () use ($landedCost, $reason) {
+            $landedCost = $this->lockFresh($landedCost);
             $landedCost->loadMissing(['items', 'transaction']);
 
             $status = $landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status;
@@ -656,6 +742,9 @@ class LandedCostService
     ): Collection {
         return StockMovement::query()
             ->whereIn('warehouse_id', Warehouse::idsOfBranch($landedCost->branch_id))
+            // A voided or cancelled receipt no longer holds stock; capitalising
+            // onto it would put cost on goods the business does not own.
+            ->whereNotIn('status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
             ->where('item_id', $itemId)
             ->where('movement_type', StockMovementType::IN)
             ->where('source', StockSourceType::PURCHASE)
@@ -668,42 +757,19 @@ class LandedCostService
             ->get();
     }
 
+    /**
+     * Re-weigh the item's average with the stock module's own replay, which
+     * converts units, skips voided movements and nets purchase returns — a
+     * private copy here drifted from it on all three.
+     */
     private function recalculateAvgCostForItem(string $itemId): void
     {
-        $item = Item::query()->find($itemId);
+        $stock = app(StockService::class);
 
-        if (! $item) {
-            return;
-        }
-
-        $movements = StockMovement::query()
-            ->where('item_id', $itemId)
-            ->orderBy('date')
-            ->orderBy('id')
-            ->get(['movement_type', 'quantity', 'unit_cost']);
-
-        $avgCost = 0.0;
-        $runningQty = 0.0;
-
-        foreach ($movements as $movement) {
-            $qty = (float) $movement->quantity;
-
-            if ($movement->movement_type === StockMovementType::IN) {
-                $cost = (float) $movement->unit_cost;
-                if ($runningQty + $qty > 0) {
-                    $avgCost = (($runningQty * $avgCost) + ($qty * $cost)) / ($runningQty + $qty);
-                }
-                $runningQty += $qty;
-            } else {
-                $runningQty = max(0.0, $runningQty - $qty);
-            }
-        }
-
-        $item->avg_cost = round($avgCost, 4);
-        $item->save();
+        $stock->recalculateItemAverage($itemId);
 
         // Each variant carries its own average too, replayed the same way.
-        app(StockService::class)->recalculateVariantAverageCosts($itemId);
+        $stock->recalculateVariantAverageCosts($itemId);
     }
 
     private function assertAllocationMatchesTotalCost(float $totalCost, float $allocatedTotal): void

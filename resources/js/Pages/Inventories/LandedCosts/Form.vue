@@ -218,13 +218,15 @@ const calculatePreviewRows = (rows, totalCost, method, rate = 1) => {
     .map((row) => {
       const quantity = Number(row.quantity) || 0;
       const unitCost = Number(row.unit_cost) || 0;
-      const weight = Number(row.weight) || 0;
-      const volume = Number(row.volume) || 0;
+      // Total weight/volume = quantity x the item's own figure. No fallback to
+      // quantity: a row without one is reported by shippingBasisProblem.
+      const weight = row.item_weight !== undefined ? quantity * (Number(row.item_weight) || 0) : (Number(row.weight) || 0);
+      const volume = row.item_volume !== undefined ? quantity * (Number(row.item_volume) || 0) : (Number(row.volume) || 0);
 
       const basisValue = {
         by_quantity: quantity,
-        by_weight: weight > 0 ? weight : quantity,
-        by_volume: volume > 0 ? volume : quantity,
+        by_weight: weight,
+        by_volume: volume,
         by_value: quantity * unitCost,
         equal: 1,
         manual: 0,
@@ -333,7 +335,39 @@ const allocationDifference = computed(() => round(
   2,
 ));
 
+// A by-weight / by-volume split needs every item to carry that figure, in one
+// unit. Only rows loaded from a purchase carry the item figures; others are
+// left for the server to check.
+const shippingBasisProblem = computed(() => {
+  const method = form.allocation_method;
+
+  if (!['by_weight', 'by_volume'].includes(method)) {
+    return null;
+  }
+
+  const byWeight = method === 'by_weight';
+  const rows = form.items.filter((row) => row.item_id && (byWeight ? row.item_weight !== undefined : row.item_volume !== undefined));
+
+  const missing = rows.filter((row) => !((byWeight ? row.item_weight : row.item_volume) > 0));
+
+  if (missing.length) {
+    return t(byWeight ? 'landed_cost.items_missing_weight' : 'landed_cost.items_missing_volume', {
+      items: [...new Set(missing.map((row) => row.item_name || row.item_code))].join('، '),
+    });
+  }
+
+  const units = new Set(rows.map((row) => (byWeight ? row.item_weight_unit_id : row.item_dimension_unit_id) || ''));
+
+  return units.size > 1
+    ? t(byWeight ? 'landed_cost.weight_units_differ' : 'landed_cost.dimension_units_differ')
+    : null;
+});
+
 const allocationWarning = computed(() => {
+  if (shippingBasisProblem.value) {
+    return { type: 'basis', message: shippingBasisProblem.value };
+  }
+
   if (!form.items.length || Number(form.total_cost || 0) <= 0) {
     return null;
   }
@@ -529,6 +563,12 @@ const fetchPurchaseItems = async (purchase) => {
       batch: row.batch,
       expire_date: row.expire_date,
       allocated_amount: 0,
+      // Per-unit figures from the item, used only to warn before saving when a
+      // weight/volume split has nothing to divide by. The server re-checks.
+      item_weight: Number(row.item?.weight) || 0,
+      item_weight_unit_id: row.item?.weight_unit_id || '',
+      item_volume: (Number(row.item?.length) || 0) * (Number(row.item?.width) || 0) * (Number(row.item?.height) || 0),
+      item_dimension_unit_id: row.item?.dimension_unit_id || '',
     }));
   } catch (error) {
     toast.error(t('landed_cost.failed_to_load_purchase_items'));

@@ -138,14 +138,28 @@ class LandedCostRequest extends FormRequest
         $current = $this->route('landedCost') ?? $this->route('landed_cost');
         $currentId = $current instanceof LandedCost ? $current->getKey() : $current;
 
-        $taken = Purchase::query()
+        $selected = Purchase::query()
             ->whereIn('id', $purchaseIds->all())
-            ->whereHas('landedCosts', function ($query) use ($currentId): void {
-                if ($currentId) {
-                    $query->whereKeyNot($currentId);
-                }
-            })
-            ->pluck('number', 'id');
+            ->get(['id', 'number', 'status']);
+
+        // Only posted bills hold stock: a draft or reversed one cannot take cost.
+        $notPosted = $selected->filter(fn (Purchase $purchase) => (string) $purchase->status !== \App\Enums\TransactionStatus::POSTED->value);
+
+        if ($notPosted->isNotEmpty()) {
+            $validator->errors()->add(
+                'purchase_ids',
+                __('general.landed_cost_purchase_not_posted', ['number' => $notPosted->pluck('number')->join(', ')])
+            );
+
+            return;
+        }
+
+        $availableIds = Purchase::query()
+            ->whereIn('id', $purchaseIds->all())
+            ->availableForLandedCost($currentId ? (string) $currentId : null)
+            ->pluck('id');
+
+        $taken = $selected->reject(fn (Purchase $purchase) => $availableIds->contains($purchase->id));
 
         if ($taken->isEmpty()) {
             return;
@@ -153,7 +167,7 @@ class LandedCostRequest extends FormRequest
 
         $validator->errors()->add(
             'purchase_ids',
-            __('general.landed_cost_purchase_already_allocated', ['number' => $taken->values()->join(', ')])
+            __('general.landed_cost_purchase_already_allocated', ['number' => $taken->pluck('number')->join(', ')])
         );
     }
 }

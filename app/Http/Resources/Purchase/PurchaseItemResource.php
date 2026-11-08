@@ -27,6 +27,12 @@ class PurchaseItemResource extends JsonResource
                     'unitMeasure' => $this->item?->unitMeasure,
                     'purchase_price' => $this->item?->purchase_price,
                     'avg_cost' => $this->item?->avg_cost,
+                    'weight' => $this->item?->weight,
+                    'weight_unit_id' => $this->item?->weight_unit_id,
+                    'length' => $this->item?->length,
+                    'width' => $this->item?->width,
+                    'height' => $this->item?->height,
+                    'dimension_unit_id' => $this->item?->dimension_unit_id,
                     'batches' => [],
                     'on_hand' => 0,
                     'item_variants' => $this->item?->relationLoaded('variants')

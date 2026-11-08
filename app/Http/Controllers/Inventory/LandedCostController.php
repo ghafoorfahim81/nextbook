@@ -308,11 +308,7 @@ class LandedCostController extends Controller
     {
         return Purchase::query()
             ->with('supplier')
-            ->whereDoesntHave('landedCosts', function ($query) use ($except): void {
-                if ($except) {
-                    $query->whereKeyNot($except->getKey());
-                }
-            })
+            ->availableForLandedCost($except?->getKey())
             ->orderByDesc('date')
             ->limit(100)
             ->get()

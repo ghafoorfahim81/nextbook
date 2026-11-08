@@ -54,5 +54,9 @@
   "item_cost_after": "Cost After",
   "share_of_total": "Share of Total",
   "no_category_breakdown": "No category breakdown was recorded for this landed cost.",
-  "purchase_already_has_landed_cost": "This purchase bill already has a landed cost."
+  "purchase_already_has_landed_cost": "This purchase bill already has a landed cost.",
+  "items_missing_weight": "The cost cannot be split by weight because these items have no weight: {items}. Enter their weight on the item, or choose another method.",
+  "items_missing_volume": "The cost cannot be split by volume because these items have no length, width and height: {items}. Enter their dimensions on the item, or choose another method.",
+  "weight_units_differ": "The cost cannot be split by weight because the items use different weight units. Use the same unit for all of them.",
+  "dimension_units_differ": "The cost cannot be split by volume because the items use different dimension units. Use the same unit for all of them."
 }

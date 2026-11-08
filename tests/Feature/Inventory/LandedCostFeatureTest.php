@@ -415,6 +415,129 @@ class LandedCostFeatureTest extends TestCase
         $this->assertEquals(100.0, (float) $this->purchaseMovement($purchase)->unit_cost);
     }
 
+    private function purchaseWithOneItem(string $batch): Purchase
+    {
+        return $this->createPostedPurchase([[
+            'item_id' => $this->ctx['item']->id,
+            'batch' => $batch,
+            'expire_date' => '2027-03-01',
+            'quantity' => 10,
+            'unit_price' => 30,
+        ]]);
+    }
+
+    public function test_a_by_weight_split_is_refused_when_an_item_has_no_weight(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-W0');
+        $this->ctx['item']->update(['weight' => null]);
+        $purchaseItem = $purchase->items()->firstOrFail();
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 50,
+            method: LandedCostAllocationMethod::ByWeight->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $purchaseItem->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => 'BT-W0',
+                'expire_date' => '2027-03-01',
+            ]],
+        ))->assertSessionHasErrors('allocation_method');
+
+        $this->assertSame(0, LandedCost::query()->count());
+    }
+
+    public function test_a_by_weight_split_uses_the_items_weight(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-W1');
+        $this->ctx['item']->update(['weight' => 2]);
+
+        $landedCost = $this->storeLandedCost($purchase, 50, ['allocation_method' => LandedCostAllocationMethod::ByWeight->value]);
+
+        $this->assertEquals(20.0, (float) $landedCost->items()->firstOrFail()->weight);
+        $this->assertEquals(50.0, (float) $landedCost->allocated_total);
+    }
+
+    public function test_a_by_volume_split_is_refused_when_an_item_has_no_dimensions(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-V0');
+        $this->ctx['item']->update(['length' => null, 'width' => null, 'height' => null]);
+        $purchaseItem = $purchase->items()->firstOrFail();
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 50,
+            method: LandedCostAllocationMethod::ByVolume->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $purchaseItem->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => 'BT-V0',
+                'expire_date' => '2027-03-01',
+            ]],
+        ))->assertSessionHasErrors('allocation_method');
+    }
+
+    public function test_a_purchase_that_is_not_posted_cannot_carry_a_landed_cost(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-NP');
+        Purchase::query()->whereKey($purchase->id)->update(['status' => 'draft']);
+        $purchaseItem = $purchase->items()->firstOrFail();
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 50,
+            method: LandedCostAllocationMethod::ByValue->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $purchaseItem->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => 'BT-NP',
+                'expire_date' => '2027-03-01',
+            ]],
+        ))->assertSessionHasErrors('purchase_ids');
+    }
+
+    public function test_a_reversed_landed_cost_frees_its_purchase_for_a_new_one(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-RF');
+
+        $first = $this->storeLandedCost($purchase, 50);
+        $this->postJson('/api/landed-costs/'.$first->id.'/post')->assertOk();
+        $this->postJson('/api/landed-costs/'.$first->id.'/reverse')->assertOk();
+
+        // storeLandedCost() redirecting to the index is the proof the store was
+        // accepted; the second record is looked up by exclusion because two
+        // records created in the same second tie on `latest()`.
+        $this->storeLandedCost($purchase, 20);
+
+        $second = LandedCost::query()->whereKeyNot($first->id)->firstOrFail();
+        $this->assertEquals(20.0, (float) $second->total_cost);
+        $this->assertEquals(2, $purchase->landedCosts()->count());
+    }
+
+    public function test_a_reversed_landed_cost_cannot_be_posted_again(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-RP');
+
+        $landedCost = $this->storeLandedCost($purchase, 50);
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')->assertOk();
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertStatus(422);
+        $this->assertEquals(30.0, (float) $this->purchaseMovement($purchase)->unit_cost);
+    }
+
     private function purchaseMovement(Purchase $purchase): StockMovement
     {
         return StockMovement::query()
