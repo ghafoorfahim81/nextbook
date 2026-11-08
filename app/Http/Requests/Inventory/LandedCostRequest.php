@@ -55,6 +55,16 @@ class LandedCostRequest extends FormRequest
         $validator->after(function ($validator) {
             $this->assertPurchasesNotAlreadyAllocated($validator);
 
+            // The form only offers cash and bank accounts as the paying side;
+            // the request must hold to the same, or any account — the inventory
+            // account itself included — could be named as the payer.
+            if ($this->filled('bank_account_id') && ! \App\Models\Account\Account::query()
+                ->whereKey($this->input('bank_account_id'))
+                ->whereHas('accountType', fn ($type) => $type->where('slug', 'cash-or-bank'))
+                ->exists()) {
+                $validator->errors()->add('bank_account_id', __('general.landed_cost_account_must_be_cash_or_bank'));
+            }
+
             $items = collect($this->input('items', []))->filter(fn ($item) => !empty(data_get($item, 'item_id')));
 
             if ($items->isEmpty()) {

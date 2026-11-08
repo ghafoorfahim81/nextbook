@@ -121,7 +121,7 @@ class Item extends Model
             'brand_id' => 'string',
             'category_id' => 'string',
             'margin_percentage' => 'decimal:4',
-            'avg_cost' => 'decimal:4',
+            'avg_cost' => \App\Casts\StockCost::class,
             'item_type' => ItemType::class,
             'minimum_stock' => 'decimal:2',
             'maximum_stock' => 'decimal:2',

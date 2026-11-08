@@ -65,7 +65,7 @@ class StockPiece extends Model
             'identifiers' => 'array',
             'attributes' => 'array',
             'measured_quantity' => 'decimal:4',
-            'unit_cost' => 'decimal:4',
+            'unit_cost' => \App\Casts\StockCost::class,
             'sale_price' => 'decimal:4',
             'condition' => ItemCondition::class,
             'status' => PieceStatus::class,

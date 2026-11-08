@@ -792,7 +792,11 @@ class DeletedRecordService
                 // Deleting one soft-deletes its voucher, the voucher's lines,
                 // its allocations and its lines, so all four have to come back
                 // together or the document returns without its accounting half.
-                'restore' => fn (Model $record) => $this->restoreTransactionRecord($record, relations: ['items', 'categoryAllocations']),
+                'restore' => function (Model $record) {
+                    $this->guardLandedCostPurchasesStillFree($record);
+
+                    $this->restoreTransactionRecord($record, relations: ['items', 'categoryAllocations']);
+                },
                 'force_delete' => fn (Model $record) => $this->forceDeleteTransactionRecord($record, relations: ['items', 'categoryAllocations']),
             ],
             'items' => [
@@ -1320,6 +1324,28 @@ class DeletedRecordService
         }
 
         $record->forceDelete();
+    }
+
+    /**
+     * A purchase bill carries one live landed cost. While this one sat in the
+     * trash the bill was free to take another, and bringing this back would put
+     * two on it and capitalise the stock twice.
+     */
+    private function guardLandedCostPurchasesStillFree(Model $record): void
+    {
+        $taken = \App\Models\Purchase\Purchase::query()
+            ->whereIn('id', $record->purchases()->pluck('purchases.id'))
+            ->whereHas('landedCosts', function ($landedCosts) use ($record): void {
+                $landedCosts->where('landed_costs.status', '!=', \App\Enums\LandedCostStatus::Reversed->value)
+                    ->whereKeyNot($record->getKey());
+            })
+            ->pluck('number');
+
+        if ($taken->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'record' => __('general.landed_cost_restore_blocked_by_purchase', ['number' => $taken->join(', ')]),
+            ]);
+        }
     }
 
     private function restoreTransactionRecord(Model $record, array $relations = []): void

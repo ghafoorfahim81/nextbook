@@ -107,6 +107,7 @@
     "landed_costs.export": "Export Landed Costs",
     "landed_costs.allocate": "Allocate Landed Costs",
     "landed_costs.post": "Post Landed Costs",
+    "landed_costs.reverse": "Reverse Landed Costs",
 
     "categories.view_any": "View Any Categories",
     "categories.view": "View Categories",

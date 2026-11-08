@@ -67,7 +67,7 @@ class StockLot extends Model
             'received_date' => 'date',
             'mrp' => 'decimal:4',
             'sale_price' => 'decimal:4',
-            'unit_cost' => 'decimal:4',
+            'unit_cost' => \App\Casts\StockCost::class,
             'purchase_price' => 'decimal:4',
             'status' => LotStatus::class,
         ];

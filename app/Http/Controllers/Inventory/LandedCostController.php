@@ -94,7 +94,6 @@ class LandedCostController extends Controller
             $landedCost = LandedCost::create([
                 'number' => LandedCost::nextNumber(),
                 'date' => $request->validated('date'),
-                'purchase_id' => $request->validated('purchase_id'),
                 'bank_account_id' => $request->validated('bank_account_id'),
                 'total_cost' => $request->validated('total_cost'),
                 'allocated_total' => 0,
@@ -102,10 +101,6 @@ class LandedCostController extends Controller
                 'status' => LandedCostStatus::Draft->value,
                 'notes' => $request->validated('notes'),
             ]);
-
-            if ($request->hasFile('attachments')) {
-                $attachmentService->store($landedCost, $request->file('attachments'));
-            }
 
             $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
             $this->persistAllocation($landedCost, $request, $service);
@@ -119,6 +114,10 @@ class LandedCostController extends Controller
 
             return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         });
+
+        // After the commit: files written inside the transaction stay on disk
+        // when the database work rolls back.
+        $this->storeAttachments($landedCost, $request, $attachmentService);
 
         if ($request->expectsJson()) {
             return LandedCostResource::make($landedCost)->response()->setStatusCode(201);
@@ -173,14 +172,9 @@ class LandedCostController extends Controller
             ]);
         }
 
-        $landedCost = DB::transaction(function () use ($request, $landedCost, $service, $attachmentService) {
-            if ($request->hasFile('attachments')) {
-                $attachmentService->store($landedCost, $request->file('attachments'));
-            }
-
+        $landedCost = DB::transaction(function () use ($request, $landedCost, $service) {
             $landedCost->update([
                 'date' => $request->validated('date'),
-                'purchase_id' => $request->validated('purchase_id'),
                 'bank_account_id' => $request->validated('bank_account_id'),
                 'total_cost' => $request->validated('total_cost'),
                 'allocated_total' => 0,
@@ -201,6 +195,8 @@ class LandedCostController extends Controller
 
             return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         });
+
+        $this->storeAttachments($landedCost, $request, $attachmentService);
 
         if ($request->expectsJson()) {
             return LandedCostResource::make($landedCost);
@@ -280,6 +276,13 @@ class LandedCostController extends Controller
         }
 
         return back()->with('success', __('general.reversed_successfully', ['resource' => __('general.resource.landed_cost')]));
+    }
+
+    private function storeAttachments(LandedCost $landedCost, Request $request, AttachmentService $attachmentService): void
+    {
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($landedCost, $request->file('attachments'));
+        }
     }
 
     private function landedCostCategoryOptions()

@@ -622,6 +622,175 @@ class LandedCostFeatureTest extends TestCase
         $this->assertEquals(80.0, (float) $landedCost->fresh()->transaction->lines()->sum('debit'));
     }
 
+    private function sellFromStock(float $quantity): void
+    {
+        $this->post(route('sales.store'), [
+            'number' => 9001,
+            'customer_id' => $this->ctx['customer_ledger']->id,
+            'date' => '2026-03-25',
+            'transaction_total' => $quantity * 100,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'sale_type' => 'on_loan',
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'item_list' => [[
+                'item_id' => $this->ctx['item']->id,
+                'batch' => null,
+                'expire_date' => null,
+                'quantity' => $quantity,
+                'unit_measure_id' => $this->ctx['unit_measure']->id,
+                'unit_price' => 100,
+                'item_discount' => 0,
+                'free' => 0,
+                'tax' => 0,
+            ]],
+        ])->assertRedirect();
+    }
+
+    public function test_a_landed_cost_cannot_be_posted_once_part_of_the_stock_is_sold(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-SOLD');
+        $landedCost = $this->storeLandedCost($purchase, 50);
+
+        $this->sellFromStock(2);
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('landed_cost');
+
+        $this->assertEquals(LandedCostStatus::Draft, $landedCost->fresh()->status);
+        $this->assertEquals(30.0, (float) $this->purchaseMovement($purchase)->unit_cost);
+    }
+
+    public function test_a_posted_landed_cost_cannot_be_reversed_after_the_stock_is_sold(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-SOLD2');
+        $landedCost = $this->storeLandedCost($purchase, 50);
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+
+        $this->sellFromStock(2);
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('landed_cost');
+
+        $this->assertEquals(LandedCostStatus::Posted, $landedCost->fresh()->status);
+        $this->assertEquals(35.0, (float) $this->purchaseMovement($purchase)->unit_cost);
+    }
+
+    public function test_the_paying_account_must_be_cash_or_bank(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-ACC');
+        $line = $purchase->items()->firstOrFail();
+
+        $payload = $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 50,
+            method: LandedCostAllocationMethod::ByValue->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $line->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+            ]],
+        );
+        $payload['bank_account_id'] = $this->ctx['accounts']['inventory-stock']->id;
+
+        $this->post(route('landed-costs.store'), $payload)->assertSessionHasErrors('bank_account_id');
+    }
+
+    public function test_a_deleted_landed_cost_cannot_be_restored_onto_a_bill_that_took_another(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-TR');
+
+        $first = $this->storeLandedCost($purchase, 50);
+        $this->delete(route('landed-costs.destroy', $first->id))->assertRedirect();
+
+        $this->storeLandedCost($purchase, 20);
+
+        try {
+            app(\App\Services\DeletedRecordService::class)->restore('landed_costs', $first->id);
+            $this->fail('The restore should have been refused.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertArrayHasKey('record', $e->errors());
+        }
+
+        $this->assertTrue(LandedCost::withTrashed()->findOrFail($first->id)->trashed());
+    }
+
+    public function test_a_deleted_landed_cost_comes_back_while_its_bill_is_free(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-TR2');
+
+        $landedCost = $this->storeLandedCost($purchase, 50);
+        $this->delete(route('landed-costs.destroy', $landedCost->id))->assertRedirect();
+
+        app(\App\Services\DeletedRecordService::class)->restore('landed_costs', $landedCost->id);
+
+        $restored = LandedCost::query()->findOrFail($landedCost->id);
+        $this->assertSame([$purchase->id], $restored->purchases()->pluck('purchases.id')->all());
+    }
+
+    public function test_reversing_needs_its_own_permission_not_the_post_one(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-PERM');
+        $landedCost = $this->storeLandedCost($purchase, 50);
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+
+        $this->actingAs($this->userWithPermissions(['landed_costs.post']));
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')->assertForbidden();
+
+        $this->actingAs($this->userWithPermissions(['landed_costs.reverse']));
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')->assertOk();
+    }
+
+    private function userWithPermissions(array $permissions): \App\Models\User
+    {
+        $key = md5(implode(',', $permissions));
+
+        $role = \App\Models\Role::query()->firstOrCreate(
+            ['name' => 'limited-'.$key, 'guard_name' => 'web'],
+            ['slug' => 'limited-'.$key],
+        );
+
+        foreach ($permissions as $name) {
+            $role->givePermissionTo(\App\Models\Permission::query()->firstOrCreate(
+                ['name' => $name, 'guard_name' => 'web'],
+                ['id' => (string) new \Symfony\Component\Uid\Ulid()],
+            ));
+        }
+
+        return tap(\App\Models\User::factory()->create([
+            'preferences' => \App\Support\Settings::defaults(),
+            'company_id' => $this->ctx['company']->id,
+            'branch_id' => $this->ctx['branch']->id,
+        ]), fn (\App\Models\User $user) => $user->assignRole($role));
+    }
+
+    public function test_stock_value_matches_the_ledger_when_the_cost_does_not_divide_evenly(): void
+    {
+        // 100 / 7000 = 0.0142857...: at 4 decimals this was 100.10 of stock.
+        $purchase = $this->createPostedPurchase([[
+            'item_id' => $this->ctx['item']->id,
+            'batch' => 'BT-BIG',
+            'expire_date' => '2027-03-01',
+            'quantity' => 7000,
+            'unit_price' => 30,
+        ]]);
+
+        $landedCost = $this->storeLandedCost($purchase, 100);
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+
+        $movement = $this->purchaseMovement($purchase);
+        $this->assertEqualsWithDelta(210100.0, (float) $movement->quantity * (float) $movement->unit_cost, 0.001);
+        $this->assertEquals(100.0, (float) $landedCost->fresh()->transaction->lines()->sum('debit'));
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')->assertOk();
+
+        $this->assertEquals(30.0, (float) $this->purchaseMovement($purchase)->unit_cost);
+    }
+
     private function purchaseMovement(Purchase $purchase): StockMovement
     {
         return StockMovement::query()

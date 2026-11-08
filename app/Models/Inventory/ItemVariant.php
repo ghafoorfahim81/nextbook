@@ -64,7 +64,7 @@ class ItemVariant extends Model
             'attributes' => 'array',
             'sale_price' => 'decimal:4',
             'purchase_price' => 'decimal:4',
-            'avg_cost' => 'decimal:4',
+            'avg_cost' => \App\Casts\StockCost::class,
             'minimum_stock' => 'decimal:4',
             'maximum_stock' => 'decimal:4',
             'weight' => 'decimal:4',

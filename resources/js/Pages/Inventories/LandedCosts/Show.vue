@@ -93,7 +93,7 @@ const statusBadgeClasses = computed(() => ({
 
 const isFinal = computed(() => ['posted', 'reversed'].includes(record.value?.status_id));
 const canEdit = computed(() => !isFinal.value && can('landed_costs.update'));
-const canReverse = computed(() => record.value?.status_id === 'posted' && can('landed_costs.post'));
+const canReverse = computed(() => record.value?.status_id === 'posted' && can('landed_costs.reverse'));
 const txnBadgeClasses = computed(() => ({
   draft: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
   posted: 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300',

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Casts\StockCost;
 use App\Support\CompanyContext;
 use App\Models\Administration\Warehouse;
 
@@ -90,9 +91,7 @@ class LandedCostService
             )->all());
         }
 
-        $landedCost->update([
-            'purchase_id' => $purchaseIds[0] ?? null,
-        ]);
+        $landedCost->unsetRelation('purchases');
     }
 
     /**
@@ -548,11 +547,7 @@ class LandedCostService
             ->values();
 
         if ($purchaseIds->isEmpty()) {
-            if ($landedCost->relationLoaded('purchases') && $landedCost->purchases->isNotEmpty()) {
-                $purchaseIds = $landedCost->purchases->pluck('id')->values();
-            } elseif ($landedCost->purchase_id) {
-                $purchaseIds = collect([$landedCost->purchase_id]);
-            }
+            $purchaseIds = $landedCost->purchases()->pluck('purchases.id')->values();
         }
 
         if ($purchaseIds->isEmpty()) {
@@ -705,7 +700,7 @@ class LandedCostService
         $itemIds = [];
 
         $rows->each(function (array $row) use ($landedCost, $rate, $direction, &$itemIds) {
-            $allocation = round((float) data_get($row, 'allocated_amount', 0) * $rate, 4) * $direction;
+            $allocation = round((float) data_get($row, 'allocated_amount', 0) * $rate, StockCost::SCALE) * $direction;
 
             if ($allocation == 0.0) {
                 return;
@@ -716,9 +711,7 @@ class LandedCostService
                 ? PurchaseItem::query()->find(data_get($row, 'purchase_item_id'))
                 : null;
 
-            $purchaseId = $purchaseItem?->purchase_id
-                ?? data_get($row, 'purchase_id')
-                ?? $landedCost->purchase_id;
+            $purchaseId = $purchaseItem?->purchase_id ?? data_get($row, 'purchase_id');
             $warehouseId = $purchaseItem?->warehouse_id ?? data_get($row, 'warehouse_id');
             $batch = $purchaseItem?->batch ?? data_get($row, 'batch');
             $expireDate = $purchaseItem?->expire_date?->toDateString() ?: data_get($row, 'expire_date');
@@ -755,21 +748,34 @@ class LandedCostService
                 return;
             }
 
+            // The cost is spread over the whole receipt, but goods already sold
+            // left with the old cost and their share belongs in cost of goods
+            // sold, which this module does not book. Refuse rather than leave
+            // the inventory account above what is really on the shelf.
+            if ($movements->contains(fn (StockMovement $movement) => $this->layerIsPartlyConsumed($movement, $itemId))) {
+                throw ValidationException::withMessages([
+                    'landed_cost' => __(
+                        $direction > 0 ? 'general.landed_cost_stock_already_sold' : 'general.landed_cost_stock_sold_cannot_reverse',
+                        ['item' => Item::query()->whereKey($itemId)->value('name') ?? $itemId]
+                    ),
+                ]);
+            }
+
             $remaining = $allocation;
             $lastIndex = $movements->count() - 1;
 
             foreach ($movements->values() as $index => $movement) {
                 $qty = (float) $movement->quantity;
                 $share = $index === $lastIndex
-                    ? round($remaining, 4)
-                    : round($allocation * ($qty / $qtyTotal), 4);
-                $remaining = round($remaining - $share, 4);
+                    ? round($remaining, StockCost::SCALE)
+                    : round($allocation * ($qty / $qtyTotal), StockCost::SCALE);
+                $remaining = round($remaining - $share, StockCost::SCALE);
 
                 if ($qty <= 0) {
                     continue;
                 }
 
-                $movement->unit_cost = round(((float) $movement->unit_cost) + ($share / $qty), 4);
+                $movement->unit_cost = round(((float) $movement->unit_cost) + ($share / $qty), StockCost::SCALE);
                 $movement->save();
             }
 
@@ -779,6 +785,28 @@ class LandedCostService
         foreach ($itemIds as $itemId) {
             $this->recalculateAvgCostForItem($itemId);
         }
+    }
+
+    /**
+     * Whether any of a receipt layer has already been issued or returned.
+     *
+     * qty_remaining is kept in the item's own unit while quantity is in the
+     * unit the purchase used, so the receipt is converted before comparing.
+     */
+    private function layerIsPartlyConsumed(StockMovement $movement, string $itemId): bool
+    {
+        if ($movement->qty_remaining === null) {
+            return false;
+        }
+
+        $unit = fn (?string $id) => $id
+            ? (float) \App\Models\Administration\UnitMeasure::withTrashed()->whereKey($id)->value('unit')
+            : 0.0;
+
+        $itemUnit = $unit(Item::query()->whereKey($itemId)->value('unit_measure_id')) ?: 1.0;
+        $factor = ($unit($movement->unit_measure_id) ?: $itemUnit) / $itemUnit;
+
+        return (float) $movement->qty_remaining + 0.0001 < (float) $movement->quantity * $factor;
     }
 
     private function relatedPurchaseMovements(

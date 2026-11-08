@@ -61,7 +61,7 @@ class SaleReturnItem extends Model
             'quantity' => 'decimal:2',
             'unit_measure_id' => 'string',
             'unit_price' => 'decimal:4',
-            'net_unit_cost' => 'decimal:4',
+            'net_unit_cost' => \App\Casts\StockCost::class,
             'warehouse_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',

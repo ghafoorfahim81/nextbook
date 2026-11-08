@@ -63,6 +63,7 @@ class PurchaseItem extends Model
             'unit_measure_id' => 'string',
             'warehouse_id' => 'string',
             'unit_price' => 'decimal:2',
+            'net_unit_cost' => \App\Casts\StockCost::class,
             'discount' => 'decimal:2',
             'free' => 'decimal:2',
             'tax' => 'decimal:2',

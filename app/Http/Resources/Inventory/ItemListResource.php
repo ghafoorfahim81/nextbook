@@ -33,7 +33,7 @@ class ItemListResource extends JsonResource
             'sale_price' => $this->sale_price,
             'purchase_price' => $this->purchase_price,
             'cost' => $this->cost,
-            'avg_cost' => $this->avg_cost,
+            'avg_cost' => $this->avg_cost === null ? null : number_format((float) $this->avg_cost, 4, '.', ''),
             'on_hand' => (float) ($this->on_hand ?? 0),
             'variants_count' => (int) ($this->variants_count ?? 0),
             'is_active' => (bool) $this->is_active,

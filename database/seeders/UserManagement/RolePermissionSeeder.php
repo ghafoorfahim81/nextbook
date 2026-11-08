@@ -134,6 +134,7 @@ class RolePermissionSeeder extends Seeder
         $landedCostActions = array_merge($baseActions, [
             'allocate',
             'post',
+            'reverse',
         ]);
 
         $transactionActions = array_merge($baseActions, [
@@ -330,6 +331,7 @@ class RolePermissionSeeder extends Seeder
             'landed_costs.update',
             'landed_costs.allocate',
             'landed_costs.post',
+            'landed_costs.reverse',
         ])->get();
 
         $accountant->syncPermissions($accountantPermissions);

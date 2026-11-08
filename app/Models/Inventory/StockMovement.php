@@ -35,7 +35,7 @@ class StockMovement extends Model
         'reference_type' => 'string',
         'created_by' => 'string',
         'quantity' => 'decimal:4',
-        'unit_cost' => 'decimal:4',
+        'unit_cost' => \App\Casts\StockCost::class,
         'status' => StockStatus::class,
         'qty_remaining' => 'decimal:4',
         'batch' => 'string',

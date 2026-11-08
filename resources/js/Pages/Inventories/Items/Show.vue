@@ -60,7 +60,7 @@ const itemDetails = computed(() => [
     { label: t('item.income_account'), value: itemData.value?.income_account?.name, icon: TrendingUp },
     { label: t('item.cost_account'), value: itemData.value?.cost_account?.name, icon: TrendingDown },
     { label: t('item.current_stock'), value: itemData.value?.on_hand || 0, icon: Target },
-    { label: t('item.average_cost'), value: itemData.value?.avg_cost, icon: DollarSign },
+    { label: t('item.average_cost'), value: Number(itemData.value?.avg_cost || 0).toFixed(4), icon: DollarSign },
     // Purchase price is a per-variant figure and is read off the variants
     // table below. It only appears up here for trades that never show that
     // table, where the item row is the only place it could be read at all.

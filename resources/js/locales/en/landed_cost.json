@@ -55,7 +55,7 @@
   "share_of_total": "Share of Total",
   "no_category_breakdown": "No category breakdown was recorded for this landed cost.",
   "purchase_already_has_landed_cost": "This purchase bill already has a landed cost.",
-  "category_breakdown_hint": "Enter each extra cost of this shipment (freight, customs, …). Their total is shared across the items below.",
+  "category_breakdown_hint": "Enter each extra cost of this shipment (freight, customs, …). Their total is shared across the items below. If the category you need is not in the list, use the Create button to add it.",
   "no_categories_hint": "No cost categories yet. Create one to start entering additional costs.",
   "items_missing_weight": "The cost cannot be split by weight because these items have no weight: {items}. Enter their weight on the item, or choose another method.",
   "items_missing_volume": "The cost cannot be split by volume because these items have no length, width and height: {items}. Enter their dimensions on the item, or choose another method.",

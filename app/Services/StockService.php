@@ -600,7 +600,7 @@ class StockService
         // A negative average is never meaningful; it would mean the receipt
         // carried more value than the shelf holds, which only happens if the
         // books drifted. Clamp rather than propagate the nonsense.
-        $item->avg_cost = round(max(0.0, $unwound), 4);
+        $item->avg_cost = round(max(0.0, $unwound), \App\Casts\StockCost::SCALE);
         $item->save();
     }
 
@@ -664,7 +664,7 @@ class StockService
             return;
         }
 
-        $variant->avg_cost = round($average, 4);
+        $variant->avg_cost = round($average, \App\Casts\StockCost::SCALE);
         $variant->save();
     }
 
@@ -693,7 +693,7 @@ class StockService
             return;
         }
 
-        $item->avg_cost = round($average, 4);
+        $item->avg_cost = round($average, \App\Casts\StockCost::SCALE);
         $item->save();
     }
 

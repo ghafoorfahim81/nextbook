@@ -40,7 +40,6 @@ class LandedCost extends Model
         'company_id',
         'number',
         'date',
-        'purchase_id',
         'bank_account_id',
         'total_cost',
         'allocated_total',
@@ -57,7 +56,6 @@ class LandedCost extends Model
     {
         return [
             'date' => 'date',
-            'purchase_id' => 'string',
             'bank_account_id' => 'string',
             'total_cost' => 'decimal:2',
             'allocated_total' => 'decimal:2',
@@ -78,7 +76,6 @@ class LandedCost extends Model
             'number',
             'status',
             'allocation_method',
-            'purchase.number',
             'purchases.number',
         ];
     }
@@ -90,11 +87,6 @@ class LandedCost extends Model
         'allocation_method',
         'created_by',
     ];
-
-    public function purchase(): BelongsTo
-    {
-        return $this->belongsTo(Purchase::class);
-    }
 
     public function bankAccount(): BelongsTo
     {

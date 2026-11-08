@@ -50,7 +50,7 @@ class LandedCostItem extends Model
             'purchase_item_id' => 'string',
             'item_id' => 'string',
             'quantity' => 'decimal:4',
-            'unit_cost' => 'decimal:4',
+            'unit_cost' => \App\Casts\StockCost::class,
             'weight' => 'decimal:4',
             'volume' => 'decimal:4',
             'warehouse_id' => 'string',
