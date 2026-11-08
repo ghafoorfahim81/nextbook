@@ -6,7 +6,11 @@
       "Bash(curl 127.0.0.1:*)",
       "Bash(npm *)",
       "Bash(git *)",
-      "PowerShell(php artisan tinker --execute='echo collect\\(DB::select\\(\"select table_name from information_schema.columns where table_schema=''public'' and column_name=''branch_id'' order by 1\"\\)\\)->pluck\\(\"table_name\"\\)->implode\\(\" \"\\);')"
+      "PowerShell(php artisan tinker --execute='echo collect\\(DB::select\\(\"select table_name from information_schema.columns where table_schema=''public'' and column_name=''branch_id'' order by 1\"\\)\\)->pluck\\(\"table_name\"\\)->implode\\(\" \"\\);')",
+      "Bash(python -)",
+      "Bash(sed -i 's|^\\\\\\(\\\\s*\\\\\\)\"opening_locked_posted\": \"This opening has already been posted.\",|&\\\\n\\\\1\"opening_locked_used\": \"This item already has other stock transactions, so its opening cannot be changed.\",|' resources/js/locales/en/item.json)",
+      "Bash(sed -i 's|^\\\\\\(\\\\s*\\\\\\)\"opening_locked_posted\": \"این موجودی اولیه قبلاً ثبت شده است.\",|&\\\\n\\\\1\"opening_locked_used\": \"این جنس تراکنش دیگری دارد، پس موجودی اولیه آن قابل تصحیح نیست.\",|' resources/js/locales/fa/item.json)",
+      "Bash(sed -i 's|^\\\\\\(\\\\s*\\\\\\)\"opening_locked_posted\": \"دا پرانیستل شوی بیلانس دمخه ثبت شوی دی.\",|&\\\\n\\\\1\"opening_locked_used\": \"دې توکي نور سټاک معاملات لري، نو پرانیستل شوی بیلانس یې نشي بدلېدلی.\",|' resources/js/locales/ps/item.json)"
     ],
     "defaultMode": "acceptEdits"
   }
