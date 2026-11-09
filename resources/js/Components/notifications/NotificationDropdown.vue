@@ -187,11 +187,11 @@ onBeforeUnmount(() => {
 <template>
     <DropdownMenu v-model:open="isOpen">
         <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="icon" class="relative rounded-full">
-                <Bell class="size-5" />
+            <Button variant="ghost" size="icon" class="relative h-8 w-8 shrink-0 rounded-full">
+                <Bell class="size-4" />
                 <span
                     v-if="unreadCount > 0"
-                    class="absolute -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold leading-none text-white"
+                    class="absolute -top-1 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white"
                     :class="isRtl ? '-left-1' : '-right-1'"
                 >
                     {{ unreadCount > 99 ? '99+' : unreadCount }}

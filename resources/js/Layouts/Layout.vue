@@ -1054,14 +1054,16 @@ function logout() {
             <header :class="launcher ? 'border-transparent !bg-transparent' : ''" class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b bg-[hsl(var(--app-chrome-background))] text-[hsl(var(--app-chrome-foreground))] px-3 py-2 transition-[width,height] ease-linear lg:h-16 lg:flex-nowrap sm:px-4 lg:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:lg:h-12">
                 <!-- Left: Sidebar trigger -->
                 <div v-if="!launcher" class="flex shrink-0 items-center gap-2">
-                    <SidebarTrigger class="-ml-1"/>
+                    <!-- Every header control is 32px tall (h-8 / size-8) with a 16px
+                         icon, so the row reads as one band. Keep new controls to it. -->
+                    <SidebarTrigger class="-ml-1 h-8 w-8"/>
                     <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
                     <QuickLinks />
                     <!-- The branch you are working in; opens the branch picker when there is a second one. -->
                     <component
                         :is="canOpenBranches ? Link : 'span'"
                         v-bind="canOpenBranches ? { href: route('workspace.branches') } : {}"
-                        class="hidden max-w-[200px] items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-sm text-foreground sm:inline-flex"
+                        class="hidden h-8 max-w-[200px] items-center gap-1.5 rounded-lg border border-border/60 px-2.5 text-xs text-foreground sm:inline-flex"
                         :class="canOpenBranches ? 'transition hover:border-primary/50 hover:bg-primary/5' : ''"
                         :title="activeBranchName || ''"
                     >
@@ -1096,7 +1098,7 @@ function logout() {
                     <!-- The module you are in: plain text, before its switcher. -->
                     <span
                         v-if="!launcher && currentModule"
-                        class="hidden items-center gap-1.5 text-sm font-medium text-foreground sm:inline-flex"
+                        class="hidden h-8 items-center gap-1.5 text-xs font-medium text-foreground sm:inline-flex"
                     >
                         <span class="size-2 rounded-full bg-gradient-to-br" :class="moduleTone(currentModule.id)" aria-hidden="true" />
                         {{ currentModule.title }}
@@ -1107,20 +1109,20 @@ function logout() {
                         :href="route('modules.index')"
                         :title="t('sidebar.all_modules')"
                         :aria-label="t('sidebar.all_modules')"
-                        class="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        class="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
                         :class="normalizePath(page.url) === '/modules' ? 'bg-primary/10 text-primary' : ''"
                     >
-                        <LayoutGrid class="size-5" />
+                        <LayoutGrid class="size-4" />
                     </Link>
 
                     <NotificationDropdown />
                     <LanguageSwitcher />
                     <button
                         @click="toggleColorMode"
-                        class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                        class="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
                     >
-                        <Moon v-if="isDarkModeActive" class="size-5 text-gray-800 dark:text-gray-200" />
-                        <Sun v-else class="size-5 text-gray-800 dark:text-gray-200" />
+                        <Moon v-if="isDarkModeActive" class="size-4" />
+                        <Sun v-else class="size-4" />
                     </button>
                 </div>
 <!--                </div>-->

@@ -179,9 +179,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcuts))
       <Button
         variant="outline"
         size="icon"
-        class="rounded-full bg-primary hover:bg-violet-600 hover:text-white cursor-pointer w-7 h-7"
+        class="h-8 w-8 shrink-0 rounded-full bg-primary hover:bg-violet-600 hover:text-white cursor-pointer"
       >
-        <PlusCircle class="text-white w-7 h-7" />
+        <PlusCircle class="size-4 text-white" />
       </Button>
     </DropdownMenuTrigger>
 

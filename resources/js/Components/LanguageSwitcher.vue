@@ -40,7 +40,7 @@ const selectDir = computed(() =>
 
 <template>
     <Select v-model="current" :dir="selectDir">
-        <SelectTrigger class="h-7 w-[110px] text-xs border-input md:w-[130px]">
+        <SelectTrigger class="h-8 w-[110px] text-xs border-input md:w-[130px]">
             <span class="truncate">{{ currentLabel }}</span>
         </SelectTrigger>
         <SelectContent>
