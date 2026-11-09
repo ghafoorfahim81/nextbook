@@ -223,13 +223,64 @@
       ]
     },
     "landed_cost": {
-      "title": "Landed Cost — Tips",
-      "description": "Add freight, customs and other extra costs onto a purchase so inventory is valued at its true landed cost.",
-      "items": [
-        "Select one or more purchase orders; their items load automatically and cannot be edited here.",
-        "Choose an allocation method, or pick Manual to type each item's share of the extra cost.",
-        "A warning appears if the allocated amounts do not add up to the total additional cost. Posting is blocked until they match.",
-        "Posting adds the allocated amount to the related purchase stock movement and recalculates the item's average cost."
+      "title": "Landed Cost Guide",
+      "description": "Freight, customs, insurance and other costs you paid to get purchased goods to the warehouse are added to the cost of those goods here, so you see their true cost and correct profit.",
+      "sections": [
+        {
+          "heading": "Before you start",
+          "items": [
+            "The purchase bill must be posted. The list only shows posted bills: drafts, reversed bills and bills that already have an active landed cost do not appear. It shows the latest 100 bills only.",
+            "Post the landed cost before selling the goods. If part of that bill's stock has been sold or returned, the system refuses to post.",
+            "To split by weight or volume, first enter the weight, or the length, width and height, on the item itself."
+          ]
+        },
+        {
+          "heading": "Step by step",
+          "items": [
+            "1. Set the date and pick one or more purchase bills. Their items load automatically, and quantity and price cannot be changed here.",
+            "2. Choose the allocation method, the cash or bank account that paid, and the currency.",
+            "3. Under Category Breakdown, enter each cost next to its category. The total of these amounts is what gets shared across the items.",
+            "4. If a category is missing, create it with the Create button in that section. The bin icon only removes a category from this form; it does not delete it from the system.",
+            "5. Check each item's allocated amount and landed unit cost in the items table, then save. The document is saved as a draft and does not affect stock or the accounts yet.",
+            "6. Press Post. Posting updates the item's cost and average cost and books the entry: inventory is debited and the paying account is credited."
+          ]
+        },
+        {
+          "heading": "Which allocation method should I use?",
+          "items": [
+            "By Value: dearer items take a larger share; suits insurance and customs. Example: a cost of 1000 with item A worth 6000 and item B worth 4000 gives 600 and 400.",
+            "By Quantity: every unit takes the same share; suits similar goods.",
+            "By Weight: item weight times quantity; suits freight. If an item has no weight, or items use different weight units, the system names the problem and does not save.",
+            "By Volume: length times width times height times quantity; suits container freight. The same conditions as weight apply.",
+            "Equal: every table row takes the same share, whatever its quantity or price.",
+            "Manual: you type each row's share. The total must equal the total of the costs.",
+            "Weight and dimensions are read from the item, not from its variants. If an item was bought in a larger unit, the system converts it to the item's own unit: 2 boxes of 12 count as 24 pieces."
+          ]
+        },
+        {
+          "heading": "Currency and rate",
+          "items": [
+            "Cost amounts are in the currency you select. Item costs are always kept in the home currency, so each amount is multiplied by the rate before it is added.",
+            "Enter the rate of the day you paid. Example: 10 dollars at a rate of 70 adds 700 in home currency to the cost of the goods."
+          ]
+        },
+        {
+          "heading": "Document statuses",
+          "items": [
+            "Draft: can be edited and deleted, and does not affect stock or the accounts. A deleted draft can be restored from Deleted Records, unless its bill has taken another landed cost in the meantime.",
+            "Posted: can no longer be edited or deleted. To correct it, reverse it and create a new one.",
+            "Reversed: the amount has been taken back out of the item costs and the entry has been reversed, dated the day of the reversal. It cannot be posted or edited again, but the bill is free for a new landed cost."
+          ]
+        },
+        {
+          "heading": "If the system refuses",
+          "items": [
+            "Part of the stock has been sold or returned: a cost that arrives after a sale cannot be recorded here, because the sold share belongs in cost of goods sold. Ask your accountant how to record it. Reversing after a sale is refused for the same reason.",
+            "Allocation does not match: under Manual, correct the row amounts until they equal the total of the costs.",
+            "The account must be cash or bank: only a cash or bank account can be the paying account.",
+            "You do not see the Reverse button: posting and reversing are separate permissions. Ask your administrator for the permission to reverse landed costs."
+          ]
+        }
       ]
     },
     "sales": {

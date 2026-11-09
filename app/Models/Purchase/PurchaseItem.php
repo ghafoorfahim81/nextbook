@@ -141,6 +141,37 @@ class PurchaseItem extends Model
         return max((float) $this->quantity - $this->returnedQuantity($excludingPurchaseReturnId), 0.0);
     }
 
+    /**
+     * The variant's name, when it tells this line apart from the item itself.
+     *
+     * Every item has at least one variant, and an unnamed one reads as the
+     * item's own name. Showing that next to the item would only repeat it.
+     */
+    public function distinctVariantName(): ?string
+    {
+        $name = $this->snapshotVariantName();
+
+        return filled($name) && $name !== $this->snapshotItemName() ? $name : null;
+    }
+
+    /**
+     * This line's quantity in the item's own unit: 2 boxes of 12 is 24 pieces.
+     *
+     * Looked up with trashed units, because a posted bill can name a unit that
+     * has since been retired.
+     */
+    public function baseQuantity(): float
+    {
+        $unit = fn (?string $id): float => $id
+            ? (float) \App\Models\Administration\UnitMeasure::withTrashed()->whereKey($id)->value('unit')
+            : 0.0;
+
+        $itemUnit = $unit($this->item?->unit_measure_id) ?: 1.0;
+        $lineUnit = $unit($this->unit_measure_id) ?: $itemUnit;
+
+        return (float) $this->quantity * ($lineUnit / $itemUnit);
+    }
+
     /** No branch of its own: the purchase holds it, and the company comes from there too. */
     protected function companyParentRelation(): string
     {

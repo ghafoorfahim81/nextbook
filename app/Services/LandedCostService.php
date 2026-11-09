@@ -359,7 +359,8 @@ class LandedCostService
             $volume = (float) data_get($row, 'volume', 0);
 
             $basisValue = match ($method) {
-                LandedCostAllocationMethod::ByQuantity => $quantity,
+                // In the item's own unit, or 2 boxes of 12 would count as 2.
+                LandedCostAllocationMethod::ByQuantity => (float) (data_get($row, 'base_quantity') ?? $quantity),
                 // withShippingBasis() has already refused any row without a weight/volume.
                 LandedCostAllocationMethod::ByWeight => $weight,
                 LandedCostAllocationMethod::ByVolume => $volume,
@@ -466,7 +467,9 @@ class LandedCostService
 
         $rows = $rows->map(function ($row) use ($items, $byWeight, &$missing, &$units) {
             $item = $items->get((string) data_get($row, 'item_id'));
-            $quantity = (float) data_get($row, 'quantity', 0);
+            // The item's weight and dimensions are per unit of its own, so the
+            // line is counted in that unit too.
+            $quantity = (float) (data_get($row, 'base_quantity') ?? data_get($row, 'quantity', 0));
 
             $figure = $byWeight
                 ? (float) $item?->weight
@@ -521,6 +524,7 @@ class LandedCostService
                     'purchase_item_id' => data_get($row, 'purchase_item_id'),
                     'item_id' => data_get($row, 'item_id'),
                     'quantity' => (float) data_get($row, 'quantity', 0),
+                    'base_quantity' => data_get($row, 'base_quantity'),
                     'unit_cost' => (float) data_get($row, 'unit_cost', 0),
                     'weight' => (float) data_get($row, 'weight', 0),
                     'volume' => (float) data_get($row, 'volume', 0),
@@ -571,6 +575,7 @@ class LandedCostService
                     'purchase_item_id' => $item->id,
                     'item_id' => $item->item_id,
                     'quantity' => (float) $item->quantity,
+                    'base_quantity' => $item->baseQuantity(),
                     // Home currency, like the stock cost the allocation lands on.
                     'unit_cost' => (float) $item->unit_price * max((float) ($purchase->transaction?->rate ?: 1), 0.0000001),
                     'weight' => 0,
@@ -593,7 +598,7 @@ class LandedCostService
     private function withPurchaseFigures(Collection $rows): Collection
     {
         $lines = PurchaseItem::query()
-            ->with(['purchase.transaction'])
+            ->with(['purchase.transaction', 'item'])
             ->whereIn('id', $rows->pluck('purchase_item_id')->filter()->unique()->all())
             ->get()
             ->keyBy('id');
@@ -611,6 +616,7 @@ class LandedCostService
                 'purchase_id' => $line->purchase_id,
                 'item_id' => $line->item_id,
                 'quantity' => (float) $line->quantity,
+                'base_quantity' => $line->baseQuantity(),
                 'unit_cost' => (float) $line->unit_price * $rate,
                 'warehouse_id' => $line->warehouse_id,
                 'batch' => $line->batch,
@@ -723,6 +729,7 @@ class LandedCostService
                 $warehouseId,
                 $batch,
                 $expireDate,
+                $purchaseItem?->variant_id,
             );
 
             if ($movements->isEmpty()) {
@@ -733,6 +740,7 @@ class LandedCostService
                     $warehouseId,
                     null,
                     null,
+                    $purchaseItem?->variant_id,
                 );
             }
 
@@ -816,6 +824,7 @@ class LandedCostService
         mixed $warehouseId,
         mixed $batch,
         mixed $expireDate,
+        ?string $variantId = null,
     ): Collection {
         return StockMovement::query()
             ->whereIn('warehouse_id', Warehouse::idsOfBranch($landedCost->branch_id))
@@ -828,6 +837,9 @@ class LandedCostService
             ->where('reference_type', Purchase::class)
             ->when($purchaseId, fn ($query) => $query->where('reference_id', $purchaseId))
             ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
+            // Two variants of one item on a bill are separate layers at separate
+            // prices; each line's share belongs on its own variant only.
+            ->when($variantId, fn ($query) => $query->where('variant_id', $variantId))
             ->when($batch, fn ($query) => $query->where('batch', $batch))
             ->when($expireDate, fn ($query) => $query->whereDate('expire_date', $expireDate))
             ->lockForUpdate()

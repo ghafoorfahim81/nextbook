@@ -267,8 +267,9 @@ class LandedCostFeatureTest extends TestCase
             'item_id' => $line['item_id'],
             'batch' => $line['batch'] ?? null,
             'expire_date' => $line['expire_date'] ?? null,
+            'variant_id' => $line['variant_id'] ?? null,
             'quantity' => $line['quantity'],
-            'unit_measure_id' => $this->ctx['unit_measure']->id,
+            'unit_measure_id' => $line['unit_measure_id'] ?? $this->ctx['unit_measure']->id,
             'unit_price' => $line['unit_price'],
             'item_discount' => 0,
             'free' => 0,
@@ -766,6 +767,173 @@ class LandedCostFeatureTest extends TestCase
             'company_id' => $this->ctx['company']->id,
             'branch_id' => $this->ctx['branch']->id,
         ]), fn (\App\Models\User $user) => $user->assignRole($role));
+    }
+
+    /**
+     * One bill with 2 boxes of 12 of the first item and 24 pieces of a second:
+     * the same number of pieces, so any split by pieces is half and half.
+     */
+    private function billOfBoxesAndPieces(): array
+    {
+        $box = \App\Models\Administration\UnitMeasure::factory()->create([
+            'company_id' => $this->ctx['company']->id,
+            'quantity_id' => $this->ctx['quantity']->id,
+            'name' => 'Box',
+            'unit' => '12',
+            'symbol' => 'bx',
+            'is_main' => false,
+            'is_active' => true,
+        ]);
+
+        $second = $this->ctx['item']->replicate(['avg_cost']);
+        $second->name = 'Second item';
+        $second->code = 'SECOND-'.fake()->unique()->numberBetween(1000, 9999);
+        $second->sku = $second->code;
+        $second->barcode = null;
+        $second->save();
+
+        $purchase = $this->createPostedPurchase([
+            ['item_id' => $this->ctx['item']->id, 'quantity' => 2, 'unit_measure_id' => $box->id, 'unit_price' => 120],
+            ['item_id' => $second->id, 'quantity' => 24, 'unit_price' => 10],
+        ]);
+
+        $rows = $purchase->items()->get()->map(fn ($line) => [
+            'purchase_id' => $purchase->id,
+            'purchase_item_id' => $line->id,
+            'item_id' => $line->item_id,
+            'quantity' => (float) $line->quantity,
+            'unit_cost' => (float) $line->unit_price,
+        ])->all();
+
+        return [$purchase, $rows, $second];
+    }
+
+    public function test_a_split_by_quantity_counts_boxes_in_the_items_own_unit(): void
+    {
+        [$purchase, $rows] = $this->billOfBoxesAndPieces();
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 100,
+            method: LandedCostAllocationMethod::ByQuantity->value,
+            items: $rows,
+        ))->assertRedirect(route('landed-costs.index'));
+
+        $amounts = LandedCost::query()->firstOrFail()->items()->pluck('allocated_amount')->map(fn ($a) => (float) $a)->all();
+
+        $this->assertEquals([50.0, 50.0], $amounts);
+    }
+
+    public function test_a_split_by_weight_counts_boxes_in_the_items_own_unit(): void
+    {
+        [$purchase, $rows, $second] = $this->billOfBoxesAndPieces();
+        $this->ctx['item']->update(['weight' => 2]);
+        $second->update(['weight' => 2]);
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 100,
+            method: LandedCostAllocationMethod::ByWeight->value,
+            items: $rows,
+        ))->assertRedirect(route('landed-costs.index'));
+
+        $saved = LandedCost::query()->firstOrFail()->items()->get();
+
+        $this->assertEquals([48.0, 48.0], $saved->pluck('weight')->map(fn ($w) => (float) $w)->all());
+        $this->assertEquals([50.0, 50.0], $saved->pluck('allocated_amount')->map(fn ($a) => (float) $a)->all());
+    }
+
+    public function test_the_edit_screen_gets_what_it_needs_to_re_split_a_saved_draft(): void
+    {
+        [$purchase, $rows, $second] = $this->billOfBoxesAndPieces();
+        $this->ctx['item']->update(['weight' => 2, 'length' => 2, 'width' => 3, 'height' => 4]);
+        $second->update(['weight' => 2]);
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 100,
+            method: LandedCostAllocationMethod::ByWeight->value,
+            items: $rows,
+        ))->assertRedirect(route('landed-costs.index'));
+
+        $landedCost = LandedCost::query()->firstOrFail();
+        $boxLine = $landedCost->items()->where('item_id', $this->ctx['item']->id)->firstOrFail();
+
+        $request = \Illuminate\Http\Request::create(route('landed-costs.edit', $landedCost->id));
+        $request->setRouteResolver(fn () => app('router')->getRoutes()->match($request));
+
+        $payload = (new \App\Http\Resources\Inventory\LandedCostItemResource($boxLine->load('item', 'purchaseItem.item')))->resolve($request);
+
+        $this->assertEquals(24.0, $payload['base_quantity']);
+        $this->assertEquals(2.0, $payload['item_weight']);
+        $this->assertEquals(24.0, $payload['item_volume']);
+        $this->assertEquals(48.0, (float) $payload['weight']);
+
+        $this->get(route('landed-costs.edit', $landedCost->id))->assertOk();
+    }
+
+    public function test_two_variants_on_one_bill_each_keep_their_own_share(): void
+    {
+        $this->ctx['item']->update(['has_variants' => true]);
+
+        $variant = fn (string $name, string $sku) => \App\Models\Inventory\ItemVariant::query()->create([
+            'company_id' => $this->ctx['company']->id,
+            'item_id' => $this->ctx['item']->id,
+            'name' => $name,
+            'sku' => $sku,
+            'barcode' => null,
+            'attributes' => ['memory' => $name],
+            'variant_key' => $sku,
+            'is_default' => false,
+            'is_active' => true,
+        ]);
+
+        $small = $variant('8GB', 'VAR-8');
+        $large = $variant('16GB', 'VAR-16');
+
+        $purchase = $this->createPostedPurchase([
+            ['item_id' => $this->ctx['item']->id, 'variant_id' => $small->id, 'quantity' => 10, 'unit_price' => 100],
+            ['item_id' => $this->ctx['item']->id, 'variant_id' => $large->id, 'quantity' => 10, 'unit_price' => 300],
+        ]);
+
+        $lines = $purchase->items()->get();
+
+        $this->post(route('landed-costs.store'), $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 400,
+            method: LandedCostAllocationMethod::ByValue->value,
+            items: $lines->map(fn ($line) => [
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $line->id,
+                'item_id' => $line->item_id,
+                'quantity' => (float) $line->quantity,
+                'unit_cost' => (float) $line->unit_price,
+            ])->all(),
+        ))->assertRedirect(route('landed-costs.index'));
+
+        $landedCost = LandedCost::query()->firstOrFail();
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+
+        $cost = fn ($v) => (float) StockMovement::query()
+            ->where('reference_id', $purchase->id)
+            ->where('variant_id', $v->id)
+            ->where('movement_type', StockMovementType::IN)
+            ->firstOrFail()
+            ->unit_cost;
+
+        // 400 by value is 100 and 300, so 10 and 30 a piece, each on its own variant.
+        $this->assertEquals(110.0, $cost($small));
+        $this->assertEquals(330.0, $cost($large));
+
+        // The row names its variant; an item with only its default variant shows no name.
+        $saved = $landedCost->items()->with('purchaseItem')->get();
+        $this->assertEqualsCanonicalizing(['8GB', '16GB'], $saved->map(fn ($row) => $row->purchaseItem->distinctVariantName())->all());
+
+        // Found by exclusion: `latest()` ties for two bills made in the same second.
+        $this->purchaseWithOneItem('BT-PLAIN');
+        $plain = Purchase::query()->whereKeyNot($purchase->id)->firstOrFail()->items()->firstOrFail();
+        $plain->variant_name = $this->ctx['item']->name;
+        $this->assertNull($plain->distinctVariantName());
     }
 
     public function test_stock_value_matches_the_ledger_when_the_cost_does_not_divide_evenly(): void

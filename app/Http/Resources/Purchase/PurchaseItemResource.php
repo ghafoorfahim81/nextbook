@@ -49,6 +49,7 @@ class PurchaseItemResource extends JsonResource
             'item_name' => $this->snapshotItemName(),
             'item_code' => $this->snapshotItemCode(),
             'variant_id' => $this->variant_id,
+            'distinct_variant_name' => $this->distinctVariantName(),
             'variant' => $this->whenLoaded('variant', fn () => $this->variant ? [
                 'id' => $this->variant->id,
                 'display_name' => $this->snapshotVariantName(),
@@ -58,6 +59,12 @@ class PurchaseItemResource extends JsonResource
             'batch' => $this->batch,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
             'quantity' => $this->quantity,
+            // Only where the unit is already loaded, so lists that nest this
+            // resource do not run a lookup per line.
+            'base_quantity' => $this->when(
+                $this->relationLoaded('unitMeasure') && $this->relationLoaded('item'),
+                fn () => $this->baseQuantity()
+            ),
             'unit_measure_id' => $this->unit_measure_id,
             'unit_measure' => $this->whenLoaded('unitMeasure', fn () => $this->unitMeasure),
             'unit_measure_name' => $this->snapshotUnitName(),

@@ -236,6 +236,12 @@ textarea.next-field-control {
   color: hsl(var(--destructive, 0 84% 60%));
 }
 
+/* Dark mode's --destructive is a deep red meant as a fill behind light text.
+   As the colour of a small asterisk on a dark field it all but disappears. */
+.dark .next-field-required {
+  color: hsl(0 91% 71%);
+}
+
 /* ---------------------------------------------------------------------------
    Floated — label up in the gap, gap open.
 
@@ -305,9 +311,14 @@ textarea.next-field-control {
   color: hsl(var(--destructive, 0 84% 60%));
 }
 
-.next-field.next-field--disabled .next-field-outline,
-.next-field.next-field--disabled .next-field-label {
+.next-field.next-field--disabled .next-field-outline {
   opacity: 0.5;
+}
+
+/* Dimmed through its colour, not opacity: opacity would take the required
+   asterisk inside the label down with it, and nothing on the child can undo it. */
+.next-field.next-field--disabled:not(.next-field--error) .next-field-label {
+  color: hsl(var(--muted-foreground) / 0.6);
 }
 
 /* The outline is the only focus indicator; the browser's own ring on the

@@ -461,8 +461,13 @@ const reverseLandedCost = async () => {
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">#{{ index + 1 }}</div>
-                <div class="truncate text-sm font-semibold text-foreground">{{ row.item_name || row.item_id }}</div>
-                <div class="text-xs text-muted-foreground">{{ row.item_code || '-' }}</div>
+                <div class="truncate text-sm font-semibold text-foreground">
+                  <bdi>{{ row.item_name || row.item_id }}</bdi>
+                  <template v-if="row.variant_name">
+                    {{ ' ' }}<bdi class="font-normal text-muted-foreground">({{ row.variant_name }})</bdi>
+                  </template>
+                </div>
+                <div v-if="!row.variant_name" class="text-xs text-muted-foreground">{{ row.item_code || '-' }}</div>
               </div>
               <div class="text-right">
                 <div class="text-xs text-muted-foreground">{{ t('landed_cost.landed_unit_cost') }}</div>
@@ -507,8 +512,13 @@ const reverseLandedCost = async () => {
                 <td class="px-3 py-3 text-foreground">{{ index + 1 }}</td>
                 <td class="px-3 py-3 text-foreground">{{ row.purchase_number || row.purchase_item?.purchase?.number || '-' }}</td>
                 <td class="px-3 py-3 text-foreground">
-                  <div class="font-medium">{{ row.item_name || row.item_id }}</div>
-                  <div class="text-xs text-muted-foreground">{{ row.item_code }}</div>
+                  <div class="font-medium">
+                    <bdi>{{ row.item_name || row.item_id }}</bdi>
+                    <template v-if="row.variant_name">
+                      {{ ' ' }}<bdi class="font-normal text-muted-foreground">({{ row.variant_name }})</bdi>
+                    </template>
+                  </div>
+                  <div v-if="!row.variant_name" class="text-xs text-muted-foreground">{{ row.item_code }}</div>
                 </td>
                 <td class="px-3 py-3 text-right text-foreground">{{ row.quantity }}</td>
                 <td class="px-3 py-3 text-right text-foreground">{{ formatAmount(row.unit_cost) }}</td>

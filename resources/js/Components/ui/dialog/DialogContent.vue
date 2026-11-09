@@ -9,7 +9,6 @@ import {
   useForwardPropsEmits,
 } from 'radix-vue';
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
-import { unrefElement } from '@vueuse/core';
 
 const props = defineProps({
   forceMount: { type: Boolean, required: false },
@@ -52,16 +51,18 @@ const dragStart = reactive({ x: 0, y: 0, offsetX: 0, offsetY: 0 })
  * the nudge that lands the box on a whole device pixel again.
  */
 const snap = reactive({ x: 0, y: 0 })
-const contentRef = ref(null)
+
+// A hidden element inside the content, because it exists only while the dialog
+// is open and its ref changes when it does. A ref on the content component
+// cannot tell: the component is mounted while closed, its $el is not reactive,
+// so a watcher reading it never saw the dialog open and the snap never ran.
+const anchor = ref(null)
 
 const contentStyle = computed(() => ({
   transform: `translate(calc(-50% + ${offset.x + snap.x}px), calc(-50% + ${offset.y + snap.y}px))`,
 }))
 
-const contentElement = () => {
-  const el = unrefElement(contentRef)
-  return el && el.nodeType === 1 ? el : null
-}
+const contentElement = () => anchor.value?.closest('[role="dialog"]') ?? null
 
 const snapToPixels = () => {
   const el = contentElement()
@@ -95,6 +96,7 @@ const detachSnap = () => {
 // element only exists once it opens. So follow the element itself rather
 // than this component's lifecycle.
 watch(
+  // Read through the anchor, which is what makes this re-run on open and close.
   () => contentElement(),
   (el) => {
     detachSnap()
@@ -177,7 +179,6 @@ onBeforeUnmount(stopDrag)
       )"
     />
     <DialogContent
-      ref="contentRef"
       v-bind="forwarded"
       :style="contentStyle"
       :class="
@@ -189,6 +190,7 @@ onBeforeUnmount(stopDrag)
       "
       @pointerdown="onPointerDown"
     >
+      <span ref="anchor" hidden />
       <slot />
 
       <DialogClose

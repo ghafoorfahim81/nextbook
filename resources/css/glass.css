@@ -64,10 +64,11 @@ html[data-surface='glass'] {
   /* A modal is the one surface that carries a whole form's worth of text, and
      it covers the densest part of the page — a data table. At the shared alpha
      with no blur, every row behind it stayed word-for-word readable and fought
-     the dialog's own labels for attention. Heavier tint plus a real blur: the
-     colour and shape of the page still come through, the words do not. */
-  --glass-alpha-dialog: 0.62;
-  --glass-blur-dialog: 2px;
+     the dialog's own labels for attention. At 0.62 with a 2px blur a long guide
+     was still tiring to read over a table, so the tint carries most of it now:
+     the colour of the page still comes through, its shapes and words do not. */
+  --glass-alpha-dialog: 0.9;
+  --glass-blur-dialog: 14px;
 
   --glass-shadow:
     0 10px 30px -12px hsl(var(--foreground) / 0.22),

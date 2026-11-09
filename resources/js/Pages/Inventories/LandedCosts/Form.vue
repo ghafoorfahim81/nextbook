@@ -76,12 +76,22 @@ const normalizeItem = (row) => ({
     ? { id: row?.item_id, name: row?.item_name, code: row?.item_code }
     : (row?.item || null),
   quantity: row?.quantity ?? '',
+  // Saved rows keep what a re-split by quantity, weight or volume works from.
+  // Left undefined on a blank row, which then falls back to the stored figures.
+  base_quantity: row?.base_quantity,
+  weight: row?.weight ?? 0,
+  volume: row?.volume ?? 0,
+  item_weight: row?.item_weight,
+  item_weight_unit_id: row?.item_weight_unit_id,
+  item_volume: row?.item_volume,
+  item_dimension_unit_id: row?.item_dimension_unit_id,
   unit_cost: row?.unit_cost ?? '',
   warehouse_id: row?.warehouse_id ?? '',
   batch: row?.batch ?? '',
   expire_date: row?.expire_date ?? '',
   item_name: row?.item_name || row?.item?.name || row?.selected_item?.name || '',
   item_code: row?.item_code || row?.item?.code || row?.selected_item?.code || '',
+  variant_name: row?.variant_name || '',
   allocated_percentage: row?.allocated_percentage ?? 0,
   allocated_amount: row?.allocated_amount ?? 0,
   item_cost_before: row?.item_cost_before ?? 0,
@@ -236,13 +246,15 @@ const calculatePreviewRows = (rows, totalCost, method, rate = 1) => {
     .map((row) => {
       const quantity = Number(row.quantity) || 0;
       const unitCost = Number(row.unit_cost) || 0;
-      // Total weight/volume = quantity x the item's own figure. No fallback to
-      // quantity: a row without one is reported by shippingBasisProblem.
-      const weight = row.item_weight !== undefined ? quantity * (Number(row.item_weight) || 0) : (Number(row.weight) || 0);
-      const volume = row.item_volume !== undefined ? quantity * (Number(row.item_volume) || 0) : (Number(row.volume) || 0);
+      // Counted in the item's own unit, the same as the server: 2 boxes of 12 is 24.
+      const baseQuantity = row.base_quantity !== undefined ? (Number(row.base_quantity) || 0) : quantity;
+      // Total weight/volume = that quantity x the item's own figure. No fallback
+      // to quantity: a row without one is reported by shippingBasisProblem.
+      const weight = row.item_weight !== undefined ? baseQuantity * (Number(row.item_weight) || 0) : (Number(row.weight) || 0);
+      const volume = row.item_volume !== undefined ? baseQuantity * (Number(row.item_volume) || 0) : (Number(row.volume) || 0);
 
       const basisValue = {
-        by_quantity: quantity,
+        by_quantity: baseQuantity,
         by_weight: weight,
         by_volume: volume,
         by_value: quantity * unitCost,
@@ -574,7 +586,9 @@ const fetchPurchaseItems = async (purchase) => {
       selected_item: row.item || { id: row.item_id, name: row.item_name, code: row.item_code },
       item_name: row.item_name || row.item?.name || '',
       item_code: row.item_code || row.item?.code || '',
+      variant_name: row.distinct_variant_name || '',
       quantity: row.quantity,
+      base_quantity: row.base_quantity,
       // Home currency: the purchase's own rate turns its price into the currency stock is costed in.
       unit_cost: Number(row.unit_price || 0) * (Number(purchaseData.rate) > 0 ? Number(purchaseData.rate) : 1),
       warehouse_id: row.warehouse_id || purchaseData.warehouse_id || '',
@@ -728,6 +742,7 @@ const saveFormRef = useSaveShortcut({ form });
             :disabled="isPosted"
             :error="form.errors?.date"
             :label="t('landed_cost.date')"
+            is-required
           />
           <NextSelect
             autofocus
@@ -740,6 +755,7 @@ const saveFormRef = useSaveShortcut({ form });
             :multiple="true"
             :close-on-select="false"
             :floating-text="t('landed_cost.purchase_order')"
+            is-required
             :searchable="true"
             resource-type="purchases"
             :disabled="isPosted"
@@ -764,6 +780,7 @@ const saveFormRef = useSaveShortcut({ form });
             value-key="id"
             :reduce="account => account"
             :floating-text="t('landed_cost.bank_account')"
+            is-required
             :searchable="true"
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
@@ -778,6 +795,7 @@ const saveFormRef = useSaveShortcut({ form });
             value-key="id"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
+            is-required
             :searchable="true"
             resource-type="currencies"
             :search-fields="['name', 'local_name', 'code', 'symbol']"
@@ -792,6 +810,7 @@ const saveFormRef = useSaveShortcut({ form });
             :disabled="isPosted || form.selected_currency?.is_base_currency === true"
             :error="form.errors?.rate"
             :label="t('general.rate')"
+            is-required
           />
           <NextTextarea
             v-model="form.notes"
@@ -809,7 +828,7 @@ const saveFormRef = useSaveShortcut({ form });
         <div class="flex flex-wrap items-center justify-between gap-2 p-3" :class="categoriesOpen ? 'border-b' : ''">
           <button type="button" class="flex items-center gap-2 text-left" @click="categoriesOpen = !categoriesOpen">
             <ChevronDown class="h-4 w-4 text-violet-500 transition-transform" :class="categoriesOpen ? '' : '-rotate-90'" />
-            <h3 class="font-semibold text-violet-500">{{ t('landed_cost.category_breakdown') }}</h3>
+            <h3 class="font-semibold text-violet-500">{{ t('landed_cost.category_breakdown') }}<span class="next-field-required">*</span></h3>
           </button>
           <p class="order-last w-full text-xs leading-5 text-muted-foreground md:order-none md:w-auto md:flex-1 md:px-3">
             {{ t('landed_cost.category_breakdown_hint') }}
@@ -849,7 +868,7 @@ const saveFormRef = useSaveShortcut({ form });
               <button
                 type="button"
                 :disabled="isPosted"
-                class="p-1 text-destructive/70 hover:text-destructive disabled:opacity-40"
+                class="p-1 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-40"
                 @click="removeCategoryAllocation(row.id)"
               >
                 <Trash2 class="h-3.5 w-3.5" />
@@ -872,7 +891,7 @@ const saveFormRef = useSaveShortcut({ form });
           <p v-if="form.errors?.items" class="mt-1 text-sm text-destructive">{{ form.errors.items }}</p>
         </div>
         <table class="w-full table-fixed min-w-[1100px] purchase-table border-separate">
-          <thead class="bg-card sticky top-0 z-[200]">
+          <thead class="bg-card sticky top-0 z-10">
             <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
               <th class="px-1 py-1 w-8">#</th>
               <th class="px-1 py-1 w-28">{{ t('landed_cost.purchase_order') }}</th>
@@ -903,8 +922,13 @@ const saveFormRef = useSaveShortcut({ form });
                 {{ row.purchase_number || '-' }}
               </td>
               <td class="px-1 py-2 align-middle">
-                <div class="text-sm font-medium">{{ row.item_name || row.selected_item?.name || '-' }}</div>
-                <div v-if="row.item_code || row.selected_item?.code" class="text-xs text-muted-foreground">
+                <div class="text-sm font-medium">
+                  <bdi>{{ row.item_name || row.selected_item?.name || '-' }}</bdi>
+                  <template v-if="row.variant_name">
+                    {{ ' ' }}<bdi class="font-normal text-muted-foreground">({{ row.variant_name }})</bdi>
+                  </template>
+                </div>
+                <div v-if="!row.variant_name && (row.item_code || row.selected_item?.code)" class="text-xs text-muted-foreground">
                   {{ row.item_code || row.selected_item?.code }}
                 </div>
               </td>
@@ -967,7 +991,7 @@ const saveFormRef = useSaveShortcut({ form });
         </div>
       </Alert>
 
-      <div class="rounded-xl border border-violet-500 bg-card p-4 shadow-sm">
+      <div class="mt-4 rounded-xl border border-violet-500 bg-card p-4 shadow-sm">
         <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
       </div>
 
