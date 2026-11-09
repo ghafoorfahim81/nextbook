@@ -1393,7 +1393,7 @@ class ReportService
 
         $query = DB::query()
             ->fromSub($balanceQty, 'bq')
-            ->join('items as i', function ($join) use ($branchId) {
+            ->join('items as i', function ($join) use ($companyId) {
                 $join->on('i.id', '=', 'bq.item_id')
                     ->where('i.company_id', '=', $companyId)
                     ->whereNull('i.deleted_at');
@@ -1450,7 +1450,7 @@ class ReportService
         // warehouses is two rows but one item.
         $totalItems = DB::query()
             ->fromSub($positiveStockPairs, 'ps')
-            ->join('items as i', function ($join) use ($branchId) {
+            ->join('items as i', function ($join) use ($companyId) {
                 $join->on('i.id', '=', 'ps.item_id')
                     ->where('i.company_id', '=', $companyId)
                     ->whereNull('i.deleted_at');
@@ -1865,7 +1865,11 @@ class ReportService
                     ->orWhereRaw('COALESCE(sm_totals.total_in, 0) <> 0')
                     ->orWhereRaw('COALESCE(sm_totals.total_out, 0) <> 0');
             })
-            ->groupBy('i.id', 'i.code', 'i.name', 'sb.variant_id', 'iv.name', 'iv.attributes', 'iv.sku')
+            // iv.is_default is grouped as well because the ORDER BY below sorts the
+            // default variant first: Postgres cannot tell it is fixed per variant
+            // (the grouping key is sb.variant_id, not iv's own primary key), so
+            // leaving it out is a "must appear in the GROUP BY clause" error.
+            ->groupBy('i.id', 'i.code', 'i.name', 'sb.variant_id', 'iv.name', 'iv.attributes', 'iv.sku', 'iv.is_default')
             ->selectRaw('i.code as item_code')
             ->selectRaw('i.name as item_name')
             ->selectRaw('iv.name as variant_name')
