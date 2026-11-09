@@ -16,6 +16,7 @@ import { useI18n } from 'vue-i18n';
 import { Plus, Trash2, AlertCircle, ChevronDown } from 'lucide-vue-next';
 import QuickCreateModal from '@/Components/next/QuickCreateModal.vue';
 import { useAuth } from '@/composables/useAuth';
+import { formatPlain, plainNumber } from '@/utils/number';
 import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import { todayValueForCalendar } from '@/utils/dateDefaults';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
@@ -61,6 +62,7 @@ const normalizeRecord = (value) => {
 
   payload.items = normalizeCollection(payload.items);
   payload.purchases = normalizeCollection(payload.purchases);
+  payload.attachments = normalizeCollection(payload.attachments);
   payload.purchase_ids = Array.isArray(payload.purchase_ids) ? payload.purchase_ids : [];
   payload.purchase_numbers = Array.isArray(payload.purchase_numbers) ? payload.purchase_numbers : [];
 
@@ -136,7 +138,7 @@ const form = useForm({
   selected_bank_account: props.bankAccounts.find((a) => a.id === currentRecord.value?.bank_account_id) || null,
   currency_id: currentRecord.value?.currency_id || '',
   selected_currency: props.currencies.find((c) => c.id === currentRecord.value?.currency_id) || null,
-  rate: currentRecord.value?.rate || '',
+  rate: plainNumber(currentRecord.value?.rate) || '',
   total_cost: currentRecord.value?.total_cost || '',
   allocation_method: currentRecord.value?.allocation_method_id || 'by_value',
   notes: currentRecord.value?.notes || '',
@@ -157,7 +159,7 @@ const handleSelectChange = (field, value) => {
 
   if (field === 'currency_id') {
     const chosen = props.currencies.find((c) => c.id === value);
-    if (chosen) form.rate = chosen.exchange_rate;
+    if (chosen) form.rate = plainNumber(chosen.exchange_rate);
   }
 };
 
@@ -167,7 +169,7 @@ watch(() => props.currencies, (list) => {
     if (base) {
       form.selected_currency = base;
       form.currency_id = base.id;
-      form.rate = base.exchange_rate;
+      form.rate = plainNumber(base.exchange_rate);
     }
   }
 }, { immediate: true });
@@ -442,7 +444,7 @@ const setRecordFromResponse = (data) => {
   form.selected_bank_account = props.bankAccounts.find((a) => a.id === data.bank_account_id) || null;
   form.currency_id = data.currency_id || form.currency_id;
   form.selected_currency = props.currencies.find((c) => c.id === data.currency_id) || form.selected_currency;
-  form.rate = data.rate || form.rate;
+  form.rate = plainNumber(data.rate) || form.rate;
   form.total_cost = data.total_cost || '';
   form.allocation_method = data.allocation_method_id || 'by_value';
   form.notes = data.notes || '';
@@ -506,7 +508,7 @@ const resetFormForCreate = () => {
   const base = props.currencies.find((c) => c.is_base_currency);
   form.selected_currency = base || null;
   form.currency_id = base?.id || '';
-  form.rate = base?.exchange_rate || '';
+  form.rate = plainNumber(base?.exchange_rate) || '';
   form.allocation_method = 'by_value';
   form.notes = '';
   form.items = [];
@@ -556,6 +558,12 @@ const saveDraft = (createAndNew = false) => {
 
   if (props.submitMethod === 'post') {
     request.post(submitRoute.value, options);
+  } else if (form.attachments?.length) {
+    // PHP does not parse a multipart PUT, so with files in it the whole request
+    // arrives empty. Sent as a POST that names the method it stands for.
+    form
+      .transform(() => ({ ...payload, _method: 'put' }))
+      .post(submitRoute.value, { ...options, forceFormData: true });
   } else {
     request.put(submitRoute.value, options);
   }
@@ -953,7 +961,7 @@ const saveFormRef = useSaveShortcut({ form });
                 </span>
               </td>
               <td class="px-1 py-2 align-middle text-center tabular-nums">
-                {{ Number(previewForRow(row)?.landed_unit_cost ?? row.unit_cost ?? 0).toFixed(4) }}
+                {{ formatPlain(previewForRow(row)?.landed_unit_cost ?? row.unit_cost ?? 0) }}
               </td>
             </tr>
           </tbody>

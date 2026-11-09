@@ -30,6 +30,8 @@ class LandedCostRequest extends FormRequest
             'allocation_method' => ['required', 'string', Rule::in(LandedCostAllocationMethod::values())],
             'status' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
             'category_allocations' => ['nullable', 'array'],
             'category_allocations.*.landed_cost_category_id' => ['required_with:category_allocations', 'string', 'exists:landed_cost_categories,id'],
             'category_allocations.*.amount' => ['required_with:category_allocations', 'numeric', 'min:0.01'],

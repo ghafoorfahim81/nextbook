@@ -936,6 +936,108 @@ class LandedCostFeatureTest extends TestCase
         $this->assertNull($plain->distinctVariantName());
     }
 
+    public function test_attachments_reach_the_details_and_edit_screens(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $purchase = $this->purchaseWithOneItem('BT-ATT');
+        $landedCost = $this->storeLandedCost($purchase, 50, [
+            'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('customs.pdf', 50, 'application/pdf')],
+        ]);
+
+        $this->assertSame(1, $landedCost->attachments()->count());
+
+        foreach (['landed-costs.show', 'landed-costs.edit'] as $route) {
+            $this->get(route($route, $landedCost->id))->assertInertia(
+                // Inertia wraps a resource collection in `data`; the pages unwrap it
+                // in normalizeRecord(), the same as they do for items and purchases.
+                fn ($page) => $page->where('landedCost.attachments.data.0.original_name', 'customs.pdf')
+            );
+        }
+    }
+
+    public function test_a_file_can_be_added_when_editing_a_draft(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $purchase = $this->purchaseWithOneItem('BT-ATT2');
+        $landedCost = $this->storeLandedCost($purchase, 50);
+        $line = $purchase->items()->firstOrFail();
+
+        // The way the form sends it: a POST carrying _method, as multipart.
+        $this->post(route('landed-costs.update', $landedCost->id), array_merge(
+            $this->landedCostPayload($purchase, 50, LandedCostAllocationMethod::ByValue->value, [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $line->id,
+                'item_id' => $line->item_id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+            ]]),
+            ['_method' => 'put', 'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('more.pdf', 50, 'application/pdf')]],
+        ))->assertRedirect(route('landed-costs.index'));
+
+        $this->assertSame(1, $landedCost->attachments()->count());
+    }
+
+    public function test_a_file_of_a_type_that_is_not_allowed_is_refused(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $purchase = $this->purchaseWithOneItem('BT-ATT3');
+        $line = $purchase->items()->firstOrFail();
+
+        $this->post(route('landed-costs.store'), array_merge(
+            $this->landedCostPayload($purchase, 50, LandedCostAllocationMethod::ByValue->value, [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $line->id,
+                'item_id' => $line->item_id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+            ]]),
+            ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('run.exe', 50, 'application/octet-stream')]],
+        ))->assertSessionHasErrors('attachments.0');
+    }
+
+    public function test_the_voucher_carries_a_reference_and_remarks_in_every_language(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-LBL');
+        $landedCost = $this->storeLandedCost($purchase, 50);
+        $number = $landedCost->number;
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
+
+        $voucher = $landedCost->fresh()->transaction;
+        $this->assertSame('Landed cost #'.$number, $voucher->voucher_number);
+        $this->assertSame('Landed cost #'.$number, $voucher->remark);
+
+        foreach ($voucher->lines()->get() as $line) {
+            $this->assertStringContainsString('#'.$number, $line->remark);
+            $this->assertStringContainsString('مصرف جنس #'.$number, $line->remark_fa);
+            $this->assertStringContainsString('#'.$number, $line->remark_ps);
+        }
+
+        $this->postJson('/api/landed-costs/'.$landedCost->id.'/reverse')->assertOk();
+
+        $reversal = \App\Models\Transaction\Transaction::query()->where('reversal_of_id', $voucher->id)->firstOrFail();
+        $this->assertSame('Reversal of Landed cost #'.$number, $reversal->voucher_number);
+        $this->assertSame('ابطال مصرف جنس #'.$number, $reversal->lines()->firstOrFail()->remark_fa);
+    }
+
+    public function test_the_account_is_named_in_the_users_language(): void
+    {
+        $purchase = $this->purchaseWithOneItem('BT-NAME');
+        $landedCost = $this->storeLandedCost($purchase, 50)->load('bankAccount');
+        $landedCost->bankAccount->update(['name' => 'Cash in Hand', 'local_name' => 'نقد در صندوق']);
+
+        $resolve = fn () => (new \App\Http\Resources\Inventory\LandedCostResource($landedCost))->resolve(request())['bank_account_name'];
+
+        app()->setLocale('fa');
+        $this->assertSame('نقد در صندوق', $resolve());
+
+        app()->setLocale('en');
+        $this->assertSame('Cash in Hand', $resolve());
+    }
+
     public function test_stock_value_matches_the_ledger_when_the_cost_does_not_divide_evenly(): void
     {
         // 100 / 7000 = 0.0142857...: at 4 decimals this was 100.10 of stock.

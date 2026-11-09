@@ -750,6 +750,12 @@ class TransactionService
         $referenceType = $referenceType ?? $original->reference_type;
 
         $map = [
+            // Passed as its morph alias: see LandedCostService::reverse().
+            'landed_cost' => [
+                'Reversal of landed cost #',
+                'ابطال مصرف جنس #',
+                'د اجناسو لګښت بیرته راګرځول #',
+            ],
             \App\Models\AccountTransfer\AccountTransfer::class => [
                 'Reversal of account transfer #',
                 'ابطال انتقال حساب #',

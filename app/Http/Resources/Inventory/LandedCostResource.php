@@ -35,7 +35,9 @@ class LandedCostResource extends JsonResource
             'purchase_numbers' => $this->whenLoaded('purchases', fn () => $this->purchases->pluck('number')->filter()->values()->all(), []),
             'purchases' => PurchaseResource::collection($this->whenLoaded('purchases')),
             'bank_account_id' => $this->bank_account_id,
-            'bank_account_name' => $this->whenLoaded('bankAccount', fn () => $this->bankAccount?->name),
+            'bank_account_name' => $this->whenLoaded('bankAccount', fn () => app()->getLocale() === 'en'
+                ? $this->bankAccount?->name
+                : ($this->bankAccount?->local_name ?: $this->bankAccount?->name)),
             // Currency and rate are never stored on the landed cost itself —
             // they live on its transaction, and are read from there for every
             // CRUD operation, per the accounting boundary in TransactionService.

@@ -314,7 +314,7 @@
   "status_change_blocked_title": "Status could not be changed",
   "account_opening_locked": "The opening balance can no longer be changed because transactions have been recorded on this account.",
   "voucher_prefix": {
-    "account_opening_balance": "Account Opening Balance", "opening_balance": "Opening Balance", "sale_return": "Sale Return", "sale": "Sale", "purchase_return": "Purchase Return", "purchase": "Purchase", "receipt": "Receipt", "payment": "Payment", "transfer": "Transfer", "item_transfer": "Item Transfer", "adjustment": "Adjustment", "journal": "Journal", "reversal": "Reversal of"
+    "account_opening_balance": "Account Opening Balance", "opening_balance": "Opening Balance", "sale_return": "Sale Return", "sale": "Sale", "purchase_return": "Purchase Return", "purchase": "Purchase", "receipt": "Receipt", "payment": "Payment", "transfer": "Transfer", "item_transfer": "Item Transfer", "landed_cost": "Landed Cost", "adjustment": "Adjustment", "journal": "Journal", "reversal": "Reversal of"
   },
   "account_identity_locked": "The account number and type can no longer be changed because transactions have been recorded on this account."
 }

@@ -10,6 +10,7 @@ import { Button } from '@/Components/ui/button';
 import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { useAuth } from '@/composables/useAuth';
+import { formatPlain } from '@/utils/number';
 import {
   ArrowLeft,
   ArrowLeftRight,
@@ -27,7 +28,7 @@ import {
   User,
 } from 'lucide-vue-next';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { toast } = useToast();
 const { can } = useAuth();
 const page = usePage();
@@ -62,6 +63,7 @@ const normalizeRecord = (value) => {
 
   payload.items = normalizeCollection(payload.items);
   payload.purchases = normalizeCollection(payload.purchases);
+  payload.attachments = normalizeCollection(payload.attachments);
   payload.category_allocations = normalizeCollection(payload.category_allocations);
   payload.purchase_numbers = Array.isArray(payload.purchase_numbers) ? payload.purchase_numbers : [];
   payload.purchase_ids = Array.isArray(payload.purchase_ids) ? payload.purchase_ids : [];
@@ -82,7 +84,7 @@ watch(() => props.landedCost, (value) => {
 }, { deep: true });
 
 const formatAmount = (value) => Number(value || 0).toFixed(2);
-const formatUnit = (value) => Number(value || 0).toFixed(4);
+const formatUnit = (value) => formatPlain(value);
 
 const statusBadgeClasses = computed(() => ({
   draft: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
@@ -147,7 +149,7 @@ const categoryTotal = computed(() =>
 const currency = computed(() => record.value?.currency ?? null);
 const currencySymbol = computed(() => currency.value?.symbol || '');
 const currencyLabel = computed(() =>
-  [currency.value?.code, currency.value?.name].filter(Boolean).join(' — ') || '-'
+  [currency.value?.code, locale.value === 'en' ? currency.value?.name : (currency.value?.local_name || currency.value?.name)].filter(Boolean).join(' — ') || '-'
 );
 
 const exchangeRate = computed(() => Number(record.value?.rate ?? 1));
@@ -476,9 +478,9 @@ const reverseLandedCost = async () => {
             </div>
             <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.purchase_order') }}</div><div class="font-medium text-foreground">{{ row.purchase_number || '-' }}</div></div>
-              <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.quantity') }}</div><div class="font-medium text-foreground">{{ row.quantity }}</div></div>
+              <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.quantity') }}</div><div class="font-medium text-foreground">{{ formatUnit(row.quantity) }}</div></div>
               <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.base_unit_cost') }}</div><div class="font-medium text-foreground">{{ formatAmount(row.unit_cost) }}</div></div>
-              <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.allocated_percentage') }}</div><div class="font-medium text-foreground">{{ Number(row.allocated_percentage || 0).toFixed(4) }}%</div></div>
+              <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.allocated_percentage') }}</div><div class="font-medium text-foreground">{{ formatPlain(row.allocated_percentage, 2) }}%</div></div>
               <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.item_cost_before') }}</div><div class="font-medium text-foreground">{{ formatAmount(row.item_cost_before) }}</div></div>
               <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.allocated_amount') }}</div><div class="font-medium text-foreground">{{ formatAmount(row.allocated_amount) }}</div></div>
               <div><div class="text-xs text-muted-foreground">{{ t('landed_cost.item_cost_after') }}</div><div class="font-medium text-foreground">{{ formatAmount(row.item_cost_after) }}</div></div>
@@ -520,10 +522,10 @@ const reverseLandedCost = async () => {
                   </div>
                   <div v-if="!row.variant_name" class="text-xs text-muted-foreground">{{ row.item_code }}</div>
                 </td>
-                <td class="px-3 py-3 text-right text-foreground">{{ row.quantity }}</td>
+                <td class="px-3 py-3 text-right text-foreground">{{ formatUnit(row.quantity) }}</td>
                 <td class="px-3 py-3 text-right text-foreground">{{ formatAmount(row.unit_cost) }}</td>
                 <td class="px-3 py-3 text-right text-foreground">{{ formatAmount(row.item_cost_before) }}</td>
-                <td class="px-3 py-3 text-right text-foreground">{{ Number(row.allocated_percentage || 0).toFixed(4) }}%</td>
+                <td class="px-3 py-3 text-right text-foreground">{{ formatPlain(row.allocated_percentage, 2) }}%</td>
                 <td class="px-3 py-3 text-right text-foreground">{{ formatAmount(row.allocated_amount) }}</td>
                 <td class="px-3 py-3 text-right text-foreground">{{ formatAmount(row.item_cost_after) }}</td>
                 <td class="px-3 py-3 text-right font-semibold text-violet-600 dark:text-violet-400">{{ formatUnit(row.landed_unit_cost) }}</td>

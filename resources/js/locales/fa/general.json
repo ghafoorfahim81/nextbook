@@ -317,7 +317,7 @@
   "status_change_blocked_title": "تغییر وضعیت انجام نشد",
   "account_opening_locked": "موجودی اولیه دیگر قابل تغییر نیست، زیرا برای این حساب تراکنش ثبت شده است.",
   "voucher_prefix": {
-    "account_opening_balance": "موجودی اولیه حساب", "opening_balance": "موجودی اولیه", "sale_return": "برگشت فروش", "sale": "فروش", "purchase_return": "برگشت خرید", "purchase": "خرید", "receipt": "رسید", "payment": "پرداخت", "transfer": "انتقال", "item_transfer": "انتقال جنس", "adjustment": "تعدیل", "journal": "سند روزنامچه", "reversal": "برگشت"
+    "account_opening_balance": "موجودی اولیه حساب", "opening_balance": "موجودی اولیه", "sale_return": "برگشت فروش", "sale": "فروش", "purchase_return": "برگشت خرید", "purchase": "خرید", "receipt": "رسید", "payment": "پرداخت", "transfer": "انتقال", "item_transfer": "انتقال جنس", "landed_cost": "مصرف جنس", "adjustment": "تعدیل", "journal": "سند روزنامچه", "reversal": "برگشت"
   },
   "account_identity_locked": "شماره و نوعیت حساب دیگر قابل تغییر نیست، زیرا برای این حساب تراکنش ثبت شده است."
 }

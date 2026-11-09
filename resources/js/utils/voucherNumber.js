@@ -12,6 +12,7 @@ const PATTERNS = [
     { re: /^Item Transfer #(.*)$/i, key: 'item_transfer', hash: true },
     { re: /^Transfer #(.*)$/i, key: 'transfer', hash: true },
     { re: /^Adjustment #(.*)$/i, key: 'adjustment', hash: true },
+    { re: /^Landed cost #(.*)$/i, key: 'landed_cost', hash: true },
     { re: /^journal #(.*)$/i, key: 'journal', hash: true },
 ]
 

@@ -150,14 +150,18 @@ class LandedCostService
             'account_id' => $this->resolveInventoryStockAccountId(),
             'debit' => $amount,
             'credit' => 0,
-            'remark' => 'Inventory capitalization for landed cost',
+            'remark' => 'Landed cost #'.$landedCost->number.' added to inventory',
+            'remark_fa' => 'مصرف جنس #'.$landedCost->number.' به موجودی انبار اضافه شد',
+            'remark_ps' => 'د اجناسو لګښت #'.$landedCost->number.' پر ګودام موجودۍ زیات شو',
         ];
 
         $bankLine = [
             'account_id' => $header['bank_account_id'],
             'debit' => 0,
             'credit' => $amount,
-            'remark' => 'Landed cost funded from account',
+            'remark' => 'Landed cost #'.$landedCost->number.' paid from account',
+            'remark_fa' => 'پرداخت مصرف جنس #'.$landedCost->number.' از حساب',
+            'remark_ps' => 'د اجناسو لګښت #'.$landedCost->number.' له حساب څخه ورکړل شو',
         ];
 
         return $this->transactionService->post(
@@ -165,7 +169,10 @@ class LandedCostService
                 'currency_id' => $header['currency_id'],
                 'rate' => $header['rate'],
                 'date' => $header['date'],
-                'remark' => 'Landed cost #' . $landedCost->id,
+                // English in the column like every other voucher; the screens
+                // translate the prefix (utils/voucherNumber.js).
+                'voucher_number' => 'Landed cost #'.$landedCost->number,
+                'remark' => 'Landed cost #'.$landedCost->number,
                 // Every reader — LandedCost::transaction() (morphOne), reports,
                 // the trash screen — resolves the type via getMorphClass(),
                 // which returns the registered morph-map alias ('landed_cost')

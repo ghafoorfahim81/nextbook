@@ -1,4 +1,5 @@
 <script setup>
+import { formatPlain, plainNumber } from '@/utils/number';
 import AppLayout from '@/Layouts/Layout.vue'
 import AttachmentList from '@/Components/AttachmentList.vue';
 import TimeSeriesChart from '@/Components/charts/TimeSeriesChart.vue';
@@ -60,14 +61,14 @@ const itemDetails = computed(() => [
     { label: t('item.income_account'), value: itemData.value?.income_account?.name, icon: TrendingUp },
     { label: t('item.cost_account'), value: itemData.value?.cost_account?.name, icon: TrendingDown },
     { label: t('item.current_stock'), value: itemData.value?.on_hand || 0, icon: Target },
-    { label: t('item.average_cost'), value: Number(itemData.value?.avg_cost || 0).toFixed(4), icon: DollarSign },
+    { label: t('item.average_cost'), value: formatPlain(itemData.value?.avg_cost), icon: DollarSign },
     // Purchase price is a per-variant figure and is read off the variants
     // table below. It only appears up here for trades that never show that
     // table, where the item row is the only place it could be read at all.
     ...(showsVariantTable.value
         ? []
         : [{ label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign }]), 
-    { label: t('item.margin_percentage'), value: itemData.value?.margin_percentage, icon: DollarSign },
+    { label: t('item.margin_percentage'), value: plainNumber(itemData.value?.margin_percentage), icon: DollarSign },
     { label: t('item.rate_a'), value: itemData.value?.rate_a, icon: DollarSign },
     { label: t('item.rate_b'), value: itemData.value?.rate_b, icon: DollarSign },
     { label: t('item.rate_c'), value: itemData.value?.rate_c, icon: DollarSign },
@@ -83,7 +84,7 @@ const filled = (value) => value !== null && value !== undefined && value !== '' 
 const dimensions = computed(() => {
     const { length, width, height } = itemData.value || {};
     const unit = itemData.value?.dimension_unit_name ? ` ${itemData.value.dimension_unit_name}` : '';
-    return [length, width, height].some(filled) ? `${length ?? '—'} × ${width ?? '—'} × ${height ?? '—'}${unit}` : null;
+    return [length, width, height].some(filled) ? `${plainNumber(length) ?? '—'} × ${plainNumber(width) ?? '—'} × ${plainNumber(height) ?? '—'}${unit}` : null;
 });
 
 const sourcingDetails = computed(() => [
@@ -95,7 +96,7 @@ const sourcingDetails = computed(() => [
     { label: t('item.shelf_life_days'), value: itemData.value?.shelf_life_days, icon: CalendarClock },
     { label: t('item.min_shelf_life_percent'), value: itemData.value?.min_shelf_life_percent, icon: CalendarClock },
     { label: t('item.storage_zone'), value: itemData.value?.storage_zone ? t(`item.storage_zones.${itemData.value.storage_zone}`) : null, icon: Boxes },
-    { label: t('item.weight'), value: filled(itemData.value?.weight) ? `${itemData.value.weight}${itemData.value.weight_unit_name ? ' ' + itemData.value.weight_unit_name : ''}` : null, icon: Scale },
+    { label: t('item.weight'), value: filled(itemData.value?.weight) ? `${plainNumber(itemData.value.weight)}${itemData.value.weight_unit_name ? ' ' + itemData.value.weight_unit_name : ''}` : null, icon: Scale },
     { label: t('item.dimensions'), value: dimensions.value, icon: Ruler },
 ].filter((row) => filled(row.value)));
 
@@ -607,7 +608,6 @@ onMounted(() => {
                                 <tr class="bg-muted/60 text-muted-foreground">
                                     <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('general.on_hand') }}</th>
-                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.stock_by_warehouse') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.reserved') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.available') }}</th>
                                     <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.stock_value') }}</th>
@@ -705,7 +705,7 @@ onMounted(() => {
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.variant?.display_name || '—' }}</td>
                                 <td class="py-3 px-3 text-center whitespace-nowrap font-semibold rtl:text-right">{{ row.quantity }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_price }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ (Number(row.quantity || 0) * Number(row.unit_price || 0)).toFixed(4) }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ formatPlain(Number(row.quantity || 0) * Number(row.unit_price || 0)) }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.source }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_measure_name }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.batch || '—' }}</td>

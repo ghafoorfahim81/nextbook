@@ -316,7 +316,7 @@
   "status_change_blocked_title": "حالت بدل نه شو",
   "account_opening_locked": "پرانیستی پاتې نور نشي بدلېدای، ځکه چې په دې حساب کې معاملې ثبت شوې دي.",
   "voucher_prefix": {
-    "account_opening_balance": "د حساب پرانیستی پاتې", "opening_balance": "پرانیستی پاتې", "sale_return": "د پلور بیرته ورکړه", "sale": "پلور", "purchase_return": "د پېرود بیرته ورکړه", "purchase": "پېرود", "receipt": "رسید", "payment": "تادیه", "transfer": "لیږد", "item_transfer": "د جنس لیږد", "adjustment": "تعدیل", "journal": "ژورنال", "reversal": "بیرته راګرځول"
+    "account_opening_balance": "د حساب پرانیستی پاتې", "opening_balance": "پرانیستی پاتې", "sale_return": "د پلور بیرته ورکړه", "sale": "پلور", "purchase_return": "د پېرود بیرته ورکړه", "purchase": "پېرود", "receipt": "رسید", "payment": "تادیه", "transfer": "لیږد", "item_transfer": "د جنس لیږد", "landed_cost": "د اجناسو لګښت", "adjustment": "تعدیل", "journal": "ژورنال", "reversal": "بیرته راګرځول"
   },
   "account_identity_locked": "د حساب شمېره او ډول نور نشي بدلېدای، ځکه چې په دې حساب کې معاملې ثبت شوې دي."
 }

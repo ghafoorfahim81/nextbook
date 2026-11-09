@@ -132,7 +132,7 @@ class LandedCostController extends Controller
 
     public function show(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'attachments', 'createdBy', 'updatedBy']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         if ($request->expectsJson()) {
@@ -148,7 +148,7 @@ class LandedCostController extends Controller
 
     public function edit(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'attachments', 'createdBy', 'updatedBy']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         return inertia('Inventories/LandedCosts/Edit', [
