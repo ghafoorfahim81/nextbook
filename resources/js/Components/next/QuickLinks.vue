@@ -111,10 +111,16 @@ const visibleGroups = computed(() =>
 // The menu lists the open module's links only (by the module each link's page
 // belongs to); outside any module (home, dashboard) it lists them all. The
 // Alt shortcuts below keep working everywhere.
+//
+// TEMPORARY (test phase): the per-module filter is switched off so every quick
+// link shows on every page. Flip this back to false to restore the old
+// behaviour — nothing else below needs changing.
+const SHOW_ALL_LINKS = true
+
 const appModules = computed(() => buildAppModules(t))
 const currentModuleId = computed(() => moduleForUrl(appModules.value, page.url)?.id ?? null)
 const menuGroups = computed(() => {
-  if (!currentModuleId.value) return visibleGroups.value
+  if (SHOW_ALL_LINKS || !currentModuleId.value) return visibleGroups.value
 
   return visibleGroups.value
     .map((group) => ({
