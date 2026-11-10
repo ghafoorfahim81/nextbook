@@ -12,6 +12,8 @@ const props = defineProps({
     /** Route parameters object, or a single route parameter value (e.g. model id) */
     backRouteParams: { type: [Object, String, Number], default: () => ({}) },
     module: { type: String, required: true },
+    /** Guide of the user manual this form belongs to; the help dialog links straight to it. */
+    guide: { type: String, default: '' },
     showPreferences: { type: Boolean, default: false },
     /**
      * When set (and the page has no rich preferences panel of its own), the toolbar
@@ -84,7 +86,7 @@ function goBack() {
                 <SlidersHorizontal class="h-4 w-4 text-primary" />
                 {{ t('general.settings') }}
             </Button>
-            <ModuleHelpButton :module="module" toolbar />
+            <ModuleHelpButton :module="module" :guide="guide" toolbar />
         </div>
     </div>
 

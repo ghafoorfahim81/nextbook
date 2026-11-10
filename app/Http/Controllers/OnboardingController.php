@@ -13,7 +13,7 @@ class OnboardingController extends Controller
      * to `preferences.onboarding.{key}_dismissed_at` on the raw preferences JSON,
      * so the flag survives future default merges without bloating the value.
      */
-    private const HINTS = ['manual_prompt', 'item_form_help'];
+    private const HINTS = ['manual_prompt', 'item_form_help', 'sale_form_help'];
 
     /**
      * Mark the app-wide "check the user manual" prompt as handled. Kept as its

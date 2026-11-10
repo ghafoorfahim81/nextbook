@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import { useFormGuard } from '@/composables/useFormGuard'
 import { useSaveShortcut } from '@/composables/useSaveShortcut'
 import { useLineEnterNavigation } from '@/composables/useLineEnterNavigation'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios'
@@ -78,6 +79,17 @@ const spec_text = item_management?.spec_text ?? 'batch'
 const decimalPlaces = Number(user_preferences.value?.appearance?.decimal_places ?? 2)
 
 const showPreferencesPanel = ref(false)
+
+// The first time a user opens this form, the quick guide is offered — how the
+// keyboard walks a line, what each sale type does — with a way into the full
+// sales guide. Shown once per user, and not on top of the app-wide welcome.
+const showSaleHelp = ref(false)
+onMounted(() => {
+    if (user_preferences.value?.onboarding?.sale_form_help_dismissed_at) return
+    if (page.props.auth?.user?.show_manual_prompt) return
+    showSaleHelp.value = true
+    axios.post(route('onboarding.hint.dismiss'), { key: 'sale_form_help' }).catch(() => {})
+})
 
 const buildEmptyRow = () => ({
     item_id: '',
@@ -1264,6 +1276,7 @@ const saveFormRef = useSaveShortcut({ form, onSave: focusSaveButton })
         <FormPageToolbar
             back-route="sales.index"
             module="sales"
+            guide="sales"
             :show-preferences="true"
             @preferences="showPreferencesPanel = true"
         />
@@ -1273,6 +1286,7 @@ const saveFormRef = useSaveShortcut({ form, onSave: focusSaveButton })
             :prefs="salePrefs"
             :title="t('preferences.tabs.sale')"
         />
+        <ModuleHelpButton module="sales" guide="sales" triggerless v-model:open="showSaleHelp" />
         <SaleOrderPickerDialog
             :open="pickerOpen"
             :sale-orders="eligibleSaleOrders"

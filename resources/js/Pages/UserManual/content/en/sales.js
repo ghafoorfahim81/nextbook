@@ -336,5 +336,248 @@ export default {
                 },
             ],
         },
+        {
+            id: 'keyboard',
+            number: '14',
+            title: 'Working fast with the keyboard',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'A sale can be entered from start to finish without touching the mouse. The form opens with the cursor on the customer, and Enter carries you through each line in the order you fill it.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Key', 'What it does'],
+                    rows: [
+                        ['Enter on the customer', 'Goes to the barcode / item search box.'],
+                        [
+                            'Tab on the customer',
+                            'Goes to the item field of the first line.',
+                        ],
+                        [
+                            'Enter on the item',
+                            'Takes the highlighted item and goes to the variant — or straight to the quantity when the item has only one variant.',
+                        ],
+                        ['Enter on the variant', 'Goes to the quantity.'],
+                        ['Enter on the quantity', 'Goes to the price.'],
+                        [
+                            'Enter on the price',
+                            'Goes to the item field of the next line. A new line is added when there is none.',
+                        ],
+                        [
+                            'Arrow keys',
+                            'Move up, down, left and right between the fields of the lines table. They never change a value.',
+                        ],
+                        [
+                            'F2 or Alt+B',
+                            'Jumps to the barcode search from anywhere on the form.',
+                        ],
+                        [
+                            'Ctrl+S, then Enter',
+                            'Saves. With “confirm before save” on, Ctrl+S opens the confirmation and Enter answers it; with it off, Ctrl+S steps onto the Save button and Enter presses it.',
+                        ],
+                    ],
+                },
+                {
+                    type: 'note',
+                    label: 'Inside a select',
+                    text: 'While a list is open, Up and Down walk its options and Enter takes the highlighted one. Press Escape to close the list; the arrows then move between the lines again.',
+                },
+                {
+                    type: 'tip',
+                    label: 'Scanning',
+                    text: 'Scan a barcode in the barcode box and the item is added as a line; scan it again and the quantity of that line goes up by one. The cursor stays in the box for the next scan. The barcode box is on the edit form as well.',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Number fields do not change when you scroll the mouse wheel over them.',
+                        'Number fields on the sale form take no negative figures.',
+                        'Enter inside a line never saves the bill — only Ctrl+S followed by Enter does.',
+                    ],
+                },
+            ],
+        },
+        {
+            id: 'payment-and-currency',
+            number: '15',
+            title: 'Payment, currency, free goods and expiry',
+            blocks: [
+                {
+                    type: 'h4',
+                    text: 'a) Sale type and payment',
+                },
+                {
+                    type: 'table',
+                    headers: ['Sale type', 'What happens', 'Payment status'],
+                    rows: [
+                        [
+                            'Cash',
+                            'The whole bill is received now into the cash/account you pick. The account is required and cannot be left empty.',
+                            'Paid',
+                        ],
+                        [
+                            'Credit',
+                            'A payment dialog opens: enter how much is received now, the payment method and the cash/bank account. The rest stays on the customer.',
+                            'Paid when the full amount is received, Partially paid when part of it is, Unpaid when nothing is',
+                        ],
+                        [
+                            'On loan',
+                            'Nothing is received now. The whole bill goes on the customer.',
+                            'Unpaid',
+                        ],
+                    ],
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The payment cannot be more than the bill. The dialog shows the bill after the bill discount, what is paid and what remains.',
+                        'Only cash and bank accounts are offered for a payment.',
+                        'The bill total is worked out by the system from the lines: goods − line discounts − bill discount.',
+                        'A percentage bill discount is taken on the value of goods, before line discounts. A fixed bill discount is taken off the bill once.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) Currency and rate',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Item prices are kept in the company currency. A bill in another currency shows each price divided by the rate: 10 AFN at a rate of 65 is 0.1538 USD.',
+                        'Changing the currency converts every price on the bill, and changing it back gives exactly the original price.',
+                        'If a currency has no stored rate, pick the currency first and then type the rate — the prices convert as you type it.',
+                        'A price you typed yourself is kept when only the rate of the same currency is changed.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'c) Free goods',
+                },
+                {
+                    type: 'p',
+                    text: 'The Free column is for units given away with the sale. They are not charged, but they do leave the warehouse and their cost goes to cost of goods sold. Selling 45 with 5 free takes 50 off the shelf, and the printed invoice shows “45 + 5 Free”.',
+                },
+                {
+                    type: 'h4',
+                    text: 'd) Variant, batch and expiry',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The stock shown on a line is the stock of the chosen variant in the chosen warehouse. If that variant has none there, a message says so.',
+                        'The batch list shows only the batches of the chosen variant.',
+                        'The expiry date is picked from the dates actually in stock, with the quantity of each; it cannot be typed. Leave it empty and the system takes the nearest expiry first.',
+                        'When no sale price is set, the proposed price is built on the chosen variant’s own average cost.',
+                    ],
+                },
+            ],
+        },
+        {
+            id: 'costing-returns-orders',
+            number: '16',
+            title: 'Cost of goods, drafts, returns and orders',
+            blocks: [
+                {
+                    type: 'h4',
+                    text: 'a) How the cost of a sale is taken',
+                },
+                {
+                    type: 'table',
+                    headers: ['Method', 'Which stock leaves', 'Cost booked'],
+                    rows: [
+                        [
+                            'FIFO',
+                            'Nearest expiry first, then the oldest receipt.',
+                            'The actual cost of the receipts the goods came from.',
+                        ],
+                        [
+                            'LIFO',
+                            'Nearest expiry first, then the newest receipt.',
+                            'The actual cost of the receipts the goods came from.',
+                        ],
+                        [
+                            'Weighted average',
+                            'Nearest expiry first.',
+                            'The average cost of the variant (or of the item when the variant has none).',
+                        ],
+                    ],
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The method is set per item, or for the whole company when the item has none of its own.',
+                        'Inventory and cost of goods sold in the ledger always equal the stock movements the sale wrote.',
+                        'A line that names no batch still records which batch it really came from, so reversing the bill puts the goods back on that same batch.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) Drafts',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'A draft only reserves its stock; nothing leaves the warehouse and nothing reaches the ledger until it is posted.',
+                        'A draft is costed on the day it is posted, at what the stock costs that day.',
+                        'Deleting a draft releases its reservation; restoring it from Deleted records reserves the stock again.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'c) Returns',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'A return credits the customer what they actually paid per unit — after the line discount and the line’s share of the bill discount — not the list price.',
+                        'Free units can be returned too. They were delivered at no charge, so they lower the per-unit figure: 45 sold + 5 free at 40 is 50 units at 36 each.',
+                        'You can return at most what was delivered (sold + free), across all returns of that bill.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'd) Orders and quotations',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'An order is billed once. While a bill made from it exists, a second bill from the same order is refused.',
+                        'Reversing that bill reopens the order, so it can be billed again.',
+                        'The order, the quotation and the sale made from them use the same total formula, so the amount does not change on conversion.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'e) Common questions',
+                },
+                {
+                    type: 'table',
+                    headers: ['Question', 'Answer'],
+                    rows: [
+                        [
+                            '“Choose the cash or bank account”',
+                            'A cash sale needs the account the money goes into. Pick it in the Payment card.',
+                        ],
+                        [
+                            '“The payment cannot be more than the bill total”',
+                            'Lower the amount received, or check the discount — the bill is smaller than the payment.',
+                        ],
+                        [
+                            '“This expiry date is not in stock”',
+                            'The date is no longer on the shelf in that warehouse. Pick one of the listed dates or leave it empty.',
+                        ],
+                        [
+                            '“This sale order has already been billed”',
+                            'A bill from that order already exists. Open it, or reverse it first.',
+                        ],
+                        [
+                            'The price did not change after I changed the currency',
+                            'The currency has no stored rate. Type the rate and the prices convert.',
+                        ],
+                    ],
+                },
+            ],
+        },
     ],
 }

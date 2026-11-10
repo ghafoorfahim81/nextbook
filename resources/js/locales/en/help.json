@@ -284,12 +284,44 @@
       ]
     },
     "sales": {
-      "title": "Sales — Tips",
-      "description": "Record sales that affect inventory and customer balance.",
-      "items": [
-        "Select the correct Customer ledger so receivables and statements are accurate.",
-        "Confirm item quantity and price; stock will reduce for inventory items.",
-        "Use discounts/taxes consistently to keep profit reports correct."
+      "title": "Sales — Quick guide",
+      "description": "A sale takes stock out of the warehouse and records the income and what the customer owes. The full guide has the details.",
+      "sections": [
+        {
+          "heading": "Fast entry with the keyboard",
+          "items": [
+            "Enter on the customer goes to the barcode search; Tab goes to the first line.",
+            "Enter walks a line: item → variant → quantity → price → next line.",
+            "Arrow keys move between the fields of the table without changing a value.",
+            "F2 jumps to the barcode search. Ctrl+S, then Enter, saves."
+          ]
+        },
+        {
+          "heading": "Sale type and payment",
+          "items": [
+            "Cash: the whole bill is received now into the cash/account you pick (required).",
+            "Credit: a dialog asks how much is received now; the rest stays on the customer.",
+            "On loan: nothing is received now; the whole bill goes on the customer.",
+            "The system works out the bill total from the lines, and a payment cannot exceed it."
+          ]
+        },
+        {
+          "heading": "Lines",
+          "items": [
+            "The stock shown is the chosen variant’s stock in the chosen warehouse.",
+            "Free units are not charged but do leave the warehouse.",
+            "The expiry date is picked from the dates in stock; leave it empty to take the nearest expiry first.",
+            "Changing the currency converts every price; if the currency has no rate, type the rate and the prices follow."
+          ]
+        },
+        {
+          "heading": "After saving",
+          "items": [
+            "A draft only reserves stock and is costed on the day it is posted.",
+            "A posted bill is locked: correct it with a reversal or a sales return.",
+            "A return credits what the customer actually paid, after discounts."
+          ]
+        }
       ]
     },
     "receipt": {

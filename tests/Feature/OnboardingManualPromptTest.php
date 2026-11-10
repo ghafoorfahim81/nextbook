@@ -37,3 +37,16 @@ it('does not resurface the prompt once a dismissed timestamp is stored', functio
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('auth.user.show_manual_prompt', false));
 });
+
+it('remembers that the sale form quick guide has been offered', function () {
+    ['user' => $user] = $this->bootstrapErpContext();
+
+    expect(data_get($user->fresh()->preferences, 'onboarding.sale_form_help_dismissed_at'))->toBeNull();
+
+    $this->post(route('onboarding.hint.dismiss'), ['key' => 'sale_form_help'])->assertNoContent();
+
+    expect(data_get($user->fresh()->preferences, 'onboarding.sale_form_help_dismissed_at'))->not->toBeNull();
+
+    // Only the hints the app knows are accepted.
+    $this->post(route('onboarding.hint.dismiss'), ['key' => 'anything_else'])->assertStatus(422);
+});

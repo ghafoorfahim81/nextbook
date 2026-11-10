@@ -15,6 +15,8 @@ const props = defineProps({
   toolbar: { type: Boolean, required: false, default: false },
   /** Render no trigger — the dialog is opened via `v-model:open` (first-time onboarding). */
   triggerless: { type: Boolean, required: false, default: false },
+  /** Guide (and optionally chapter) the "open full guide" button lands on, e.g. "sales" or "sales/keyboard". */
+  guide: { type: String, required: false, default: '' },
   /** Optional external open state; omit for the self-contained trigger button. */
   open: { type: Boolean, required: false, default: undefined },
 })
@@ -115,7 +117,7 @@ const hasContent = computed(() => sections.value.length || items.value.length)
 
         <DialogFooter v-if="hasContent">
           <Button as-child variant="outline" class="gap-2">
-            <Link :href="route('user-manual')">
+            <Link :href="route('user-manual') + (props.guide ? '#' + props.guide : '')">
               <BookOpen class="size-4" />
               {{ t('help.open_full_guide') }}
             </Link>

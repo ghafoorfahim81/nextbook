@@ -954,6 +954,7 @@ const saveFormRef = useSaveShortcut({ form, onSave: focusSaveButton });
         <FormPageToolbar
             back-route="sales.index"
             module="sales"
+            guide="sales"
             :show-preferences="true"
             @preferences="showPreferencesPanel = true"
         />
