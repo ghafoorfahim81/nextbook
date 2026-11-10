@@ -945,7 +945,9 @@ const onhand = (index) => {
     const converted = (onHand * baseUnit) / selectedUnit
     const free = Number(item.free) || 0
     const qty = Number(item.quantity) || 0
-    return converted - free - qty;
+    // Stock is stored to 4 decimals in the item's base unit (19.1667 dozen), so the
+    // converted figure carries rounding dust (230.0004). Trim it to display precision.
+    return Math.round((converted - free - qty) * 100) / 100;
 }
 
 const reservedOut = (index) => {
