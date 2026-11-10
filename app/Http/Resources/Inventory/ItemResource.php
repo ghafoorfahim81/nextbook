@@ -145,7 +145,10 @@ class ItemResource extends JsonResource
                     });
                 return number_format($sum, 2);
             }),
-            'on_hand' => number_format($this->onHand(), 2),
+            // Keep the full stored precision (numeric(18,4)) with no thousands separator:
+            // the sale/purchase screens multiply this by the unit factor, so rounding it
+            // to 2 decimals (19.1667 -> 19.17) shows up as wrong stock (230.04 vs 230).
+            'on_hand' => rtrim(rtrim(number_format((float) $this->onHand(), 4, '.', ''), '0'), '.'),
             'avg_cost' => $this->avg_cost,
             // 'avg_cost' => number_format($this->avg_cost, 2),
             'stock_value' => (function () {
