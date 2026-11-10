@@ -556,16 +556,16 @@ class SearchController extends Controller
         }
 
         $availableFor = function (float $onHand, float $reservedOut) use ($enforceReservation) {
-            return $enforceReservation ? round(max(0, $onHand - $reservedOut), 2) : round($onHand, 2);
+            return $enforceReservation ? round(max(0, $onHand - $reservedOut), 4) : round($onHand, 4);
         };
 
         $batches = array_map(function ($batch) use ($availableFor) {
             return [
                 'batch' => $batch['batch'],
                 'expire_date' => $batch['expire_date'],
-                'on_hand' => round($batch['on_hand'] ?? 0, 2),
-                'reserved_out' => round($batch['reserved_out'] ?? 0, 2),
-                'reserved_in' => round($batch['reserved_in'] ?? 0, 2),
+                'on_hand' => round($batch['on_hand'] ?? 0, 4),
+                'reserved_out' => round($batch['reserved_out'] ?? 0, 4),
+                'reserved_in' => round($batch['reserved_in'] ?? 0, 4),
                 'available' => $availableFor((float) ($batch['on_hand'] ?? 0), (float) ($batch['reserved_out'] ?? 0)),
                 'avg_cost' => $batch['avg_cost'],
             ];
@@ -574,9 +574,9 @@ class SearchController extends Controller
         $expiryBatches = array_map(function ($expiry) use ($availableFor) {
             return [
                 'expire_date' => $expiry['expire_date'],
-                'on_hand' => round($expiry['on_hand'] ?? 0, 2),
-                'reserved_out' => round($expiry['reserved_out'] ?? 0, 2),
-                'reserved_in' => round($expiry['reserved_in'] ?? 0, 2),
+                'on_hand' => round($expiry['on_hand'] ?? 0, 4),
+                'reserved_out' => round($expiry['reserved_out'] ?? 0, 4),
+                'reserved_in' => round($expiry['reserved_in'] ?? 0, 4),
                 'available' => $availableFor((float) ($expiry['on_hand'] ?? 0), (float) ($expiry['reserved_out'] ?? 0)),
                 'avg_cost' => $expiry['avg_cost'],
             ];
@@ -586,21 +586,21 @@ class SearchController extends Controller
             array_sum(array_column($batches, 'on_hand'))
             + array_sum(array_column($expiryBatches, 'on_hand'))
             + $nonBatchOnHand,
-            2
+            4
         );
 
         $totalReservedOut = round(
             array_sum(array_column($batches, 'reserved_out'))
             + array_sum(array_column($expiryBatches, 'reserved_out'))
             + $nonBatchReservedOut,
-            2
+            4
         );
 
         $totalReservedIn = round(
             array_sum(array_column($batches, 'reserved_in'))
             + array_sum(array_column($expiryBatches, 'reserved_in'))
             + $nonBatchReservedIn,
-            2
+            4
         );
 
         $totalAvailable = $availableFor($totalOnHand, $totalReservedOut);
@@ -639,8 +639,8 @@ class SearchController extends Controller
                 'variant_id' => $row['variant_id'],
                 'batch' => $row['batch'],
                 'expire_date' => $row['expire_date'],
-                'on_hand' => round($row['on_hand'], 2),
-                'reserved_out' => round($row['reserved_out'], 2),
+                'on_hand' => round($row['on_hand'], 4),
+                'reserved_out' => round($row['reserved_out'], 4),
                 'available' => $availableFor((float) $row['on_hand'], (float) $row['reserved_out']),
                 'avg_cost' => $item->avg_cost,
             ])->values()->all(),
@@ -651,8 +651,8 @@ class SearchController extends Controller
                 'variant_id' => $row['variant_id'],
                 'batch' => $row['batch'],
                 'expire_date' => app(\App\Services\DateConversionService::class)->toDisplay($row['sort']),
-                'on_hand' => round($row['on_hand'], 2),
-                'reserved_out' => round($row['reserved_out'], 2),
+                'on_hand' => round($row['on_hand'], 4),
+                'reserved_out' => round($row['reserved_out'], 4),
                 'available' => $availableFor((float) $row['on_hand'], (float) $row['reserved_out']),
             ])->values()->all(),
             'has_variants' => $item->variants->count() > 1,
@@ -684,8 +684,8 @@ class SearchController extends Controller
                     // Only set once stock has actually been recorded against this
                     // variant specifically; null tells the picker to fall back to
                     // the item's total on-hand rather than show a false zero.
-                    'on_hand' => $stock ? round($stock['on_hand'], 2) : null,
-                    'reserved_out' => $stock ? round($stock['reserved_out'], 2) : null,
+                    'on_hand' => $stock ? round($stock['on_hand'], 4) : null,
+                    'reserved_out' => $stock ? round($stock['reserved_out'], 4) : null,
                     'available' => $stock ? $availableFor((float) $stock['on_hand'], (float) $stock['reserved_out']) : null,
                     'has_stock' => (bool) $stock,
                 ];

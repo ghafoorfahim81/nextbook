@@ -102,7 +102,12 @@ const rows = computed(() => (props.invoice?.items ?? []).map((item, index) => {
   return {
     id: item.id ?? `row-${index}`,
     row: index + 1,
-    name: item.item_name || item.item?.name || t('invoice.item'),
+    name: (() => {
+      const base = item.item_name || item.item?.name || t('invoice.item')
+      const variant = item.variant?.display_name
+      // An unnamed variant reports the item's own name; only a real one is added.
+      return variant && variant !== base ? `${base} ${variant}` : base
+    })(),
     code: item.item_code || item.item?.code || '-',
     unit: item.unit_measure_name || item.unit_measure?.name || t('invoice.unit'),
     quantity,

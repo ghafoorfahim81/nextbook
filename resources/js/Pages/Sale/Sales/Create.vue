@@ -1087,7 +1087,10 @@ const onhand = (index) => {
     const converted = (onHand * baseUnit) / selectedUnit
     const free = Number(item.free) || 0
     const qty = Number(item.quantity) || 0
-    return converted - free - qty;
+    // Stock is stored in the base unit to 4 decimals, so converting to a
+    // smaller unit (dozen -> piece) leaves sub-hundredth residue (230.0016).
+    // Shown to 2 decimals so 230 reads 230.
+    return Number((converted - free - qty).toFixed(2));
 }
 
 const reservedOut = (index) => {

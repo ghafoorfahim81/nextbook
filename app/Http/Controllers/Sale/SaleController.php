@@ -1645,6 +1645,7 @@ class SaleController extends Controller
         $sale = $sale->load([
             'customer',
             'items.item',
+            'items.variant',
             'items.unitMeasure',
             'items.warehouse',
             'transaction.currency',
