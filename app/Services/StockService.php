@@ -220,9 +220,7 @@ class StockService
             return $allocations;
         }
 
-        $movement = $this->deductWeightedAverage($item, $movementData, $balanceData, $conversionFactor, $unitCostOverride);
-        $this->decreaseBalance($balanceData);
-        return [$movement];
+        return $this->deductWeightedAverage($item, $movementData, $balanceData, $conversionFactor, $unitCostOverride);
     }
 
     /**
@@ -503,21 +501,84 @@ class StockService
     /**
      * Weighted Average Deduction
      */
-    protected function deductWeightedAverage(Item $item, array $movementData, array $balanceData, float $conversionFactor, ?float $unitCostOverride = null): StockMovement
+    /**
+     * Takes the quantity off the shelf nearest expiry first and writes one OUT
+     * row per batch / expiry it actually came from, all at the one average cost.
+     *
+     * It used to write a single row carrying only what the document named — for
+     * a line that names no batch, nothing. The balance was still taken from a
+     * real batch, so the movement and the shelf disagreed about which, and
+     * reversing the document put the goods back in a bucket with no batch and
+     * no expiry (or, on a batch-tracked item, could not put them back at all).
+     *
+     * @return array<int, StockMovement>
+     */
+    protected function deductWeightedAverage(Item $item, array $movementData, array $balanceData, float $conversionFactor, ?float $unitCostOverride = null): array
     {
-        $balance = StockBalance::query()
+        $balances = StockBalance::query()
             ->where('item_id', $balanceData['item_id'])
             ->where('warehouse_id', $balanceData['warehouse_id'])
+            ->when(!empty($balanceData['batch']), fn ($query) => $query->where('batch', $balanceData['batch']))
+            ->when(!empty($balanceData['expire_date']), fn ($query) => $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date'])))
+            ->tap(fn ($query) => $this->applyVariantFilter($query, $balanceData['variant_id'] ?? null))
             ->lockForUpdate()
-            ->firstOrFail();
+            ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('expire_date')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get();
 
-        return StockMovement::create([
-            ...$movementData,
-            'date' => $this->normalizeDate($movementData['date']),
-            'expire_date' => $movementData['expire_date'] ? $this->normalizeDate($movementData['expire_date']) : null,
-            'unit_cost' => $unitCostOverride ?? $this->convertToSelectedUnitCost((float) $item->avg_cost, $conversionFactor),
-            'qty_remaining' => null,
-        ]);
+        $remaining = (float) $balanceData['quantity'];
+        $taken = [];
+
+        foreach ($balances as $balance) {
+            if ($remaining <= self::QUANTITY_EPSILON) {
+                break;
+            }
+
+            $available = (float) $balance->quantity;
+
+            if ($available <= 0) {
+                continue;
+            }
+
+            $deductQty = min($available, $remaining);
+            $balance->decrement('quantity', $deductQty);
+            $remaining -= $deductQty;
+
+            $expireDate = $balance->expire_date
+                ? \Illuminate\Support\Carbon::parse($balance->expire_date)->toDateString()
+                : null;
+            $key = ($balance->batch ?? '') . '|' . ($expireDate ?? '');
+
+            $taken[$key] ??= ['batch' => $balance->batch, 'expire_date' => $expireDate, 'quantity' => 0.0];
+            $taken[$key]['quantity'] += $deductQty;
+        }
+
+        if ($remaining > self::QUANTITY_EPSILON) {
+            throw ValidationException::withMessages([
+                'stock' => __('messages.stock.negative_not_allowed'),
+            ]);
+        }
+
+        $this->markBalancesAsPosted($balances);
+
+        $unitCost = $unitCostOverride ?? $this->convertToSelectedUnitCost((float) $item->avg_cost, $conversionFactor);
+        $movements = [];
+
+        foreach ($taken as $bucket) {
+            $movements[] = StockMovement::create([
+                ...$movementData,
+                'batch' => $bucket['batch'],
+                'quantity' => $this->convertFromItemUnit($bucket['quantity'], $conversionFactor),
+                'date' => $this->normalizeDate($movementData['date']),
+                'expire_date' => $bucket['expire_date'],
+                'unit_cost' => $unitCost,
+                'qty_remaining' => null,
+            ]);
+        }
+
+        return $movements;
     }
 
     /**

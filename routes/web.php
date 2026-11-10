@@ -253,7 +253,6 @@ Route::middleware([
     Route::resource('/sales', \App\Http\Controllers\Sale\SaleController::class);
     Route::post('/sales/{sale}/post', [\App\Http\Controllers\Sale\SaleController::class, 'post'])->name('sales.post');
     Route::post('/sales/{sale}/reverse', [\App\Http\Controllers\Sale\SaleController::class, 'reverse'])->name('sales.reverse');
-    Route::patch('/update-sale-status/{sale}/status', [\App\Http\Controllers\Sale\SaleController::class, 'updateSaleStatus'])->name('sales.update-sale-status');
     Route::patch('/sales/{sale}/restore', [\App\Http\Controllers\Sale\SaleController::class, 'restore'])->name('sales.restore')->withTrashed();
     Route::delete('/sales/{sale}/force-delete', [\App\Http\Controllers\Sale\SaleController::class, 'forceDelete'])
         ->name('sales.force-delete')

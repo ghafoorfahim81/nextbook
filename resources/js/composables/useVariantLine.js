@@ -9,6 +9,60 @@
  * behaviour consistent instead of re-deriving it per module.
  */
 
+import { toDocumentCurrency } from '@/utils/currency'
+
+// How many of the item's own units one unit of the row's selected measure is.
+const unitRatio = (row) => {
+  const baseUnit = Number(row?.selected_item?.unitMeasure?.unit) || 1
+  const selectedUnit = Number(row?.selected_measure?.unit) || baseUnit
+  return selectedUnit / baseUnit || 1
+}
+
+/**
+ * A row's price as the home-currency price of one base unit: the figure
+ * `base_unit_price` holds. The line itself is in the document's currency and
+ * the selected unit, so this multiplies by the rate and divides by the unit.
+ */
+export function linePriceToHome(row, rate) {
+  return ((Number(row?.unit_price) || 0) * (Number(rate) || 1)) / unitRatio(row)
+}
+
+/** The other way: what the row shows, from its home-currency base price. */
+export function homePriceToLine(row, rate) {
+  return toDocumentCurrency((Number(row?.base_unit_price) || 0) * unitRatio(row), rate)
+}
+
+/**
+ * Bring every row in line with a new rate.
+ *
+ * Changing the CURRENCY re-expresses every price in the new currency, typed or
+ * not: 10 AFN at 65 becomes 0.1538 USD, and comes back as exactly 10 because it
+ * is always worked out from the home-currency base, never from the rounded
+ * figure on screen.
+ *
+ * Changing only the RATE of the same currency leaves a price typed by hand
+ * alone — the salesperson agreed 5 USD, a new rate does not change that — and
+ * moves its home-currency base instead. Prices nobody touched follow the rate.
+ *
+ * After a currency change no price counts as typed any more: each one is now a
+ * conversion of its home-currency base, and has to keep following the rate. A
+ * currency whose stored rate is 0 is picked first and its rate typed second;
+ * the prices must convert when that rate is typed, not stay as they were.
+ */
+export function repriceRowsForRate(rows, rate, currencyChanged) {
+  for (const row of rows || []) {
+    if (!row?.selected_item) continue
+
+    if (row.price_touched && !currencyChanged) {
+      row.base_unit_price = linePriceToHome(row, rate)
+      continue
+    }
+
+    row.unit_price = homePriceToLine(row, rate)
+    if (currencyChanged) row.price_touched = false
+  }
+}
+
 /** The variant a fresh row should start on: the item's own default. */
 export function pickDefaultVariant(itemVariants) {
   const list = itemVariants || []
@@ -214,7 +268,8 @@ export function batchOptionsForRow(row) {
 
   if (!Array.isArray(split)) return item?.batches || []
 
-  const variantId = row.selected_variant?.id ?? item.default_variant_id ?? null
+  // Forms disagree on the key: sales keep it under selected_item_variant.
+  const variantId = (row.selected_variant ?? row.selected_item_variant)?.id ?? item.default_variant_id ?? null
   const defaultId = item.default_variant_id ?? null
 
   return split

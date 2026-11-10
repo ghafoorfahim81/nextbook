@@ -113,6 +113,7 @@ const rows = computed(() => (props.invoice?.items ?? []).map((item, index) => {
     name:       item.item_name || item.item?.name || '',
     unit:       item.unit_measure_name || item.unit_measure?.name || '',
     quantity,
+    free:       toNumber(item.free),
     unit_price: unitPrice,
     discount,
     tax,
@@ -297,6 +298,7 @@ const titleText   = computed(() => hdr.value.title_text || t('invoice.sale_invoi
                 <template v-else-if="col.key === 'name'">{{ row.name }}</template>
                 <template v-else-if="col.key === 'code'">{{ row.code }}</template>
                 <template v-else-if="col.key === 'unit'">{{ row.unit }}</template>
+                <template v-else-if="col.key === 'quantity' && row.free > 0">{{ formatNum(row.quantity) }} + {{ formatNum(row.free) }} {{ t('general.free') }}</template>
                 <template v-else>{{ formatNum(row[col.key]) }}</template>
               </td>
             </tr>

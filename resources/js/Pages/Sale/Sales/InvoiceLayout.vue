@@ -106,6 +106,7 @@ const rows = computed(() => (props.invoice?.items ?? []).map((item, index) => {
     code: item.item_code || item.item?.code || '-',
     unit: item.unit_measure_name || item.unit_measure?.name || t('invoice.unit'),
     quantity,
+    free: toNumber(item.free),
     unitPrice,
     discount,
     tax,
@@ -113,6 +114,13 @@ const rows = computed(() => (props.invoice?.items ?? []).map((item, index) => {
     total: baseTotal - discount,
   }
 }))
+
+// Units given away go on the invoice beside the ones charged for: "45 + 5 Free".
+const quantityText = (row) => (
+  row.free > 0
+    ? `${formatNumber(row.quantity)} + ${formatNumber(row.free)} ${t('general.free')}`
+    : formatNumber(row.quantity)
+)
 
 const minimumRows = computed(() => ({ format1: 4, format2: 12, format3: 8, format4: 4, format5: 0 }[themeId.value] ?? 4))
 const fillerRows = computed(() => Array.from({ length: Math.max(0, minimumRows.value - rows.value.length) }, (_, index) => index))
@@ -294,7 +302,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
               <td class="py-2">{{ row.row }}</td>
               <td class="text-slate-800 text-[32px]">{{ row.name }}</td>
               <td>{{ row.unit }}</td>
-              <td>{{ formatNumber(row.quantity) }}</td>
+              <td>{{ quantityText(row) }}</td>
               <td>{{ formatNumber(row.unitPrice) }}</td>
               <td>{{ formatNumber(row.tax) }}</td>
               <td>{{ formatNumber(row.total) }}</td>
@@ -396,7 +404,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
             <td class="font-medium text-slate-800">{{ row.name }}</td>
             <td>{{ formatNumber(row.unitPrice) }}</td>
             <td>{{ row.unit }}</td>
-            <td>{{ formatNumber(row.quantity) }}</td>
+            <td>{{ quantityText(row) }}</td>
             <td>{{ formatNumber(row.total) }}</td>
           </tr>
           <tr v-for="index in fillerRows" :key="`f2-filler-${index}`" class="filler-row">
@@ -483,7 +491,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
         <tbody>
           <tr v-for="row in rows" :key="row.id">
             <td><div class="font-medium text-slate-800">{{ row.name }}</div><div class="text-xs text-slate-400">{{ row.code }}</div></td>
-            <td>{{ row.unit }}</td><td>{{ formatNumber(row.quantity) }}</td><td>{{ formatNumber(row.unitPrice) }}</td><td>{{ formatNumber(row.total) }}</td>
+            <td>{{ row.unit }}</td><td>{{ quantityText(row) }}</td><td>{{ formatNumber(row.unitPrice) }}</td><td>{{ formatNumber(row.total) }}</td>
           </tr>
           <tr v-for="index in fillerRows" :key="`f3-filler-${index}`" class="filler-row"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
         </tbody>
@@ -567,7 +575,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
           <tr v-for="row in rows" :key="row.id">
             <td class="font-medium text-slate-800">{{ row.name }}</td>
             <td>{{ row.unit }}</td>
-            <td>{{ formatNumber(row.quantity) }}</td>
+            <td>{{ quantityText(row) }}</td>
             <td>{{ formatNumber(row.unitPrice) }}</td>
             <td>{{ formatNumber(row.total) }}</td>
           </tr>
@@ -643,7 +651,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="row.id">
-            <td>{{ row.name }}</td><td>{{ row.code }}</td><td>{{ formatNumber(row.quantity) }}</td><td>{{ formatNumber(row.unitPrice) }}</td><td>{{ formatNumber(row.baseTotal) }}</td><td>{{ formatNumber(row.discount) }}</td><td>{{ formatNumber(row.total) }}</td>
+            <td>{{ row.name }}</td><td>{{ row.code }}</td><td>{{ quantityText(row) }}</td><td>{{ formatNumber(row.unitPrice) }}</td><td>{{ formatNumber(row.baseTotal) }}</td><td>{{ formatNumber(row.discount) }}</td><td>{{ formatNumber(row.total) }}</td>
           </tr>
         </tbody>
       </table>

@@ -19,7 +19,7 @@ import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { todayValueForCalendar } from '@/utils/dateDefaults'
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, batchOptionsForRow, linePriceToHome, repriceRowsForRate } from '@/composables/useVariantLine'
 import { toDocumentCurrency } from '@/utils/currency'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { useSaveShortcut } from '@/composables/useSaveShortcut'
@@ -198,7 +198,7 @@ const notifySound = (type) => {
 }
 
 function handleSubmit({ createAndNew = false } = {}) {
-    if (!form.items[0]?.selected_item) {
+    if (!form.items.some((item) => item?.selected_item && item?.item_id)) {
         notifySound('error');
         toast({
             title: t('sale.no_item_warning'),
@@ -259,15 +259,17 @@ onUnmounted(() => {
     if (sidebar) sidebar.setOpen(prevSidebarOpen.value)
 })
 
-watch(() => form.rate, (newRate) => {
+// See repriceRowsForRate: a currency change converts every price, a rate
+// change leaves the ones typed by hand. Rate and currency are watched together
+// so one callback sees both and knows which of the two it was.
+const setLinePrice = (row, value) => {
+    row.unit_price = value
+    row.price_touched = true
+    row.base_unit_price = linePriceToHome(row, form.rate)
+}
+watch(() => [form.rate, form.currency_id], ([rate, currencyId], [, previousCurrencyId]) => {
     if (!Array.isArray(form.items)) return
-    form.items.forEach((row) => {
-        if (!row || !row?.selected_item) return
-        const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
-        const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-        const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.sale_price ?? 0)
-        row.unit_price = (baseUnitPrice * selectedUnit * (Number(newRate) || 0)) / baseUnit
-    })
+    repriceRowsForRate(form.items, rate, currencyId !== previousCurrencyId)
 })
 
 const handleItemChange = (index, selected_item) => {
@@ -312,7 +314,8 @@ const handleItemChange = (index, selected_item) => {
     row.base_unit_price = resolveVariantUnitPrice(selected_item, row.selected_variant, 'sale')
 
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(2));
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(decimalPlaces));
+    row.price_touched = false
 
     if (index === form.items.length - 1) {
         addRow()
@@ -331,11 +334,14 @@ const handleVariantChange = (index, variant) => {
     repriceRow(row, variant, 'sale')
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(2))
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces))
+    row.price_touched = false
 }
 
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
+    // A row that already holds an item stays usable whatever sits above it.
+    if (form.items[index]?.selected_item) return true
     for (let i = 0; i < index; i++) {
         if (!form.items[i]?.selected_item) return false
     }
@@ -370,6 +376,11 @@ const resetRow = (index) => {
     const r = form.items[index]
     if (!r) return
     Object.assign(r, buildEmptyRow())
+    // An emptied row in the middle is just a gap: close it.
+    if (index < form.items.length - 1) {
+        form.items.splice(index, 1)
+        while (form.items.length < 6) form.items.push(buildEmptyRow())
+    }
 }
 
 const duplicateToast = ref(null)
@@ -579,7 +590,7 @@ const saveFormRef = useSaveShortcut({ form })
                             </td>
                             <td v-if="localColumns.batch" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
-                                    :options="item.selected_item?.batches"
+                                    :options="batchOptionsForRow(item)"
                                     v-model="item.selected_batch"
                                     label-key="batch"
                                     :placeholder="t('general.search_or_select')"
@@ -615,7 +626,7 @@ const saveFormRef = useSaveShortcut({ form })
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextInput v-model="item.unit_price" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
+                                <NextInput :model-value="item.unit_price" @update:model-value="setLinePrice(item, $event)" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <VariantCell

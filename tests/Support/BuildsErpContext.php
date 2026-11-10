@@ -319,6 +319,8 @@ trait BuildsErpContext
             'raw-materials' => ['name' => 'Raw Materials', 'type' => 'other-current-asset', 'number' => '3003'],
             'finished-goods' => ['name' => 'Finished Goods', 'type' => 'other-current-asset', 'number' => '3004'],
             'other-expenses' => ['name' => 'Other Expenses', 'type' => 'expense', 'number' => '9001'],
+            // Where a sale books the discount it gives (line and bill discounts).
+            'discount-to-customer' => ['name' => 'Discount To Customer', 'type' => 'expense', 'number' => '9055'],
             // Freight for moving goods between the company's own warehouses.
             // An item transfer defaults its expense line here.
             'item-transfer-expense' => ['name' => 'Item Transfer Expense', 'type' => 'expense', 'number' => '9801'],

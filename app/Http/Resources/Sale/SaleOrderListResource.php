@@ -18,9 +18,20 @@ class SaleOrderListResource extends JsonResource
             'customer_name' => $this->customer?->name,
             'date' => app(DateConversionService::class)->toDisplay($this->date),
             'delivery_date' => $this->delivery_date ? app(DateConversionService::class)->toDisplay($this->delivery_date) : null,
-            'amount' => (float) ($this->items_gross_total ?? 0),
+            'amount' => $this->netAmount(),
             'status' => $this->status,
             'status_label' => SaleOrderStatus::tryFrom((string) $this->status)?->getLabel() ?? $this->status,
         ];
+    }
+
+    /** Value of goods less line discounts and the document discount: what the document comes to. */
+    private function netAmount(): float
+    {
+        $gross = (float) ($this->items_gross_total ?? 0);
+        $documentDiscount = $this->discount_type === 'percentage'
+            ? $gross * ((float) ($this->discount ?? 0) / 100)
+            : (float) ($this->discount ?? 0);
+
+        return $gross - (float) ($this->items_discount_total ?? 0) - $documentDiscount;
     }
 }

@@ -199,16 +199,17 @@ class Sale extends Model
 
     public function saleTotal()
     {
-        $saleAmount = $this->items->sum(function ($item) {
-            $row_total = (float) $item->quantity * (float) $item->unit_price;
-            $item_discount = (float) ($item->discount ?? 0);
-            $sale_discount = $this->discount_type === 'percentage'
-                ? $row_total * ((float) $this->discount / 100)
-                : (float) ($this->discount ?? 0);
+        // The same sum SaleController::computeSaleTotals() posts to the ledger.
+        // A fixed-amount bill discount comes off the bill once — this used to
+        // take it off every line, so a three-line bill lost it three times.
+        $gross = $this->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price);
+        $lineDiscount = $this->items->sum(fn ($item) => (float) ($item->discount ?? 0));
+        $tax = $this->items->sum(fn ($item) => (float) ($item->tax ?? 0));
+        $billDiscount = $this->discount_type === 'percentage'
+            ? $gross * ((float) $this->discount / 100)
+            : (float) ($this->discount ?? 0);
 
-            return $row_total - $item_discount - $sale_discount;
-        });
-        return $saleAmount;
+        return $gross - $lineDiscount - $billDiscount + $tax;
     }
 
 

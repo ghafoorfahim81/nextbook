@@ -16,6 +16,7 @@
                 :autocomplete="autocomplete"
                 :placeholder="placeholder || ' '"
                 @click="handleClick"
+                @wheel="handleWheel"
                 class="next-field-control peer relative z-0 block w-full appearance-none rounded-lg text-sm
                 placeholder:text-transparent focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:placeholder:text-muted-foreground
                 disabled:cursor-not-allowed disabled:opacity-50"
@@ -74,6 +75,15 @@ const model = computed({
 })
 
 const inputRef = ref(null)
+
+// The browser steps a focused number input on every wheel notch. Letting go
+// of the focus stops that and leaves the wheel free to scroll the page.
+function handleWheel(e) {
+    if (props.type === 'number' && e.target === document.activeElement) {
+        e.target.blur()
+    }
+}
+
 function handleClick(e) {
     // Call any click listener provided via $emit
     // Select input value if enabled

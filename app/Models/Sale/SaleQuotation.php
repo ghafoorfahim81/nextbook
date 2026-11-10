@@ -120,18 +120,16 @@ class SaleQuotation extends Model
 
     public function quotationTotal(): float
     {
-        $amount = $this->items->sum(function (SaleQuotationItem $item) {
-            $rowTotal = (float) $item->quantity * (float) $item->unit_price;
-            $itemDiscount = (float) ($item->discount ?? 0);
-
-            return $rowTotal - $itemDiscount;
-        });
-
+        // A percentage discount is taken on the value of goods, before line
+        // discounts: the same sum the form shows and the sale made from this
+        // document posts. Taking it after line discounts made the three disagree.
+        $gross = (float) $this->items->sum(fn (SaleQuotationItem $item) => (float) $item->quantity * (float) $item->unit_price);
+        $lineDiscount = (float) $this->items->sum(fn (SaleQuotationItem $item) => (float) ($item->discount ?? 0));
         $documentDiscount = $this->discount_type === 'percentage'
-            ? $amount * ((float) ($this->discount ?? 0) / 100)
+            ? $gross * ((float) ($this->discount ?? 0) / 100)
             : (float) ($this->discount ?? 0);
 
-        return $amount - $documentDiscount;
+        return $gross - $lineDiscount - $documentDiscount;
     }
 
     public function isDraft(): bool

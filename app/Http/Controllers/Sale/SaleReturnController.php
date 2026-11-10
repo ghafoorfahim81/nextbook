@@ -160,9 +160,13 @@ class SaleReturnController extends Controller
                 'unit_measure_name' => $item->unitMeasure?->name,
                 'warehouse_id' => $item->warehouse_id,
                 'warehouse_name' => $item->warehouse?->name,
-                'unit_price' => (float) $item->unit_price,
+                // Net of the line and bill discounts, per delivered unit:
+                // the figure the return will actually credit.
+                'unit_price' => round($item->returnUnitValue()['net'], 4),
+                'list_unit_price' => (float) $item->unit_price,
                 'net_unit_cost' => (float) $item->net_unit_cost,
-                'original_quantity' => (float) $item->quantity,
+                'original_quantity' => $item->deliveredQuantity(),
+                'free_quantity' => (float) ($item->free ?? 0),
                 'returned_quantity' => $item->returnedQuantity($excludeSaleReturnId),
                 'remaining_quantity' => $item->remainingReturnableQuantity($excludeSaleReturnId),
             ])->values(),
@@ -462,6 +466,8 @@ class SaleReturnController extends Controller
         $lines = [];
         $stockPayloads = [];
         $totalReturnedValue = 0.0;
+        $totalDiscountReturned = 0.0;
+        $sale->loadMissing('items');
 
         foreach ($itemList as $row) {
             /** @var SaleItem|null $saleItem */
@@ -476,11 +482,14 @@ class SaleReturnController extends Controller
             $quantity = (float) $row['quantity'];
             $alreadyReturned = $saleItem->returnedQuantity($excludingSaleReturnId);
 
-            if ($alreadyReturned + $quantity > (float) $saleItem->quantity + 0.0001) {
+            if ($alreadyReturned + $quantity > $saleItem->deliveredQuantity() + 0.0001) {
                 throw ValidationException::withMessages([
                     'item_list' => __('The return quantity exceeds the remaining returnable quantity.'),
                 ]);
             }
+
+            $saleItem->setRelation('sale', $sale);
+            $unitValue = $saleItem->returnUnitValue();
 
             SaleReturnItem::create([
                 'sale_return_id' => $saleReturn->id,
@@ -491,7 +500,8 @@ class SaleReturnController extends Controller
                 'expire_date' => $saleItem->expire_date,
                 'quantity' => $quantity,
                 'unit_measure_id' => $saleItem->unit_measure_id,
-                'unit_price' => $saleItem->unit_price,
+                // What the customer is credited per unit, not the list price.
+                'unit_price' => round($unitValue['net'], 4),
                 'net_unit_cost' => $saleItem->net_unit_cost,
                 'warehouse_id' => $saleItem->warehouse_id,
             ]);
@@ -502,14 +512,20 @@ class SaleReturnController extends Controller
             }
 
             $unitCost = (float) $saleItem->net_unit_cost;
-            $lineGrossTotal = $quantity * (float) $saleItem->unit_price;
+            // Revenue goes back at the price before discount and the discount
+            // account gives back its part, so the customer is credited the net:
+            // the reverse of the three figures the sale itself posted.
+            $lineGrossTotal = round($quantity * $unitValue['gross'], 4);
+            $lineDiscountTotal = round($quantity * $unitValue['discount'], 4);
+            $lineNetTotal = round($lineGrossTotal - $lineDiscountTotal, 4);
+            $totalDiscountReturned += $lineDiscountTotal;
             $totalCost = $unitCost * $quantity;
             // Stock cost is home currency; the voucher is in the sale's currency and
             // is multiplied by its rate, so the GL lines take the cost divided back
             // down — as SaleController does for the original COGS line.
             $saleRate = (float) ($sale->transaction?->rate ?: 1) ?: 1.0;
             $totalCostInTransactionCurrency = $totalCost / $saleRate;
-            $totalReturnedValue += $lineGrossTotal;
+            $totalReturnedValue += $lineNetTotal;
 
             $stockPayload = [
                 'item_id' => $saleItem->item_id,
@@ -558,6 +574,20 @@ class SaleReturnController extends Controller
                 'remark' => 'Sale return inventory restock for item: ' . $itemModel->name . ' #' . $saleReturn->number,
             ];
         }
+
+        if ($totalDiscountReturned > 0) {
+            $lines[] = [
+                'account_id' => $glAccounts['discount-to-customer'],
+                'ledger_id' => null,
+                'debit' => 0,
+                'credit' => round($totalDiscountReturned, 4),
+                'remark' => 'Sale discount taken back for return #' . $saleReturn->number . ' (Sale #' . $sale->number . ')',
+                'remark_fa' => 'برگشت تخفیف فروش بابت برگشتی #' . $saleReturn->number . ' (فروش #' . $sale->number . ')',
+                'remark_ps' => 'د پلور تخفیف بېرته اخیستل، بېرته ستنول #' . $saleReturn->number . ' (پلور #' . $sale->number . ')',
+            ];
+        }
+
+        $totalReturnedValue = round($totalReturnedValue, 4);
 
         // The credit relieves what is still open on this sale; that part is
         // settled against the sale once posted (SettlementService::
@@ -708,11 +738,19 @@ class SaleReturnController extends Controller
         );
     }
 
-    public function restore(Request $request, SaleReturn $saleReturn, ActivityLogService $activityLogService)
+    public function restore(Request $request, SaleReturn $saleReturn, ActivityLogService $activityLogService, StockService $stockService)
     {
-        DB::transaction(function () use ($saleReturn, $activityLogService) {
+        DB::transaction(function () use ($saleReturn, $activityLogService, $stockService) {
             $saleReturn->restore();
             $saleReturn->items()->withTrashed()->restore();
+
+            // Deleting the draft released what it was expecting back; a
+            // restored draft expects it again.
+            if ($saleReturn->status === TransactionStatus::DRAFT->value) {
+                foreach ((array) data_get($saleReturn->transaction()->first()?->posting_payload, 'stock_movements', []) as $payload) {
+                    $stockService->reserve($payload);
+                }
+            }
 
             $activityLogService->logAction(
                 eventType: 'restored',

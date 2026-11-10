@@ -30,7 +30,7 @@ class SaleOrderStoreRequest extends FormRequest
             'delivery_date' => ['nullable', 'date'],
             'customer_id' => ['required', 'string', Rule::exists('ledgers', 'id')->where('type', 'customer')],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'rate' => ['nullable', 'numeric', 'min:0'],
+            'rate' => ['nullable', 'numeric', 'gt:0'],
             'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'discount_type' => ['nullable', 'string', Rule::in(DiscountType::values())],

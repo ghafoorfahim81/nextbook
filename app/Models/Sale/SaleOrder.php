@@ -126,18 +126,16 @@ class SaleOrder extends Model
 
     public function orderTotal(): float
     {
-        $orderAmount = $this->items->sum(function (SaleOrderItem $item) {
-            $rowTotal = (float) $item->quantity * (float) $item->unit_price;
-            $itemDiscount = (float) ($item->discount ?? 0);
-
-            return $rowTotal - $itemDiscount;
-        });
-
-        $orderDiscount = $this->discount_type === 'percentage'
-            ? $orderAmount * ((float) ($this->discount ?? 0) / 100)
+        // A percentage discount is taken on the value of goods, before line
+        // discounts: the same sum the form shows and the sale made from this
+        // document posts. Taking it after line discounts made the three disagree.
+        $gross = (float) $this->items->sum(fn (SaleOrderItem $item) => (float) $item->quantity * (float) $item->unit_price);
+        $lineDiscount = (float) $this->items->sum(fn (SaleOrderItem $item) => (float) ($item->discount ?? 0));
+        $documentDiscount = $this->discount_type === 'percentage'
+            ? $gross * ((float) ($this->discount ?? 0) / 100)
             : (float) ($this->discount ?? 0);
 
-        return $orderAmount - $orderDiscount;
+        return $gross - $lineDiscount - $documentDiscount;
     }
 
     public function isDraft(): bool

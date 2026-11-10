@@ -51,6 +51,10 @@ class SaleQuotationController extends Controller
             ->selectRaw('COALESCE(SUM(quantity * unit_price), 0)')
             ->whereColumn('sale_quotation_items.sale_quotation_id', 'sale_quotations.id')
             ->whereNull('sale_quotation_items.deleted_at');
+        $itemDiscountTotal = SaleQuotationItem::query()
+            ->selectRaw('COALESCE(SUM(discount), 0)')
+            ->whereColumn('sale_quotation_items.sale_quotation_id', 'sale_quotations.id')
+            ->whereNull('sale_quotation_items.deleted_at');
 
         $saleQuotations = SaleQuotation::query()
             ->select([
@@ -60,8 +64,11 @@ class SaleQuotationController extends Controller
                 'sale_quotations.date',
                 'sale_quotations.valid_until',
                 'sale_quotations.status',
+                'sale_quotations.discount',
+                'sale_quotations.discount_type',
             ])
             ->selectSub($itemGrossTotal, 'items_gross_total')
+            ->selectSub($itemDiscountTotal, 'items_discount_total')
             ->with(['customer:id,name'])
             ->search($request->query('search'))
             ->filter($filters)
@@ -129,10 +136,7 @@ class SaleQuotationController extends Controller
                 'status' => $documentStatus,
             ]);
 
-            $validated['item_list'] = array_map(
-                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
-                $validated['item_list']
-            );
+            $validated['item_list'] = $this->prepareLines($validated['item_list']);
             $saleQuotation->items()->createMany($validated['item_list']);
 
             $activityLogService->logCreate(
@@ -165,6 +169,23 @@ class SaleQuotationController extends Controller
             'success',
             __('general.created_successfully', ['resource' => __('general.resource.sale_quotation')])
         );
+    }
+
+    /**
+     * Lines as they are stored: the variant resolved, and the expiry date in
+     * Gregorian like every other date on the document.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function prepareLines(array $items): array
+    {
+        return array_map(fn ($item) => [
+            ...$item,
+            'variant_id' => $this->resolveLineVariantId($item),
+            'expire_date' => ! empty($item['expire_date'])
+                ? $this->dateConversionService->toGregorian((string) $item['expire_date'])
+                : null,
+        ], $items);
     }
 
     public function show(Request $request, SaleQuotation $saleQuotation)
@@ -236,10 +257,7 @@ class SaleQuotationController extends Controller
             ]);
 
             $saleQuotation->items()->forceDelete();
-            $validated['item_list'] = array_map(
-                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
-                $validated['item_list']
-            );
+            $validated['item_list'] = $this->prepareLines($validated['item_list']);
             $saleQuotation->items()->createMany($validated['item_list']);
 
             $activityLogService->logUpdate(

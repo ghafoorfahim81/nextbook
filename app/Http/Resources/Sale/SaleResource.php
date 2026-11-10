@@ -26,6 +26,16 @@ class SaleResource extends JsonResource
         $transactionLines = $transaction?->relationLoaded('lines')
             ? $transaction->lines
             : collect();
+        // A draft keeps its lines on the voucher's payload, not on the ledger,
+        // so that is where its receivable has to be read from.
+        if ($transactionLines->isEmpty() && $transaction) {
+            $transactionLines = collect((array) data_get($transaction->posting_payload, 'lines', []))
+                ->map(fn ($line) => (object) [
+                    'ledger_id' => $line['ledger_id'] ?? null,
+                    'debit' => $line['debit'] ?? 0,
+                    'credit' => $line['credit'] ?? 0,
+                ]);
+        }
         $customerStatement = !$isListing && $this->relationLoaded('customer') && $this->customer
             ? $this->customer->statement
             : null;
@@ -109,6 +119,10 @@ class SaleResource extends JsonResource
             'currency_id' => $this->transaction?->currency_id,
             'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,
+            // How the sale was paid, as the form sent it. The edit form reads
+            // these back; a draft has no ledger lines to recover them from.
+            'bank_account_id' => data_get($transaction?->posting_payload, 'sale.bank_account_id'),
+            'payment' => data_get($transaction?->posting_payload, 'sale.payment'),
             // additional() must be set on each item — on a collection it lands on the
             // wrapper and never reaches SaleItemResource::toArray().
             'items' => $this->whenLoaded('items', fn () =>

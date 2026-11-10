@@ -216,6 +216,10 @@ return [
     'cannot_reverse_stock_already_gone' => 'This document cannot be reversed: the goods it brought in have already been sold or issued and are no longer on the shelf. Reverse the documents that issued them first, or raise a return for what is left.',
     'cannot_post_insufficient_stock' => 'Cannot post: not enough stock for :item. It may have been sold on another invoice.',
     'expiry_not_in_stock' => 'This expiry date is not in stock for the selected item and warehouse. Choose one of the listed dates.',
+    'sale_order_already_billed' => 'This sale order has already been billed on sale #:number.',
+    'discount_exceeds_bill_total' => 'The discount is larger than the bill total.',
+    'payment_exceeds_bill_total' => 'The payment cannot be more than the bill total.',
+    'cash_account_required' => 'Choose the cash or bank account the money goes into.',
     'transfer_cost_accounts_missing' => 'Cannot post the transfer cost: the bank account or the Item Transfer Expense account is not set up for this branch.',
     'invalid_phone_number' => 'Enter a valid international phone number (6 to 15 digits, country code included).',
 ];

@@ -139,7 +139,56 @@ class SaleItem extends Model
 
     public function remainingReturnableQuantity(?string $excludingSaleReturnId = null): float
     {
-        return max((float) $this->quantity - $this->returnedQuantity($excludingSaleReturnId), 0.0);
+        return max($this->deliveredQuantity() - $this->returnedQuantity($excludingSaleReturnId), 0.0);
+    }
+
+    /** Every unit the line handed over: the ones charged for and the free ones. */
+    public function deliveredQuantity(): float
+    {
+        return (float) $this->quantity + max(0.0, (float) ($this->free ?? 0));
+    }
+
+    /**
+     * What one delivered unit of this line was really charged at, split into
+     * the price before discount and the discount on it.
+     *
+     * A return has to give back what the customer paid, not the list price:
+     * the line's own discount and its share of the bill discount both come
+     * off. Free units were delivered at no charge, so they dilute the figure
+     * (45 sold + 5 free at 40 is 50 units at 36), which is what lets a free
+     * unit be returned at all without crediting money that was never taken.
+     *
+     * @return array{gross: float, discount: float, net: float}  Per delivered unit, sale currency.
+     */
+    public function returnUnitValue(): array
+    {
+        $delivered = $this->deliveredQuantity();
+
+        if ($delivered <= 0) {
+            return ['gross' => 0.0, 'discount' => 0.0, 'net' => 0.0];
+        }
+
+        $sale = $this->sale;
+        $lineGross = (float) $this->quantity * (float) $this->unit_price;
+        $billDiscount = 0.0;
+
+        if ($sale && (float) $sale->discount > 0) {
+            if ($sale->discount_type === 'percentage') {
+                $billDiscount = $lineGross * ((float) $sale->discount / 100);
+            } else {
+                // A fixed bill discount is shared out by each line's value.
+                $saleGross = (float) $sale->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price);
+                $billDiscount = $saleGross > 0 ? (float) $sale->discount * ($lineGross / $saleGross) : 0.0;
+            }
+        }
+
+        $discount = min($lineGross, (float) ($this->discount ?? 0) + $billDiscount);
+
+        return [
+            'gross' => $lineGross / $delivered,
+            'discount' => $discount / $delivered,
+            'net' => ($lineGross - $discount) / $delivered,
+        ];
     }
 
     /** No branch of its own: the sale holds it, and the company comes from there too. */

@@ -52,11 +52,17 @@
     // Translated server-side from App\Enums\PaymentMethod (shared lookup).
     const paymentMethods = computed(() => usePage().props.paymentMethods || []);
 
+    // The server names its errors payment.amount, payment.method, ...
+    const fieldError = (field) => props.errors?.[`payment.${field}`] || props.errors?.[field] || '';
+
+    const exceedsBill = computed(() => Number(localPayment.value.amount || 0) > Number(props.billTotal || 0) + 0.0001);
+
     // Form validation
     const isFormValid = computed(() => {
       return  localPayment.value.amount &&
              localPayment.value.method &&
-             localPayment.value.account_id;
+             localPayment.value.account_id &&
+             !exceedsBill.value;
     });
 
     // Watch for prop changes and sync local state
@@ -124,7 +130,7 @@
                   type="number"
                   step="0.01"
                   :placeholder="t('general.enter', { text: t('general.payment_amount') })"
-                  :error="errors.amount"
+                  :error="exceedsBill ? t('general.payment_exceeds_bill_total') : fieldError('amount')"
                   :isRequired="true"
                   @update:modelValue="(value) => updatePayment('amount', value)"
                 />
@@ -137,7 +143,7 @@
               value-key="id"
               :floating-text="t('general.payment_method')"
               :placeholder="t('general.select_payment_method')"
-              :error="errors.method"
+              :error="fieldError('method')"
               :isRequired="true"
               @update:modelValue="(value) => updatePayment('method', value)"
             />
@@ -150,7 +156,7 @@
               value-key="id"
               :floating-text="t('general.cash_or_account')"
               :placeholder="t('general.select_cash_or_account')"
-              :error="errors.account_id"
+              :error="fieldError('account_id')"
               :isRequired="true"
               @update:modelValue="(value) => updatePayment('account_id', value)"
             />

@@ -14,7 +14,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, linePriceToHome, repriceRowsForRate } from '@/composables/useVariantLine'
 import { toDocumentCurrency } from '@/utils/currency'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { useSaveShortcut } from '@/composables/useSaveShortcut'
@@ -54,7 +54,10 @@ const buildInitialRows = () => (saleQuotationData.value.item_list || []).map((it
     batch: item.batch || '',
     expire_date: item.expire_date || '',
     unit_price: item.unit_price,
-    base_unit_price: item.unit_price,
+    // Home currency: the saved price is in the document's own.
+    base_unit_price: (Number(item.unit_price) || 0) * (Number(saleQuotationData.value.rate) || 1),
+    // A saved price was agreed when the document was written.
+    price_touched: true,
     free: item.free || '',
     discount: item.discount || '',
     variant_id: item.variant_id || null,
@@ -118,6 +121,19 @@ const handleSelectChange = (field, value) => {
     form[field] = value.id;
 };
 
+// See repriceRowsForRate: a currency change converts every price, a rate
+// change leaves the ones typed by hand. Rate and currency are watched together
+// so one callback sees both and knows which of the two it was.
+const setLinePrice = (row, value) => {
+    row.unit_price = value
+    row.price_touched = true
+    row.base_unit_price = linePriceToHome(row, form.rate)
+}
+watch(() => [form.rate, form.currency_id], ([rate, currencyId], [, previousCurrencyId]) => {
+    if (!Array.isArray(form.items)) return
+    repriceRowsForRate(form.items, rate, currencyId !== previousCurrencyId)
+})
+
 const handleItemChange = (index, selected_item) => {
     const row = form.items[index]
     if (!row || !selected_item) return
@@ -143,7 +159,8 @@ const handleItemChange = (index, selected_item) => {
     // What we sell it for, not what it cost us.
     row.base_unit_price = resolveVariantUnitPrice(selected_item, row.selected_variant, 'sale')
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(2));
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(decimalPlaces));
+    row.price_touched = false
 }
 
 const handleVariantChange = (index, variant) => {
@@ -156,7 +173,8 @@ const handleVariantChange = (index, variant) => {
     repriceRow(row, variant, 'sale')
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(2))
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces))
+    row.price_touched = false
 }
 
 const rowTotal = (index) => {
@@ -344,7 +362,7 @@ const saveFormRef = useSaveShortcut({ form })
                                 />
                             </td>
                             <td>
-                                <NextInput v-model="item.unit_price" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
+                                <NextInput :model-value="item.unit_price" @update:model-value="setLinePrice(item, $event)" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
                             </td>
                             <td>
                                 <VariantCell
