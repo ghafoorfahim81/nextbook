@@ -26,3 +26,4 @@ yarn-error.log
 yaml
 public/public.zip
 package-lock.json
+.claude/settings.json
