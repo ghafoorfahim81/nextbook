@@ -7,7 +7,7 @@ import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, RotateCcw, Coins, Printer, SquarePen, Download } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, RotateCcw, Coins, Printer, SquarePen, Download, Warehouse, Percent } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
@@ -55,12 +55,27 @@ const documentVoucherNumber = computed(() => saleData.value.transaction?.voucher
 const originalVoucherNumber = computed(() => props.originalDoc?.voucher_number || documentVoucherNumber.value);
 const reversalVoucherNumber = computed(() => props.reversal?.voucher_number || documentVoucherNumber.value);
 
+// The bill-level discount on its own: the footer only ever shows it folded
+// into the total with the line discounts.
+const billDiscountAmount = computed(() => {
+    const discount = Number(saleData.value.discount || 0);
+    return saleData.value.discount_type === 'percentage'
+        ? (totalAmount.value * discount) / 100
+        : discount;
+});
+const billDiscountLabel = computed(() => {
+    const discount = Number(saleData.value.discount || 0);
+    if (!discount) return '-';
+    const amount = `${currencySymbol.value} ${billDiscountAmount.value.toFixed(2)}`;
+    return saleData.value.discount_type === 'percentage' ? `${discount}% (${amount})` : amount;
+});
+
 const formattedTotalAmount = computed(() => totalAmount.value.toFixed(2));
 const formattedTotalDiscount = computed(() => totalDiscount.value.toFixed(2));
 const formattedTotalTax = computed(() => totalTax.value.toFixed(2));
 const formattedGrandTotal = computed(() => grandTotal.value.toFixed(2));
 const formattedTotalProfit = computed(() => totalProfit.value.toFixed(2));
-const formattedTotalCost = computed(() => saleData.value.items?.reduce((s, i) => s + (parseFloat(i.unit_cost || 0) * parseFloat(i.quantity || 0)), 0).toFixed(2));
+const formattedTotalCost = computed(() => saleData.value.items?.reduce((s, i) => s + (parseFloat(i.unit_cost || 0) * (parseFloat(i.quantity || 0) + parseFloat(i.free || 0))), 0).toFixed(2));
 const formattedPaidAmount = computed(() => paidAmount.value.toFixed(2));
 const formattedRemainingAmount = computed(() => remainingAmount.value.toFixed(2));
 const formatLineValue = (value) => Number(value || 0).toFixed(2);
@@ -254,6 +269,18 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                         <div v-if="isForeignCurrency" class="text-xs text-muted-foreground">
                             ≈ {{ formattedBaseTotal }} {{ baseCurrencyCode }}
                         </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Warehouse class="h-3 w-3" />{{ t('admin.warehouse.warehouse') }}
+                        </div>
+                        <div class="text-sm font-medium text-foreground">{{ saleData.warehouse?.name || '-' }}</div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Percent class="h-3 w-3" />{{ t('general.bill_discount') }}
+                        </div>
+                        <div class="text-sm font-medium text-foreground">{{ billDiscountLabel }}</div>
                     </div>
                     <div v-if="saleData.sale_order_id" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
@@ -489,12 +516,12 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
             </div>
 
             <!-- Description -->
-            <div v-if="saleData.description" class="rounded-xl border border-border bg-card px-5 py-4 text-card-foreground shadow-sm">
+            <div class="rounded-xl border border-border bg-card px-5 py-4 text-card-foreground shadow-sm">
                 <div class="mb-2 flex items-center gap-2">
                     <FileText class="h-5 w-5 text-violet-500" />
                     <h3 class="text-base font-semibold text-foreground">{{ t('general.description') }}</h3>
                 </div>
-                <p class="text-sm text-muted-foreground whitespace-pre-line">{{ saleData.description }}</p>
+                <p class="text-sm text-muted-foreground whitespace-pre-line">{{ saleData.description || '-' }}</p>
             </div>
         </div>
     </AppLayout>

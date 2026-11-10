@@ -256,6 +256,8 @@ class SaleController extends Controller
             // at the moment of this sale (before any stock deductions change state).
             [$itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId] = $this->buildSaleItemCostLookup($validated['item_list']);
 
+            $validated['item_list'] = $this->normalizeLineExpiryDates($validated['item_list'], $validated['warehouse_id']);
+
             $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById, $averageCostsByVariantId) {
                 // The form posts the line discount as item_discount; the column is
                 // `discount`. Without this the value is dropped on create, so the GL
@@ -278,7 +280,7 @@ class SaleController extends Controller
                     unitValuesById: $unitValuesById,
                     itemId: $item['item_id'],
                     warehouseId: $validated['warehouse_id'],
-                    quantity: (float) $item['quantity'],
+                    quantity: $this->lineStockQuantity($item),
                     costingMethod: $itemModel->effectiveCostingMethod()->value,
                     variantId: $item['variant_id'] ?? null,
                 ) : 0.0;
@@ -308,13 +310,16 @@ class SaleController extends Controller
                 }
 
                 $unitCost = (float) $item['net_unit_cost'];
-                $totalCost = $unitCost * $quantity;
+                // Free units leave the shelf too: they cost what the sold ones cost,
+                // and carry no revenue.
+                $stockQuantity = $this->lineStockQuantity($item);
+                $totalCost = $unitCost * $stockQuantity;
                 $totalCostInTransactionCurrency = $totalCost / $rate;
                 $stockPayloads[] = [
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
-                    'quantity'             => $quantity,
+                    'quantity'             => $stockQuantity,
                     'source'               => StockSourceType::SALE->value,
                     'unit_cost'            => $unitCost,
                     'unit_cost_override'   => $unitCost,
@@ -671,6 +676,8 @@ class SaleController extends Controller
 
             // $oldItemIds = collect($affectedCombos)->pluck('item_id')->unique()->values()->all();
 
+            $validated['item_list'] = $this->normalizeLineExpiryDates($validated['item_list'], $validated['warehouse_id']);
+
             $validated['item_list'] = array_map(function ($item) use ($validated, $sale) {
                 $item['discount'] = $this->resolveLineDiscount($item, $validated, $sale->company_id);
                 $item['warehouse_id'] = $validated['warehouse_id'];
@@ -762,7 +769,7 @@ class SaleController extends Controller
                         unitValuesById: $unitValuesById,
                         itemId: $item['item_id'],
                         warehouseId: $item['warehouse_id'],
-                        quantity: (float) $item['quantity'],
+                        quantity: $this->lineStockQuantity($item),
                         costingMethod: $itemModel->effectiveCostingMethod()->value,
                         variantId: $item['variant_id'] ?? null,
                     ) : 0.0);
@@ -802,7 +809,10 @@ class SaleController extends Controller
                     throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
                 }
                 $unitCost = (float) $item['net_unit_cost'];
-                $totalCost = $unitCost * $quantity;
+                // Free units leave the shelf too: they cost what the sold ones cost,
+                // and carry no revenue.
+                $stockQuantity = $this->lineStockQuantity($item);
+                $totalCost = $unitCost * $stockQuantity;
                 $totalCostInTransactionCurrency = $totalCost / $rate;
                 // update() only ever edits a draft (posted/reversed sales are
                 // immutable), so this reserves like a fresh draft rather than
@@ -811,7 +821,7 @@ class SaleController extends Controller
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
-                    'quantity'             => $quantity,
+                    'quantity'             => $stockQuantity,
                     'source'               => StockSourceType::SALE->value,
                     'unit_cost'            => $unitCost,
                     'unit_cost_override'   => $unitCost,
@@ -1245,6 +1255,63 @@ class SaleController extends Controller
             companyId: $companyId,
             onDate: $validated['date'] ?? null,
         );
+    }
+
+    /**
+     * An expiry date on a sale line has to be one the warehouse actually holds.
+     *
+     * The form only offers dates read from stock, so this is for everything
+     * that is not the form: a stale page, an import, an API client. Dates are
+     * also brought to Gregorian here, so the sale line stores the same value
+     * the stock movement will.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeLineExpiryDates(array $items, string $warehouseId): array
+    {
+        foreach ($items as $index => $item) {
+            if (empty($item['expire_date'])) {
+                $items[$index]['expire_date'] = null;
+                continue;
+            }
+
+            $expireDate = $this->dateConversionService->toGregorian((string) $item['expire_date']);
+            $variantId = $item['variant_id'] ?? null;
+
+            $inStock = StockBalance::query()
+                ->where('item_id', $item['item_id'])
+                ->where('warehouse_id', $warehouseId)
+                ->whereDate('expire_date', $expireDate)
+                ->where('quantity', '>', 0)
+                ->when(! empty($item['batch']), fn ($q) => $q->where('batch', $item['batch']))
+                // Stock from before variants existed carries none and counts
+                // for whichever variant the line names.
+                ->when($variantId, fn ($q) => $q->where(
+                    fn ($w) => $w->where('variant_id', $variantId)->orWhereNull('variant_id')
+                ))
+                ->exists();
+
+            if (! $inStock) {
+                throw ValidationException::withMessages([
+                    "item_list.{$index}.expire_date" => __('general.expiry_not_in_stock'),
+                ]);
+            }
+
+            $items[$index]['expire_date'] = $expireDate;
+        }
+
+        return $items;
+    }
+
+    /**
+     * What a sale line takes off the shelf: the units sold plus the units given
+     * away with them. Revenue is charged on `quantity` alone, but the free units
+     * are just as gone from the warehouse — leaving them out kept stock (and the
+     * inventory account) overstated by every giveaway.
+     */
+    private function lineStockQuantity(array $item): float
+    {
+        return (float) ($item['quantity'] ?? 0) + max(0.0, (float) ($item['free'] ?? 0));
     }
 
     private function buildSaleItemCostLookup(array $items): array

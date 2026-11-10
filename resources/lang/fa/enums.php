@@ -129,6 +129,12 @@ return [
         'bill_by_bill' => 'بر اساس فاکتور',
         'on_account' => 'بر اساس حساب',
     ],
+    'payment_method' => [
+        'cash' => 'نقد',
+        'bank_transfer' => 'انتقال بانکی',
+        'check' => 'چک',
+        'card' => 'کارت',
+    ],
     'payment_status' => [
         'paid' => 'پرداخت شده',
         'unpaid' => 'باقی',

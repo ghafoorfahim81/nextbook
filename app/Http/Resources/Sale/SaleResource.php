@@ -50,7 +50,7 @@ class SaleResource extends JsonResource
         if (!$isListing && $items->isNotEmpty()) {
             // net_unit_cost is home currency; revenue below is in the sale's currency.
             $totalCostValue = $items->sum(
-                fn ($item) => (float) ($item->net_unit_cost ?? 0) * (float) $item->quantity
+                fn ($item) => (float) ($item->net_unit_cost ?? 0) * ((float) $item->quantity + (float) ($item->free ?? 0))
             ) / ($transactionRate ?: 1);
 
             $totalRevenue = $items->sum(function ($item) {

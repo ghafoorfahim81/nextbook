@@ -47,8 +47,12 @@ export function resolveVariantUnitPrice(item, variant, direction) {
       ?? 0
   }
 
+  // With no sale price anywhere, the proposal is built on what the chosen
+  // variant's own stock cost. The item's average is blended across every
+  // variant, so it only stands in when the variant has no average of its own
+  // (or the item has no variants to choose between).
   const fromMargin = () => {
-    const cost = positive(item?.avg_cost)
+    const cost = positive(variant?.avg_cost) ?? positive(item?.avg_cost)
     if (cost === null) return null
     const margin = Number(item?.margin_percentage)
     return cost * (1 + (Number.isFinite(margin) ? margin : 0) / 100)
@@ -110,6 +114,76 @@ export function resolveVariantOnHand(row) {
   const fallback = row?.selected_batch?.on_hand ?? row.selected_item?.on_hand
   const value = variantOnHand ?? fallback
   return value === undefined || value === null ? null : Number(value)
+}
+
+/**
+ * One variant's own stock figure in the selected warehouse, or null when the
+ * item's figure is the right one to show.
+ *
+ * `item_variants` comes from the warehouse-aware search, so `has_stock` means
+ * "has stock in THIS warehouse". On an item with several variants, a variant
+ * with nothing here must read zero rather than borrow the item's total — that
+ * total is the other variants' stock. Only the default variant inherits what
+ * carries no variant at all (stock from before variants existed).
+ *
+ * For forms that keep the variant under a different key than
+ * resolveVariantOnHand expects, and want a reserved figure by the same rule.
+ *
+ * @param {'on_hand'|'reserved_out'} field
+ */
+export function variantStockFigure(row, variant, field = 'on_hand') {
+  if (!variant) return null
+  if (variant.has_stock) return Number(variant[field]) || 0
+
+  const variants = row?.item_variants?.length ? row.item_variants : (row?.selected_item?.item_variants || [])
+  if (variants.length <= 1) return null
+  if (!variant.is_default) return 0
+
+  const itemTotal = Number(row?.selected_item?.[field]) || 0
+  const recorded = variants.reduce((sum, v) => sum + (v.has_stock ? Number(v[field]) || 0 : 0), 0)
+
+  return Math.max(0, itemTotal - recorded)
+}
+
+/**
+ * The expiry dates a sale line may pick: only the ones on the shelf.
+ *
+ * `expiry_options` (warehouse-aware search) lists every expiry date in stock
+ * per variant and batch, nearest first. A row sees its own variant's dates,
+ * narrowed to the chosen batch when there is one; the same date under several
+ * batches is one option with the stock added up. Stock from before variants
+ * existed carries no variant and counts for the default one.
+ *
+ * `keep` is a date the row already holds (a saved draft): it stays selectable
+ * even when the shelf no longer shows it, so opening a document never blanks it.
+ */
+export function expiryOptionsForRow(row, variant, keep = '') {
+  const item = row?.selected_item
+  const lots = Array.isArray(item?.expiry_options) ? item.expiry_options : []
+  const variants = row?.item_variants?.length ? row.item_variants : (item?.item_variants || [])
+  const defaultId = item?.default_variant_id ?? null
+  const variantId = variant?.id ?? defaultId
+  const batch = (row?.batch || '').toString().trim()
+  const merged = new Map()
+
+  for (const lot of lots) {
+    if (variants.length > 1 && lot.variant_id !== variantId && !(!lot.variant_id && variantId === defaultId)) continue
+    if (batch && (lot.batch || '') !== batch) continue
+
+    const entry = merged.get(lot.expire_date) || { expire_date: lot.expire_date, on_hand: 0, reserved_out: 0, available: 0 }
+    entry.on_hand += Number(lot.on_hand) || 0
+    entry.reserved_out += Number(lot.reserved_out) || 0
+    entry.available += Number(lot.available) || 0
+    merged.set(lot.expire_date, entry)
+  }
+
+  const options = [...merged.values()].map((o) => ({ ...o, label: `${o.expire_date} (${o.on_hand})` }))
+
+  if (keep && !merged.has(keep)) {
+    options.unshift({ expire_date: keep, on_hand: null, reserved_out: null, available: null, label: keep })
+  }
+
+  return options
 }
 
 /**

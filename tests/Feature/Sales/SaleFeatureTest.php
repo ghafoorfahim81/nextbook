@@ -103,6 +103,145 @@ class SaleFeatureTest extends TestCase
         $this->assertEquals(200.0, (float) $customerBalance);
     }
 
+    public function test_free_quantity_leaves_the_warehouse_with_the_sold_quantity(): void
+    {
+        app(StockService::class)->post([
+            'item_id' => $this->ctx['item']->id,
+            'movement_type' => StockMovementType::IN->value,
+            'unit_measure_id' => $this->ctx['unit_measure']->id,
+            'quantity' => 250,
+            'source' => StockSourceType::PURCHASE->value,
+            'unit_cost' => 10,
+            'status' => StockStatus::POSTED->value,
+            'batch' => null,
+            'date' => '2026-03-10',
+            'expire_date' => null,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'branch_id' => $this->ctx['branch']->id,
+            'reference_type' => 'seed-sale-stock',
+            'reference_id' => $this->ctx['item']->id,
+        ]);
+
+        $this->post(route('sales.store'), [
+            'number' => 7050,
+            'customer_id' => $this->ctx['customer_ledger']->id,
+            'date' => '2026-03-19',
+            'transaction_total' => 1800,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'sale_type' => 'on_loan',
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'item_list' => [
+                [
+                    'item_id' => $this->ctx['item']->id,
+                    'batch' => null,
+                    'expire_date' => null,
+                    'quantity' => 45,
+                    'unit_measure_id' => $this->ctx['unit_measure']->id,
+                    'unit_price' => 40,
+                    'item_discount' => 0,
+                    'free' => 5,
+                    'tax' => 0,
+                ],
+            ],
+        ])->assertRedirect(route('sales.index'));
+
+        $sale = Sale::query()->latest()->firstOrFail();
+
+        // 250 - (45 sold + 5 free) = 200 on the shelf.
+        $this->assertDatabaseHas('stock_balances', [
+            'item_id' => $this->ctx['item']->id,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'quantity' => 200.0000,
+        ]);
+
+        // The invoice still says 45 sold, 5 free — only the stock side moves 50.
+        $this->assertDatabaseHas('sale_items', [
+            'sale_id' => $sale->id,
+            'quantity' => 45.00,
+            'free' => 5,
+        ]);
+
+        // Revenue is charged on the 45; inventory is relieved for all 50, and
+        // the books still balance.
+        $lines = DB::table('transaction_lines')
+            ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+            ->where('transactions.reference_type', Sale::class)
+            ->where('transactions.reference_id', $sale->id);
+
+        $this->assertEquals(
+            500.0,
+            (float) (clone $lines)->where('transaction_lines.account_id', $this->ctx['item']->asset_account_id)->sum('credit'),
+        );
+        $this->assertEquals(
+            (float) (clone $lines)->sum('debit'),
+            (float) (clone $lines)->sum('credit'),
+        );
+    }
+
+    public function test_a_sale_line_can_only_carry_an_expiry_date_the_warehouse_holds(): void
+    {
+        app(StockService::class)->post([
+            'item_id' => $this->ctx['item']->id,
+            'movement_type' => StockMovementType::IN->value,
+            'unit_measure_id' => $this->ctx['unit_measure']->id,
+            'quantity' => 20,
+            'source' => StockSourceType::PURCHASE->value,
+            'unit_cost' => 10,
+            'status' => StockStatus::POSTED->value,
+            'batch' => null,
+            'date' => '2026-03-10',
+            'expire_date' => '2027-06-30',
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'branch_id' => $this->ctx['branch']->id,
+            'reference_type' => 'seed-sale-stock',
+            'reference_id' => $this->ctx['item']->id,
+        ]);
+
+        $payload = fn (int $number, string $expireDate) => [
+            'number' => $number,
+            'customer_id' => $this->ctx['customer_ledger']->id,
+            'date' => '2026-03-19',
+            'transaction_total' => 200,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'sale_type' => 'on_loan',
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'item_list' => [
+                [
+                    'item_id' => $this->ctx['item']->id,
+                    'batch' => null,
+                    'expire_date' => $expireDate,
+                    'quantity' => 5,
+                    'unit_measure_id' => $this->ctx['unit_measure']->id,
+                    'unit_price' => 40,
+                    'item_discount' => 0,
+                    'free' => 0,
+                    'tax' => 0,
+                ],
+            ],
+        ];
+
+        // The form is offered exactly the dates on the shelf.
+        $this->getJson(route('search.items-list', ['warehouse_id' => $this->ctx['warehouse']->id]))
+            ->assertOk()
+            ->assertJsonFragment(['batch' => '', 'expire_date' => '2027-06-30']);
+
+        // A date nobody ever received: refused, and nothing is written.
+        $this->post(route('sales.store'), $payload(7060, '2029-01-01'))
+            ->assertSessionHasErrors('item_list.0.expire_date');
+        $this->assertDatabaseMissing('sales', ['number' => 7060]);
+
+        // The date that is on the shelf goes through and takes that lot down.
+        $this->post(route('sales.store'), $payload(7061, '2027-06-30'))
+            ->assertRedirect(route('sales.index'));
+        $this->assertDatabaseHas('stock_balances', [
+            'item_id' => $this->ctx['item']->id,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'quantity' => 15.0000,
+        ]);
+    }
+
     public function test_sale_creation_auto_allocates_fifo_batches_when_batch_is_not_selected(): void
     {
         $stockService = app(StockService::class);

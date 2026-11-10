@@ -459,6 +459,7 @@ class SearchController extends Controller
         $expirySummaries = [];
         $variantIdSummaries = [];
         $variantBatchSummaries = [];
+        $expiryOptions = [];
         $nonBatchOnHand = 0;
         $nonBatchReservedOut = 0;
         $nonBatchReservedIn = 0;
@@ -501,6 +502,21 @@ class SearchController extends Controller
                     'expire_date' => $balance->expire_date,
                     'on_hand' => ($variantBatchSummaries[$variantBatchKey]['on_hand'] ?? 0) + $onHand,
                     'reserved_out' => ($variantBatchSummaries[$variantBatchKey]['reserved_out'] ?? 0) + $reservedOut,
+                ];
+            }
+
+            // Every expiry date actually on the shelf, per variant and batch.
+            // A sale form offers these and nothing else: an expiry date is a
+            // property of the stock, not something decided at the counter.
+            if ($balance->expire_date && $onHand > 0) {
+                $expiryDate = \Carbon\Carbon::parse($balance->expire_date)->toDateString();
+                $expiryOptionKey = ($balance->variant_id ?? '') . '|' . $batchKey . '|' . $expiryDate;
+                $expiryOptions[$expiryOptionKey] = [
+                    'variant_id' => $balance->variant_id,
+                    'batch' => $batchKey,
+                    'sort' => $expiryDate,
+                    'on_hand' => ($expiryOptions[$expiryOptionKey]['on_hand'] ?? 0) + $onHand,
+                    'reserved_out' => ($expiryOptions[$expiryOptionKey]['reserved_out'] ?? 0) + $reservedOut,
                 ];
             }
 
@@ -627,6 +643,17 @@ class SearchController extends Controller
                 'reserved_out' => round($row['reserved_out'], 2),
                 'available' => $availableFor((float) $row['on_hand'], (float) $row['reserved_out']),
                 'avg_cost' => $item->avg_cost,
+            ])->values()->all(),
+            // Nearest expiry first — the order the stock is consumed in. The
+            // date is in the company's calendar, the same form a saved line
+            // comes back in, so the two can be matched as plain strings.
+            'expiry_options' => collect($expiryOptions)->sortBy('sort')->map(fn ($row) => [
+                'variant_id' => $row['variant_id'],
+                'batch' => $row['batch'],
+                'expire_date' => app(\App\Services\DateConversionService::class)->toDisplay($row['sort']),
+                'on_hand' => round($row['on_hand'], 2),
+                'reserved_out' => round($row['reserved_out'], 2),
+                'available' => $availableFor((float) $row['on_hand'], (float) $row['reserved_out']),
             ])->values()->all(),
             'has_variants' => $item->variants->count() > 1,
             // The real item_variants rows — every item has at least one.

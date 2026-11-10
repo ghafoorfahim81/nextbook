@@ -129,6 +129,12 @@ return [
         'bill_by_bill' => 'Bill by bill',
         'on_account' => 'On account',
     ],
+    'payment_method' => [
+        'cash' => 'Cash',
+        'bank_transfer' => 'Bank Transfer',
+        'check' => 'Check',
+        'card' => 'Card',
+    ],
     'payment_status' => [
         'paid' => 'Paid',
         'unpaid' => 'Unpaid',

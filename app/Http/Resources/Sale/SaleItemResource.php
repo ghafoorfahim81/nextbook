@@ -28,7 +28,8 @@ class SaleItemResource extends JsonResource
 
         $quantity   = (float) $this->quantity;
         $subtotal   = ($quantity * (float) $this->unit_price) - (float) ($this->discount ?? 0) + (float) ($this->tax ?? 0);
-        $lineCost   = $unitCost * $quantity;
+        // Free units cost what the sold ones cost and earn nothing.
+        $lineCost   = $unitCost * ($quantity + (float) ($this->free ?? 0));
         $lineProfit = $subtotal - $lineCost;
 
         return [

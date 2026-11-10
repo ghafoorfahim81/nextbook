@@ -215,6 +215,7 @@ return [
     'cannot_reverse_document_with_returns' => 'Return :numbers stands against this document. Reverse or delete it first, otherwise a return is left pointing at a document that no longer happened.',
     'cannot_reverse_stock_already_gone' => 'This document cannot be reversed: the goods it brought in have already been sold or issued and are no longer on the shelf. Reverse the documents that issued them first, or raise a return for what is left.',
     'cannot_post_insufficient_stock' => 'Cannot post: not enough stock for :item. It may have been sold on another invoice.',
+    'expiry_not_in_stock' => 'This expiry date is not in stock for the selected item and warehouse. Choose one of the listed dates.',
     'transfer_cost_accounts_missing' => 'Cannot post the transfer cost: the bank account or the Item Transfer Expense account is not set up for this branch.',
     'invalid_phone_number' => 'Enter a valid international phone number (6 to 15 digits, country code included).',
 ];

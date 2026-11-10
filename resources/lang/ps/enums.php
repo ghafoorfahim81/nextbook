@@ -113,6 +113,12 @@ return [
         'bill_by_bill' => 'د بل له مخې',
         'on_account' => 'د حساب له مخې',
     ],
+    'payment_method' => [
+        'cash' => 'نغدې',
+        'bank_transfer' => 'بانکي لېږد',
+        'check' => 'چک',
+        'card' => 'کارت',
+    ],
     'payment_status' => [
         'paid' => 'ورکړل شوی',
         'unpaid' => 'پاتې',

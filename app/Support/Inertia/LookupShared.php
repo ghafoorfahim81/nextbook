@@ -6,6 +6,7 @@ use App\Enums\BusinessType;
 use App\Enums\CalendarType;
 use App\Enums\DiscountType;
 use App\Enums\Locale;
+use App\Enums\PaymentMethod;
 use App\Enums\SalePurchaseType;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
@@ -137,6 +138,7 @@ final class LookupShared
             'locales' => EnumOptions::forLocale($request, Locale::class, 'locales'),
             'costingMethods' => EnumOptions::forLocale($request, CostingMethod::class, 'costing_methods'),
             'salePurchaseTypes' => EnumOptions::forLocale($request, SalePurchaseType::class, 'sale_purchase_types'),
+            'paymentMethods' => EnumOptions::forLocale($request, PaymentMethod::class, 'payment_methods'),
             'discountTypes' => EnumOptions::forLocale($request, DiscountType::class, 'discount_types'),
             'itemTypes' => EnumOptions::forLocale($request, ItemType::class, 'item_types'),
             'transactionStatuses' => EnumOptions::forLocale($request, TransactionStatus::class, 'transaction_statuses'),

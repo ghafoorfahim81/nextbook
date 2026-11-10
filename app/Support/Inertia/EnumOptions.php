@@ -19,6 +19,7 @@ final class EnumOptions
         'locales',
         'costing_methods',
         'sale_purchase_types',
+        'payment_methods',
         'discount_types',
         'item_types',
         'transaction_statuses',

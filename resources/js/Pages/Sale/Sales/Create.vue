@@ -24,7 +24,7 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { printDocument } from '@/composables/usePrintDocument'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantAverageCost } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantAverageCost, variantStockFigure, expiryOptionsForRow } from '@/composables/useVariantLine'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
@@ -800,6 +800,7 @@ const handleItemChange = async (index, selected_item) => {
         date: form.date || null,
     })
     applyRuleDiscount(row)
+    notifyIfVariantNotInWarehouse(row)
 
     // Add a new empty row only when selecting into the last row
     if (index === form.items.length - 1) {
@@ -859,6 +860,17 @@ const resetRow = (index) => {
     r.reserved_out = ''
     r.reserved_in = ''
     r.available = ''
+    // The variant goes with the item: left behind, it stayed on screen and
+    // was still attached to this (now empty) line.
+    r.variant_id = null
+    r.selected_item_variant = null
+    r.item_variants = []
+    r.free = ''
+    r.tax = ''
+    r.discount = ''
+    r.item_discount = ''
+    r.discount_rule = null
+    r.discount_touched = false
 }
 
 const duplicateToast = ref(null)
@@ -913,11 +925,51 @@ const notifyIfDuplicate = (index) => {
     }
 }
 
+
+// A variant the selected warehouse holds none of: say so the moment it is
+// picked, rather than leaving a bare zero in the on-hand column to be noticed.
+const notifyIfVariantNotInWarehouse = (row) => {
+    const variant = row?.selected_item_variant
+    if (!row?.selected_item || !variant) return
+    if (variantStockFigure(row, variant, 'on_hand') !== 0) return
+
+    toast({
+        title: t('general.variant_not_in_warehouse_title'),
+        description: t('general.variant_not_in_warehouse', {
+            variant: variant.display_name || row.selected_item.name,
+            item: row.selected_item.name,
+            warehouse: form.selected_warehouse?.name || '',
+        }),
+        variant: 'destructive',
+    })
+}
+
+// --- Expiry date ---------------------------------------------------------
+// Chosen from the dates the selected warehouse holds, never typed. Left empty,
+// the posting takes the nearest expiry first by itself.
+const expiryOptions = (row) => expiryOptionsForRow(row, row?.selected_item_variant, row?.expire_date || '')
+const selectedExpiry = (row) => (
+    row?.expire_date ? expiryOptions(row).find((o) => o.expire_date === row.expire_date) || null : null
+)
+// After the batch or variant moves: keep a date that is still on offer, take
+// the only one there is when a batch pins it down, otherwise leave it open.
+const syncRowExpiry = (row, { autoPick = false } = {}) => {
+    const options = expiryOptionsForRow(row, row?.selected_item_variant)
+    if (options.some((o) => o.expire_date === row.expire_date)) return
+    row.expire_date = autoPick && options.length === 1 ? options[0].expire_date : ''
+}
+const handleExpiryChange = (index, option) => {
+    const row = form.items[index]
+    if (!row) return
+    row.expire_date = option?.expire_date || ''
+    notifyIfDuplicate(index)
+}
+
 function handleBatchChange(index, batch){
     const row = form.items[index]
     row.selected_batch = batch ?? null
     row.batch = batch?.batch
-    row.expire_date = batch?.expire_date
+    syncRowExpiry(row, { autoPick: !!batch })
     notifyIfDuplicate(index)
 }
 // Real item_variants picker — which sellable variant this line moved.
@@ -932,6 +984,8 @@ const handleItemVariantChange = (index, variant) => {
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
     row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(2))
+    syncRowExpiry(row)
+    notifyIfVariantNotInWarehouse(row)
     notifyIfDuplicate(index)
 }
 
@@ -940,8 +994,11 @@ const onhand = (index) => {
     if (!item || !item.selected_item) return ''
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
-    const variantOnHand = item.selected_item_variant?.has_stock ? item.selected_item_variant.on_hand : null
-    const onHand = Number(variantOnHand ?? item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0
+    // Per warehouse: a variant with nothing in the selected warehouse reads
+    // zero instead of borrowing the item's total (the other variants' stock).
+    const variantOnHand = variantStockFigure(item, item.selected_item_variant, 'on_hand')
+    // A chosen expiry date narrows the line to that lot's stock.
+    const onHand = Number(selectedExpiry(item)?.on_hand ?? variantOnHand ?? item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0
     const converted = (onHand * baseUnit) / selectedUnit
     const free = Number(item.free) || 0
     const qty = Number(item.quantity) || 0
@@ -951,7 +1008,7 @@ const onhand = (index) => {
 const reservedOut = (index) => {
     const item = form.items[index]
     if (!item || !item.selected_item) return 0
-    const variantReserved = item.selected_item_variant?.has_stock ? item.selected_item_variant.reserved_out : null
+    const variantReserved = variantStockFigure(item, item.selected_item_variant, 'reserved_out')
     return Number(variantReserved ?? item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out) || 0
 }
 
@@ -1320,10 +1377,19 @@ const saveFormRef = useSaveShortcut({ form })
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="localColumns.expiry">
-                                <NextDate   v-model="item.expire_date"
-                                :lock-future-dates="false"
-                                popover="top-left"
-                                :error="form.errors?.[`item_list.${index}.expire_date`]"   />
+                                <NextSelect
+                                    :options="expiryOptions(item)"
+                                    :model-value="selectedExpiry(item)"
+                                    label-key="label"
+                                    value-key="expire_date"
+                                    :placeholder="t('general.search_or_select')"
+                                    :id="`sale_expiry_${index}`"
+                                    :disabled="!item.selected_item"
+                                    :error="form.errors?.[`item_list.${index}.expire_date`]"
+                                    :show-arrow="false"
+                                    :reduce="(expiry) => expiry"
+                                    @update:modelValue="(value) => handleExpiryChange(index, value)"
+                                />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
@@ -1486,7 +1552,7 @@ const saveFormRef = useSaveShortcut({ form })
 
                 <!-- Adjustments -->
                 <div class="rounded-xl border bg-card p-4 shadow-sm">
-                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.adjustments') }}</div>
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.tax_summary') }}</div>
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-muted-foreground">{{ t('general.total_item_tax') }}</span>
                         <span class="tabular-nums text-sm">{{ fmtMoney(totalTax) }}</span>
@@ -1521,7 +1587,7 @@ const saveFormRef = useSaveShortcut({ form })
                     <div v-if="form.sale_type === 'cash'">
                         <NextSelect
                             :options="bankAccounts"
-                            :floating-text="t('general.bank_account')"
+                            :floating-text="t('general.cash_or_account')"
                             v-model="form.selected_bank_account"
                             @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
                             label-key="name"

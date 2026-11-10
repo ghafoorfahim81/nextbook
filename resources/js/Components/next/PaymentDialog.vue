@@ -8,6 +8,7 @@
     import NextSelect from '@/Components/next/NextSelect.vue';
     import NextTextarea from '@/Components/next/NextTextarea.vue';
     import ModalDialog from '@/Components/next/Dialog.vue';
+    import { usePage } from '@inertiajs/vue3';
     import { useI18n } from 'vue-i18n';
     const { t } = useI18n();
     const props = defineProps({
@@ -48,12 +49,8 @@
     }, { immediate: true });
 
     // Payment method options
-    const paymentMethods = [
-      { id: 'cash', name: 'Cash' },
-      { id: 'bank_transfer', name: 'Bank Transfer' },
-      { id: 'check', name: 'Check' },
-      { id: 'card', name: 'Card' },
-    ];
+    // Translated server-side from App\Enums\PaymentMethod (shared lookup).
+    const paymentMethods = computed(() => usePage().props.paymentMethods || []);
 
     // Form validation
     const isFormValid = computed(() => {
@@ -151,8 +148,8 @@
               :options="bankAccounts"
               label-key="name"
               value-key="id"
-              :floating-text="t('general.bank_account')"
-              :placeholder="t('general.select_bank_account')"
+              :floating-text="t('general.cash_or_account')"
+              :placeholder="t('general.select_cash_or_account')"
               :error="errors.account_id"
               :isRequired="true"
               @update:modelValue="(value) => updatePayment('account_id', value)"
@@ -188,8 +185,8 @@
                 <span class="font-bold text-violet-600 text-xs">
                   {{ t('general.remaining_balance') }}
                 </span>
-                <span class="text-base tabular-nums text-gray-900"
-                      :class="{'text-rose-600': (props.billTotal - localPayment.amount) > 0}">
+                <span class="text-base tabular-nums text-foreground"
+                      :class="{'!text-rose-600 dark:!text-rose-400': (props.billTotal - localPayment.amount) > 0}">
                   {{ Number(props.billTotal - localPayment.amount || 0).toLocaleString() }}
                 </span>
               </div>

@@ -35,7 +35,7 @@ class SaleUpdateRequest extends FormRequest
             'due_date' => ['nullable', 'date'],
             'bank_account_id' => ['nullable', 'string', 'exists:accounts,id'],
             'payment' => ['nullable', 'array'],
-            'payment.method' => ['nullable', 'string'],
+            'payment.method' => ['nullable', 'string', Rule::in(\App\Enums\PaymentMethod::values())],
             'payment.amount' => ['nullable', 'numeric'],
             'payment.account_id' => ['nullable', 'string'],
             'payment.note' => ['nullable', 'string'],
