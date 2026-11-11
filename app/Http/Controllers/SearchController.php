@@ -339,6 +339,10 @@ class SearchController extends Controller
             'search' => 'nullable|string|max:255',
             'search_query' => 'nullable|string|max:255',
             'limit' => 'nullable|integer|min:1|max:250',
+            // Look up these items only: an edit form refreshing the stock of
+            // the lines it already holds.
+            'ids' => 'nullable|array|max:250',
+            'ids.*' => 'string',
         ]);
 
         if ($validator->fails()) {
@@ -349,6 +353,7 @@ class SearchController extends Controller
             ], 422);
         }
 
+        $onlyIds = array_values(array_filter((array) $request->input('ids', [])));
         $searchTerm = trim($request->input('search_query') ?? $request->input('search', ''));
         $limit = $this->resolveItemLimit($request->input('limit'), $searchTerm);
         $inStockOnly = $request->boolean('in_stock_only', true);
@@ -362,7 +367,7 @@ class SearchController extends Controller
         }
 
         try {
-            $items = $this->gatherItemsFromWarehouse($warehouseId, $searchTerm, $limit, $inStockOnly);
+            $items = $this->gatherItemsFromWarehouse($warehouseId, $searchTerm, $limit, $inStockOnly, $onlyIds);
 
             return response()->json([
                 'success' => true,
@@ -383,7 +388,7 @@ class SearchController extends Controller
         }
     }
 
-    private function gatherItemsFromWarehouse(string $warehouseId, string $searchTerm, int $limit, bool $inStockOnly = true): array
+    private function gatherItemsFromWarehouse(string $warehouseId, string $searchTerm, int $limit, bool $inStockOnly = true, array $onlyIds = []): array
     {
         $searchableFields = ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'];
 
@@ -406,6 +411,7 @@ class SearchController extends Controller
                     }
                 });
             })
+            ->when($onlyIds !== [], fn ($query) => $query->whereIn('id', $onlyIds))
             ->orderBy('created_at','desc')
             ->limit($limit);
 

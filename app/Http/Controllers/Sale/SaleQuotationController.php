@@ -194,7 +194,6 @@ class SaleQuotationController extends Controller
             'items.item',
             'items.variant',
             'items.unitMeasure',
-            'items.category',
             'customer',
             'currency',
             'warehouse',
@@ -219,7 +218,7 @@ class SaleQuotationController extends Controller
             return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
-        $saleQuotation->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'customer', 'currency', 'warehouse']);
+        $saleQuotation->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'customer', 'currency', 'warehouse']);
 
         return inertia('Sale/SaleQuotations/Edit', [
             'saleQuotation' => new SaleQuotationResource($saleQuotation),

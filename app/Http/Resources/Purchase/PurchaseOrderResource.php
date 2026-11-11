@@ -31,6 +31,8 @@ class PurchaseOrderResource extends JsonResource
             'status' => $this->status,
             'status_label' => PurchaseOrderStatus::tryFrom((string) $this->status)?->getLabel() ?? $this->status,
             'note' => $this->note,
+            'created_at' => $this->created_at?->toDateTimeString(),
+            'updated_at' => $this->updated_at?->toDateTimeString(),
             'order_total' => $this->relationLoaded('items') ? $this->orderTotal() : null,
             'purchase_id' => $this->whenLoaded('purchase', fn () => $this->purchase?->id),
             'purchase_number' => $this->whenLoaded('purchase', fn () => $this->purchase?->number),
@@ -46,7 +48,6 @@ class PurchaseOrderResource extends JsonResource
                     'batch' => $item->batch,
                     'variant_id' => $item->variant_id,
                     'expire_date' => $item->expire_date,
-                    'category_id' => $item->category_id,
                     'discount' => $item->discount,
                 ];
             })),

@@ -1027,6 +1027,7 @@ const { onLineEnter, onCustomerEnter, onGridArrow, onNumberBeforeInput, onNumber
     hasItem: (row) => !!form.items[row]?.selected_item,
     ensureRow: (row) => { while (form.items.length <= row) addRow() },
     focusBarcode,
+    clearRow: (row) => resetRow(row),
 })
 
 // Ctrl+S, then Enter, saves. Until Ctrl+S, Enter belongs to the lines.

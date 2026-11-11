@@ -46,8 +46,6 @@ class PurchaseOrderItemResource extends JsonResource
             'free' => $this->free,
             'unit_measure_id' => $this->unit_measure_id,
             'unit_measure_name' => $this->snapshotUnitName(),
-            'category_id' => $this->category_id,
-            'category_name' => $this->category?->localized_name,
             'unit_price' => $this->unit_price,
             'discount' => $this->discount,
             'line_total' => $lineTotal,

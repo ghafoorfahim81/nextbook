@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { cn } from '@/lib/utils'
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
@@ -23,6 +24,16 @@ const props = defineProps({
     // with the mouse only to press Enter anyway was the slower path. A caller
     // that wants the cautious default can still turn this off.
     focusConfirm: { type: Boolean, default: true },
+    // What follows the title. By default a question mark in the language's own
+    // form: "؟" sits against the word in Persian and Pashto, " ?" in English.
+    // A title that is not a question (the dialog's text already asks it) passes ''.
+    titleSuffix: { type: String, default: null },
+})
+
+const { locale } = useI18n()
+const resolvedSuffix = computed(() => {
+    if (props.titleSuffix !== null) return props.titleSuffix
+    return ['fa', 'ps', 'ar'].includes(String(locale.value).toLowerCase()) ? '؟' : ' ?'
 })
 const emit = defineEmits(['confirm', 'update:open'])
 
@@ -56,7 +67,7 @@ const onOpenAutoFocus = (event) => {
             @open-auto-focus="onOpenAutoFocus"
         >
             <DialogHeader class="gap-y-2">
-                <DialogTitle>{{ title }} ?</DialogTitle>
+                <DialogTitle>{{ title }}{{ resolvedSuffix }}</DialogTitle>
                 <DialogDescription class="text-base">{{ description }}</DialogDescription>
             </DialogHeader>
             <DialogFooter>

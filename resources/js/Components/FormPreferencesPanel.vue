@@ -89,7 +89,7 @@ const saleOrderItemColumns = [
     { key: 'discount', labelKey: 'preferences.fields.discount' },
     { key: 'free', labelKey: 'preferences.fields.free' },
     { key: 'variant', labelKey: 'preferences.fields.variant' },
-    { key: 'category', labelKey: 'preferences.fields.category' },
+    { key: 'on_hand', labelKey: 'preferences.fields.on_hand' },
 ]
 
 // Purchase orders render the same item columns as sale orders.

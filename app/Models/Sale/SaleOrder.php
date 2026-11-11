@@ -3,6 +3,7 @@
 namespace App\Models\Sale;
 
 use App\Enums\SaleOrderStatus;
+use App\Enums\TransactionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -109,9 +110,13 @@ class SaleOrder extends Model
         return $this->hasMany(SaleOrderItem::class);
     }
 
+    /**
+     * The bill that delivered this order. A reversed bill released the order,
+     * so it no longer counts as the one it was delivered by.
+     */
     public function sale(): HasOne
     {
-        return $this->hasOne(Sale::class);
+        return $this->hasOne(Sale::class)->where('status', '!=', TransactionStatus::REVERSED->value);
     }
 
     public function branch(): BelongsTo

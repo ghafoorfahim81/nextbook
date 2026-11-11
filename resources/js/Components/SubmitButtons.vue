@@ -5,6 +5,9 @@ import { useI18n } from 'vue-i18n'
 import { Spinner } from '@/Components/ui/spinner'
 import { Button } from '@/Components/ui/button'
 import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue'
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/Components/ui/dialog'
 
 const props = defineProps({
     createLabel: { type: String, required: true },
@@ -48,6 +51,38 @@ const confirmOnSave = computed(() => {
 const confirmOpen = ref(false)
 const pendingAction = ref(null) // 'create' | 'create-and-new' | 'save-and-print'
 const createButtonRef = ref(null)
+
+// Where a document can be saved three ways (save, save and new, save and print),
+// the save confirmation offers the three instead of a bare yes/no: the choice is
+// the confirmation. Arrow keys walk the options, Enter takes the one in focus.
+const choiceMode = computed(() => props.showSaveAndPrint && props.showCreateAndNew && pendingAction.value === 'create')
+const choicesRef = ref(null)
+
+const chooseAction = (action) => {
+    confirmOpen.value = false
+    pendingAction.value = null
+    runAction(action)
+}
+
+const choiceButtons = () => [...(choicesRef.value?.querySelectorAll('button') ?? [])]
+
+const onChoiceOpenAutoFocus = (event) => {
+    event.preventDefault()
+    choiceButtons()[0]?.focus()
+}
+
+const onChoiceKeydown = (event) => {
+    const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
+    if (!keys.includes(event.key)) return
+
+    event.preventDefault()
+    // By where they sit on screen, so Left is left in both directions of text.
+    const buttons = choiceButtons().sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
+    const at = buttons.indexOf(document.activeElement)
+    const forward = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+    const next = at < 0 ? 0 : (at + (forward ? 1 : -1) + buttons.length) % buttons.length
+    buttons[next]?.focus()
+}
 
 const runAction = (action) => {
     if (action === 'create') {
@@ -98,7 +133,8 @@ const handleConfirmDialogClose = (value) => {
  */
 const submitCreate = () => {
     if (isDisabled.value) return
-    if (confirmOnSave.value) {
+    // The three-way choice is asked even when plain confirmations are off.
+    if (confirmOnSave.value || (props.showSaveAndPrint && props.showCreateAndNew)) {
         pendingAction.value = 'create'
         confirmOpen.value = true
         return
@@ -155,8 +191,26 @@ defineExpose({ submitCreate })
             {{ cancelLabel }}
         </Button>
 
+        <Dialog :open="confirmOpen && choiceMode" @update:open="handleConfirmDialogClose">
+            <DialogContent
+                class="gap-5 rounded-xl p-6 sm:max-w-[31.25rem] sm:rounded-xl !top-[28%]"
+                @open-auto-focus="onChoiceOpenAutoFocus"
+            >
+                <DialogHeader class="gap-y-2">
+                    <DialogTitle>{{ t('general.save_confirmation_title') }}</DialogTitle>
+                    <DialogDescription class="text-base">{{ t('general.save_confirmation_message') }}</DialogDescription>
+                </DialogHeader>
+                <div ref="choicesRef" class="flex flex-wrap gap-2" @keydown="onChoiceKeydown">
+                    <Button class="rounded-lg" @click="chooseAction('create')">{{ createLabel }}</Button>
+                    <Button variant="outline" class="rounded-lg" @click="chooseAction('create-and-new')">{{ createAndNewLabel }}</Button>
+                    <Button variant="outline" class="rounded-lg" @click="chooseAction('save-and-print')">{{ saveAndPrintLabel }}</Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
         <ConfirmDeleteDialog
-            :open="confirmOpen"
+            :open="confirmOpen && !choiceMode"
+            title-suffix=""
             :title="t('general.save_confirmation_title')"
             :description="t('general.save_confirmation_message')"
             :cancel-text="t('general.cancel')"

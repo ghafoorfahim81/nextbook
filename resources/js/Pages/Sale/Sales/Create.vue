@@ -1262,18 +1262,14 @@ const { onLineEnter, onCustomerEnter, onGridArrow, onNumberBeforeInput, onNumber
     hasItem: (row) => !!form.items[row]?.selected_item,
     ensureRow: (row) => { while (form.items.length <= row) addRow() },
     focusBarcode,
+    clearRow: (row) => resetRow(row),
 })
 
-// Ctrl+S, then Enter, saves. Until Ctrl+S, Enter belongs to the lines.
-// With "confirm before save" on, Ctrl+S opens that confirmation and Enter
-// answers it; with it off, Ctrl+S steps onto the Save button and Enter presses it.
-const focusSaveButton = () => {
-    const button = saveFormRef.value?.querySelector?.('button[type="submit"]')
-    if (!button || button.disabled) return
-    const confirms = usePage().props?.user_preferences?.confirmations?.sale ?? true
-    if (confirms) button.click()
-    else button.focus()
-}
+// Ctrl+S opens the choice: save, save and new, or save and print. Arrow keys
+// walk the three and Enter takes the one in focus. Until Ctrl+S, Enter belongs
+// to the lines.
+const submitButtonsRef = ref(null)
+const focusSaveButton = () => submitButtonsRef.value?.submitCreate?.()
 const saveFormRef = useSaveShortcut({ form, onSave: focusSaveButton })
 </script>
 
@@ -1712,6 +1708,7 @@ const saveFormRef = useSaveShortcut({ form, onSave: focusSaveButton })
             </div>
 
             <SubmitButtons module="sale"
+                ref="submitButtonsRef"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :save-and-print-label="t('general.save_and_print')"

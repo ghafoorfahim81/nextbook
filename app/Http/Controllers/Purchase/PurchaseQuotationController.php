@@ -194,7 +194,6 @@ class PurchaseQuotationController extends Controller
             'items.item',
             'items.variant',
             'items.unitMeasure',
-            'items.category',
             'supplier',
             'currency',
             'warehouse',
@@ -219,7 +218,7 @@ class PurchaseQuotationController extends Controller
             return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
-        $purchaseQuotation->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'supplier', 'currency', 'warehouse']);
+        $purchaseQuotation->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'supplier', 'currency', 'warehouse']);
 
         return inertia('Purchase/PurchaseQuotations/Edit', [
             'purchaseQuotation' => new PurchaseQuotationResource($purchaseQuotation),

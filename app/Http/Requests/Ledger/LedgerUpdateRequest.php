@@ -4,6 +4,7 @@ namespace App\Http\Requests\Ledger;
 
 use App\Enums\CreditTerms;
 use App\Http\Requests\Ledger\Concerns\ValidatesLedgerOpenings;
+use App\Http\Requests\Ledger\Concerns\ValidatesPartyName;
 use App\Http\Requests\Ledger\Concerns\ValidatesPhoneNumbers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,7 @@ class LedgerUpdateRequest extends FormRequest
 {
     use BranchScopedUnique;
 
-    use ValidatesLedgerOpenings, ValidatesPhoneNumbers;
+    use ValidatesLedgerOpenings, ValidatesPartyName, ValidatesPhoneNumbers;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -29,7 +30,7 @@ class LedgerUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string'],
+            'name' => $this->nameRules(),
             'code' => ['nullable', 'string'],
             'address' => ['nullable', 'string'],
             'contact_person' => ['nullable', 'string'],

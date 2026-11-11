@@ -3,6 +3,7 @@
 namespace App\Models\Purchase;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\TransactionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -109,9 +110,13 @@ class PurchaseOrder extends Model
         return $this->hasMany(PurchaseOrderItem::class);
     }
 
+    /**
+     * The bill that received this order. A reversed bill released the order,
+     * so it no longer counts as the one it was received by.
+     */
     public function purchase(): HasOne
     {
-        return $this->hasOne(Purchase::class);
+        return $this->hasOne(Purchase::class)->where('status', '!=', TransactionStatus::REVERSED->value);
     }
 
     public function branch(): BelongsTo

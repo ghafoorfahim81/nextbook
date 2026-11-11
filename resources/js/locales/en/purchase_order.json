@@ -13,7 +13,7 @@
     "post_purchase_order_description": "This makes the purchase order available for conversion into a purchase. Posted orders cannot be edited.",
     "cancel_purchase_order_description": "This cancels the purchase order and prevents it from being converted into a purchase.",
     "convert_to_purchase": "Convert to Purchase",
-    "linked_purchase": "Purchase",
+    "linked_purchase": "Completed by purchase",
     "no_purchase_order_selected": "Select a posted purchase order to load its items",
     "pick_purchase_order": "Use Purchase Order",
     "eligible_purchase_orders_title": "Posted Purchase Orders for this Supplier",

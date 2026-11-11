@@ -38,18 +38,18 @@ const groups = computed(() => [
     label: t('sidebar.main.sale'),
     items: [
       { label: t('sidebar.sale.sale'), url: '/sales/create', key: 'S', permission: 'sales.create' },
-      { label: t('sidebar.sale.sale_order'), url: '/sale-orders/create', key: 'O', permission: 'sale_orders.create' },
-      { label: t('sidebar.sale.sale_quotation'), url: '/sale-quotations/create', key: 'Q', permission: 'sale_quotations.create' },
-      { label: t('sidebar.sale.sale_return'), url: '/sale-returns/create', key: 'U', permission: 'sale_returns.create' },
+      { label: t('sidebar.sale.menu_order'), url: '/sale-orders/create', key: 'O', permission: 'sale_orders.create' },
+      { label: t('sidebar.sale.menu_return'), url: '/sale-returns/create', key: 'U', permission: 'sale_returns.create' },
+      { label: t('sidebar.sale.menu_quotation'), url: '/sale-quotations/create', key: 'Q', permission: 'sale_quotations.create' },
     ],
   },
   {
     label: t('sidebar.main.purchase'),
     items: [
       { label: t('sidebar.purchase.purchase'), url: '/purchases/create', key: 'P', permission: 'purchases.create' },
-      { label: t('sidebar.purchase.purchase_order'), url: '/purchase-orders/create', permission: 'purchase_orders.create' },
-      { label: t('sidebar.purchase.purchase_quotation'), url: '/purchase-quotations/create', permission: 'purchase_quotations.create' },
-      { label: t('sidebar.purchase.purchase_return'), url: '/purchase-returns/create', permission: 'purchase_returns.create' },
+      { label: t('sidebar.purchase.menu_order'), url: '/purchase-orders/create', permission: 'purchase_orders.create' },
+      { label: t('sidebar.purchase.menu_return'), url: '/purchase-returns/create', permission: 'purchase_returns.create' },
+      { label: t('sidebar.purchase.menu_quotation'), url: '/purchase-quotations/create', permission: 'purchase_quotations.create' },
     ],
   },
   {

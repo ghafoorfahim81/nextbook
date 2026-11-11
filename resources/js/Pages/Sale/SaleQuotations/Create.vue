@@ -17,12 +17,15 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { Trash2 } from 'lucide-vue-next';
+import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, batchOptionsForRow, linePriceToHome, repriceRowsForRate, priceInLineUnit } from '@/composables/useVariantLine'
 import { toDocumentCurrency } from '@/utils/currency'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { useSaveShortcut } from '@/composables/useSaveShortcut'
+import { useLineEnterNavigation } from '@/composables/useLineEnterNavigation'
+import { variantStockFigure, stockInLineUnit } from '@/composables/useVariantLine'
+import BarcodeSearchInput from '@/Components/next/BarcodeSearchInput.vue'
 
 const { t } = useI18n();
 const { toast } = useToast()
@@ -37,7 +40,6 @@ const props = defineProps({
 const currencies = computed(() => page.props.currencies ?? { data: [] })
 const warehouses = computed(() => page.props.warehouses ?? { data: [] })
 const unitMeasures = computed(() => page.props.unitMeasures ?? { data: [] })
-const categories = computed(() => page.props.categories ?? { data: [] })
 const decimalPlaces = Number(page.props.auth?.user?.preferences?.appearance?.decimal_places ?? 2)
 
 const user_preferences = computed(() => page.props.user_preferences?.data ?? page.props.user_preferences ?? {})
@@ -66,8 +68,6 @@ const buildEmptyRow = () => ({
     variant_id: null,
     selected_variant: null,
     item_variants: [],
-    category_id: '',
-    selected_category: '',
 })
 
 const form = useForm({
@@ -214,7 +214,6 @@ function handleSubmit({ createAndNew = false } = {}) {
             ...item,
             unit_measure_id: item.selected_measure?.id,
             variant_id: item.selected_variant?.id ?? item.variant_id ?? null,
-            category_id: item.selected_category?.id ?? null,
         }));
 
     const payload = { create_and_new: createAndNew };
@@ -469,6 +468,70 @@ const addRow = () => {
     form.items.push(buildEmptyRow())
 }
 
+// Stock on hand for the line, in the line's own unit. Shown for reference only:
+// an order or a quotation moves no stock.
+if (localColumns.on_hand === undefined) localColumns.on_hand = true
+if (localColumns.variant === undefined) localColumns.variant = true
+const onHandDisplay = (index) => {
+    const row = form.items[index]
+    if (!row?.selected_item) return ''
+    const variantOnHand = variantStockFigure(row, row.selected_variant, 'on_hand')
+    return stockInLineUnit(row, variantOnHand ?? row.selected_batch?.on_hand ?? row.selected_item?.on_hand ?? 0)
+}
+
+/* ---- Barcode / item search and keyboard flow, as on the sale and purchase forms ---- */
+const barcodeRef = ref(null)
+const focusBarcode = () => barcodeRef.value?.focus?.()
+
+const handleScannedItem = async (item) => {
+    if (!item) return
+    // A plain (single-variant) line for the same item just increments.
+    const existing = form.items.find((r) => r.selected_item && r.item_id === item.id && (r.item_variants?.length || 0) <= 1)
+    if (existing) {
+        existing.quantity = toNum(existing.quantity, 0) + 1
+    } else {
+        let idx = form.items.findIndex((r) => !r.selected_item)
+        if (idx === -1) { addRow(); idx = form.items.length - 1 }
+        form.items[idx].selected_item = item
+        await handleItemChange(idx, item)
+        form.items[idx].quantity = 1
+    }
+    notifySound('success')
+    focusBarcode()
+}
+
+const handleScanNotFound = (code) => {
+    notifySound('error')
+    toast({ title: t('general.barcode_not_found', { code }), variant: 'destructive' })
+    focusBarcode()
+}
+
+const handleScanError = () => {
+    notifySound('error')
+    toast({ title: t('general.barcode_lookup_failed'), variant: 'destructive' })
+    focusBarcode()
+}
+
+const handleGlobalKeydown = (e) => {
+    if (e.key === 'F2' || (e.altKey && (e.code === 'KeyB' || e.key === 'b' || e.key === 'B'))) {
+        e.preventDefault()
+        focusBarcode()
+    }
+}
+onMounted(() => window.addEventListener('keydown', handleGlobalKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleGlobalKeydown))
+
+const clearLine = (index) => resetRow(index)
+
+// Enter walks a line: item -> variant -> quantity -> price -> next line.
+// Delete on a line empties it.
+const { onLineEnter, onCustomerEnter, onGridArrow, onNumberBeforeInput, onNumberPaste, onNumberKeydown } = useLineEnterNavigation({
+    hasItem: (row) => !!form.items[row]?.selected_item,
+    ensureRow: (row) => { while (form.items.length <= row) addRow() },
+    focusBarcode,
+    clearRow: clearLine,
+})
+
 useFormGuard(form)
 
 const saveFormRef = useSaveShortcut({ form })
@@ -489,29 +552,34 @@ const saveFormRef = useSaveShortcut({ form })
             :title="t('sale_quotation.sale_quotation')"
         />
 
-        <form ref="saveFormRef" @submit.prevent="handleSubmitAction('create')">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction('create')"
+              @beforeinput.capture="onNumberBeforeInput"
+              @paste.capture="onNumberPaste"
+              @keydown.capture="onNumberKeydown">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale_quotation.sale_quotation') }) }}</div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                    <NextSelect
-                        autofocus
-                        :options="ledgers?.data || []"
-                        v-model="form.selected_ledger"
-                        @update:modelValue="(value) => handleSelectChange('customer_id', value)"
-                        label-key="name"
-                        value-key="id"
-                        :reduce="ledger => ledger"
-                        :floating-text="t('ledger.customer.customer')"
-                        is-required
-                        :error="form.errors?.customer_id"
-                        :searchable="true"
-                        resource-type="ledgers"
-                        :search-fields="['name', 'email', 'phone_no']"
-                        :search-options="{ type: 'customer' }"
-                    />
+                    <div @keydown.enter="onCustomerEnter">
+                        <NextSelect
+                            autofocus
+                            :options="ledgers?.data || []"
+                            v-model="form.selected_ledger"
+                            @update:modelValue="(value) => handleSelectChange('customer_id', value)"
+                            label-key="name"
+                            value-key="id"
+                            :reduce="ledger => ledger"
+                            :floating-text="t('ledger.customer.customer')"
+                            is-required
+                            :error="form.errors?.customer_id"
+                            :searchable="true"
+                            resource-type="ledgers"
+                            :search-fields="['name', 'email', 'phone_no']"
+                            :search-options="{ type: 'customer' }"
+                        />
+                    </div>
                     <NextInput is-required :placeholder="t('general.number')" v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                     <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-                    <NextDate v-model="form.valid_until" :error="form.errors?.valid_until" :placeholder="t('general.enter', { text: t('sale_quotation.valid_until') })" :label="t('sale_quotation.valid_until')" />
+                    <NextDate v-model="form.valid_until" :lock-future-dates="false" :error="form.errors?.valid_until" :label="t('sale_quotation.valid_until')" />
 
                     <div class="grid grid-cols-2 gap-2" v-if="general_fields.currency">
                         <NextSelect
@@ -544,22 +612,42 @@ const saveFormRef = useSaveShortcut({ form })
                         resource-type="warehouses"
                         :search-fields="['name', 'code', 'address']"
                     />
+                    <div class="md:col-span-3">
+                        <NextTextarea v-model="form.note" :error="form.errors?.note" :label="t('general.note')" />
+                    </div>
                 </div>
             </div>
 
+            <!-- Barcode scanner / item search: scan or type to add or increment a line -->
+            <div class="mb-2 flex flex-wrap items-center gap-3">
+                <ScanBarcode class="h-5 w-5 shrink-0 text-violet-500" />
+                <div class="w-full max-w-xs">
+                    <BarcodeSearchInput
+                        ref="barcodeRef"
+                        :warehouse-id="form.warehouse_id"
+                        :in-stock-only="false"
+                        :disabled="!form.selected_ledger"
+                        :disabled-hint="t('general.select_ledger_first')"
+                        @select="handleScannedItem"
+                        @not-found="handleScanNotFound"
+                        @error="handleScanError"
+                    />
+                </div>
+                <span class="hidden text-xs text-muted-foreground sm:inline">{{ t('general.sale_keyboard_hint') }}</span>
+            </div>
             <div class="rounded-md border bg-card shadow-sm border-violet-500">
-                <table class="w-full table-fixed min-w-[1200px] sale-table border-separate">
+                <table class="w-full table-fixed min-w-[1200px] sale-table border-separate" @keydown.enter="onLineEnter" @keydown.capture="onGridArrow">
                     <thead class="bg-card sticky top-0 z-10">
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-32" v-if="localColumns.variant">{{ t('item.variant') }}</th>
                             <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t('general.batch') }}</th>
                             <th class="px-1 py-1 w-36" v-if="localColumns.expiry">{{ t('general.expire_date') }}</th>
+                            <th class="px-1 py-1 w-20" v-if="localColumns.on_hand">{{ t('general.on_hand') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }} <span class="text-red-500">*</span></th>
-                            <th class="px-1 py-1 w-32">{{ t('item.variant') }}</th>
-                            <th class="px-1 py-1 w-28" v-if="localColumns.category">{{ t('admin.category.category') }}</th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.discount">{{ t('general.discount') }}</th>
                             <th class="px-1 py-1 w-16" v-if="localColumns.free">{{ t('general.free') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.total') }}</th>
@@ -571,7 +659,7 @@ const saveFormRef = useSaveShortcut({ form })
                     <tbody class="p-2">
                         <tr v-for="(item, index) in form.items" :key="index" class="hover:bg-muted/40 transition-colors">
                             <td class="px-1 py-2 align-top w-5 text-center">{{ index + 1 }}</td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td data-nav="item" :data-row="index" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="itemOptions"
                                     v-model="item.selected_item"
@@ -587,6 +675,16 @@ const saveFormRef = useSaveShortcut({ form })
                                     :reduce="itemValue => itemValue"
                                     :search-options="itemSearchOptions"
                                     @update:modelValue="value => handleItemChange(index, value)"
+                                />
+                            </td>
+                            <td v-if="localColumns.variant" data-nav="variant" :data-row="index" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                                <VariantCell
+                                    :model-value="item.selected_variant"
+                                    :item-variants="item.item_variants"
+                                    :disabled="!item?.selected_item"
+                                    :error="form.errors?.[`item_list.${index}.variant_id`]"
+                                    :id="`quotation_variant_${index}`"
+                                    @update:modelValue="value => handleVariantChange(index, value)"
                                 />
                             </td>
                             <td v-if="localColumns.batch" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -605,7 +703,8 @@ const saveFormRef = useSaveShortcut({ form })
                             <td v-if="localColumns.expiry" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextDate v-model="item.expire_date" :lock-future-dates="false" popover="top-left" :error="form.errors?.[`item_list.${index}.expire_date`]" />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td class="text-center text-sm" v-if="localColumns.on_hand">{{ onHandDisplay(index) }}</td>
+                            <td data-nav="qty" :data-row="index" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput v-model="item.quantity" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.quantity`]" />
                             </td>
                             <td v-if="localColumns.measure" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -626,29 +725,8 @@ const saveFormRef = useSaveShortcut({ form })
                                     }"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td data-nav="price" :data-row="index" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput :model-value="item.unit_price" @update:model-value="setLinePrice(item, $event)" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
-                            </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <VariantCell
-                                    :model-value="item.selected_variant"
-                                    :item-variants="item.item_variants"
-                                    :disabled="!item?.selected_item"
-                                    :error="form.errors?.[`item_list.${index}.variant_id`]"
-                                    :id="`quotation_variant_${index}`"
-                                    @update:modelValue="value => handleVariantChange(index, value)"
-                                />
-                            </td>
-                            <td v-if="localColumns.category" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextSelect
-                                    :options="categories.data"
-                                    v-model="item.selected_category"
-                                    label-key="name"
-                                    value-key="id"
-                                    :show-arrow="false"
-                                    :reduce="category => category"
-                                    :error="form.errors?.[`item_list.${index}.category_id`]"
-                                />
                             </td>
                             <td v-if="localColumns.discount" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput v-model="item.discount" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.discount`]" />
@@ -668,13 +746,13 @@ const saveFormRef = useSaveShortcut({ form })
                         <tr class="bg-violet-500/10 hover:bg-violet-500/30 transition-colors">
                             <td></td>
                             <td class="text-center">{{ totalRows }}</td>
+                            <td v-if="localColumns.variant"></td>
                             <td v-if="localColumns.batch"></td>
                             <td v-if="localColumns.expiry"></td>
+                            <td v-if="localColumns.on_hand"></td>
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="localColumns.measure"></td>
                             <td class="text-center">{{ goodsTotal || 0 }}</td>
-                            <td></td>
-                            <td v-if="localColumns.category"></td>
                             <td class="text-center" v-if="localColumns.discount">{{ totalItemDiscount || 0 }}</td>
                             <td class="text-center" v-if="localColumns.free">{{ totalFree || 0 }}</td>
                             <td class="text-center">{{ totalRowTotal || 0 }}</td>
@@ -714,9 +792,6 @@ const saveFormRef = useSaveShortcut({ form })
                 </div>
             </div>
 
-            <div class="mt-4">
-                <NextTextarea v-model="form.note" :error="form.errors?.note" :label="t('general.note')" />
-            </div>
 
             <SubmitButtons module="sale_quotations"
                 :create-label="t('general.create')"

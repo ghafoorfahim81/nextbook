@@ -194,11 +194,10 @@ class PurchaseOrderController extends Controller
             'items.item',
             'items.variant',
             'items.unitMeasure',
-            'items.category',
             'supplier',
             'currency',
             'warehouse',
-            'purchase:id,number,supplier_id',
+            'purchase:id,purchase_order_id,number,status',
             'createdBy',
             'updatedBy',
         ]);
@@ -220,7 +219,7 @@ class PurchaseOrderController extends Controller
             return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
-        $purchaseOrder->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'supplier', 'currency', 'warehouse']);
+        $purchaseOrder->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'supplier', 'currency', 'warehouse']);
 
         return inertia('Purchase/PurchaseOrders/Edit', [
             'purchaseOrder' => new PurchaseOrderResource($purchaseOrder),
@@ -311,7 +310,8 @@ class PurchaseOrderController extends Controller
     {
         $this->authorize('update', $purchaseOrder);
 
-        if ($purchaseOrder->status !== PurchaseOrderStatus::DRAFT->value) {
+        // Draft or posted: an order already billed (completed) is released by reversing its bill.
+        if (! in_array($purchaseOrder->status, [PurchaseOrderStatus::DRAFT->value, PurchaseOrderStatus::POSTED->value], true)) {
             abort(422, __('messages.document.only_draft_can_be_cancelled'));
         }
 
@@ -472,7 +472,6 @@ class PurchaseOrderController extends Controller
                 ] : null,
                 // In the company calendar, like every date the purchase form handles.
                 'expire_date' => $item->expire_date ? $this->dateConversionService->toDisplay($item->expire_date) : null,
-                'category_id' => $item->category_id,
                 'discount' => (float) ($item->discount ?? 0),
             ])->values(),
         ]);

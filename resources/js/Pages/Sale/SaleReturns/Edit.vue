@@ -12,8 +12,16 @@ import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n';
 import { useSaveShortcut } from '@/composables/useSaveShortcut';
+import { useLineEnterNavigation } from '@/composables/useLineEnterNavigation';
 
 const { t } = useI18n();
+// Enter walks the quantities down the bill's lines (the shared line helper).
+const focusFirstQuantity = () => document.querySelector('[data-nav="qty"][data-row="0"] input:not([disabled])')?.focus()
+const { onLineEnter, onCustomerEnter } = useLineEnterNavigation({
+    hasItem: () => true,
+    ensureRow: () => {},
+    focusBarcode: focusFirstQuantity,
+})
 
 const props = defineProps({
     saleReturn: { type: Object, required: true },
@@ -135,7 +143,7 @@ const saveFormRef = useSaveShortcut({ form });
             <div class="rounded-md border bg-card shadow-sm border-violet-500">
                 <div v-if="loadError" class="p-3 text-sm text-red-600">{{ loadError }}</div>
                 <div v-if="loadingItems" class="p-3 text-sm text-muted-foreground">{{ t('general.loading') }}</div>
-                <table v-else class="w-full table-fixed min-w-[1100px] border-separate">
+                <table v-else class="w-full table-fixed min-w-[1100px] border-separate" @keydown.enter="onLineEnter">
                     <thead class="bg-card sticky top-0 z-10">
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-2 py-2 w-8 text-center">#</th>
@@ -164,7 +172,7 @@ const saveFormRef = useSaveShortcut({ form });
                             <td class="px-2 py-2 text-right">{{ row.returned_quantity }}</td>
                             <td class="px-2 py-2 text-right">{{ row.remaining_quantity }}</td>
                             <td class="px-2 py-2 text-right">{{ row.unit_price }}</td>
-                            <td class="px-2 py-2">
+                            <td class="px-2 py-2" data-nav="qty" :data-row="index">
                                 <NextInput
                                     type="number"
                                     step="any"

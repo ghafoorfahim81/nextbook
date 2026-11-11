@@ -54,6 +54,7 @@ export function useSaveConfirmation() {
                     h(ConfirmDeleteDialog, {
                         open: isOpen.value,
                         title: t('general.save_confirmation_title'),
+                        titleSuffix: '',
                         description: t('general.save_confirmation_message'),
                         cancelText: t('general.cancel'),
                         continueText: t('general.confirm'),

@@ -17,8 +17,9 @@ import { nextTick } from 'vue'
  * @param {(row: number) => boolean} options.hasItem   Whether the row holds an item yet.
  * @param {(row: number) => void} options.ensureRow    Make sure this row index exists.
  * @param {() => void} [options.focusBarcode]          Where Enter on the customer goes.
+ * @param {(row: number) => void} [options.clearRow]   Empty a line. When given, Delete inside a line does it.
  */
-export function useLineEnterNavigation({ hasItem, ensureRow, focusBarcode }) {
+export function useLineEnterNavigation({ hasItem, ensureRow, focusBarcode, clearRow }) {
   const ORDER = ['item', 'variant', 'qty', 'price']
   // Each Enter starts a new move; an older one still settling gives way to it.
   let move = 0
@@ -110,6 +111,34 @@ export function useLineEnterNavigation({ hasItem, ensureRow, focusBarcode }) {
   }
 
   /**
+   * Delete inside a line empties that line. Text the user is in the middle of
+   * editing keeps its Delete key, so a typed word is still edited, not lost with
+   * the line; a number, or a picker with nothing typed in it, hands the key to
+   * the line.
+   */
+  const onLineDelete = (event) => {
+    if (!clearRow || hasModifier(event)) return
+
+    const input = event.target
+    if (input?.tagName !== 'INPUT') return
+
+    const line = input.closest('tr')
+    const body = line?.parentElement
+    if (!body || body.tagName !== 'TBODY') return
+    if (input.type !== 'number' && input.value !== '') return
+
+    const row = [...body.rows].indexOf(line)
+    if (row < 0 || !hasItem(row)) return
+
+    event.preventDefault()
+    event.stopPropagation()
+    clearRow(row)
+
+    const table = body.closest('table')
+    nextTick(() => setTimeout(() => inputIn(table, row, 'item')?.focus(), 60))
+  }
+
+  /**
    * Arrow keys move between the fields of the lines table, like a spreadsheet,
    * and never change a value on the way: Up/Down on a number field would
    * otherwise step it by one.
@@ -122,6 +151,10 @@ export function useLineEnterNavigation({ hasItem, ensureRow, focusBarcode }) {
    */
   const onGridArrow = (event) => {
     const { key } = event
+    if (key === 'Delete') {
+      onLineDelete(event)
+      return
+    }
     if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key) || hasModifier(event)) return
 
     const input = event.target

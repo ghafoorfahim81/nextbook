@@ -13,7 +13,7 @@
     "post_sale_order_description": "دا به د خرڅ امر د خرڅلاو ته د بدلولو لپاره چمتو کړي. ثبت شوي امرونه نشي سمول کیدای.",
     "cancel_sale_order_description": "دا به د خرڅ امر لغوه کړي او مخنیوی به یې وکړي چې دا خرڅلاو ته وبدل شي.",
     "convert_to_sale": "خرڅلاو ته بدلول",
-    "linked_sale": "خرڅلاو",
+    "linked_sale": "د خرڅلاو په واسطه بشپړ شو",
     "no_sale_order_selected": "یو ثبت شوی د خرڅ امر غوره کړئ ترڅو د هغه توکي بارول شي",
     "pick_sale_order": "د دې امر کارول",
     "eligible_sale_orders_title": "د دې پیرودونکي ثبت شوي خرڅ امرونه",

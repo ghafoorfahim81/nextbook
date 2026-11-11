@@ -190,22 +190,21 @@ onBeforeUnmount(() => {
     opacity: 1;
     transform: rotate(3deg) translate(0, -4px);
 }
+/* The spinner sits in the middle of the screen, where the eye already is,
+   not in a corner nobody is looking at. */
 #nprogress .spinner {
     position: fixed;
-    top: 15px;
-    right: 15px;
+    top: 50%;
+    left: 50%;
     z-index: 1031;
     display: block;
-}
-[dir='rtl'] #nprogress .spinner {
-    right: auto;
-    left: 15px;
+    transform: translate(-50%, -50%);
 }
 #nprogress .spinner-icon {
     box-sizing: border-box;
-    width: 18px;
-    height: 18px;
-    border: solid 2px transparent;
+    width: 40px;
+    height: 40px;
+    border: solid 3px transparent;
     border-top-color: hsl(var(--primary));
     border-left-color: hsl(var(--primary));
     border-radius: 50%;

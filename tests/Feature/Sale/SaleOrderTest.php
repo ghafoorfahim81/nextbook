@@ -158,6 +158,76 @@ class SaleOrderTest extends TestCase
         ]);
     }
 
+    /**
+     * The order shows which sale completed it, and a reversed sale lets go of
+     * it: the order is open again, points at no sale, and can be billed afresh.
+     */
+    public function test_reversing_the_sale_releases_the_order_it_completed(): void
+    {
+        $this->post(route('sale-orders.store'), $this->storeSaleOrderPayload());
+        $saleOrder = SaleOrder::query()->latest()->firstOrFail();
+
+        app(StockService::class)->post([
+            'item_id' => $this->ctx['item']->id,
+            'movement_type' => StockMovementType::IN->value,
+            'unit_measure_id' => $this->ctx['unit_measure']->id,
+            'quantity' => 10,
+            'source' => StockSourceType::PURCHASE->value,
+            'unit_cost' => 10,
+            'status' => StockStatus::POSTED->value,
+            'batch' => null,
+            'date' => '2026-03-10',
+            'expire_date' => null,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'branch_id' => $this->ctx['branch']->id,
+            'reference_type' => 'seed-sale-order-stock',
+            'reference_id' => $this->ctx['item']->id,
+        ]);
+
+        $billOrder = fn (int $number) => $this->post(route('sales.store'), [
+            'number' => $number,
+            'customer_id' => $this->ctx['customer_ledger']->id,
+            'sale_order_id' => $saleOrder->id,
+            'date' => '2026-03-20',
+            'transaction_total' => 150,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'sale_type' => 'on_loan',
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'item_list' => [[
+                'item_id' => $this->ctx['item']->id,
+                'batch' => null,
+                'expire_date' => null,
+                'quantity' => 3,
+                'unit_measure_id' => $this->ctx['unit_measure']->id,
+                'unit_price' => 50,
+                'item_discount' => 0,
+                'free' => 0,
+                'tax' => 0,
+            ]],
+        ]);
+
+        $billOrder(9601)->assertRedirect(route('sales.index'));
+        $sale = Sale::query()->where('number', 9601)->firstOrFail();
+
+        // Completed: the order says which sale did it.
+        $shown = $this->getJson(route('sale-orders.show', $saleOrder->id))->assertOk();
+        $shown->assertJsonPath('data.status', SaleOrderStatus::COMPLETED->value);
+        $shown->assertJsonPath('data.sale_id', $sale->id);
+        $shown->assertJsonPath('data.sale_number', 9601);
+
+        $this->post(route('sales.reverse', $sale), ['reason' => 'wrong goods'])->assertRedirect();
+
+        // Released: open again, and no longer pointing at the reversed sale.
+        $this->assertSame(SaleOrderStatus::POSTED->value, $saleOrder->fresh()->status);
+        $released = $this->getJson(route('sale-orders.show', $saleOrder->id))->assertOk();
+        $released->assertJsonPath('data.sale_id', null);
+
+        // And it can be billed afresh.
+        $billOrder(9602)->assertRedirect(route('sales.index'));
+        $this->assertSame(SaleOrderStatus::COMPLETED->value, $saleOrder->fresh()->status);
+    }
+
     public function test_sale_creation_rejects_a_non_posted_sale_order(): void
     {
         $this->post(route('sale-orders.store'), $this->storeSaleOrderPayload());
@@ -193,7 +263,7 @@ class SaleOrderTest extends TestCase
         $this->assertDatabaseMissing('sales', ['number' => 9502]);
     }
 
-    public function test_draft_sale_order_can_be_posted_then_no_longer_edited_or_cancelled(): void
+    public function test_draft_sale_order_can_be_posted_then_no_longer_edited_but_can_be_voided(): void
     {
         // Force draft by disabling post-immediately preference for this request.
         set_company_setting('transaction.sale_order_post_immediately', false);
@@ -206,12 +276,17 @@ class SaleOrderTest extends TestCase
         $this->post(route('sale-orders.post', $saleOrder->id))->assertRedirect();
         $this->assertDatabaseHas('sale_orders', ['id' => $saleOrder->id, 'status' => SaleOrderStatus::POSTED->value]);
 
-        // Once posted, the order can no longer be cancelled or edited.
-        $this->post(route('sale-orders.cancel', $saleOrder->id))->assertStatus(422);
-        $this->assertDatabaseHas('sale_orders', ['id' => $saleOrder->id, 'status' => SaleOrderStatus::POSTED->value]);
-
+        // Once posted, the order can no longer be edited.
         $this->get(route('sale-orders.edit', $saleOrder->id))->assertRedirect();
         $this->assertDatabaseHas('sale_orders', ['id' => $saleOrder->id, 'status' => SaleOrderStatus::POSTED->value]);
+
+        // It can still be voided from its page (the "reverse" button), until a sale completes it.
+        $saleOrder->update(['status' => SaleOrderStatus::COMPLETED->value]);
+        $this->post(route('sale-orders.cancel', $saleOrder->id))->assertStatus(422);
+        $saleOrder->update(['status' => SaleOrderStatus::POSTED->value]);
+
+        $this->post(route('sale-orders.cancel', $saleOrder->id))->assertRedirect();
+        $this->assertDatabaseHas('sale_orders', ['id' => $saleOrder->id, 'status' => SaleOrderStatus::CANCELLED->value]);
     }
 
     public function test_draft_sale_order_can_be_cancelled(): void

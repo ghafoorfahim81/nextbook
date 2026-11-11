@@ -44,7 +44,6 @@ class PurchaseOrderStoreRequest extends FormRequest
             'item_list.*.unit_measure_id' => ['nullable', 'string', 'exists:unit_measures,id'],
             'item_list.*.batch' => ['nullable', 'string'],
             'item_list.*.expire_date' => ['nullable', 'date'],
-            'item_list.*.category_id' => ['nullable', 'string', 'exists:categories,id'],
             'item_list.*.discount' => ['nullable', 'numeric', 'min:0'],
         ];
     }

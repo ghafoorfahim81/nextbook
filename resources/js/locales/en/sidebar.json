@@ -73,7 +73,10 @@
         "purchase": "Purchase",
         "purchase_order": "Purchase Order",
         "purchase_quotation": "Purchase Quotation",
-        "purchase_return": "Purchase Return"
+        "purchase_return": "Purchase Return",
+        "menu_order": "Order",
+        "menu_quotation": "Quotation",
+        "menu_return": "Return"
     },
     "sale": {
         "sale": "Sale",
@@ -84,7 +87,10 @@
         "sale_updated_successfully": "Sale updated successfully",
         "sale_return": "Sale Return",
         "sale_order": "Sale Order",
-        "sale_quotation": "Sale Quotation"
+        "sale_quotation": "Sale Quotation",
+        "menu_order": "Order",
+        "menu_quotation": "Quotation",
+        "menu_return": "Return"
     },
     "ledger": {
         "customer": "Customer",

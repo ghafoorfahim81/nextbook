@@ -31,6 +31,8 @@ class SaleQuotationResource extends JsonResource
             'status' => $this->status,
             'status_label' => SaleQuotationStatus::tryFrom((string) $this->status)?->getLabel() ?? $this->status,
             'note' => $this->note,
+            'created_at' => $this->created_at?->toDateTimeString(),
+            'updated_at' => $this->updated_at?->toDateTimeString(),
             'quotation_total' => $this->relationLoaded('items') ? $this->quotationTotal() : null,
             'items' => $this->whenLoaded('items', fn () => SaleQuotationItemResource::collection($this->items)),
             'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) {
@@ -44,7 +46,6 @@ class SaleQuotationResource extends JsonResource
                     'batch' => $item->batch,
                     'variant_id' => $item->variant_id,
                     'expire_date' => $item->expire_date,
-                    'category_id' => $item->category_id,
                     'discount' => $item->discount,
                 ];
             })),

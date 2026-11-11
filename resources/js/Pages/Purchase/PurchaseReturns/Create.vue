@@ -13,8 +13,16 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useI18n } from 'vue-i18n';
 import { useSaveShortcut } from '@/composables/useSaveShortcut';
+import { useLineEnterNavigation } from '@/composables/useLineEnterNavigation';
 
 const { t } = useI18n();
+// Enter walks the quantities down the bill's lines (the shared line helper).
+const focusFirstQuantity = () => document.querySelector('[data-nav="qty"][data-row="0"] input:not([disabled])')?.focus()
+const { onLineEnter, onCustomerEnter } = useLineEnterNavigation({
+    hasItem: () => true,
+    ensureRow: () => {},
+    focusBarcode: focusFirstQuantity,
+})
 const page = usePage();
 
 // Reactive copy of the purchase_return preferences so the settings panel and form stay in sync.
@@ -140,20 +148,22 @@ const saveFormRef = useSaveShortcut({ form });
                     {{ t('general.create', { name: t('purchase_return.purchase_return') }) }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                    <NextSelect
-                        autofocus
-                        :options="purchases"
-                        v-model="selectedPurchase"
-                        label-key="label"
-                        value-key="id"
-                        :reduce="purchase => purchase"
-                        :floating-text="t('purchase_return.select_purchase')"
-                        is-required
-                        :placeholder="t('purchase_return.search_purchase_placeholder')"
-                        :error="form.errors?.purchase_id"
-                        :searchable="true"
-                        :search-fields="['number', 'supplier_name', 'label']"
-                    />
+                    <div @keydown.enter="onCustomerEnter">
+                        <NextSelect
+                            autofocus
+                            :options="purchases"
+                            v-model="selectedPurchase"
+                            label-key="label"
+                            value-key="id"
+                            :reduce="purchase => purchase"
+                            :floating-text="t('purchase_return.select_purchase')"
+                            is-required
+                            :placeholder="t('purchase_return.search_purchase_placeholder')"
+                            :error="form.errors?.purchase_id"
+                            :searchable="true"
+                            :search-fields="['number', 'supplier_name', 'label']"
+                        />
+                    </div>
                     <NextInput v-if="general_fields.number !== false" is-required type="number" :error="form.errors?.number" v-model="form.number" :label="t('general.bill_number')" />
                     <NextDate v-if="general_fields.date !== false" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                     <NextSelect
@@ -178,7 +188,7 @@ const saveFormRef = useSaveShortcut({ form });
             <div v-else class="rounded-md border bg-card shadow-sm border-violet-500">
                 <div v-if="loadError" class="p-3 text-sm text-red-600">{{ loadError }}</div>
                 <div v-if="loadingItems" class="p-3 text-sm text-muted-foreground">{{ t('general.loading') }}</div>
-                <table v-else class="w-full table-fixed min-w-[1100px] border-separate">
+                <table v-else class="w-full table-fixed min-w-[1100px] border-separate" @keydown.enter="onLineEnter">
                     <thead class="bg-card sticky top-0 z-10">
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-2 py-2 w-8 text-center">#</th>
@@ -207,7 +217,7 @@ const saveFormRef = useSaveShortcut({ form });
                             <td class="px-2 py-2 text-right">{{ row.returned_quantity }}</td>
                             <td class="px-2 py-2 text-right">{{ row.remaining_quantity }}</td>
                             <td class="px-2 py-2 text-right">{{ row.unit_price }}</td>
-                            <td class="px-2 py-2">
+                            <td class="px-2 py-2" data-nav="qty" :data-row="index">
                                 <NextInput
                                     type="number"
                                     step="any"

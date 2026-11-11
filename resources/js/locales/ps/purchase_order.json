@@ -13,7 +13,7 @@
     "post_purchase_order_description": "دا به د پیرودنې امر د پیرودنې ته د بدلولو لپاره چمتو کړي. ثبت شوي امرونه نشي سمول کیدای.",
     "cancel_purchase_order_description": "دا به د پیرودنې امر لغوه کړي او مخنیوی به یې وکړي چې دا پیرودنې ته وبدل شي.",
     "convert_to_purchase": "پیرودنې ته بدلول",
-    "linked_purchase": "پیرودنه",
+    "linked_purchase": "د پیرودنې په واسطه بشپړ شو",
     "no_purchase_order_selected": "یو ثبت شوی د پیرودنې امر غوره کړئ ترڅو د هغه توکي بارول شي",
     "pick_purchase_order": "د دې امر کارول",
     "eligible_purchase_orders_title": "د دې عرضه کوونکي ثبت شوي پیرودنې امرونه",

@@ -68,7 +68,10 @@
         "purchase": "پېرود",
         "purchase_order": "د پیرودنې امر",
         "purchase_quotation": "د پیرودنې کوټیشن",
-        "purchase_return": "د پېرود ستنول"
+        "purchase_return": "د پېرود ستنول",
+        "menu_order": "امر",
+        "menu_quotation": "کوټیشن",
+        "menu_return": "ستنول"
     },
     "sale": {
         "sale": "خرڅ",
@@ -79,7 +82,10 @@
         "sale_updated_successfully": "خرڅ په بریالیتوب سره تازه شو",
         "sale_return": "د خرڅ ستنول",
         "sale_order": "د خرڅ امر",
-        "sale_quotation": "د خرڅلاو کوټیشن"
+        "sale_quotation": "د خرڅلاو کوټیشن",
+        "menu_order": "امر",
+        "menu_quotation": "کوټیشن",
+        "menu_return": "ستنول"
     },
     "ledger": {
         "customer": "پېرېدونکی",

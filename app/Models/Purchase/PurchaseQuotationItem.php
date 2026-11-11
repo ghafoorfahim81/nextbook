@@ -38,7 +38,6 @@ class PurchaseQuotationItem extends Model
         'unit_measure_id',
         'batch',
         'expire_date',
-        'category_id',
         'discount',
         'created_by',
         'updated_by',
@@ -61,7 +60,6 @@ class PurchaseQuotationItem extends Model
             'unit_measure_id' => 'string',
             'batch' => 'string',
             'expire_date' => 'date',
-            'category_id' => 'string',
             'discount' => 'decimal:2',
             'created_by' => 'string',
             'updated_by' => 'string',
@@ -101,11 +99,6 @@ class PurchaseQuotationItem extends Model
     public function unitMeasure(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\Administration\Category::class);
     }
 
     /** No branch of its own: the purchaseQuotation holds it, and the company comes from there too. */

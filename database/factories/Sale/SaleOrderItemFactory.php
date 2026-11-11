@@ -37,7 +37,6 @@ class SaleOrderItemFactory extends Factory
                 ->getKey(),
             'batch' => null,
             'expire_date' => null,
-            'category_id' => null,
             'discount' => 0,
         ];
     }

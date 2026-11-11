@@ -194,11 +194,10 @@ class SaleOrderController extends Controller
             'items.item',
             'items.variant',
             'items.unitMeasure',
-            'items.category',
             'customer',
             'currency',
             'warehouse',
-            'sale:id,number,customer_id',
+            'sale:id,sale_order_id,number,status',
             'createdBy',
             'updatedBy',
         ]);
@@ -220,7 +219,7 @@ class SaleOrderController extends Controller
             return back()->with('error', __('messages.document.only_draft_can_be_edited'));
         }
 
-        $saleOrder->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'items.category', 'customer', 'currency', 'warehouse']);
+        $saleOrder->load(['items.item', 'items.item.variants', 'items.variant', 'items.unitMeasure', 'customer', 'currency', 'warehouse']);
 
         return inertia('Sale/SaleOrders/Edit', [
             'saleOrder' => new SaleOrderResource($saleOrder),
@@ -311,7 +310,8 @@ class SaleOrderController extends Controller
     {
         $this->authorize('update', $saleOrder);
 
-        if ($saleOrder->status !== SaleOrderStatus::DRAFT->value) {
+        // Draft or posted: an order already billed (completed) is released by reversing its bill.
+        if (! in_array($saleOrder->status, [SaleOrderStatus::DRAFT->value, SaleOrderStatus::POSTED->value], true)) {
             abort(422, __('messages.document.only_draft_can_be_cancelled'));
         }
 
@@ -472,7 +472,6 @@ class SaleOrderController extends Controller
                 ] : null,
                 // In the company calendar, like every date the sale form handles.
                 'expire_date' => $item->expire_date ? $this->dateConversionService->toDisplay($item->expire_date) : null,
-                'category_id' => $item->category_id,
                 'discount' => (float) ($item->discount ?? 0),
             ])->values(),
         ]);
