@@ -234,7 +234,7 @@
         "opening_unit_price": "The cost per unit of this opening stock. Drives the item's average cost.",
         "opening_variant": "Which variant this opening quantity belongs to."
     },
-    "final_cost": "Final cost",
+    "final_cost": "Final Cost",
     "column_settings": "Column settings",
     "go_to_item_list": "Go to item list",
     "confirm_save_title": "Save these items?",

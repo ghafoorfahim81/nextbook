@@ -85,6 +85,26 @@ const uploadPhoto = (file) => {
     });
 };
 
+// Active / inactive / blocked. Only an active customer is offered by the sale,
+// receipt and other pickers; the difference between the other two is the reason.
+const statusOptions = computed(() => [
+    { value: 'active', label: t('general.active'), on: 'bg-green-600 text-white border-green-600' },
+    { value: 'inactive', label: t('general.inactive'), on: 'bg-slate-500 text-white border-slate-500' },
+    { value: 'blocked', label: t('general.blocked'), on: 'bg-red-600 text-white border-red-600' },
+]);
+const currentStatus = computed(() => customerData.value.status || 'active');
+const statusSaving = ref(false);
+
+const setStatus = (status) => {
+    if (status === currentStatus.value || statusSaving.value || !customerData.value.id) return;
+
+    statusSaving.value = true;
+    router.patch(route('customers.status.update', customerData.value.id), { status }, {
+        preserveScroll: true,
+        onFinish: () => { statusSaving.value = false; },
+    });
+};
+
 const creditTermsLabel = (terms) => {
     if (terms === 'strict') return t('ledger.credit_terms_strict');
     if (terms === 'warning') return t('ledger.credit_terms_warning');
@@ -148,7 +168,7 @@ const customerPaymentTableRows = computed(() => paymentRows.value.map((row) => (
 })));
 
 const customerSalesColumns = computed(() => [
-    { key: 'number', label: t('general.number') },
+    { key: 'number', label: t('general.transaction_number') },
     { key: 'date', label: t('general.date') },
     { key: 'type', label: t('general.type') },
     { key: 'amount', label: t('general.amount'), type: 'money', align: 'right' },
@@ -180,7 +200,7 @@ const customerContraColumns = computed(() => [
 ]);
 
 const customerMovementColumns = computed(() => [
-    { key: 'number', label: t('general.number') },
+    { key: 'number', label: t('general.transaction_number') },
     { key: 'date', label: t('general.date') },
     { key: 'amount', label: t('general.amount'), type: 'money', align: 'right' },
     { key: 'currency', label: t('admin.currency.currency') },
@@ -295,6 +315,24 @@ const customerMovementColumns = computed(() => [
                                 <div class="text-lg font-semibold text-primary">{{ customerData.name }}</div>
                                 <div class="mt-1 text-xs text-muted-foreground/70">{{ t('ledger.customer.customer') }}</div>
                             </div>
+                            <!-- Status: three states, switched right here -->
+                            <div class="inline-flex overflow-hidden rounded-md border border-border" :class="statusSaving ? 'opacity-60' : ''">
+                                <button
+                                    v-for="option in statusOptions"
+                                    :key="option.value"
+                                    type="button"
+                                    class="px-3 py-1 text-xs font-medium transition-colors border-e border-border last:border-e-0"
+                                    :class="[
+                                        currentStatus === option.value ? option.on : 'bg-transparent text-muted-foreground',
+                                        can('customers.update') && currentStatus !== option.value ? 'hover:bg-muted cursor-pointer' : 'cursor-default',
+                                    ]"
+                                    :disabled="statusSaving || !can('customers.update')"
+                                    :aria-pressed="currentStatus === option.value"
+                                    @click="setStatus(option.value)"
+                                >
+                                    {{ option.label }}
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Contact card -->
@@ -308,7 +346,7 @@ const customerMovementColumns = computed(() => [
                                 class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
                             >
                                 <Phone class="h-4 w-4 shrink-0 text-emerald-500" />
-                                <span class="text-sm text-foreground">{{ customerData.phone_no || '-' }}</span>
+                                <span dir="ltr" class="text-sm text-foreground">{{ customerData.phone_no || '-' }}</span>
                             </a>
                             <a
                                 v-if="customerData.whatsapp_number"
@@ -318,7 +356,7 @@ const customerMovementColumns = computed(() => [
                                 class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
                             >
                                 <MessageCircle class="h-4 w-4 shrink-0 text-green-500" />
-                                <span class="text-sm text-foreground">{{ customerData.whatsapp_number }}</span>
+                                <span dir="ltr" class="text-sm text-foreground">{{ customerData.whatsapp_number }}</span>
                             </a>
                             <a
                                 :href="customerData.email ? `mailto:${customerData.email}` : undefined"
@@ -373,7 +411,7 @@ const customerMovementColumns = computed(() => [
                             </div>
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('general.phone') }}</div>
-                                <div class="font-medium text-foreground">{{ customerData.phone_no }}</div>
+                                <div class="font-medium text-foreground"><span dir="ltr" class="inline-block">{{ customerData.phone_no }}</span></div>
                             </div>
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('general.email') }}</div>
@@ -401,7 +439,7 @@ const customerMovementColumns = computed(() => [
                             </div>
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('ledger.whatsapp_number') }}</div>
-                                <div class="font-medium text-foreground">{{ customerData.whatsapp_number || '-' }}</div>
+                                <div class="font-medium text-foreground"><span dir="ltr" class="inline-block">{{ customerData.whatsapp_number || '-' }}</span></div>
                             </div>
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('ledger.credit_limit') }}</div>
@@ -541,7 +579,7 @@ const customerMovementColumns = computed(() => [
                         :export-url="exportUrl('sales')"
                         :export-label="t('report.export_excel')"
                         :add-route="createTransactionRoute('sales')"
-                        :add-label="t('general.add_new')"
+                        :add-label="t('general.new', { name: t('sale.sale') })"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
@@ -567,7 +605,7 @@ const customerMovementColumns = computed(() => [
                         :export-url="exportUrl('receipts')"
                         :export-label="t('report.export_excel')"
                         :add-route="createTransactionRoute('receipts')"
-                        :add-label="t('general.add_new')"
+                        :add-label="t('general.new', { name: t('receipt.receipt') })"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
@@ -599,7 +637,7 @@ const customerMovementColumns = computed(() => [
                         :export-url="exportUrl('payments')"
                         :export-label="t('report.export_excel')"
                         :add-route="createTransactionRoute('payments')"
-                        :add-label="t('general.add_new')"
+                        :add-label="t('general.new', { name: t('payment.payment') })"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
@@ -622,6 +660,7 @@ const customerMovementColumns = computed(() => [
                 param-key="customer"
                 :ledger-id="customerData.id"
                 export-route-name="customers.export"
+                printable
             />
 
             <!-- OPENING TAB -->

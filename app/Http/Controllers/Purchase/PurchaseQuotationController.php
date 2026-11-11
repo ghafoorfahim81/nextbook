@@ -101,9 +101,9 @@ class PurchaseQuotationController extends Controller
             'purchaseQuotationNumber' => $purchaseQuotationNumber,
             'ledgers' => \App\Http\Resources\Ledger\LedgerOptionResource::collection(
                 Ledger::query()
-                    ->select(['id', 'name', 'code', 'type', 'currency_id', 'is_active', 'company_id'])
+                    ->select(['id', 'name', 'code', 'type', 'currency_id', 'status', 'company_id'])
                     ->where('type', 'supplier')
-                    ->where('is_active', true)
+                    ->where('status', 'active')
                     ->availableInBranch(CompanyContext::branchId())
                     ->orderBy('created_at', 'desc')
                     ->limit(200)

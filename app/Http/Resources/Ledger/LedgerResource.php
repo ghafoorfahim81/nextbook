@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Ledger;
 
+use App\Enums\UserStatus;
 use App\Http\Resources\AttachmentResource;
 use App\Http\Resources\Ledger\LedgerOpeningResource;
 use Illuminate\Http\Request;
@@ -53,6 +54,8 @@ class LedgerResource extends JsonResource
                 'type' => $this->counterpart?->type,
             ]),
             'is_active' => $this->is_active,
+            'status' => ($this->status ?? UserStatus::ACTIVE)->value,
+            'status_label' => ($this->status ?? UserStatus::ACTIVE)->getLabel(),
             'created_at' => $this->created_at,
             'created_by' => $this->whenLoaded('createdBy'),
             'updated_by' => $this->whenLoaded('updatedBy'),

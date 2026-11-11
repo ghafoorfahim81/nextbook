@@ -62,11 +62,11 @@ final class DomainShared
                             'phone_no',
                             'address',
                             'currency_id',
-                            'is_active',
+                            'status',
                             'company_id',
                         ])
                         ->withStatementTotals()
-                        ->where('is_active', true)
+                        ->where('status', 'active')
                         ->availableInBranch(CompanyContext::branchId())
                         ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
                         ->orderBy('created_at','desc')

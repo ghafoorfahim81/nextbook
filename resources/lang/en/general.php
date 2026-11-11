@@ -186,6 +186,8 @@ return [
     'prior_periods_profit_loss' => 'Retained Profit / Loss (Prior Years)',
     'active' => 'Active',
     'inactive' => 'Inactive',
+    'customer_delete_has_transactions' => 'This customer has transactions and cannot be deleted. Set the customer inactive instead.',
+    'customer_delete_has_balance' => 'This customer has an outstanding balance and cannot be deleted until it is zero.',
     'insufficient_stock_for_item' => 'Not enough stock for :item in :warehouse. Available: :available, required: :required.',
     'cannot_reverse_document_with_payments' => 'Receipt or payment :numbers has been allocated to this document. Reverse it first, otherwise the money stays allocated to something that no longer exists.',
     'contra_amount_must_be_positive' => 'A set-off needs an amount greater than zero.',

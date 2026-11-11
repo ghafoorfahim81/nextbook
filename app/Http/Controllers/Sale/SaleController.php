@@ -164,12 +164,12 @@ class SaleController extends Controller
                         'credit_limit',
                         'credit_limit_enabled',
                         'credit_terms',
-                        'is_active',
+                        'status',
                         'company_id',
                     ])
                     ->withStatementTotals()
                     ->where('type', 'customer')
-                    ->where('is_active', true)
+                    ->where('status', true)
                     ->availableInBranch(CompanyContext::branchId())
                     ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
                     ->orderBy('created_at','desc')
@@ -207,7 +207,7 @@ class SaleController extends Controller
                 'credit_limit',
                 'credit_limit_enabled',
                 'credit_terms',
-                'is_active',
+                'status',
                 'company_id',
             ])
             ->withStatementTotals()
@@ -853,12 +853,12 @@ class SaleController extends Controller
                         'credit_limit',
                         'credit_limit_enabled',
                         'credit_terms',
-                        'is_active',
+                        'status',
                         'company_id',
                     ])
                     ->withStatementTotals()
                     ->where('type', 'customer')
-                    ->where('is_active', true)
+                    ->where('status', true)
                     // Its own customer stays selectable even if no longer open here.
                     ->where(fn ($q) => $q->availableInBranch(CompanyContext::branchId())->orWhere('id', $sale->customer_id))
                     ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")

@@ -21,10 +21,10 @@ const columns = computed(() => ([
         { key: 'phone_no', label: t('general.phone'), sortable: true },
         { key: 'email', label: t('general.email'), sortable: true },
         {
-            key: 'is_active',
+            key: 'status',
             label: t('general.status'),
             sortable: true,
-            render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
+            render: (row) => row.status_label,
         },
         { key: 'actions', label: t('general.actions') },
 

@@ -27,6 +27,7 @@ use App\Services\Accounting\SettlementService;
 use App\Services\AttachmentService;
 use App\Services\DateConversionService;
 use App\Enums\TransactionStatus;
+use App\Enums\UserStatus;
 use App\Models\Accounting\ContraSettlement;
 use App\Services\Accounting\LedgerLinkService;
 use App\Services\LedgerOpeningService;
@@ -121,7 +122,6 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $validated['type'] = 'customer';
         $validated['code'] = $validated['code'] ?: $this->nextCode(CompanyContext::companyId());
-        $validated['is_active'] = $validated['is_active'] ?? true;
 
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
@@ -343,6 +343,8 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'list' => ['nullable', 'string', Rule::in(['sales', 'receipts', 'payments', 'statement'])],
             'format' => ['nullable', 'string', Rule::in(['xlsx', 'pdf'])],
+            // Print: the same PDF, opened in the browser instead of saved.
+            'inline' => ['nullable', 'boolean'],
         ]);
 
         $list = $validated['list'] ?? 'sales';
@@ -406,6 +408,13 @@ class CustomerController extends Controller
             },
             'rows' => $rows,
         ];
+
+        if ($format === 'pdf' && $request->boolean('inline')) {
+            return response($pdfExportService->raw($payload), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="statement.pdf"',
+            ]);
+        }
 
         return $format === 'pdf'
             ? $pdfExportService->download($payload)
@@ -523,6 +532,26 @@ class CustomerController extends Controller
     }
 
     /**
+     * Set the customer active, inactive or blocked, from the Show page.
+     * Only an active customer is offered by the sale, receipt and other pickers.
+     */
+    public function updateStatus(Request $request, Ledger $customer)
+    {
+        $this->authorize('update', $customer);
+        abort_unless($customer->type?->value === 'customer', 404);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::enum(UserStatus::class)],
+        ]);
+
+        $customer->update(['status' => $validated['status']]);
+
+        CacheForget::lookupEverywhere($request, 'ledgers');
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.customer')]));
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(
@@ -532,11 +561,12 @@ class CustomerController extends Controller
         AttachmentService $attachmentService,
     ) {
         $validated = $request->validated();
-        $validated['is_active'] = $validated['is_active'] ?? true;
 
         // A form without a new upload posts no `photo` key at all, so the existing
-        // one must not be cleared.
-        $attributes = Arr::except($validated, ['attachments', 'photo']);
+        // one must not be cleared. The code is fixed once the customer exists —
+        // it is what printed documents and the other party's own records quote —
+        // and the status is changed from the Show page, never by this form.
+        $attributes = Arr::except($validated, ['attachments', 'photo', 'code', 'is_active', 'status']);
 
         if ($request->hasFile('photo')) {
             if ($customer->photo) {
@@ -587,7 +617,14 @@ class CustomerController extends Controller
             ->exists();
 
         if ($hasNonOpeningTransactions) {
-            return back()->with('error', __('Cannot delete customer: this customer has transactions. Please remove related transactions first.'));
+            return back()->with('error', __('general.customer_delete_has_transactions'));
+        }
+
+        // An opening balance is the only thing left that can make the customer
+        // owe or be owed. Deleting it with the customer would write the debt
+        // off without anyone deciding to, so it has to be settled first.
+        if (abs((float) $customer->statement['net_balance']) >= 0.005) {
+            return back()->with('error', __('general.customer_delete_has_balance'));
         }
 
         DB::transaction(function () use ($customer, $openingTransactionIds) {
@@ -674,7 +711,7 @@ class CustomerController extends Controller
             // The same preference-aware string the list and detail pages show,
             // so an exported balance reads the way the user set it to read.
             'balance'         => (string) $c->statement['balance'],
-            'is_active'       => $c->is_active ? $t('general', 'active', 'Active') : $t('general', 'inactive', 'Inactive'),
+            'is_active'       => ($c->status ?? ($c->is_active ? UserStatus::ACTIVE : UserStatus::INACTIVE))->getLabel(),
         ])->all();
 
         $label = $t('ledger', 'customer.customers', 'Customers');

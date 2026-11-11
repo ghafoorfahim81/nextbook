@@ -82,7 +82,7 @@
                     class="h-9 border-green-800 text-green-600 hover:bg-green-700 hover:text-white"
                 >
                     <FileDown class="h-4 w-4" />
-                    <span class="ml-1">{{ t('general.excel') }}</span>
+                    <span class="ms-1">{{ t('general.excel') }}</span>
                 </Button>
                 <AddNewButton
                     v-if="props.showAddButton && can(`${props.can}.create`)"
@@ -214,6 +214,14 @@
                                     class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
                                     :class="column.badge(item)"
                                 >
+                                    {{ column.render ? column.render(item) : getNestedValue(item, column.key) }}
+                                </span>
+                            </template>
+                            <!-- Phone numbers, codes and the like: the bidi
+                                 algorithm moves a leading "+" to the far end of a
+                                 right-to-left cell unless the value is isolated. -->
+                            <template v-else-if="column.ltr">
+                                <span dir="ltr" class="inline-block tabular-nums">
                                     {{ column.render ? column.render(item) : getNestedValue(item, column.key) }}
                                 </span>
                             </template>

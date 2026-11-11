@@ -234,7 +234,7 @@ const closeDialog = () => {
                     </div>
                     <div>
                       <div class="text-sm text-muted-foreground">{{ t('general.phone') }}</div>
-                      <div class="font-medium">{{ customerData.phone_no }}</div>
+                      <div class="font-medium"><span dir="ltr" class="inline-block">{{ customerData.phone_no }}</span></div>
                     </div>
                     <div>
                       <div class="text-sm text-muted-foreground">{{ t('general.email') }}</div>

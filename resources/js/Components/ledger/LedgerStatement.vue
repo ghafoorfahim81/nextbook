@@ -5,7 +5,7 @@ import { router } from '@inertiajs/vue3'
 import { Button } from '@/Components/ui/button'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
-import { Download, FileText, RotateCcw, Search } from 'lucide-vue-next'
+import { Download, FileText, Printer, RotateCcw, Search } from 'lucide-vue-next'
 
 const props = defineProps({
   // The `ledgerStatement` payload built by LedgerStatementService.
@@ -16,6 +16,8 @@ const props = defineProps({
   paramKey: { type: String, required: true },
   ledgerId: { type: String, required: true },
   exportRouteName: { type: String, default: '' },
+  // Whether the export route can also serve the PDF inline for printing.
+  printable: { type: Boolean, default: false },
 })
 
 const { t, locale } = useI18n()
@@ -102,6 +104,14 @@ const exportStatement = (format = 'xlsx') => {
   window.location.href = route(props.exportRouteName, params)
 }
 
+// Print: the statement as filtered on screen, opened as a PDF in a new tab so
+// the browser's own print dialog handles paper size and page breaks.
+const printStatement = () => {
+  if (!props.exportRouteName) return
+  const params = { [props.paramKey]: props.ledgerId, list: 'statement', format: 'pdf', inline: 1, ...queryPayload() }
+  window.open(route(props.exportRouteName, params), '_blank', 'noopener')
+}
+
 const agingBuckets = computed(() => [
   { key: 'current', label: t('report.aging.current') },
   { key: 'days_30', label: t('report.aging.days_30') },
@@ -143,6 +153,10 @@ const agingBuckets = computed(() => [
           <Button v-if="exportRouteName" size="sm" variant="outline" class="gap-1.5" @click="exportStatement('pdf')">
             <FileText class="h-4 w-4" />
             {{ t('report.export_pdf') }}
+          </Button>
+          <Button v-if="printable" size="sm" variant="outline" class="gap-1.5" @click="printStatement">
+            <Printer class="h-4 w-4" />
+            {{ t('general.print') }}
           </Button>
         </div>
       </div>

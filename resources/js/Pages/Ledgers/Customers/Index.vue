@@ -16,13 +16,25 @@ import { router } from '@inertiajs/vue3'
         { key: 'name', label: t('general.name'), sortable: true },
         { key: 'code', label: t('admin.currency.code'), sortable: true },
         { key: 'contact_person', label: t('ledger.contact_person') },
-        { key: 'phone_no', label: t('general.phone'), sortable: true },
+        { key: 'phone_no', label: t('general.phone'), sortable: true, ltr: true },
         { key: 'email', label: t('general.email'), sortable: true },
         {
-            key: 'is_active',
+            // What the customer owes (or is owed), in the wording the user's
+            // balance preference chose. A settled customer shows a dash.
+            key: 'statement.balance',
+            label: t('general.balance'),
+            render: (row) => Number(row.statement?.balance_amount) > 0 ? row.statement.balance : '-',
+        },
+        {
+            key: 'status',
             label: t('general.status'),
             sortable: true,
-            render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
+            render: (row) => row.status_label,
+            badge: (row) => ({
+                active: 'bg-green-500/10 text-green-700 dark:text-green-300',
+                inactive: 'bg-muted text-muted-foreground',
+                blocked: 'bg-red-500/10 text-red-700 dark:text-red-300',
+            }[row.status] ?? 'bg-muted text-muted-foreground'),
         },
         { key: 'actions', label: t('general.actions') },
 
@@ -44,6 +56,9 @@ import { router } from '@inertiajs/vue3'
         })
 
     };
+
+    // The server refuses these too; greying the action out just says so sooner.
+    const canDeleteCustomer = (item) => !(Number(item.statement?.balance_amount) > 0);
 
     const filterFields = computed(() => ([
         { key: 'name', label: t('general.name'), type: 'text' },
@@ -108,6 +123,7 @@ import { router } from '@inertiajs/vue3'
             :title="t('ledger.customer.customers')"
             :url="`customers.index`"
             :hasShow="true"
+            :canDeleteItem="canDeleteCustomer"
             exportRoute="customers.list-export"
             :showAddButton="true"
             :addTitle="t('ledger.customer.customer')"

@@ -26,7 +26,7 @@ const columns = computed(() => ([
   { key: 'measure', label: t('admin.unit_measure.unit_measure') },
   ...(showsField('brand') ? [{ key: 'brand_name', label: t('admin.brand.brand') }] : []),
   ...(showsSection('variants') ? [{ key: 'variants_count', label: t('item.variants') }] : []),
-  { key: 'avg_cost', label: t('item.cost'), sortable: true },
+  { key: 'avg_cost', label: t('item.final_cost'), sortable: true },
   { key: 'on_hand', label: t('general.on_hand') },
   { key: 'sale_price', label: t('item.sale_price'), sortable: true },
   { key: 'actions', label: t('general.actions') },

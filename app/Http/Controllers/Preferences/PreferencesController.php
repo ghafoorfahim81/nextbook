@@ -151,7 +151,7 @@ class PreferencesController extends Controller
             'warehouses' => Warehouse::query()->where('is_active', true)->pluck('id')->values()->all(),
             'sizes' => Size::query()->where('is_active', true)->pluck('id')->values()->all(),
             'currencies' => Currency::query()->where('is_active', true)->pluck('id')->values()->all(),
-            'ledgers' => Ledger::query()->whereIn('type', ['customer', 'supplier'])->where('is_active', true)->pluck('id')->values()->all(),
+            'ledgers' => Ledger::query()->whereIn('type', ['customer', 'supplier'])->where('status', 'active')->pluck('id')->values()->all(),
         ];
 
         $validated = $request->validate([
@@ -186,7 +186,9 @@ class PreferencesController extends Controller
             // selection here would hide every party from the sale/purchase forms in one save, so
             // leave their flags untouched and only apply an explicit selection.
             if ($ledgerIds->isNotEmpty()) {
-                Ledger::query()->whereIn('type', ['customer', 'supplier'])->update(['is_active' => false]);
+                // A blocked party stays blocked: this screen switches parties
+                // on and off, and unblocking is decided on the party's own page.
+                Ledger::query()->whereIn('type', ['customer', 'supplier'])->where('status', 'active')->update(['status' => 'inactive']);
             }
 
             if ($unitMeasureIds->isNotEmpty()) UnitMeasure::query()->whereIn('id', $unitMeasureIds)->update(['is_active' => true]);
@@ -194,7 +196,7 @@ class PreferencesController extends Controller
             if ($warehouseIds->isNotEmpty()) Warehouse::query()->whereIn('id', $warehouseIds)->update(['is_active' => true]);
             if ($sizeIds->isNotEmpty()) Size::query()->whereIn('id', $sizeIds)->update(['is_active' => true]);
             if ($currencyIds->isNotEmpty()) Currency::query()->whereIn('id', $currencyIds)->update(['is_active' => true]);
-            if ($ledgerIds->isNotEmpty()) Ledger::query()->whereIn('id', $ledgerIds)->update(['is_active' => true]);
+            if ($ledgerIds->isNotEmpty()) Ledger::query()->whereIn('id', $ledgerIds)->where('status', 'inactive')->update(['status' => 'active']);
         });
 
         Cache::forget(CacheKey::forUser($request, 'preferences'));

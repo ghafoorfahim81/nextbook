@@ -35,6 +35,7 @@ use App\Traits\HasCache;
 use App\Models\Purchase\Purchase;
 use App\Models\Payment\Payment;
 use App\Enums\LedgerType;
+use App\Enums\UserStatus;
 use App\Models\Transaction\TransactionLine;
 use App\Traits\CompanySpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -57,6 +58,41 @@ class Ledger extends Model
                 ? Storage::disk('public')->url($this->photo)
                 : null,
         );
+    }
+
+    /**
+     * `is_active` is no longer a column — `status` replaced it. This keeps the
+     * name working as an attribute for code that still speaks in on/off terms
+     * (the supplier form, the employee mirror, factories and seeders): reading
+     * it asks "is the status active", writing it sets the status.
+     *
+     * It is NOT queryable. Filter with scopeActive() or `status`.
+     */
+    protected function isActive(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, array $attributes) => ($attributes['status'] ?? UserStatus::ACTIVE->value) === UserStatus::ACTIVE->value,
+            set: function ($value, array $attributes) {
+                if ($value === null) {
+                    return [];
+                }
+
+                if ($value) {
+                    return ['status' => UserStatus::ACTIVE->value];
+                }
+
+                // Switching a blocked party "off" must not quietly unblock it.
+                return ($attributes['status'] ?? null) === UserStatus::BLOCKED->value
+                    ? []
+                    : ['status' => UserStatus::INACTIVE->value];
+            },
+        );
+    }
+
+    /** Parties offered by pickers: neither inactive nor blocked. */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where($this->qualifyColumn('status'), UserStatus::ACTIVE->value);
     }
 
     /**
@@ -191,7 +227,10 @@ class Ledger extends Model
         // symmetric, and mass-assigning one side would leave a pairing that
         // is true read from here and false read from the other account.
         // LedgerLinkService writes both sides together.
+        // Not a column: an attribute that writes `status`. See isActive().
         'is_active',
+        // active | inactive | blocked.
+        'status',
         'created_by',
         'updated_by',
     ];
@@ -217,7 +256,7 @@ class Ledger extends Model
             'updated_by' => 'string',
             'company_id' => 'string',
             'counterpart_ledger_id' => 'string',
-            'is_active' => 'boolean',
+            'status' => UserStatus::class,
             'is_main' => 'boolean',
             'type' => LedgerType::class,
         ];
@@ -371,6 +410,7 @@ class Ledger extends Model
 
     protected static function booted(): void
     {
+
         // A new party starts in the branch that created it. With no acting
         // branch (a seeder, an import, a job) it is open to every branch of
         // its company, as the parties that predate branch lists are.

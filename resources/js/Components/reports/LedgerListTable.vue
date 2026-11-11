@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { Download, ArrowUpDown, Plus } from 'lucide-vue-next'
 import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import ReportDataTable from '@/Components/reports/ReportDataTable.vue'
 import { useClientTable } from '@/composables/useClientTable'
@@ -95,13 +96,25 @@ const visitAddRoute = () => {
       </div>
 
       <div class="flex gap-2">
-        <Button v-if="addRoute" variant="outline" class="gap-2" @click="visitAddRoute">
-          <Plus class="h-4 w-4" />
-          {{ addLabel || t('general.add_new') }}
-        </Button>
-        <Button v-if="exportUrl" class="gap-2" @click="exportTable">
+        <!-- Same look as the Export and New buttons on the module lists. -->
+        <Button
+          v-if="exportUrl"
+          variant="outline"
+          size="sm"
+          class="h-9 gap-1 border-green-800 text-green-600 hover:bg-green-700 hover:text-white"
+          @click="exportTable"
+        >
           <Download class="h-4 w-4" />
           {{ exportButtonLabel }}
+        </Button>
+        <Button
+          v-if="addRoute"
+          variant="outline"
+          class="h-9 border-primary text-primary hover:bg-primary hover:text-white"
+          @click="visitAddRoute"
+        >
+          <Plus class="h-4 w-4" />
+          {{ addLabel || t('general.add_new') }}
         </Button>
       </div>
     </div>
@@ -114,14 +127,24 @@ const visitAddRoute = () => {
                         'pl-8 w-full pr-20 text-primary rounded-md border-primary focus:border-none focus:ring-1 focus:ring-ring'"
       />
 
-      <select
-        v-model="sortKey"
-        class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none"
-      >
-        <option v-for="option in sortOptions" :key="option.key" :value="option.key">
-          {{ option.label }}
-        </option>
-      </select>
+      <!-- The app's own select, not a native one: the browser draws a native
+           option list in its system colours (grey on the dark theme) and
+           keeps its arrow on the reading-start side in a right-to-left page. -->
+      <Select v-model="sortKey">
+        <SelectTrigger class="h-10 w-full border-input">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="option in sortOptions"
+            :key="option.key"
+            :value="option.key"
+            class="data-[state=checked]:bg-primary data-[state=checked]:text-white data-[highlighted]:bg-purple-500 data-[highlighted]:text-white"
+          >
+            {{ option.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
 
       <NextDate v-model="dateFrom" :placeholder="dateFromLabel || t('general.from')" />
       <NextDate v-model="dateTo" :placeholder="dateToLabel || t('general.to')" />
@@ -131,15 +154,21 @@ const visitAddRoute = () => {
         {{ sortDirection === 'asc' ? 'Asc' : 'Desc' }}
       </Button>
 
-      <select
-        v-model="perPage"
-        class="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm outline-none"
-      >
-        <option :value="10">10</option>
-        <option :value="25">25</option>
-        <option :value="50">50</option>
-        <option :value="100">100</option>
-      </select>
+      <Select v-model="perPage">
+        <SelectTrigger class="h-10 w-[84px] border-input">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="size in [10, 25, 50, 100]"
+            :key="size"
+            :value="size"
+            class="data-[state=checked]:bg-primary data-[state=checked]:text-white data-[highlighted]:bg-purple-500 data-[highlighted]:text-white"
+          >
+            {{ size }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <ReportDataTable

@@ -223,11 +223,11 @@ class SearchController extends Controller
                 'credit_limit',
                 'credit_limit_enabled',
                 'credit_terms',
-                'is_active',
+                'status',
                 'company_id',
             ])
             ->withStatementTotals()
-            ->where('is_active', true)
+            ->where('status', 'active')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'email', 'phone_no', 'address'], true)) {
@@ -1022,7 +1022,7 @@ class SearchController extends Controller
             ->select(['id', 'name'])
             ->withStatementTotals()
             ->where('type', $type)
-            ->where('is_active', true);
+            ->where('status', 'active');
 
         return DB::query()->fromSub($sub, 'x')
             ->orderByRaw('ABS(statement_total_debit - statement_total_credit) DESC')
@@ -1078,7 +1078,7 @@ class SearchController extends Controller
 
         // Customers
         try {
-            Ledger::query()->select(['id', 'name', 'code', 'phone_no', 'is_active'])
+            Ledger::query()->select(['id', 'name', 'code', 'phone_no', 'status'])
                 ->where('type', 'customer')->orderByDesc('created_at')->limit(400)->get()
                 ->each(function ($r) use (&$results) {
                     $results[] = [
@@ -1086,15 +1086,15 @@ class SearchController extends Controller
                         'type' => 'customer',
                         'subtitle' => 'Customer' . ($r->phone_no ? ' · ' . $r->phone_no : ''),
                         'url' => '/customers/' . $r->id,
-                        'status' => $r->is_active ? 'active' : 'inactive',
-                        'status_label' => $r->is_active ? 'Active' : 'Inactive',
+                        'status' => $r->status?->value ?? 'active',
+                        'status_label' => $r->status?->getLabel() ?? 'Active',
                     ];
                 });
         } catch (\Throwable $e) { Log::warning('[GlobalSearch] customers failed: ' . $e->getMessage()); }
 
         // Suppliers
         try {
-            Ledger::query()->select(['id', 'name', 'code', 'phone_no', 'is_active'])
+            Ledger::query()->select(['id', 'name', 'code', 'phone_no', 'status'])
                 ->where('type', 'supplier')->orderByDesc('created_at')->limit(400)->get()
                 ->each(function ($r) use (&$results) {
                     $results[] = [
@@ -1102,8 +1102,8 @@ class SearchController extends Controller
                         'type' => 'supplier',
                         'subtitle' => 'Supplier' . ($r->phone_no ? ' · ' . $r->phone_no : ''),
                         'url' => '/suppliers/' . $r->id,
-                        'status' => $r->is_active ? 'active' : 'inactive',
-                        'status_label' => $r->is_active ? 'Active' : 'Inactive',
+                        'status' => $r->status?->value ?? 'active',
+                        'status_label' => $r->status?->getLabel() ?? 'Active',
                     ];
                 });
         } catch (\Throwable $e) { Log::warning('[GlobalSearch] suppliers failed: ' . $e->getMessage()); }

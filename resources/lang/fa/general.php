@@ -183,6 +183,8 @@ return [
     'prior_periods_profit_loss' => 'سود/زیان انباشته سال‌های قبل',
     'active' => 'فعال',
     'inactive' => 'غیرفعال',
+    'customer_delete_has_transactions' => 'این مشتری تراکنش دارد و قابل حذف نیست. به جای حذف، آن را غیرفعال کنید.',
+    'customer_delete_has_balance' => 'این مشتری بلانس دارد و تا زمانی که بلانس آن صفر نشود قابل حذف نیست.',
     'insufficient_stock_for_item' => 'موجودی :item در :warehouse کافی نیست. موجود: :available، مورد نیاز: :required.',
     'cannot_reverse_document_with_payments' => 'رسید یا پرداخت :numbers روی این سند تخصیص یافته است. اول آن را باطل کنید، وگرنه پول روی سندی تخصیص‌یافته می‌ماند که دیگر وجود ندارد.',
     'contra_amount_must_be_positive' => 'مبلغ تهاتر باید بیشتر از صفر باشد.',

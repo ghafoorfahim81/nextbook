@@ -215,6 +215,7 @@ Route::middleware([
     Route::get('/suppliers/{supplier}/export', [\App\Http\Controllers\Ledger\SupplierController::class, 'export'])->name('suppliers.export');
     Route::get('/customers/list-export', [\App\Http\Controllers\Ledger\CustomerController::class, 'exportList'])->name('customers.list-export');
     Route::post('/customers/{customer}/photo', [\App\Http\Controllers\Ledger\CustomerController::class, 'updatePhoto'])->name('customers.photo.update');
+    Route::patch('/customers/{customer}/status', [\App\Http\Controllers\Ledger\CustomerController::class, 'updateStatus'])->name('customers.status.update');
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
     Route::patch('/customers/{customer}/restore', [\App\Http\Controllers\Ledger\CustomerController::class, 'restore'])->name('customers.restore')->withTrashed();
     Route::get('/customers/{customer}/export', [\App\Http\Controllers\Ledger\CustomerController::class, 'export'])->name('customers.export');

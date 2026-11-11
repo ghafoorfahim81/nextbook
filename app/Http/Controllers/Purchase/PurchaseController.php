@@ -129,7 +129,7 @@ class PurchaseController extends Controller
                 'credit_limit',
                 'credit_limit_enabled',
                 'credit_terms',
-                'is_active',
+                'status',
                 'company_id',
             ])
             ->withStatementTotals()
