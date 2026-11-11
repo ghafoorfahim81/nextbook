@@ -62,11 +62,13 @@ class SaleItem extends Model
             'expire_date' => 'date',
             'quantity' => 'decimal:2',
             'unit_measure_id' => 'string',
-            'unit_price' => 'decimal:2',
+            // Four decimals in the column; see PurchaseItem.
+            'unit_price' => 'float',
             'net_unit_cost' => \App\Casts\StockCost::class,
-            'discount' => 'decimal:2',
-            'free' => 'decimal:2',
-            'tax' => 'decimal:2',
+            // Four decimals in the columns; see Item.
+            'discount' => 'float',
+            'free' => 'float',
+            'tax' => 'float',
             'warehouse_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
@@ -169,7 +171,7 @@ class SaleItem extends Model
         }
 
         $sale = $this->sale;
-        $lineGross = (float) $this->quantity * (float) $this->unit_price;
+        $lineGross = money_round((float) $this->quantity * (float) $this->unit_price);
         $billDiscount = 0.0;
 
         if ($sale && (float) $sale->discount > 0) {
@@ -177,12 +179,12 @@ class SaleItem extends Model
                 $billDiscount = $lineGross * ((float) $sale->discount / 100);
             } else {
                 // A fixed bill discount is shared out by each line's value.
-                $saleGross = (float) $sale->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price);
+                $saleGross = (float) $sale->items->sum(fn ($item) => money_round((float) $item->quantity * (float) $item->unit_price));
                 $billDiscount = $saleGross > 0 ? (float) $sale->discount * ($lineGross / $saleGross) : 0.0;
             }
         }
 
-        $discount = min($lineGross, (float) ($this->discount ?? 0) + $billDiscount);
+        $discount = min($lineGross, money_round((float) ($this->discount ?? 0) + $billDiscount));
 
         return [
             'gross' => $lineGross / $delivered,

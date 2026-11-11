@@ -241,7 +241,6 @@ Route::middleware([
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
     Route::post('/purchases/{purchase}/post', [\App\Http\Controllers\Purchase\PurchaseController::class, 'post'])->name('purchases.post');
     Route::post('/purchases/{purchase}/reverse', [\App\Http\Controllers\Purchase\PurchaseController::class, 'reverse'])->name('purchases.reverse');
-    Route::patch('/update-purchase-status/{purchase}/status', [\App\Http\Controllers\Purchase\PurchaseController::class, 'updatePurchaseStatus'])->name('purchases.update-purchase-status');
     Route::patch('/purchases/{purchase}/restore', [\App\Http\Controllers\Purchase\PurchaseController::class, 'restore'])->name('purchases.restore')->withTrashed();
     Route::delete('/purchases/{purchase}/force-delete', [\App\Http\Controllers\Purchase\PurchaseController::class, 'forceDelete'])
         ->name('purchases.force-delete')

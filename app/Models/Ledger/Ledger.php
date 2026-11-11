@@ -92,7 +92,10 @@ class Ledger extends Model
                     $totalCredit = (float) ($totals->total_credit ?? 0);
                 }
 
-                $netBalance = $totalDebit - $totalCredit;
+                // At cents: residue below a cent must not reach the text shown.
+                $totalDebit  = money_round($totalDebit);
+                $totalCredit = money_round($totalCredit);
+                $netBalance = money_round($totalDebit - $totalCredit);
 
                 $balanceAmount = abs($netBalance);
                 $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';

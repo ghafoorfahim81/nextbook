@@ -14,7 +14,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, linePriceToHome, repriceRowsForRate } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, linePriceToHome, repriceRowsForRate, priceInLineUnit } from '@/composables/useVariantLine'
 import { toDocumentCurrency } from '@/utils/currency'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { useSaveShortcut } from '@/composables/useSaveShortcut'
@@ -159,7 +159,7 @@ const handleItemChange = (index, selected_item) => {
     // What we sell it for, not what it cost us.
     row.base_unit_price = resolveVariantUnitPrice(selected_item, row.selected_variant, 'sale')
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(decimalPlaces));
+    row.unit_price = priceInLineUnit(row.base_unit_price, selected_item, row.selected_measure, form.rate);
     row.price_touched = false
 }
 
@@ -173,7 +173,7 @@ const handleVariantChange = (index, variant) => {
     repriceRow(row, variant, 'sale')
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces))
+    row.unit_price = priceInLineUnit(row.base_unit_price, row.selected_item, row.selected_measure, form.rate)
     row.price_touched = false
 }
 
@@ -204,7 +204,9 @@ const totalRows = computed(() => form.items.length)
 const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0).toFixed(decimalPlaces)))
 const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(decimalPlaces)))
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.discount, 0), 0))
-const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0)), 0))
+// Each line at cents, the sum at cents: the server's formula, so the form and
+// the posted bill agree (49 kg at 71.4286 is 3,500.00, not 3,500.0014).
+const goodsTotal = computed(() => Number(form.items.reduce((acc, item) => acc + Number((toNum(item.unit_price, 0) * toNum(item.quantity, 0)).toFixed(2)), 0).toFixed(2)))
 const billDiscountCurrency = computed(() => {
     const billDisc = toNum(form.discount, 0)
     if (form.discount_type === 'percentage') return goodsTotal.value * (billDisc / 100)

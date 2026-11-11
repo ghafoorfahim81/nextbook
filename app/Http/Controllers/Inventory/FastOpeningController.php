@@ -107,7 +107,7 @@ class FastOpeningController extends Controller
 
                 $posted++;
 
-                $openingValue = round($unitCost * $quantity, 4);
+                $openingValue = money_round($unitCost * $quantity);
 
                 // A zero-value opening would post a voucher that balances at
                 // nothing and only clutters the ledger.

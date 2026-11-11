@@ -202,14 +202,14 @@ class Sale extends Model
         // The same sum SaleController::computeSaleTotals() posts to the ledger.
         // A fixed-amount bill discount comes off the bill once — this used to
         // take it off every line, so a three-line bill lost it three times.
-        $gross = $this->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price);
+        $gross = $this->items->sum(fn ($item) => money_round((float) $item->quantity * (float) $item->unit_price));
         $lineDiscount = $this->items->sum(fn ($item) => (float) ($item->discount ?? 0));
         $tax = $this->items->sum(fn ($item) => (float) ($item->tax ?? 0));
         $billDiscount = $this->discount_type === 'percentage'
             ? $gross * ((float) $this->discount / 100)
             : (float) ($this->discount ?? 0);
 
-        return $gross - $lineDiscount - $billDiscount + $tax;
+        return money_round($gross - money_round($lineDiscount + money_round($billDiscount)) + $tax);
     }
 
 

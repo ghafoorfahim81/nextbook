@@ -576,15 +576,21 @@ class LandedCostService
 
         return $purchases->flatMap(function (Purchase $purchase) {
             return $purchase->items->map(function (PurchaseItem $item) use ($purchase) {
+                // Its bill, with every line loaded: the net cost shares the
+                // bill discount out across them.
+                $item->setRelation('purchase', $purchase);
+
                 return [
                     'purchase_id' => $purchase->id,
                     'purchase_number' => $purchase->number,
                     'purchase_item_id' => $item->id,
                     'item_id' => $item->item_id,
-                    'quantity' => (float) $item->quantity,
-                    'base_quantity' => $item->baseQuantity(),
-                    // Home currency, like the stock cost the allocation lands on.
-                    'unit_cost' => (float) $item->unit_price * max((float) ($purchase->transaction?->rate ?: 1), 0.0000001),
+                    // Free units arrived on the same layer, so they share the cost.
+                    'quantity' => $item->deliveredQuantity(),
+                    'base_quantity' => $item->deliveredBaseQuantity(),
+                    // Home currency, like the stock cost the allocation lands on:
+                    // what the layer was received at, after discounts.
+                    'unit_cost' => $item->stockUnitCost(),
                     'weight' => 0,
                     'volume' => 0,
                     'warehouse_id' => $item->warehouse_id,
@@ -605,7 +611,7 @@ class LandedCostService
     private function withPurchaseFigures(Collection $rows): Collection
     {
         $lines = PurchaseItem::query()
-            ->with(['purchase.transaction', 'item'])
+            ->with(['purchase.transaction', 'purchase.items', 'item'])
             ->whereIn('id', $rows->pluck('purchase_item_id')->filter()->unique()->all())
             ->get()
             ->keyBy('id');
@@ -617,14 +623,12 @@ class LandedCostService
                 return $row;
             }
 
-            $rate = max((float) ($line->purchase?->transaction?->rate ?: 1), 0.0000001);
-
             return array_merge((array) $row, [
                 'purchase_id' => $line->purchase_id,
                 'item_id' => $line->item_id,
-                'quantity' => (float) $line->quantity,
-                'base_quantity' => $line->baseQuantity(),
-                'unit_cost' => (float) $line->unit_price * $rate,
+                'quantity' => $line->deliveredQuantity(),
+                'base_quantity' => $line->deliveredBaseQuantity(),
+                'unit_cost' => $line->stockUnitCost(),
                 'warehouse_id' => $line->warehouse_id,
                 'batch' => $line->batch,
                 'expire_date' => $line->expire_date?->toDateString(),

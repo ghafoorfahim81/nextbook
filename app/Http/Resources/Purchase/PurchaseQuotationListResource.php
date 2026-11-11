@@ -18,9 +18,20 @@ class PurchaseQuotationListResource extends JsonResource
             'supplier_name' => $this->supplier?->name,
             'date' => app(DateConversionService::class)->toDisplay($this->date),
             'valid_until' => $this->valid_until ? app(DateConversionService::class)->toDisplay($this->valid_until) : null,
-            'amount' => (float) ($this->items_gross_total ?? 0),
+            'amount' => $this->netAmount(),
             'status' => $this->status,
             'status_label' => PurchaseQuotationStatus::tryFrom((string) $this->status)?->getLabel() ?? $this->status,
         ];
+    }
+
+    /** Value of goods less line discounts and the document discount: what the document comes to. */
+    private function netAmount(): float
+    {
+        $gross = (float) ($this->items_gross_total ?? 0);
+        $documentDiscount = $this->discount_type === 'percentage'
+            ? $gross * ((float) ($this->discount ?? 0) / 100)
+            : (float) ($this->discount ?? 0);
+
+        return $gross - (float) ($this->items_discount_total ?? 0) - $documentDiscount;
     }
 }

@@ -27,9 +27,28 @@ export function linePriceToHome(row, rate) {
   return ((Number(row?.unit_price) || 0) * (Number(rate) || 1)) / unitRatio(row)
 }
 
+/**
+ * A price kept per base unit, in the unit a line is in and the document's
+ * currency.
+ *
+ * Prices are stored per base unit to 4 decimals, so a bag priced at 3,500 is
+ * kept as 71.4286 a kilo — and multiplied back up by 49 it reads 3,500.0014.
+ * Going UP to a bigger unit only ever magnifies that storage residue, never
+ * real precision, so the result is taken to 2 decimals there. Going down (or
+ * staying in the base unit) keeps 4: 71.4286 a kilo is a real price.
+ */
+export function priceInLineUnit(baseUnitPrice, selectedItem, measure, rate) {
+  const baseUnit = Number(selectedItem?.unitMeasure?.unit) || 1
+  const lineUnit = Number(measure?.unit) || baseUnit
+  const ratio = lineUnit / baseUnit || 1
+  let home = (Number(baseUnitPrice) || 0) * ratio
+  if (ratio > 1) home = Number(home.toFixed(2))
+  return toDocumentCurrency(home, rate)
+}
+
 /** The other way: what the row shows, from its home-currency base price. */
 export function homePriceToLine(row, rate) {
-  return toDocumentCurrency((Number(row?.base_unit_price) || 0) * unitRatio(row), rate)
+  return priceInLineUnit(row?.base_unit_price, row?.selected_item, row?.selected_measure, rate)
 }
 
 /**
@@ -61,6 +80,23 @@ export function repriceRowsForRate(rows, rate, currencyChanged) {
     row.unit_price = homePriceToLine(row, rate)
     if (currencyChanged) row.price_touched = false
   }
+}
+
+/**
+ * A stock figure (kept in the item's own unit) in the unit the line is in,
+ * shown to 2 decimals.
+ *
+ * Stock is stored to 4 decimals in the base unit, so moving it into another
+ * unit leaves residue — 19.1667 dozen back in pieces is 230.0004. Two
+ * decimals make 230 read 230. Every stock column of a line (on hand,
+ * reserved in, reserved out) goes through here so they are all in the same
+ * unit as the quantity typed beside them.
+ */
+export function stockInLineUnit(row, value) {
+  const baseUnit = Number(row?.selected_item?.unitMeasure?.unit) || 1
+  const selectedUnit = Number(row?.selected_measure?.unit) || baseUnit
+  const converted = ((Number(value) || 0) * baseUnit) / selectedUnit
+  return Number.isFinite(converted) ? Number(converted.toFixed(2)) : 0
 }
 
 /** The variant a fresh row should start on: the item's own default. */
@@ -109,7 +145,8 @@ export function resolveVariantUnitPrice(item, variant, direction) {
     const cost = positive(variant?.avg_cost) ?? positive(item?.avg_cost)
     if (cost === null) return null
     const margin = Number(item?.margin_percentage)
-    return cost * (1 + (Number.isFinite(margin) ? margin : 0) / 100)
+    // A proposed selling price, at cents: cost plus margin is 78.571428... otherwise.
+    return Number((cost * (1 + (Number.isFinite(margin) ? margin : 0) / 100)).toFixed(2))
   }
 
   return positive(variant?.sale_price)

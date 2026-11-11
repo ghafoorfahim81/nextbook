@@ -137,6 +137,9 @@ class PurchaseReturnController extends Controller
 
         abort_unless($purchase->status === TransactionStatus::POSTED->value, 422, 'Only posted purchases can be returned against.');
 
+        // Each line's net value shares the bill discount out over all of them.
+        $purchase->items->each->setRelation('purchase', $purchase);
+
         $excludePurchaseReturnId = $request->query('exclude_purchase_return_id');
 
         return response()->json([
@@ -160,10 +163,14 @@ class PurchaseReturnController extends Controller
                 'unit_measure_name' => $item->unitMeasure?->name,
                 'warehouse_id' => $item->warehouse_id,
                 'warehouse_name' => $item->warehouse?->name,
-                'unit_price' => (float) $item->unit_price,
-                'original_quantity' => (float) $item->quantity,
-                'returned_quantity' => $item->returnedQuantity($excludePurchaseReturnId),
-                'remaining_quantity' => $item->remainingReturnableQuantity($excludePurchaseReturnId),
+                // Per delivered unit, after the line and bill discounts: what
+                // the bill really charged, and what the return gives back.
+                'unit_price' => round($item->netUnitValue(), 4),
+                'list_unit_price' => (float) $item->unit_price,
+                'original_quantity' => $item->deliveredQuantity(),
+                'free_quantity' => (float) ($item->free ?? 0),
+                'returned_quantity' => round($item->returnedQuantity($excludePurchaseReturnId), 4),
+                'remaining_quantity' => round($item->remainingReturnableQuantity($excludePurchaseReturnId), 4),
             ])->values(),
         ]);
     }
@@ -462,6 +469,7 @@ class PurchaseReturnController extends Controller
         $lines = [];
         $stockPayloads = [];
         $totalReturnedValue = 0.0;
+        $purchase->loadMissing(['items', 'transaction']);
 
         foreach ($itemList as $row) {
             /** @var PurchaseItem|null $purchaseItem */
@@ -476,11 +484,16 @@ class PurchaseReturnController extends Controller
             $quantity = (float) $row['quantity'];
             $alreadyReturned = $purchaseItem->returnedQuantity($excludingPurchaseReturnId);
 
-            if ($alreadyReturned + $quantity > (float) $purchaseItem->quantity + 0.0001) {
+            if ($alreadyReturned + $quantity > $purchaseItem->deliveredQuantity() + 0.0001) {
                 throw ValidationException::withMessages([
                     'item_list' => __('The return quantity exceeds the remaining returnable quantity.'),
                 ]);
             }
+
+            // The bill, with all its lines: the net value shares the bill
+            // discount out across them.
+            $purchaseItem->setRelation('purchase', $purchase);
+            $netUnitValue = $purchaseItem->netUnitValue();
 
             PurchaseReturnItem::create([
                 'purchase_return_id' => $purchaseReturn->id,
@@ -491,7 +504,8 @@ class PurchaseReturnController extends Controller
                 'expire_date' => $purchaseItem->expire_date,
                 'quantity' => $quantity,
                 'unit_measure_id' => $purchaseItem->unit_measure_id,
-                'unit_price' => $purchaseItem->unit_price,
+                // What the supplier is debited per unit, not the list price.
+                'unit_price' => round($netUnitValue, 4),
                 'warehouse_id' => $purchaseItem->warehouse_id,
             ]);
 
@@ -500,16 +514,14 @@ class PurchaseReturnController extends Controller
                 throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$purchaseItem->item_id]);
             }
 
-            $unitPrice = (float) $purchaseItem->unit_price;
-            $totalCost = $unitPrice * $quantity;
+            // The goods go back at what they were received at: the bill's net
+            // value per unit, after its discounts. Charging the supplier the list
+            // price instead claimed back a discount the business never paid.
+            // The GL lines are in the purchase's currency (the voucher carries
+            // its rate); the stock layer is home currency.
+            $totalCost = money_round($netUnitValue * $quantity);
             $totalReturnedValue += $totalCost;
-
-            // unit_price is in the purchase's currency, and so are the GL lines
-            // (the voucher carries the purchase's rate). Stock is always costed
-            // in home currency — the purchase stored unit_price × rate — so the
-            // return has to relieve it at the same figure. Using the raw price
-            // relieved a dollar purchase at ~1/70th of its cost.
-            $homeUnitCost = $unitPrice * $this->purchaseRate($purchase);
+            $homeUnitCost = $purchaseItem->stockUnitCost();
 
             $stockPayload = [
                 'item_id' => $purchaseItem->item_id,
@@ -548,6 +560,8 @@ class PurchaseReturnController extends Controller
                 'debit' => 0,
                 'credit' => $totalCost,
                 'remark' => 'Purchase return inventory reduction for item: ' . $itemModel->name . ' #' . $purchaseReturn->number,
+                'remark_fa' => 'کاهش موجودی بابت برگشت خرید ' . $itemModel->name . ' #' . $purchaseReturn->number,
+                'remark_ps' => 'د پېرود د بېرته ستنولو له امله د ' . $itemModel->name . ' موجودي کمېدل #' . $purchaseReturn->number,
             ];
         }
 
@@ -560,8 +574,8 @@ class PurchaseReturnController extends Controller
             SettlementService::DIRECTION_OUT,
             (string) $purchase->transaction?->id,
         );
-        $againstPurchase = round(min($totalReturnedValue, max($open, 0)), 4);
-        $excess = round($totalReturnedValue - $againstPurchase, 4);
+        $againstPurchase = money_round(min($totalReturnedValue, max($open, 0)));
+        $excess = money_round($totalReturnedValue - $againstPurchase);
 
         if ($againstPurchase > 0) {
             $lines[] = [
@@ -570,6 +584,8 @@ class PurchaseReturnController extends Controller
                 'debit' => $againstPurchase,
                 'credit' => 0,
                 'remark' => 'Purchase return debit for return #' . $purchaseReturn->number . ' (Purchase #' . $purchase->number . ')',
+                'remark_fa' => 'بدهی تأمین‌کننده بابت برگشت خرید #' . $purchaseReturn->number . ' (خرید #' . $purchase->number . ')',
+                'remark_ps' => 'د پېرود د بېرته ستنولو #' . $purchaseReturn->number . ' پور (پېرود #' . $purchase->number . ')',
             ];
         }
 
@@ -580,18 +596,12 @@ class PurchaseReturnController extends Controller
                 'debit' => $excess,
                 'credit' => 0,
                 'remark' => 'Purchase return refund due from supplier, return #' . $purchaseReturn->number . ' (Purchase #' . $purchase->number . ')',
+                'remark_fa' => 'طلب از تأمین‌کننده بابت برگشت خرید #' . $purchaseReturn->number . ' (خرید #' . $purchase->number . ')',
+                'remark_ps' => 'د پېرود د بېرته ستنولو #' . $purchaseReturn->number . ' له امله له عرضه کوونکي غوښتنه (پېرود #' . $purchase->number . ')',
             ];
         }
 
-        return [$lines, $stockPayloads, $totalReturnedValue];
-    }
-
-    /** The rate the purchase was booked at (1 for home-currency purchases). */
-    private function purchaseRate(Purchase $purchase): float
-    {
-        $rate = (float) ($purchase->transaction?->rate ?? 1);
-
-        return $rate > 0 ? $rate : 1.0;
+        return [$lines, $stockPayloads, money_round($totalReturnedValue)];
     }
 
     /**
@@ -730,11 +740,18 @@ class PurchaseReturnController extends Controller
         );
     }
 
-    public function restore(Request $request, PurchaseReturn $purchaseReturn, ActivityLogService $activityLogService)
+    public function restore(Request $request, PurchaseReturn $purchaseReturn, ActivityLogService $activityLogService, StockService $stockService)
     {
-        DB::transaction(function () use ($purchaseReturn, $activityLogService) {
+        DB::transaction(function () use ($purchaseReturn, $activityLogService, $stockService) {
             $purchaseReturn->restore();
             $purchaseReturn->items()->withTrashed()->restore();
+
+            // Deleting the draft released the goods it was holding to send back.
+            if ($purchaseReturn->status === TransactionStatus::DRAFT->value) {
+                foreach ((array) data_get($purchaseReturn->transaction()->first()?->posting_payload, 'stock_movements', []) as $payload) {
+                    $stockService->reserve($payload);
+                }
+            }
 
             $activityLogService->logAction(
                 eventType: 'restored',

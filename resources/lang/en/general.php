@@ -216,6 +216,8 @@ return [
     'cannot_reverse_stock_already_gone' => 'This document cannot be reversed: the goods it brought in have already been sold or issued and are no longer on the shelf. Reverse the documents that issued them first, or raise a return for what is left.',
     'cannot_post_insufficient_stock' => 'Cannot post: not enough stock for :item. It may have been sold on another invoice.',
     'expiry_not_in_stock' => 'This expiry date is not in stock for the selected item and warehouse. Choose one of the listed dates.',
+    'purchase_order_already_billed' => 'This purchase order has already been billed on purchase #:number.',
+    'cannot_reverse_purchase_with_landed_cost' => 'Landed cost :numbers was added to this purchase. Reverse the landed cost first.',
     'sale_order_already_billed' => 'This sale order has already been billed on sale #:number.',
     'discount_exceeds_bill_total' => 'The discount is larger than the bill total.',
     'payment_exceeds_bill_total' => 'The payment cannot be more than the bill total.',

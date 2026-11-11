@@ -14,7 +14,7 @@ import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
-import { pickDefaultVariant, repriceRow } from '@/composables/useVariantLine'
+import { pickDefaultVariant, repriceRow, linePriceToHome, repriceRowsForRate, priceInLineUnit } from '@/composables/useVariantLine'
 import { toDocumentCurrency } from '@/utils/currency'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { useSaveShortcut } from '@/composables/useSaveShortcut'
@@ -54,7 +54,10 @@ const buildInitialRows = () => (purchaseOrderData.value.item_list || []).map((it
     batch: item.batch || '',
     expire_date: item.expire_date || '',
     unit_price: item.unit_price,
-    base_unit_price: item.unit_price,
+    // Home currency: the saved price is in the document's own.
+    base_unit_price: (Number(item.unit_price) || 0) * (Number(purchaseOrderData.value.rate) || 1),
+    // A saved price was agreed when the document was written.
+    price_touched: true,
     free: item.free || '',
     discount: item.discount || '',
     variant_id: item.variant_id || null,
@@ -118,6 +121,20 @@ const handleSelectChange = (field, value) => {
     form[field] = value.id;
 };
 
+// See repriceRowsForRate: a currency change converts every price, a rate
+// change leaves the ones typed by hand. Item prices are home currency and the
+// line is in the document's: this used to multiply by the rate, turning
+// 12,000 AFN into 780,000 "USD".
+const setLinePrice = (row, value) => {
+    row.unit_price = value
+    row.price_touched = true
+    row.base_unit_price = linePriceToHome(row, form.rate)
+}
+watch(() => [form.rate, form.currency_id], ([rate, currencyId], [, previousCurrencyId]) => {
+    if (!Array.isArray(form.items)) return
+    repriceRowsForRate(form.items, rate, currencyId !== previousCurrencyId)
+})
+
 const handleItemChange = (index, selected_item) => {
     const row = form.items[index]
     if (!row || !selected_item) return
@@ -142,7 +159,8 @@ const handleItemChange = (index, selected_item) => {
 
     row.base_unit_price = row.selected_variant?.purchase_price ?? selected_item.purchase_price ?? selected_item.avg_cost ?? 0
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(2));
+    row.unit_price = priceInLineUnit(row.base_unit_price, selected_item, row.selected_measure, form.rate);
+    row.price_touched = false
 }
 
 const handleVariantChange = (index, variant) => {
@@ -155,7 +173,8 @@ const handleVariantChange = (index, variant) => {
     repriceRow(row, variant, 'purchase')
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(2))
+    row.unit_price = priceInLineUnit(row.base_unit_price, row.selected_item, row.selected_measure, form.rate)
+    row.price_touched = false
 }
 
 const rowTotal = (index) => {
@@ -185,7 +204,9 @@ const totalRows = computed(() => form.items.length)
 const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0).toFixed(decimalPlaces)))
 const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(decimalPlaces)))
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.discount, 0), 0))
-const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0)), 0))
+// Each line at cents, the sum at cents: the server's formula, so the form and
+// the posted bill agree (49 kg at 71.4286 is 3,500.00, not 3,500.0014).
+const goodsTotal = computed(() => Number(form.items.reduce((acc, item) => acc + Number((toNum(item.unit_price, 0) * toNum(item.quantity, 0)).toFixed(2)), 0).toFixed(2)))
 const billDiscountCurrency = computed(() => {
     const billDisc = toNum(form.discount, 0)
     if (form.discount_type === 'percentage') return goodsTotal.value * (billDisc / 100)
@@ -343,7 +364,7 @@ const saveFormRef = useSaveShortcut({ form })
                                 />
                             </td>
                             <td>
-                                <NextInput v-model="item.unit_price" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
+                                <NextInput :model-value="item.unit_price" @update:model-value="setLinePrice(item, $event)" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
                             </td>
                             <td>
                                 <VariantCell

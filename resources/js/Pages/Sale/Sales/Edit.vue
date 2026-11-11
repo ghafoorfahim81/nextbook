@@ -20,7 +20,7 @@ import { ToastAction } from '@/Components/ui/toast';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { printDocument } from '@/composables/usePrintDocument';
 import NextDate from '@/Components/next/NextDatePicker.vue';
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantAverageCost, variantStockFigure, expiryOptionsForRow, batchOptionsForRow, linePriceToHome, repriceRowsForRate } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantAverageCost, variantStockFigure, expiryOptionsForRow, batchOptionsForRow, linePriceToHome, repriceRowsForRate, stockInLineUnit, priceInLineUnit } from '@/composables/useVariantLine'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2, ScanBarcode } from 'lucide-vue-next';
@@ -552,7 +552,7 @@ const handleItemChange = async (index, selectedItem) => {
 
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1;
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
-    row.unit_price = Number(toDocumentCurrency((toNum(row.base_unit_price, 0) * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces.value));
+    row.unit_price = priceInLineUnit(toNum(row.base_unit_price, 0), selectedItem, row.selected_measure, form.rate);
     row.price_touched = false;
     row.selected_item = selectedItem;
 
@@ -580,7 +580,7 @@ const handleItemVariantChange = (index, variant) => {
     repriceRow(row, variant, 'sale')
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces.value))
+    row.unit_price = priceInLineUnit(row.base_unit_price, row.selected_item, row.selected_measure, form.rate)
     row.price_touched = false
     syncRowExpiry(row);
     notifyIfVariantNotInWarehouse(row);
@@ -645,8 +645,6 @@ const onhand = (index) => {
     const variantOnHand = variantStockFigure(item, item.selected_item_variant, 'on_hand');
     // A chosen expiry date narrows the line to that lot's stock.
     const onHandBase = Number(selectedExpiry(item)?.on_hand ?? variantOnHand ?? item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0;
-    const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1;
-    const selectedUnit = Number(item.selected_measure?.unit) || baseUnit;
     // A draft only reserves its stock, so what it already holds was never
     // taken off the on-hand figure and must not be added back to it.
     const currentQuantityBase = quantityOutInBaseUnits({
@@ -656,22 +654,23 @@ const onhand = (index) => {
         selectedItem: item.selected_item,
     });
     const adjustedOnHandBase = onHandBase - currentQuantityBase;
-    const converted = (adjustedOnHandBase * baseUnit) / selectedUnit;
-
-    return Number.isFinite(converted) ? Number(converted.toFixed(decimalPlaces.value)) : 0;
+    // Stock is stored in the base unit to 4 decimals; shown to 2 so a
+    // converted 230.0004 reads 230, as on the create form.
+    return stockInLineUnit(item, adjustedOnHandBase);
 };
 
 const reservedOut = (index) => {
     const item = form.items[index];
     if (!item || !item.selected_item) return 0;
     const variantReserved = variantStockFigure(item, item.selected_item_variant, 'reserved_out');
-    return Number(variantReserved ?? item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out) || 0;
+    // In the line's unit, like the on-hand figure beside it.
+    return stockInLineUnit(item, variantReserved ?? item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out);
 };
 
 const reservedIn = (index) => {
     const item = form.items[index];
     if (!item || !item.selected_item) return 0;
-    return Number(item.selected_batch?.reserved_in ?? item.selected_item?.reserved_in ?? item.reserved_in) || 0;
+    return stockInLineUnit(item, item.selected_batch?.reserved_in ?? item.selected_item?.reserved_in ?? item.reserved_in);
 };
 
 const rowTotal = (index) => {
@@ -713,7 +712,7 @@ const displayedAverageCost = (row) => {
     // posting relieves inventory at — so the below-cost warning cannot fire
     // against a blended item average the sale will never actually use.
     const avgCost = resolveVariantAverageCost(row.selected_item, row.selected_item_variant);
-    return toDocumentCurrency((avgCost * selectedUnit) / baseUnit, form.rate);
+    return priceInLineUnit(avgCost, row.selected_item, row.selected_measure, form.rate);
 };
 
 const getLossWarning = (row) => {
@@ -734,7 +733,9 @@ const getLossWarning = (row) => {
 const totalRows = computed(() => form.items.filter((item) => item?.selected_item).length);
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0));
 const totalTax = computed(() => form.items.reduce((acc, item) => acc + toNum(item.tax, 0), 0));
-const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0)), 0));
+// Each line at cents, the sum at cents: the server's formula, so the form and
+// the posted bill agree (49 kg at 71.4286 is 3,500.00, not 3,500.0014).
+const goodsTotal = computed(() => Number(form.items.reduce((acc, item) => acc + Number((toNum(item.unit_price, 0) * toNum(item.quantity, 0)).toFixed(2)), 0).toFixed(2)));
 const billDiscountCurrency = computed(() => {
     const billDiscount = toNum(form.discount, 0);
     return form.discount_type === 'percentage' ? goodsTotal.value * (billDiscount / 100) : billDiscount;
@@ -748,7 +749,7 @@ const totalDiscount = computed(() => Number((billDiscountCurrency.value + totalI
 // What the customer owes for the whole bill: goods, less every discount.
 const billNetTotal = computed(() => Number((goodsTotal.value - totalDiscount.value + totalTax.value).toFixed(decimalPlaces.value)));
 const totalRowTotal = computed(() => Number(form.items.reduce((acc, item) => {
-    return acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0));
+    return acc + (Number((toNum(item.unit_price, 0) * toNum(item.quantity, 0)).toFixed(2)) - toNum(item.item_discount, 0) + toNum(item.tax, 0));
 }, 0).toFixed(decimalPlaces.value)));
 const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0).toFixed(decimalPlaces.value)));
 const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(decimalPlaces.value)));
@@ -1186,7 +1187,7 @@ const saveFormRef = useSaveShortcut({ form, onSave: focusSaveButton });
                                         const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1;
                                         const selectedUnit = Number(measure?.unit) || baseUnit;
                                         const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0;
-                                        form.items[index].unit_price = toDocumentCurrency((baseUnitPrice * selectedUnit) / baseUnit, form.rate);
+                                        form.items[index].unit_price = priceInLineUnit(baseUnitPrice, form.items[index]?.selected_item, measure, form.rate);
                                         form.items[index].price_touched = false;
                                         form.items[index].unit_measure_id = measure?.id || '';
                                         notifyIfDuplicate(index);

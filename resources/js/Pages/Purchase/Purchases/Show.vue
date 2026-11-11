@@ -7,7 +7,7 @@ import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, ArrowLeft, ArrowLeftRight,RotateCcw, Coins, SquarePen, Download } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, ArrowLeft, ArrowLeftRight,RotateCcw, Coins, SquarePen, Download, Percent, Wallet } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
@@ -28,24 +28,32 @@ const page = usePage();
 const purchaseData = computed(() => props.purchase?.data ?? props.purchase ?? {});
 
 const totalAmount = computed(() =>
-    Number(purchaseData.value.items?.reduce((sum, item) => sum + Number(item.subtotal || 0), 0) || 0)
+    // Value of goods: quantity × price per line, at cents (the server's formula).
+    Number((purchaseData.value.items?.reduce((sum, item) => sum + Number((Number(item.quantity || 0) * Number(item.unit_price || 0)).toFixed(2)), 0) || 0).toFixed(2))
 );
 
-const totalDiscount = computed(() => {
-    let discount = Number(purchaseData.value.items?.reduce((sum, item) => sum + Number(item.discount || 0), 0) || 0);
-    if (purchaseData.value.discount && purchaseData.value.discount_type === 'percentage') {
-        discount += Number(totalAmount.value * purchaseData.value.discount) / 100;
-    } else if (purchaseData.value.discount) {
-        discount += Number(purchaseData.value.discount);
-    }
-    return Number(discount);
+// The bill-level discount on its own: on the value of goods for a
+// percentage, as it was posted.
+const billDiscountAmount = computed(() => {
+    const discount = Number(purchaseData.value.discount || 0);
+    return purchaseData.value.discount_type === 'percentage'
+        ? Number(((totalAmount.value * discount) / 100).toFixed(2))
+        : discount;
 });
+
+// Line discounts plus the bill discount. Each line's subtotal already has its
+// own discount and tax applied, which is why the totals are not built from it:
+// they were taken off (and added on) twice.
+const totalDiscount = computed(() =>
+    Number(((purchaseData.value.items?.reduce((sum, item) => sum + Number(item.discount || 0), 0) || 0) + billDiscountAmount.value).toFixed(2))
+);
 
 const totalTax = computed(() =>
     Number(purchaseData.value.items?.reduce((sum, item) => sum + Number(item.tax || 0), 0) || 0)
 );
 
-const grandTotal = computed(() => Number(totalAmount.value - totalDiscount.value + totalTax.value));
+// The bill as posted; worked out here only if the server did not send it.
+const grandTotal = computed(() => Number(purchaseData.value.amount ?? (totalAmount.value - totalDiscount.value + totalTax.value)));
 const hasDeferredBalance = computed(() => ['credit', 'on_loan'].includes(String(purchaseData.value.raw_type || '').toLowerCase()));
 const remainingAmount = computed(() => Number(purchaseData.value.remaining_amount ?? purchaseData.value.payable_amount ?? 0));
 const paidAmount = computed(() => Math.max(0, grandTotal.value - remainingAmount.value));
@@ -60,6 +68,13 @@ const formattedGrandTotal = computed(() => grandTotal.value.toFixed(2));
 const formattedPaidAmount = computed(() => paidAmount.value.toFixed(2));
 const formattedRemainingAmount = computed(() => remainingAmount.value.toFixed(2));
 const formatLineValue = (value) => Number(value || 0).toFixed(2);
+
+const billDiscountLabel = computed(() => {
+    const discount = Number(purchaseData.value.discount || 0);
+    if (!discount) return '-';
+    const amount = `${currencySymbol.value} ${billDiscountAmount.value.toFixed(2)}`;
+    return purchaseData.value.discount_type === 'percentage' ? `${discount}% (${amount})` : amount;
+});
 
 const statusBadgeClasses = computed(() => {
     switch (purchaseData.value.status) {
@@ -117,29 +132,7 @@ const baseCurrencyCode = computed(() => page.props?.homeCurrency?.code || '');
 const formattedRate = computed(() => exchangeRate.value.toLocaleString(undefined, { maximumFractionDigits: 4 }));
 const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value).toFixed(2));
 
-const form = useForm({ status: purchaseData.value.status || '' });
 
-const updateStatus = (status) => {
-    form.status = status;
-    form.patch(route('purchases.update-purchase-status', purchaseData.value.id), {
-        onSuccess: () => {
-            toast({
-                title: t('general.success'),
-                description: `Purchase ${status} successfully`,
-                variant: 'success',
-                class: 'bg-green-600 text-white',
-            });
-        },
-        onError: () => {
-            toast({
-                title: t('general.error'),
-                description: `Failed to ${status} purchase`,
-                variant: 'destructive',
-                class: 'bg-red-600 text-white',
-            });
-        },
-    });
-};
 
 const postPurchase = () => {
     submit(route('purchases.post', purchaseData.value.id), {}, {
@@ -169,24 +162,6 @@ const reversePurchase = (reason) => {
                 @post="postDialogOpen = true"
                 @reverse="reverseDialogOpen = true"
             >
-                <template v-if="purchaseData.status === 'pending'">
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        :disabled="form.processing"
-                        @click="updateStatus('rejected')"
-                    >
-                        <XCircle class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.reject') }}
-                    </Button>
-                    <Button
-                        size="sm"
-                        class="bg-green-600 text-white hover:bg-green-700"
-                        :disabled="form.processing"
-                        @click="updateStatus('approved')"
-                    >
-                        <CheckCircle2 class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.approve') }}
-                    </Button>
-                </template>
             </ShowPageToolbar>
 
             <TransactionActionDialog
@@ -273,6 +248,14 @@ const reversePurchase = (reason) => {
                         <div v-if="isForeignCurrency" class="text-xs text-muted-foreground">
                             ≈ {{ formattedBaseTotal }} {{ baseCurrencyCode }}
                         </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><Percent class="h-3 w-3" />{{ t('general.bill_discount') }}</div>
+                        <div class="text-sm font-medium text-foreground">{{ billDiscountLabel }}</div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><Wallet class="h-3 w-3" />{{ t('general.cash_or_account') }}</div>
+                        <div class="text-sm font-medium text-foreground">{{ purchaseData.payment_account?.name || '-' }}</div>
                     </div>
                     <div v-if="purchaseData.purchase_order_id" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground"><FileCheck class="h-3 w-3" />{{ t('purchase_order.purchase_order') }}</div>
@@ -386,7 +369,7 @@ const reversePurchase = (reason) => {
                                 <td class="px-3 py-3 text-foreground">{{ item.variant?.display_name || '-' }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.quantity }}</td>
                                 <td class="px-3 py-3 text-foreground">{{ item.unit_measure_name }}</td>
-                                <td class="px-3 py-3 text-right text-foreground">{{ item.unit_price }}</td>
+                                <td class="px-3 py-3 text-right text-foreground">{{ Number(item.unit_price || 0) }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.discount || 0 }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.free || 0 }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.tax || 0 }}</td>

@@ -149,20 +149,59 @@ class Purchase extends Model
     }
 
     /**
-     * Net purchase amount (goods − item discounts − bill discount), mirroring the
-     * calculation in PurchaseResource. Requires the `items` relation loaded.
+     * What the bill comes to: goods − line discounts − bill discount + tax.
+     *
+     * The sum of the lines' net values, so it is always exactly what the
+     * ledger was posted with. A fixed bill discount comes off once — this used
+     * to take it off every line. Requires the `items` relation loaded.
      */
     public function purchaseTotal(): float
     {
-        return (float) $this->items->sum(function ($item) {
-            $rowTotal = (float) $item->quantity * (float) $item->unit_price;
-            $itemDiscount = (float) ($item->discount ?? 0);
-            $billDiscount = $this->discount_type === 'percentage'
-                ? $rowTotal * ((float) $this->discount / 100)
-                : (float) ($this->discount ?? 0);
+        return money_round(
+            array_sum(static::lineNetValues($this->items, $this->discount, $this->discount_type))
+                + (float) $this->items->sum(fn ($item) => (float) ($item->tax ?? 0))
+        );
+    }
 
-            return $rowTotal - $itemDiscount - $billDiscount;
-        });
+    /**
+     * Each line's net value in the purchase's currency, keyed by line id (or
+     * position, for lines not saved yet): quantity × price, less its own
+     * discount and its share of the bill discount.
+     *
+     * One formula for posting, returns, landed costs and every total shown, so
+     * none of them can disagree. A percentage bill discount is taken on each
+     * line's value of goods; a fixed one is shared out by that value.
+     *
+     * @param  iterable<int, mixed>  $lines  Models or arrays with quantity, unit_price, discount.
+     * @return array<string|int, float>
+     */
+    public static function lineNetValues(iterable $lines, mixed $billDiscount, ?string $billDiscountType): array
+    {
+        $rows = [];
+        $grossTotal = 0.0;
+
+        foreach ($lines as $key => $line) {
+            // At cents: 49 kg at 71.4286 is 3,500.00, not 3,500.0014.
+            $gross = money_round((float) data_get($line, 'quantity', 0) * (float) data_get($line, 'unit_price', 0));
+            $rows[data_get($line, 'id') ?? $key] = [
+                'gross' => $gross,
+                'discount' => (float) (data_get($line, 'discount') ?? 0),
+            ];
+            $grossTotal += $gross;
+        }
+
+        $discount = max(0.0, (float) $billDiscount);
+        $nets = [];
+
+        foreach ($rows as $key => $row) {
+            $share = ($billDiscountType ?? 'percentage') === 'percentage'
+                ? $row['gross'] * ($discount / 100)
+                : ($grossTotal > 0 ? $discount * ($row['gross'] / $grossTotal) : 0.0);
+
+            $nets[$key] = money_round($row['gross'] - $row['discount'] - money_round($share));
+        }
+
+        return $nets;
     }
 
     /**

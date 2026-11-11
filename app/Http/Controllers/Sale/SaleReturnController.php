@@ -167,8 +167,8 @@ class SaleReturnController extends Controller
                 'net_unit_cost' => (float) $item->net_unit_cost,
                 'original_quantity' => $item->deliveredQuantity(),
                 'free_quantity' => (float) ($item->free ?? 0),
-                'returned_quantity' => $item->returnedQuantity($excludeSaleReturnId),
-                'remaining_quantity' => $item->remainingReturnableQuantity($excludeSaleReturnId),
+                'returned_quantity' => round($item->returnedQuantity($excludeSaleReturnId), 4),
+                'remaining_quantity' => round($item->remainingReturnableQuantity($excludeSaleReturnId), 4),
             ])->values(),
         ]);
     }
@@ -515,16 +515,16 @@ class SaleReturnController extends Controller
             // Revenue goes back at the price before discount and the discount
             // account gives back its part, so the customer is credited the net:
             // the reverse of the three figures the sale itself posted.
-            $lineGrossTotal = round($quantity * $unitValue['gross'], 4);
-            $lineDiscountTotal = round($quantity * $unitValue['discount'], 4);
-            $lineNetTotal = round($lineGrossTotal - $lineDiscountTotal, 4);
+            $lineGrossTotal = money_round($quantity * $unitValue['gross']);
+            $lineDiscountTotal = money_round($quantity * $unitValue['discount']);
+            $lineNetTotal = money_round($lineGrossTotal - $lineDiscountTotal);
             $totalDiscountReturned += $lineDiscountTotal;
             $totalCost = $unitCost * $quantity;
             // Stock cost is home currency; the voucher is in the sale's currency and
             // is multiplied by its rate, so the GL lines take the cost divided back
             // down — as SaleController does for the original COGS line.
             $saleRate = (float) ($sale->transaction?->rate ?: 1) ?: 1.0;
-            $totalCostInTransactionCurrency = $totalCost / $saleRate;
+            $totalCostInTransactionCurrency = money_round($totalCost / $saleRate);
             $totalReturnedValue += $lineNetTotal;
 
             $stockPayload = [
@@ -580,14 +580,14 @@ class SaleReturnController extends Controller
                 'account_id' => $glAccounts['discount-to-customer'],
                 'ledger_id' => null,
                 'debit' => 0,
-                'credit' => round($totalDiscountReturned, 4),
+                'credit' => money_round($totalDiscountReturned),
                 'remark' => 'Sale discount taken back for return #' . $saleReturn->number . ' (Sale #' . $sale->number . ')',
                 'remark_fa' => 'برگشت تخفیف فروش بابت برگشتی #' . $saleReturn->number . ' (فروش #' . $sale->number . ')',
                 'remark_ps' => 'د پلور تخفیف بېرته اخیستل، بېرته ستنول #' . $saleReturn->number . ' (پلور #' . $sale->number . ')',
             ];
         }
 
-        $totalReturnedValue = round($totalReturnedValue, 4);
+        $totalReturnedValue = money_round($totalReturnedValue);
 
         // The credit relieves what is still open on this sale; that part is
         // settled against the sale once posted (SettlementService::
@@ -600,8 +600,8 @@ class SaleReturnController extends Controller
             SettlementService::DIRECTION_IN,
             (string) $sale->transaction?->id,
         );
-        $againstSale = round(min($totalReturnedValue, max($open, 0)), 4);
-        $excess = round($totalReturnedValue - $againstSale, 4);
+        $againstSale = money_round(min($totalReturnedValue, max($open, 0)));
+        $excess = money_round($totalReturnedValue - $againstSale);
 
         if ($againstSale > 0) {
             $lines[] = [

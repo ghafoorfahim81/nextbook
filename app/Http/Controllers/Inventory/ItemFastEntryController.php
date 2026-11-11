@@ -94,7 +94,7 @@ class ItemFastEntryController extends Controller
                     // branch doing the entry.
                 ]);
 
-                $openingValue = round($unitCost * $quantity, 4);
+                $openingValue = money_round($unitCost * $quantity);
 
                 // A zero-value opening (quantity but no cost yet) would post a
                 // balanced-at-nothing voucher that only clutters the ledger.

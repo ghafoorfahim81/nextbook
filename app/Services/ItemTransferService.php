@@ -440,7 +440,7 @@ class ItemTransferService
 
         foreach ($transfer->items as $item) {
             $price = (float) $item->unit_price;
-            $sent = round((float) $item->quantity * $price, 4);
+            $sent = money_round((float) $item->quantity * $price);
             $inventoryId = $assetAccounts[$item->item_id] ?? $gl['inventory-stock'] ?? null;
 
             if (! $receiving) {
@@ -449,9 +449,9 @@ class ItemTransferService
                 continue;
             }
 
-            $arrived = round((float) ($quantities[$item->id] ?? $item->quantity) * $price, 4);
+            $arrived = money_round((float) ($quantities[$item->id] ?? $item->quantity) * $price);
             $add($debits, $inventoryId, $arrived);
-            $add($debits, $shrinkageId, round($sent - $arrived, 4));
+            $add($debits, $shrinkageId, money_round($sent - $arrived));
             $add($credits, $transitId, $sent);
         }
 

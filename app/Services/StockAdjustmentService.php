@@ -356,7 +356,7 @@ class StockAdjustmentService
                 $this->stockService->reserve($stockPayloads[array_key_last($stockPayloads)]);
             }
 
-            $totalCost = round($unitCost * $quantity, 4);
+            $totalCost = money_round($unitCost * $quantity);
             $inventoryAccountId = $itemModel->asset_account_id ?? data_get($glAccounts, 'inventory-stock');
 
             if (!$inventoryAccountId) {

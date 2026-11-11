@@ -31,18 +31,10 @@ class PurchaseResource extends JsonResource
             'date' => $dateConversionService->toDisplay($this->date),
             'due_date' => $dateConversionService->toDisplay($this->due_date),
             'updated_at' => $dateConversionService->toDisplay($this->updated_at?->toDateString()),
-            'amount' => $this->items->sum(function ($item) {
-                $row_total = floatval($item->quantity) * floatval($item->unit_price);
-                $item_discount = floatval($item->discount ?? 0);
-
-                if ($this->discount_type === 'percentage') {
-                    $sale_discount = $row_total * (floatval($this->discount) / 100);
-                } else {
-                    $sale_discount = floatval($this->discount ?? 0);
-                }
-
-                return $row_total - $item_discount - $sale_discount;
-            }),
+            // The same total the ledger was posted with (PurchaseController
+            // works it out with this formula). A fixed bill discount used to
+            // come off once per line here.
+            'amount' => $this->resource->purchaseTotal(),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
             'type' => ($this->type instanceof SalePurchaseType)
@@ -51,9 +43,7 @@ class PurchaseResource extends JsonResource
             'sale_purchase_type_id' => ($this->type instanceof SalePurchaseType)
                 ? $this->type->value
                 : $this->type,
-            'payable_amount' => $this->transaction?->lines->sum(function ($line) {
-                return $line->ledger_id !== null ? $line->credit : 0;
-            }),
+            'payable_amount' => $this->payableAmount(),
             'raw_type' => $this->type,
             'bank_account_id' => $this->bank_account_id,
             'description' => $this->description,
@@ -66,13 +56,20 @@ class PurchaseResource extends JsonResource
             'payment_status_label' => $this->payment_status instanceof PaymentStatus
                 ? $this->payment_status->getLabel()
                 : (PaymentStatus::tryFrom((string) $this->payment_status)?->getLabel() ?? $this->payment_status),
-            'transaction_total' => $this->transaction?->amount,
+            'transaction_total' => $this->resource->purchaseTotal(),
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
             'warehouse' => $this->warehouse(),
             'warehouse_id' => $this->warehouse()?->id,
             'currency_id' => $this->transaction?->currency_id,
             'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,
+            // How the bill was paid, as the form sent it. A draft has no ledger
+            // lines, so the edit form reads them back from here.
+            'payment' => data_get($this->transaction?->posting_payload, 'purchase.payment'),
+            // Cash/bank account the bill was paid from — details page only.
+            'payment_account' => $request->routeIs('purchases.show')
+                ? \App\Support\Documents\PaymentAccount::for($this->transaction, $this->bank_account_id, 'purchase')
+                : null,
             'items' => $this->whenLoaded('items', PurchaseItemResource::collection($this->items)),
             'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) use ($dateConversionService) {
                 return [
@@ -103,5 +100,17 @@ class PurchaseResource extends JsonResource
                 ];
             })),
         ];
+    }
+
+    /** What is owed to the supplier on this bill; read from the draft's payload until it is posted. */
+    private function payableAmount(): float
+    {
+        $lines = $this->transaction?->lines ?? collect();
+
+        if ($lines->isEmpty() && $this->transaction) {
+            $lines = collect((array) data_get($this->transaction->posting_payload, 'lines', []))->map(fn ($line) => (object) $line);
+        }
+
+        return money_round($lines->sum(fn ($line) => ($line->ledger_id ?? null) !== null ? (float) ($line->credit ?? 0) : 0));
     }
 }

@@ -126,18 +126,10 @@ class PurchaseOrder extends Model
 
     public function orderTotal(): float
     {
-        $orderAmount = $this->items->sum(function (PurchaseOrderItem $item) {
-            $rowTotal = (float) $item->quantity * (float) $item->unit_price;
-            $itemDiscount = (float) ($item->discount ?? 0);
-
-            return $rowTotal - $itemDiscount;
-        });
-
-        $orderDiscount = $this->discount_type === 'percentage'
-            ? $orderAmount * ((float) ($this->discount ?? 0) / 100)
-            : (float) ($this->discount ?? 0);
-
-        return $orderAmount - $orderDiscount;
+        // The formula the purchase made from this document posts with
+        // (Purchase::lineNetValues): a percentage discount is taken on the value
+        // of goods, before line discounts. Taking it after made the two disagree.
+        return round(array_sum(\App\Models\Purchase\Purchase::lineNetValues($this->items, $this->discount, $this->discount_type)), 4);
     }
 
     public function isDraft(): bool

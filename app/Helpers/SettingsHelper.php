@@ -100,3 +100,22 @@ if (!function_exists('balance_nature_format')) {
     }
 }
 
+
+if (! function_exists('money_round')) {
+    /**
+     * A money amount at the precision the books are kept in: 2 decimals.
+     *
+     * Prices and costs are held to 4 (or more) decimals per base unit, so
+     * quantity × price leaves sub-cent residue — 49 kg at 71.4286 is
+     * 3,500.0014. Posted that way, the residue reaches every balance built on
+     * it ("3490.0014 cr"). Every amount a document writes to the ledger goes
+     * through here first; prices and stock costs keep their own precision.
+     */
+    function money_round(float|int|string|null $amount): float
+    {
+        $rounded = round((float) $amount, 2);
+
+        // No negative zero.
+        return $rounded == 0.0 ? 0.0 : $rounded;
+    }
+}

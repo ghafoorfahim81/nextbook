@@ -51,6 +51,10 @@ class PurchaseQuotationController extends Controller
             ->selectRaw('COALESCE(SUM(quantity * unit_price), 0)')
             ->whereColumn('purchase_quotation_items.purchase_quotation_id', 'purchase_quotations.id')
             ->whereNull('purchase_quotation_items.deleted_at');
+        $itemDiscountTotal = PurchaseQuotationItem::query()
+            ->selectRaw('COALESCE(SUM(discount), 0)')
+            ->whereColumn('purchase_quotation_items.purchase_quotation_id', 'purchase_quotations.id')
+            ->whereNull('purchase_quotation_items.deleted_at');
 
         $purchaseQuotations = PurchaseQuotation::query()
             ->select([
@@ -60,8 +64,11 @@ class PurchaseQuotationController extends Controller
                 'purchase_quotations.date',
                 'purchase_quotations.valid_until',
                 'purchase_quotations.status',
+                'purchase_quotations.discount',
+                'purchase_quotations.discount_type',
             ])
             ->selectSub($itemGrossTotal, 'items_gross_total')
+            ->selectSub($itemDiscountTotal, 'items_discount_total')
             ->with(['supplier:id,name'])
             ->search($request->query('search'))
             ->filter($filters)
@@ -129,10 +136,7 @@ class PurchaseQuotationController extends Controller
                 'status' => $documentStatus,
             ]);
 
-            $validated['item_list'] = array_map(
-                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
-                $validated['item_list']
-            );
+            $validated['item_list'] = $this->prepareLines($validated['item_list']);
             $purchaseQuotation->items()->createMany($validated['item_list']);
 
             $activityLogService->logCreate(
@@ -165,6 +169,23 @@ class PurchaseQuotationController extends Controller
             'success',
             __('general.created_successfully', ['resource' => __('general.resource.purchase_quotation')])
         );
+    }
+
+    /**
+     * Lines as they are stored: the variant resolved, and the expiry date in
+     * Gregorian like every other date on the document.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function prepareLines(array $items): array
+    {
+        return array_map(fn ($item) => [
+            ...$item,
+            'variant_id' => $this->resolveLineVariantId($item),
+            'expire_date' => ! empty($item['expire_date'])
+                ? $this->dateConversionService->toGregorian((string) $item['expire_date'])
+                : null,
+        ], $items);
     }
 
     public function show(Request $request, PurchaseQuotation $purchaseQuotation)
@@ -236,10 +257,7 @@ class PurchaseQuotationController extends Controller
             ]);
 
             $purchaseQuotation->items()->forceDelete();
-            $validated['item_list'] = array_map(
-                fn ($item) => [...$item, 'variant_id' => $this->resolveLineVariantId($item)],
-                $validated['item_list']
-            );
+            $validated['item_list'] = $this->prepareLines($validated['item_list']);
             $purchaseQuotation->items()->createMany($validated['item_list']);
 
             $activityLogService->logUpdate(

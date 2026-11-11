@@ -380,7 +380,8 @@ class SaleController extends Controller
         $tax = 0.0;
 
         foreach ($validated['item_list'] as $item) {
-            $gross += (float) $item['quantity'] * (float) $item['unit_price'];
+            // At cents: 49 kg at 71.4286 is 3,500.00, not 3,500.0014.
+            $gross += money_round((float) $item['quantity'] * (float) $item['unit_price']);
             $lineDiscount += (float) ($item['discount'] ?? 0);
             $tax += (float) ($item['tax'] ?? 0);
         }
@@ -390,8 +391,8 @@ class SaleController extends Controller
             ? $gross * ($billDiscountInput / 100)
             : $billDiscountInput;
 
-        $discount = round($lineDiscount + $billDiscount, 4);
-        $total = round($gross - $discount + $tax, 4);
+        $discount = money_round($lineDiscount + money_round($billDiscount));
+        $total = money_round($gross - $discount + $tax);
 
         if ($total < 0) {
             throw ValidationException::withMessages([
@@ -400,11 +401,11 @@ class SaleController extends Controller
         }
 
         return [
-            'gross' => round($gross, 4),
-            'line_discount' => round($lineDiscount, 4),
-            'bill_discount' => round($billDiscount, 4),
+            'gross' => money_round($gross),
+            'line_discount' => money_round($lineDiscount),
+            'bill_discount' => money_round($billDiscount),
             'discount' => $discount,
-            'tax' => round($tax, 4),
+            'tax' => money_round($tax),
             'total' => $total,
         ];
     }
@@ -535,8 +536,9 @@ class SaleController extends Controller
                 sale: $sale,
                 itemModel: $itemModel,
                 index: $index,
-                grossTotal: (float) $item['quantity'] * (float) $item['unit_price'],
-                cost: $totalCost / $rate,
+                grossTotal: money_round((float) $item['quantity'] * (float) $item['unit_price']),
+                // The ledger at cents; the stock movement keeps the full cost.
+                cost: money_round($totalCost / $rate),
             ));
         }
 
@@ -686,7 +688,7 @@ class SaleController extends Controller
 
         // Credit: part of it may be taken now, the rest stays owed.
         $paid = (float) ($validated['payment']['amount'] ?? 0);
-        $remaining = round($total - $paid, 4);
+        $remaining = money_round($total - $paid);
 
         if ($paid > 0) {
             $inFull = $remaining <= 0;
@@ -1331,7 +1333,7 @@ class SaleController extends Controller
                     $payload['unit_cost_override'] = $unitCost;
                     $payloads[$index] = $payload;
 
-                    $lines = $this->recostDraftLines($lines, $index, count($payloads), $totalCost / $rate);
+                    $lines = $this->recostDraftLines($lines, $index, count($payloads), money_round($totalCost / $rate));
 
                     if (! empty($payload['sale_item_id'])) {
                         SaleItem::whereKey($payload['sale_item_id'])->update(['net_unit_cost' => $unitCost]);

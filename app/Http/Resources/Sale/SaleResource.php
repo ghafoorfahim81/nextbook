@@ -46,7 +46,7 @@ class SaleResource extends JsonResource
         $ledgerEffect = $transactionLines
             ->where('ledger_id', $this->customer_id)
             ->sum(fn ($line) => (float) $line->debit - (float) $line->credit);
-        $remainingAmount = abs((float) $ledgerEffect);
+        $remainingAmount = money_round(abs((float) $ledgerEffect));
         $oldNetBalance = (float) data_get($customerStatement, 'net_balance', 0) - ($ledgerEffect * $transactionRate);
         $items = $this->relationLoaded('items') ? $this->items : collect();
         // `transactions` has no `amount` column — always compute from items when loaded. 
@@ -100,7 +100,7 @@ class SaleResource extends JsonResource
             'raw_type' => $this->type,
             'receivable_amount' => $remainingAmount,
             'remaining_amount' => $remainingAmount,
-            'old_balance' => abs($oldNetBalance),
+            'old_balance' => money_round(abs($oldNetBalance)),
             'old_balance_nature' => $oldNetBalance >= 0 ? 'dr' : 'cr',
             'description' => $this->description,
             'status' => $this->status,
@@ -123,6 +123,10 @@ class SaleResource extends JsonResource
             // these back; a draft has no ledger lines to recover them from.
             'bank_account_id' => data_get($transaction?->posting_payload, 'sale.bank_account_id'),
             'payment' => data_get($transaction?->posting_payload, 'sale.payment'),
+            // Cash/bank account the money went into — details page only.
+            'payment_account' => $request->routeIs('sales.show')
+                ? \App\Support\Documents\PaymentAccount::for($transaction, null, 'sale')
+                : null,
             // additional() must be set on each item — on a collection it lands on the
             // wrapper and never reaches SaleItemResource::toArray().
             'items' => $this->whenLoaded('items', fn () =>

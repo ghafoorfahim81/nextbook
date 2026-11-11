@@ -7,7 +7,7 @@ import { useDocumentAction } from '@/composables/useDocumentAction'
 import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, RotateCcw, Coins, Printer, SquarePen, Download, Warehouse, Percent } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, RotateCcw, Coins, Printer, SquarePen, Download, Warehouse, Percent, Wallet } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
@@ -28,24 +28,32 @@ const props = defineProps({
 const saleData = computed(() => props.sale?.data ?? props.sale ?? {});
 
 const totalAmount = computed(() =>
-    Number(saleData.value.items?.reduce((sum, item) => sum + Number(item.subtotal || 0), 0) || 0)
+    // Value of goods: quantity × price per line, at cents (the server's formula).
+    Number((saleData.value.items?.reduce((sum, item) => sum + Number((Number(item.quantity || 0) * Number(item.unit_price || 0)).toFixed(2)), 0) || 0).toFixed(2))
 );
 
-const totalDiscount = computed(() => {
-    let discount = Number(saleData.value.items?.reduce((sum, item) => sum + Number(item.discount || 0), 0) || 0);
-    if (saleData.value.discount && saleData.value.discount_type === 'percentage') {
-        discount += Number(totalAmount.value * saleData.value.discount) / 100;
-    } else if (saleData.value.discount) {
-        discount += Number(saleData.value.discount);
-    }
-    return Number(discount);
+// The bill-level discount on its own: on the value of goods for a
+// percentage, as it was posted.
+const billDiscountAmount = computed(() => {
+    const discount = Number(saleData.value.discount || 0);
+    return saleData.value.discount_type === 'percentage'
+        ? Number(((totalAmount.value * discount) / 100).toFixed(2))
+        : discount;
 });
+
+// Line discounts plus the bill discount. Each line's subtotal already has its
+// own discount and tax applied, which is why the totals are not built from it:
+// they were taken off (and added on) twice.
+const totalDiscount = computed(() =>
+    Number(((saleData.value.items?.reduce((sum, item) => sum + Number(item.discount || 0), 0) || 0) + billDiscountAmount.value).toFixed(2))
+);
 
 const totalTax = computed(() =>
     Number(saleData.value.items?.reduce((sum, item) => sum + Number(item.tax || 0), 0) || 0)
 );
 
-const grandTotal = computed(() => Number(totalAmount.value - totalDiscount.value + totalTax.value));
+// The bill as posted; worked out here only if the server did not send it.
+const grandTotal = computed(() => Number(saleData.value.amount ?? (totalAmount.value - totalDiscount.value + totalTax.value)));
 const totalProfit = computed(() => Number((saleData.value.total_profit ?? saleData.value.items?.reduce((sum, item) => sum + Number(item.line_profit || 0), 0)) || 0));
 const isProfitable = computed(() => totalProfit.value >= 0);
 const hasDeferredBalance = computed(() => ['credit', 'on_loan'].includes(String(saleData.value.raw_type || '').toLowerCase()));
@@ -55,14 +63,6 @@ const documentVoucherNumber = computed(() => saleData.value.transaction?.voucher
 const originalVoucherNumber = computed(() => props.originalDoc?.voucher_number || documentVoucherNumber.value);
 const reversalVoucherNumber = computed(() => props.reversal?.voucher_number || documentVoucherNumber.value);
 
-// The bill-level discount on its own: the footer only ever shows it folded
-// into the total with the line discounts.
-const billDiscountAmount = computed(() => {
-    const discount = Number(saleData.value.discount || 0);
-    return saleData.value.discount_type === 'percentage'
-        ? (totalAmount.value * discount) / 100
-        : discount;
-});
 const billDiscountLabel = computed(() => {
     const discount = Number(saleData.value.discount || 0);
     if (!discount) return '-';
@@ -281,6 +281,10 @@ const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value
                             <Percent class="h-3 w-3" />{{ t('general.bill_discount') }}
                         </div>
                         <div class="text-sm font-medium text-foreground">{{ billDiscountLabel }}</div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><Wallet class="h-3 w-3" />{{ t('general.cash_or_account') }}</div>
+                        <div class="text-sm font-medium text-foreground">{{ saleData.payment_account?.name || '-' }}</div>
                     </div>
                     <div v-if="saleData.sale_order_id" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">

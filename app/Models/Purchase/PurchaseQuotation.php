@@ -120,18 +120,10 @@ class PurchaseQuotation extends Model
 
     public function quotationTotal(): float
     {
-        $amount = $this->items->sum(function (PurchaseQuotationItem $item) {
-            $rowTotal = (float) $item->quantity * (float) $item->unit_price;
-            $itemDiscount = (float) ($item->discount ?? 0);
-
-            return $rowTotal - $itemDiscount;
-        });
-
-        $documentDiscount = $this->discount_type === 'percentage'
-            ? $amount * ((float) ($this->discount ?? 0) / 100)
-            : (float) ($this->discount ?? 0);
-
-        return $amount - $documentDiscount;
+        // The formula the purchase made from this document posts with
+        // (Purchase::lineNetValues): a percentage discount is taken on the value
+        // of goods, before line discounts. Taking it after made the two disagree.
+        return round(array_sum(\App\Models\Purchase\Purchase::lineNetValues($this->items, $this->discount, $this->discount_type)), 4);
     }
 
     public function isDraft(): bool

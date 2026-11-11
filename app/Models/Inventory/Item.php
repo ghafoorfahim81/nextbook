@@ -125,12 +125,15 @@ class Item extends Model
             'item_type' => ItemType::class,
             'minimum_stock' => 'decimal:2',
             'maximum_stock' => 'decimal:2',
-            'purchase_price' => 'decimal:2',
-            'cost' => 'decimal:2',
-            'sale_price' => 'decimal:2',
-            'rate_a' => 'decimal:2',
-            'rate_b' => 'decimal:2',
-            'rate_c' => 'decimal:2',
+            // The columns keep 4 decimals. Read back at 2, a bag priced 3,500
+            // and kept per kilo as 71.4286 came out as 71.43 — 3,500.07 a bag
+            // on every form that priced a line from it.
+            'purchase_price' => 'float',
+            'cost' => 'float',
+            'sale_price' => 'float',
+            'rate_a' => 'float',
+            'rate_b' => 'float',
+            'rate_c' => 'float',
             'company_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',

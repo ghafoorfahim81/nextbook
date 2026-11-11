@@ -136,8 +136,9 @@ class ItemCrudTest extends TestCase
 
         $this->assertSame('PARA-500', $item->sku);
         $this->assertSame('5000001', $item->barcode);
-        $this->assertSame('90.00', (string) $item->purchase_price);
-        $this->assertSame('130.00', (string) $item->sale_price);
+        // Read at the column's own precision (4 decimals), so compared as numbers.
+        $this->assertEquals(90.0, $item->purchase_price);
+        $this->assertEquals(130.0, $item->sale_price);
         $this->assertSame('6.00', (string) $item->minimum_stock);
         $this->assertSame('40.00', (string) $item->maximum_stock);
     }

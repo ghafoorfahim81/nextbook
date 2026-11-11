@@ -114,7 +114,11 @@ class Account extends Model
                     $totalCredit = (float) ($totals->total_credit ?? 0);
                 }
 
-                $netBalance = $totalDebit>0 ? $totalDebit - $totalCredit : $totalCredit - $totalDebit;
+                // At cents: residue below a cent (from lines posted before
+                // amounts were rounded) must not reach the text shown.
+                $totalDebit  = money_round($totalDebit);
+                $totalCredit = money_round($totalCredit);
+                $netBalance = money_round($totalDebit>0 ? $totalDebit - $totalCredit : $totalCredit - $totalDebit);
                 $balanceAmount = abs($netBalance);
                 $balanceNature = $totalDebit > $totalCredit
                     ? 'dr'

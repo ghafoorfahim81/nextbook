@@ -23,7 +23,8 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantOnHand } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, resolveVariantOnHand, linePriceToHome, repriceRowsForRate, stockInLineUnit, priceInLineUnit } from '@/composables/useVariantLine'
+import { useLineEnterNavigation } from '@/composables/useLineEnterNavigation'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
@@ -72,6 +73,8 @@ const buildEmptyRow = () => ({
     expire_date: '',
     unit_price: '',
     base_unit_price: '',
+    // True once the price has been typed by hand (UI-only, never posted).
+    price_touched: false,
     on_hand: '',
     reserved_out: '',
     reserved_in: '',
@@ -366,7 +369,9 @@ const applyPurchaseOrderToForm = (purchaseOrderId, payload) => {
         item_variants: [],
         expire_date: item.expire_date || '',
         unit_price: item.unit_price,
-        base_unit_price: item.unit_price,
+        base_unit_price: (Number(item.unit_price) || 0) * (Number(header.rate) || 1),
+        // The price agreed on the order: a rate change must not rewrite it.
+        price_touched: true,
         on_hand: '',
         reserved_out: '',
         reserved_in: '',
@@ -376,7 +381,60 @@ const applyPurchaseOrderToForm = (purchaseOrderId, payload) => {
         tax: '',
     }))
 
+    if (form.items.length) addRow()
+    hydrateConvertedRows()
+
     setTimeout(() => { skipEligibilityCheck.value = false }, 0)
+}
+
+// The units an item can be bought in: every unit measuring the same quantity.
+const measuresFor = (item) => {
+    const selUM = item?.unitMeasure || {}
+    const quantityId = selUM.quantity_id ?? selUM.quantity?.id
+    const quantityName = (selUM.quantity?.name || selUM.quantity?.code || '').toString().toLowerCase()
+    return (props.unitMeasures?.data || []).filter((unit) => {
+        const unitQtyId = unit?.quantity_id ?? unit?.quantity?.id
+        const unitQtyName = (unit?.quantity?.name || unit?.quantity?.code || '').toString().toLowerCase()
+        return (quantityId && unitQtyId === quantityId) || (!!quantityName && unitQtyName === quantityName)
+    })
+}
+
+// A converted order arrives as bare ids and names. Each line is matched to the
+// live item, so it shows its stock and offers its units and variants like a
+// line picked by hand. Not every item is on the first page: the rest are
+// looked up by name.
+const hydrateConvertedRows = async () => {
+    await loadItemOptions(form.warehouse_id)
+
+    for (const row of form.items) {
+        if (!row?.item_id) continue
+
+        let live = itemOptions.value.find((option) => option.id === row.item_id)
+        if (!live && row.selected_item?.name) {
+            try {
+                const response = await axios.get(route('search.items-list'), {
+                    params: { warehouse_id: form.warehouse_id, search: row.selected_item.name, limit: 20, in_stock_only: 0 },
+                })
+                live = (response.data?.data || []).find((option) => option.id === row.item_id)
+            } catch (error) {
+                console.error('Failed to load item for converted line', error)
+            }
+        }
+        if (!live) continue
+
+        row.selected_item = live
+        row.item_variants = live.item_variants || []
+        row.selected_variant = row.item_variants.find((variant) => variant.id === row.variant_id)
+            || row.selected_variant
+            || pickDefaultVariant(row.item_variants)
+        row.variant_id = row.selected_variant?.id || row.variant_id || null
+        row.available_measures = measuresFor(live)
+        row.selected_measure = row.available_measures.find((unit) => unit.id === row.unit_measure_id)
+            || live.unitMeasure
+            || row.selected_measure
+        row.base_unit_price = linePriceToHome(row, form.rate)
+        row.on_hand = resolveVariantOnHand(row) ?? live.on_hand
+    }
 }
 
 const handlePurchaseOrderPicked = async (purchaseOrderId) => {
@@ -418,7 +476,7 @@ const applyLedgerBillDiscount = (ledger) => {
 
 
 function handleSubmit(createAndNew = false) {
-    if(form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
+    if (!form.items.some((item) => item?.selected_item && item?.item_id)) {
         notifySound('error');
         toast({
             title: t('purchase.please_add_items'),
@@ -548,16 +606,17 @@ onUnmounted(() => {
     }
 })
 
-// Recalculate item unit prices when currency rate changes
-watch(() => form.rate, (newRate) => {
+// See repriceRowsForRate: a currency change converts every price, a rate
+// change leaves the ones typed by hand. Rate and currency are watched together
+// so one callback sees both and knows which of the two it was.
+const setLinePrice = (row, value) => {
+    row.unit_price = value
+    row.price_touched = true
+    row.base_unit_price = linePriceToHome(row, form.rate)
+}
+watch(() => [form.rate, form.currency_id], ([rate, currencyId], [, previousCurrencyId]) => {
     if (!Array.isArray(form.items)) return
-    form.items.forEach((row) => {
-        if (!row || !row.selected_item) return
-        const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
-        const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-        const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.purchase_price ?? 0)
-        row.unit_price = toDocumentCurrency((baseUnitPrice * selectedUnit) / baseUnit, newRate)
-    })
+    repriceRowsForRate(form.items, rate, currencyId !== previousCurrencyId)
 })
 
 const notifySound = (type) => {
@@ -577,12 +636,18 @@ const handleItemChange = async (index, selected_item) => {
         row.available_measures = []
         row.selected_measure = ''
         row.unit_price = ''
+        row.base_unit_price = ''
+        row.price_touched = false
         row.quantity = ''
         row.batch = ''
         row.expire_date = ''
         row.discount = ''
+        row.item_discount = ''
         row.free = ''
         row.tax = ''
+        row.variant_id = null
+        row.selected_variant = null
+        row.item_variants = []
         // do not add a new row on deselect
         return
     }
@@ -615,7 +680,8 @@ const handleItemChange = async (index, selected_item) => {
 
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate);
+    row.unit_price = priceInLineUnit(row.base_unit_price, selected_item, row.selected_measure, form.rate);
+    row.price_touched = false
 
     // Add a new empty row only when selecting into the last row
     if (index === form.items.length - 1) {
@@ -635,11 +701,15 @@ const handleVariantChange = (index, variant) => {
     row.on_hand = resolveVariantOnHand(row) ?? row.selected_item?.on_hand ?? 0
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    row.unit_price = toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate)
+    row.unit_price = priceInLineUnit(row.base_unit_price, row.selected_item, row.selected_measure, form.rate)
+    row.price_touched = false
     notifyIfDuplicate(index)
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
+    // A row that already holds an item stays usable whatever sits above it:
+    // emptying one row used to lock every filled row below it.
+    if (form.items[index]?.selected_item) return true
     for (let i = 0; i < index; i++) {
         if (!form.items[i]?.selected_item) return false
     }
@@ -684,6 +754,21 @@ const resetRow = (index) => {
     r.quantity = ''
     r.unit_price = ''
     r.base_unit_price = ''
+    r.price_touched = false
+    // The variant, free units and discount go with the item: left behind they
+    // stayed on screen and on this (now empty) line.
+    r.variant_id = null
+    r.selected_variant = null
+    r.item_variants = []
+    r.item_discount = ''
+    r.free = ''
+    r.tax = ''
+    r.on_hand = ''
+    // An emptied row in the middle is just a gap: close it.
+    if (index < form.items.length - 1) {
+        form.items.splice(index, 1)
+        while (form.items.length < 6) form.items.push(buildEmptyRow())
+    }
 }
 
 const duplicateToast = ref(null)
@@ -736,43 +821,35 @@ const notifyIfDuplicate = (index) => {
     }
 }
 
-const onhand1 = (index) => {
-    const item = form.items[index]
-    if (!item || !item.selected_item) return ''
-    const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
-    const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
-    const onHand = Number(item.on_hand) || 0
-    const converted = (onHand * baseUnit) / selectedUnit
-    const free = Number(item.free) || 0
-    const qty = Number(item.quantity) || 0
-    return converted + free + qty;
-}
-
 const onhand = (index) => {
     const item = form.items[index]
     if (!item || !item.selected_item) return ''
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
-    console.log('this is selected measure',selectedUnit, 'and this is based unit', baseUnit)
     const qty = Number(item.quantity) || 0
-    const onHand = Number(item.on_hand) ||0
-    const converted = onHand>0?Number((onHand * baseUnit) /selectedUnit):Number((onHand * selectedUnit) /baseUnit)
-    console.log('this is converted',onHand)
+    const onHand = Number(item.on_hand) || 0
+    // Stock is counted in the item's own unit; the line may be in a bigger one.
+    // The same conversion whatever the sign — a negative on-hand used to be
+    // converted the other way round.
+    const converted = (onHand * baseUnit) / selectedUnit
 
     const free = Number(item.free) || 0
-    return converted + free +qty;
+    // Stock is stored in the base unit to 4 decimals, so converting to another
+    // unit leaves sub-hundredth residue (230.0004). Shown to 2 decimals.
+    return Number((converted + free + qty).toFixed(2));
 }
 
 const reservedIn = (index) => {
     const item = form.items[index]
     if (!item || !item.selected_item) return 0
-    return Number(item.selected_batch?.reserved_in ?? item.selected_item?.reserved_in ?? item.reserved_in) || 0
+    // In the line's unit, like the on-hand figure beside it.
+    return stockInLineUnit(item, item.selected_batch?.reserved_in ?? item.selected_item?.reserved_in ?? item.reserved_in)
 }
 
 const reservedOut = (index) => {
     const item = form.items[index]
     if (!item || !item.selected_item) return 0
-    return Number(item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out) || 0
+    return stockInLineUnit(item, item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out)
 }
 
 
@@ -788,7 +865,7 @@ const rowTotal = (index) => {
     const price = toNum(item.unit_price, 0)
     const disc = toNum(item.item_discount, 0)
     const tax = toNum(item.tax, 0)
-    return Number((qty * price - disc + tax).toFixed(2))
+    return Number((qty * price - disc + tax).toFixed(decimalPlaces))
 }
 
 const deleteRow = (index) => {
@@ -800,7 +877,9 @@ const totalRows = computed(() => form.items.length)
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0))
 const totalTax = computed(() => form.items.reduce((acc, item) => acc + toNum(item.tax, 0), 0))
 // Value of goods (sum of qty * price)
-const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0)), 0))
+// Each line at cents, the sum at cents: the server's formula, so the form and
+// the posted bill agree (49 kg at 71.4286 is 3,500.00, not 3,500.0014).
+const goodsTotal = computed(() => Number(form.items.reduce((acc, item) => acc + Number((toNum(item.unit_price, 0) * toNum(item.quantity, 0)).toFixed(2)), 0).toFixed(2)))
 // Bill discount currency and percent
 const billDiscountCurrency = computed(() => {
     const billDisc = toNum(form.discount, 0)
@@ -818,10 +897,10 @@ const billDiscountPercent = computed(() => {
     return gt > 0 ? (billDisc / gt) * 100 : 0
 })
 const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDiscount.value)
-const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0))
-const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
-const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0))
-const totalPurchasePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0))
+const totalRowTotal = computed(() => Number(form.items.reduce((acc, item) => acc + (Number((toNum(item.unit_price, 0) * toNum(item.quantity, 0)).toFixed(2)) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0).toFixed(2)))
+const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0).toFixed(2)))
+const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(2)))
+const totalPurchasePrice = computed(() => Number(form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0).toFixed(2)))
 
 // Transaction summary for card (spec-compliant)
 const transactionSummary = computed(() => {
@@ -829,7 +908,7 @@ const transactionSummary = computed(() => {
     const purchaseType = form.selected_purchase_type?.id;
     let cashReceived = 0;
     if (purchaseType === 'cash') {
-        cashReceived = goodsTotal.value; // transaction total
+        cashReceived = goodsTotal.value - totalDiscount.value + totalTax.value; // the whole bill, after discount
     } else if (purchaseType === 'credit') {
         cashReceived = paid; // on loan = 0, default
     }
@@ -859,21 +938,11 @@ const transactionSummary = computed(() => {
 })
 
 const addRow = () => {
-    form.items.push({
-        item_id: '',
-        selected_item: '',
-        quantity: '',
-        unit_measure_id: '',
-        batch: '',
-        expire_date: '',
-        unit_price: '',
-        base_unit_price: '',
-        selected_measure: '',
-        item_discount: '',
-        free: '',
-        tax: '',
-    })
+    form.items.push(buildEmptyRow())
 }
+
+// What is owed to the supplier for the whole bill: goods, less every discount.
+const billNetTotal = computed(() => Number((goodsTotal.value - totalDiscount.value + totalTax.value).toFixed(decimalPlaces)))
 
 /* ---------------- BARCODE SCAN / ITEM SEARCH & KEYBOARD SHORTCUTS ----------------
  * The field below doubles as a scanner target and an item autocomplete: a hardware
@@ -951,7 +1020,26 @@ const showPreferencesPanel = ref(false)
 
 useFormGuard(form)
 
-const saveFormRef = useSaveShortcut({ form })
+// Enter walks a line: item -> variant -> quantity -> price -> next line.
+// Arrow keys move between the fields of the table; number fields take no
+// negative figures (see useLineEnterNavigation).
+const { onLineEnter, onCustomerEnter, onGridArrow, onNumberBeforeInput, onNumberPaste, onNumberKeydown } = useLineEnterNavigation({
+    hasItem: (row) => !!form.items[row]?.selected_item,
+    ensureRow: (row) => { while (form.items.length <= row) addRow() },
+    focusBarcode,
+})
+
+// Ctrl+S, then Enter, saves. Until Ctrl+S, Enter belongs to the lines.
+// With "confirm before save" on, Ctrl+S opens that confirmation and Enter
+// answers it; with it off, Ctrl+S steps onto the Save button and Enter presses it.
+const focusSaveButton = () => {
+    const button = saveFormRef.value?.querySelector?.('button[type="submit"]')
+    if (!button || button.disabled) return
+    const confirms = usePage().props?.user_preferences?.confirmations?.purchase ?? true
+    if (confirms) button.click()
+    else button.focus()
+}
+const saveFormRef = useSaveShortcut({ form, onSave: focusSaveButton })
 </script>
 
 <template>
@@ -974,7 +1062,10 @@ const saveFormRef = useSaveShortcut({ form })
             @update:open="(value) => pickerOpen = value"
             @select="handlePurchaseOrderPicked"
         />
-        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)">
+        <form ref="saveFormRef" @submit.prevent="handleSubmitAction(false)"
+              @beforeinput.capture="onNumberBeforeInput"
+              @paste.capture="onNumberPaste"
+              @keydown.capture="onNumberKeydown">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
@@ -1077,10 +1168,10 @@ const saveFormRef = useSaveShortcut({ form })
                         @error="handleScanError"
                     />
                 </div>
-                <span class="hidden text-xs text-muted-foreground sm:inline">{{ t('general.scan_barcode_hint') }}</span>
+                <span class="hidden text-xs text-muted-foreground sm:inline">{{ t('general.sale_keyboard_hint') }}</span>
             </div>
             <div class="rounded-xl border bg-card shadow-sm border-violet-500">
-                <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate">
+                <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate" @keydown.enter="onLineEnter" @keydown.capture="onGridArrow">
                     <thead class=" " :class="form.purchase_type === 'cash' ? 'bg-card sticky top-0 z-10' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
@@ -1105,7 +1196,7 @@ const saveFormRef = useSaveShortcut({ form })
                     <tbody class="p-2">
                         <tr v-for="(item, index) in form.items" :key="item.id" class="hover:bg-muted/40 transition-colors">
                             <td class="px-1 py-2 align-top w-5 text-center">{{ index + 1 }}</td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td data-nav="item" :data-row="index" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="itemOptions"
                                     v-model="item.selected_item"
@@ -1123,7 +1214,7 @@ const saveFormRef = useSaveShortcut({ form })
                                     @update:modelValue="value => { handleItemChange(index, value) }"
                                     />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td data-nav="variant" :data-row="index" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <VariantCell
                                     v-model="item.selected_variant"
                                     :item-variants="item.item_variants"
@@ -1147,14 +1238,13 @@ const saveFormRef = useSaveShortcut({ form })
                                 popover="top-left"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td data-nav="qty" :data-row="index" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.quantity"
                                     :disabled="!item.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.quantity`]"
-                                    @keydown.enter.prevent="focusBarcode"
                                 />
                             </td>
                             <td class="text-center" v-if="localColumns.on_hand">
@@ -1176,15 +1266,16 @@ const saveFormRef = useSaveShortcut({ form })
                                             const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
                                             const selectedUnit = Number(measure?.unit) || baseUnit
                                             const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
-                                            form.items[index].unit_price = toDocumentCurrency((baseUnitPrice * selectedUnit) / baseUnit, form.rate);
+                                            form.items[index].unit_price = priceInLineUnit(baseUnitPrice, form.items[index]?.selected_item, measure, form.rate);
 
                                         notifyIfDuplicate(index)
                                     }"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td data-nav="price" :data-row="index" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
-                                    v-model="item.unit_price"
+                                    :model-value="item.unit_price"
+                                    @update:model-value="setLinePrice(item, $event)"
                                     :disabled="!item.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
@@ -1283,7 +1374,7 @@ const saveFormRef = useSaveShortcut({ form })
 
                 <!-- Adjustments -->
                 <div class="rounded-xl border bg-card p-4 shadow-sm">
-                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.adjustments') }}</div>
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.tax_discount_summary') }}</div>
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-muted-foreground">{{ t('general.total_item_tax') }}</span>
                         <span class="tabular-nums text-sm">{{ fmtMoney(totalTax) }}</span>
@@ -1319,7 +1410,9 @@ const saveFormRef = useSaveShortcut({ form })
                         <NextSelect
                             :options="bankAccounts"
                             v-model="form.selected_bank_account"
-                            :floating-text="t('general.bank_account')"
+                            :floating-text="t('general.cash_or_account')"
+                            is-required
+                            :clearable="false"
                             @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
                             label-key="name"
                             :searchable="true"
@@ -1356,10 +1449,10 @@ const saveFormRef = useSaveShortcut({ form })
          <!-- Payment Dialog for Credit Transactions -->
          <PaymentDialog
              :open="showPaymentDialog"
-             :bill-total="totalRowTotal"
+             :bill-total="billNetTotal"
              :payment="form.payment"
              :errors="form.errors"
-             :accounts="props.accounts?.data || []"
+             :accounts="bankAccounts || []"
              :submitting="false"
              @update:open="(value) => showPaymentDialog = value"
              @confirm="handlePaymentDialogConfirm"

@@ -39,6 +39,7 @@ class PurchaseItem extends Model
         'unit_measure_id',
         'warehouse_id',
         'unit_price',
+        'net_unit_cost',
         'discount',
         'free',
         'tax',
@@ -62,11 +63,13 @@ class PurchaseItem extends Model
             'quantity' => 'decimal:2',
             'unit_measure_id' => 'string',
             'warehouse_id' => 'string',
-            'unit_price' => 'decimal:2',
+            // Four decimals in the column: a 2-decimal cast read a dollar price
+            // of 0.1538 back as 0.15, and returns and landed costs used that.
+            'unit_price' => 'float',
             'net_unit_cost' => \App\Casts\StockCost::class,
-            'discount' => 'decimal:2',
-            'free' => 'decimal:2',
-            'tax' => 'decimal:2',
+            'discount' => 'float',
+            'free' => 'float',
+            'tax' => 'float',
             'created_by' => 'string',
             'updated_by' => 'string',
         ];
@@ -138,7 +141,61 @@ class PurchaseItem extends Model
 
     public function remainingReturnableQuantity(?string $excludingPurchaseReturnId = null): float
     {
-        return max((float) $this->quantity - $this->returnedQuantity($excludingPurchaseReturnId), 0.0);
+        return max($this->deliveredQuantity() - $this->returnedQuantity($excludingPurchaseReturnId), 0.0);
+    }
+
+    /** Every unit the line brought in: the ones paid for and the free ones. */
+    public function deliveredQuantity(): float
+    {
+        return (float) $this->quantity + max(0.0, (float) ($this->free ?? 0));
+    }
+
+    /** deliveredQuantity() in the item's own unit. */
+    public function deliveredBaseQuantity(): float
+    {
+        $quantity = (float) $this->quantity;
+
+        return $quantity > 0
+            ? $this->baseQuantity() * ($this->deliveredQuantity() / $quantity)
+            : $this->deliveredQuantity();
+    }
+
+    /**
+     * What one delivered unit of this line really cost, in the purchase's
+     * currency: its net value (after its discount and its share of the bill
+     * discount, plus its tax) spread over the paid and the free units alike.
+     *
+     * This is what the stock was received at, what a return sends back and
+     * what the supplier is debited for it.
+     */
+    public function netUnitValue(): float
+    {
+        $delivered = $this->deliveredQuantity();
+        $purchase = $this->purchase;
+
+        if ($delivered <= 0 || ! $purchase) {
+            return 0.0;
+        }
+
+        $nets = Purchase::lineNetValues($purchase->items, $purchase->discount, $purchase->discount_type);
+
+        // The line's tax was added to the cost of its goods, so it goes back too.
+        return (($nets[$this->id] ?? 0.0) + (float) ($this->tax ?? 0)) / $delivered;
+    }
+
+    /**
+     * The same, in home currency: what the stock layer was costed at. Stored
+     * on the line when it is posted; worked out for lines written before.
+     */
+    public function stockUnitCost(): float
+    {
+        if ($this->net_unit_cost !== null && (float) $this->net_unit_cost > 0) {
+            return (float) $this->net_unit_cost;
+        }
+
+        $rate = max((float) ($this->purchase?->transaction?->rate ?: 1), 0.0000001);
+
+        return $this->netUnitValue() * $rate;
     }
 
     /**

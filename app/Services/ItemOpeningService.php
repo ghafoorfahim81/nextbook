@@ -484,9 +484,9 @@ class ItemOpeningService
             Transaction::whereIn('id', $existingIds)->forceDelete();
         }
 
-        $value = (float) $item->openings()
+        $value = money_round($item->openings()
             ->where('movement_type', StockMovementType::IN->value)
-            ->sum(DB::raw('quantity * unit_cost'));
+            ->sum(DB::raw('quantity * unit_cost')));
 
         if ($value <= 0) {
             return;

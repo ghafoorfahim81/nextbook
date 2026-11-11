@@ -76,7 +76,7 @@ class ItemFastEntryTest extends TestCase
 
         // The legacy item columns stay mirrored from the default variant.
         $this->assertSame('7000001', $water->barcode);
-        $this->assertSame('12.00', (string) $water->sale_price);
+        $this->assertEquals(12.0, $water->sale_price);
 
         $this->assertCount(1, Item::where('code', '7002')->firstOrFail()->variants);
     }

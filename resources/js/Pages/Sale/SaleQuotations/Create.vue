@@ -19,7 +19,7 @@ import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { todayValueForCalendar } from '@/utils/dateDefaults'
-import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, batchOptionsForRow, linePriceToHome, repriceRowsForRate } from '@/composables/useVariantLine'
+import { pickDefaultVariant, resolveVariantUnitPrice, repriceRow, batchOptionsForRow, linePriceToHome, repriceRowsForRate, priceInLineUnit } from '@/composables/useVariantLine'
 import { toDocumentCurrency } from '@/utils/currency'
 import VariantCell from '@/Components/inventory/VariantCell.vue'
 import { useSaveShortcut } from '@/composables/useSaveShortcut'
@@ -313,7 +313,7 @@ const handleItemChange = (index, selected_item) => {
     row.base_unit_price = resolveVariantUnitPrice(selected_item, row.selected_variant, 'sale')
 
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(decimalPlaces));
+    row.unit_price = priceInLineUnit(row.base_unit_price, selected_item, row.selected_measure, form.rate);
     row.price_touched = false
 
     if (index === form.items.length - 1) {
@@ -333,7 +333,7 @@ const handleVariantChange = (index, variant) => {
     repriceRow(row, variant, 'sale')
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces))
+    row.unit_price = priceInLineUnit(row.base_unit_price, row.selected_item, row.selected_measure, form.rate)
     row.price_touched = false
 }
 
@@ -452,7 +452,9 @@ const deleteRow = (index) => {
 
 const totalRows = computed(() => form.items.length)
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.discount, 0), 0))
-const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0)), 0))
+// Each line at cents, the sum at cents: the server's formula, so the form and
+// the posted bill agree (49 kg at 71.4286 is 3,500.00, not 3,500.0014).
+const goodsTotal = computed(() => Number(form.items.reduce((acc, item) => acc + Number((toNum(item.unit_price, 0) * toNum(item.quantity, 0)).toFixed(2)), 0).toFixed(2)))
 const billDiscountCurrency = computed(() => {
     const billDisc = toNum(form.discount, 0)
     if (form.discount_type === 'percentage') return goodsTotal.value * (billDisc / 100)
@@ -619,7 +621,7 @@ const saveFormRef = useSaveShortcut({ form })
                                         const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
                                         const selectedUnit = Number(measure?.unit) || baseUnit
                                         const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
-                                        form.items[index].unit_price = toDocumentCurrency((baseUnitPrice * selectedUnit) / baseUnit, form.rate);
+                                        form.items[index].unit_price = priceInLineUnit(baseUnitPrice, form.items[index]?.selected_item, measure, form.rate);
                                         notifyIfDuplicate(index)
                                     }"
                                 />
