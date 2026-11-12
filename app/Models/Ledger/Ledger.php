@@ -383,7 +383,11 @@ class Ledger extends Model
         }
 
         return $query->where(function (Builder $q) use ($branchId) {
+            // The cash customer is the company's walk-in party, open to every
+            // branch including ones created after it (provisioning inserts it
+            // without model events, so it has no branch rows of its own).
             $q->whereNotIn($this->qualifyColumn('type'), LedgerType::commercialValues())
+                ->orWhere($this->qualifyColumn('code'), 'CASH-CUST')
                 ->orWhereExists(fn ($sub) => $sub->select(DB::raw(1))
                     ->from('ledger_branches')
                     ->whereColumn('ledger_branches.ledger_id', $this->qualifyColumn('id'))

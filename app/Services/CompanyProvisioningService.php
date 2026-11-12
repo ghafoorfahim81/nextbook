@@ -389,13 +389,20 @@ class CompanyProvisioningService
             return 0;
         }
 
-        $this->insert(Ledger::class, [
+        $cash = $this->insert(Ledger::class, [
             'name' => __('general.cash_customer'),
             'code' => 'CASH-CUST',
             'type' => 'customer',
             'company_id' => $company->id,
             'created_by' => $actorId,
         ]);
+
+        // Events are off here, so the model's "open to its creator's branch"
+        // hook did not run: open it to every branch by hand.
+        $cash->openToBranches(
+            \App\Models\Administration\Branch::withoutGlobalScopes()
+                ->where('company_id', $company->id)->pluck('id')->all()
+        );
 
         return 1;
     }

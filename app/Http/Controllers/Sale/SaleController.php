@@ -169,7 +169,7 @@ class SaleController extends Controller
                     ])
                     ->withStatementTotals()
                     ->where('type', 'customer')
-                    ->where('status', true)
+                    ->where('status', 'active')
                     ->availableInBranch(CompanyContext::branchId())
                     ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
                     ->orderBy('created_at','desc')
@@ -858,7 +858,7 @@ class SaleController extends Controller
                     ])
                     ->withStatementTotals()
                     ->where('type', 'customer')
-                    ->where('status', true)
+                    ->where('status', 'active')
                     // Its own customer stays selectable even if no longer open here.
                     ->where(fn ($q) => $q->availableInBranch(CompanyContext::branchId())->orWhere('id', $sale->customer_id))
                     ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")

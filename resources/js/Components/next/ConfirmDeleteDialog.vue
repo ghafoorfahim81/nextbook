@@ -1,6 +1,5 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { cn } from '@/lib/utils'
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
@@ -30,10 +29,13 @@ const props = defineProps({
     titleSuffix: { type: String, default: null },
 })
 
-const { locale } = useI18n()
 const resolvedSuffix = computed(() => {
     if (props.titleSuffix !== null) return props.titleSuffix
-    return ['fa', 'ps', 'ar'].includes(String(locale.value).toLowerCase()) ? '؟' : ' ?'
+    // Read from the document, not useI18n(): the delete, toggle and save
+    // confirmations mount this dialog in a separate app that has no i18n plugin,
+    // and useI18n() throws there, so the dialog never opened.
+    const lang = String(document.documentElement.getAttribute('lang') || 'en').toLowerCase()
+    return ['fa', 'ps', 'ar'].includes(lang) ? '؟' : ' ?'
 })
 const emit = defineEmits(['confirm', 'update:open'])
 
