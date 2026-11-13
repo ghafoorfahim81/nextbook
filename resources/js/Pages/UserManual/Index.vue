@@ -12,10 +12,13 @@ import {
     Building2,
     Calculator,
     CalendarClock,
+    CalendarDays,
     ChevronLeft,
+    Clock,
     ChevronRight,
     Compass,
     ArrowLeftRight,
+    Gauge,
     Image as ImageIcon,
     Info,
     Languages,
@@ -39,6 +42,7 @@ import { getMeta, getGuides, getGuide, getGuidesByLocale, MANUAL_LOCALES } from 
 import { buildSearchIndex, chapterMatches, normalize, searchIndex } from './content/search'
 import TocPanel from './TocPanel.vue'
 import ManualHighlight from './ManualHighlight.vue'
+import { demoComponent } from './demos'
 
 const { t, locale } = useI18n()
 
@@ -707,6 +711,18 @@ onBeforeUnmount(() => {
                         <header class="border-b border-border bg-muted/50 px-6 py-4">
                             <p class="text-xs font-bold tracking-wide text-primary">{{ chapter.number }}</p>
                             <h3 class="text-xl font-bold text-card-foreground"><ManualHighlight :text="chapter.title" :query="query" /></h3>
+                            <!-- Optional: how hard the chapter is, how long it takes, when it was last revised. -->
+                            <ul v-if="chapter.meta" class="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <li v-if="chapter.meta.level" class="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-0.5">
+                                    <Gauge class="size-3" /> {{ chapter.meta.level }}
+                                </li>
+                                <li v-if="chapter.meta.minutes" class="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-0.5">
+                                    <Clock class="size-3" /> {{ chapter.meta.minutes }}
+                                </li>
+                                <li v-if="chapter.meta.updated" class="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-0.5">
+                                    <CalendarDays class="size-3" /> {{ chapter.meta.updated }}
+                                </li>
+                            </ul>
                         </header>
 
                         <div class="space-y-5 px-6 py-6 text-base leading-8 text-card-foreground">
@@ -742,6 +758,25 @@ onBeforeUnmount(() => {
                                 >
                                     <li v-for="item in block.items" :key="item"><ManualHighlight :text="item" :query="query" /></li>
                                 </ol>
+
+                                <!-- Numbered steps: a title and a sentence each. -->
+                                <ol v-else-if="block.type === 'steps'" class="space-y-5">
+                                    <li v-for="(step, stepIndex) in block.items" :key="stepIndex" class="flex gap-4">
+                                        <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                                            {{ (stepIndex + 1).toLocaleString(manualLocale === 'en' ? 'en' : 'fa') }}
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="font-semibold text-card-foreground"><ManualHighlight :text="step.title" :query="query" /></p>
+                                            <p class="text-card-foreground"><ManualHighlight :text="step.text" :query="query" /></p>
+                                        </div>
+                                    </li>
+                                </ol>
+
+                                <!-- A live demo on sample data; nothing in it is saved. -->
+                                <div v-else-if="block.type === 'demo'" class="space-y-2">
+                                    <component :is="demoComponent(block.demo)" v-if="demoComponent(block.demo)" :labels="block.labels" />
+                                    <p v-if="block.caption" class="text-xs text-muted-foreground"><ManualHighlight :text="block.caption" :query="query" /></p>
+                                </div>
 
                                 <div
                                     v-else-if="block.type === 'note'"

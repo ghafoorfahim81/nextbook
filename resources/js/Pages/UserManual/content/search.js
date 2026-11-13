@@ -107,7 +107,12 @@ export function blockTexts(block) {
         if (block[key]) parts.push(String(block[key]))
     }
     for (const key of ['items', 'steps', 'headers']) {
-        if (Array.isArray(block[key])) parts.push(...block[key].map(String))
+        if (!Array.isArray(block[key])) continue
+        // A `steps` block holds { title, text } objects rather than plain strings.
+        for (const entry of block[key]) {
+            if (entry && typeof entry === 'object') parts.push(...[entry.title, entry.text].filter(Boolean).map(String))
+            else parts.push(String(entry))
+        }
     }
     // A whole row reads as one sentence ("IBAN — International Bank Account
     // Number…"), which makes a far better search snippet than a lone cell.

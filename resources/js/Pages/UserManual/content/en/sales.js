@@ -723,5 +723,107 @@ export default {
                 },
             ],
         },
+        {
+            id: 'try-invoice',
+            number: '19',
+            title: 'Try it: an invoice with discounts, tax and currency',
+            meta: {
+                level: 'Intermediate',
+                minutes: '10 min',
+                updated: 'Nov 2026',
+            },
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'This is a working copy of the sales invoice with sample data. Change the quantities, prices and discounts, add or remove lines, and switch the currency — the totals follow the same rules as the real form. Nothing you do here is saved.',
+                },
+                {
+                    type: 'demo',
+                    demo: 'sales-invoice',
+                    caption: 'The demo uses sample customers and items; it never touches your own data.',
+                    labels: {
+                        banner: 'Live demo — sample data, nothing is saved',
+                        form_title: 'Sales invoice',
+                        customer: 'Customer',
+                        date: 'Date',
+                        currency: 'Currency',
+                        rate: 'rate',
+                        item: 'Item',
+                        qty: 'Quantity',
+                        price: 'Unit price',
+                        line_discount: 'Discount',
+                        tax: 'Tax',
+                        total: 'Total',
+                        remove: 'Remove line',
+                        add_line: 'Add line',
+                        bill_discount: 'Bill discount',
+                        discount_too_big: 'The discount is larger than the bill total.',
+                        goods: 'Goods',
+                        line_discounts: 'Line discounts',
+                        grand_total: 'Amount payable',
+                        save: 'Save',
+                        saved: 'This is only a demo — nothing was saved.',
+                        number_locale: 'en',
+                        sample_date: '2026-11-13',
+                        customers: [
+                            'Ahmad Store',
+                            'Noor Trading',
+                            'Cash customer',
+                        ],
+                        items: [
+                            {
+                                name: 'Black tea 200 g',
+                                price: 280,
+                            },
+                            {
+                                name: 'Basmati rice 5 kg',
+                                price: 1450,
+                            },
+                            {
+                                name: 'Cooking oil 5 L',
+                                price: 980,
+                            },
+                        ],
+                        base_currency: 'AFN',
+                        foreign_currency: 'USD',
+                    },
+                },
+                {
+                    type: 'steps',
+                    items: [
+                        {
+                            title: 'Line discount',
+                            text: 'In the Discount column of a line, type the amount to take off that line — good for a special price on one item. Discount rules can fill it in for you on the real form.',
+                        },
+                        {
+                            title: 'Bill discount',
+                            text: 'Under the table, set the bill discount as a percentage of the goods or as a fixed amount. A percentage is taken on the value of the goods before line discounts; a fixed amount comes off once.',
+                        },
+                        {
+                            title: 'Tax',
+                            text: 'Type the tax amount of a line in the Tax column (on the real form it fills itself in when the item or customer has a tax rate). Tax is added to the bill.',
+                        },
+                        {
+                            title: 'Currency',
+                            text: 'Change the currency at the top. Prices convert at the rate, and switching back gives exactly the original price. A price you type yourself is kept.',
+                        },
+                        {
+                            title: 'Save',
+                            text: 'Press Save — or Ctrl+S, then pick Save, Save and new, or Save and print. For a credit sale the payment dialog opens first.',
+                        },
+                    ],
+                },
+                {
+                    type: 'tip',
+                    label: 'Try this',
+                    text: 'Set the bill discount to 10 %, then switch it to a fixed amount and compare. Then add a line discount and watch the percentage stay on the goods, not on what is left.',
+                },
+                {
+                    type: 'warn',
+                    label: 'Only the arithmetic',
+                    text: 'The demo shows how the totals are worked out. The real form also checks stock, the price limit and the discount cap that your role allows.',
+                },
+            ],
+        },
     ],
 }
