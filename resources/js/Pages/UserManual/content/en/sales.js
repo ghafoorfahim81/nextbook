@@ -245,6 +245,7 @@ export default {
                         'The print window opens on the same page; the system does not send you to a new browser tab.',
                         'You can export the invoice to Excel or PDF.',
                         'Ready-made templates 1 to 5 and custom templates are available in the invoice designer.',
+                        'On a printed invoice the variant name is shown beside the item.',
                     ],
                 },
                 {
@@ -330,7 +331,7 @@ export default {
                         ['“Not enough stock” when posting', 'Wrong warehouse selected, or stock really is low. Check warehouse stock in inventory.'],
                         ['Sale price cannot be changed', 'Your role is not allowed to change price. Ask an administrator.'],
                         ['Invoice not in the sales report', 'It is probably still a draft. The sales report shows posted documents only.'],
-                        ['Customer balance looks wrong', 'Read the customer statement and the activity log. A receipt may be posted on the wrong customer, or an invoice was reversed.'],
+                        ['Customer balance looks wrong', 'Read the customer statement and the activity log. A receipt may be posted on the wrong customer, or an invoice was reversed. Reversed documents are left off the statement (together with their reversal), but the activity log still shows them.'],
                         ['Print shows the old template', 'The template was changed under Administration → Company but the browser cached the old one. Refresh the page.'],
                     ],
                 },
@@ -394,7 +395,14 @@ export default {
                         'Number fields do not change when you scroll the mouse wheel over them.',
                         'Number fields on the sale form take no negative figures.',
                         'Enter inside a line never saves the bill — only Ctrl+S followed by Enter does.',
+                        'Delete on a number, or on an item box with nothing typed in it, empties the whole line. While you are typing text, Delete edits the text as usual.',
+                        'The sales return and purchase return forms walk the returned quantities with Enter in the same way.',
                     ],
+                },
+                {
+                    type: 'tip',
+                    label: 'Three ways to save',
+                    text: 'On a new sale, and on the new receipt and new payment forms, saving asks you to choose — Save, Save and new, or Save and print. The Left and Right arrow keys move between the three and Enter takes the one in focus. This choice is asked even when “confirm before save” is off.',
                 },
             ],
         },
@@ -469,6 +477,18 @@ export default {
                         'The batch list shows only the batches of the chosen variant.',
                         'The expiry date is picked from the dates actually in stock, with the quantity of each; it cannot be typed. Leave it empty and the system takes the nearest expiry first.',
                         'When no sale price is set, the proposed price is built on the chosen variant’s own average cost.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'e) Rounding',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Prices and unit costs keep their own precision, up to four decimals. A bag priced at 3,500 and kept per kilo is held as 71.4286 per kilo, not 71.43.',
+                        'Every amount a document posts is rounded to cents: 49 kg at 71.4286 posts 3,500.00, not 3,500.0014. Balances are read at cents.',
+                        'On the form, the stock shown on a line is in the unit of the line with two decimals; the item search list shows four.',
                     ],
                 },
             ],
@@ -576,6 +596,130 @@ export default {
                             'The currency has no stored rate. Type the rate and the prices convert.',
                         ],
                     ],
+                },
+            ],
+        },
+        {
+            id: 'orders-quotations',
+            number: '17',
+            title: 'Orders and quotations in detail',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'Sales orders and sales quotations are filled in almost exactly like a sales invoice, so everything in the keyboard chapter works here too. This chapter lists what is specific to them.',
+                },
+                {
+                    type: 'h4',
+                    text: 'a) The form',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Variant column: the variant is picked beside the item, so one item sold in several variants (sizes, colours) is entered once per variant. The column is on by default and can be switched off in the form settings.',
+                        'Stock column: shows the stock of the chosen variant in the chosen warehouse, in the unit of the line. An order or a quotation does not move stock; the figure is only there to help you decide.',
+                        'Barcode box: scan a barcode and the item is added as a line; scan it again and the quantity goes up by one.',
+                        'Enter moves through item, variant, quantity and price and on to the next line. Delete on a number, or on an item box with nothing typed in it, empties the whole line. The arrow keys move between fields.',
+                        'Note: the note sits among the general fields at the top of the form.',
+                        'Dates: the delivery date of an order and the validity date of a quotation may be in the future — that is the normal case.',
+                        'The Category column is no longer on these forms.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) The detail page',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'It shows every field that was saved: customer, warehouse, currency and rate, bill discount, note, who created and who last updated it and when, and each line with its batch, expiry date, quantity, free units, price, line discount and total.',
+                        'Once an order has been invoiced, the page says “Completed by sale” and links to that sale.',
+                        'The Reverse button on a posted order or quotation voids it: it can no longer be turned into a sale.',
+                        'Reversing the sale made from an order releases the order. The “Completed by sale” link disappears and the order can be invoiced again.',
+                    ],
+                },
+                {
+                    type: 'note',
+                    label: 'Sidebar names',
+                    text: 'In the sidebar and in the quick links the documents are listed under short names: Sale, Order, Return and Quotation, with the quotation last.',
+                },
+            ],
+        },
+        {
+            id: 'customers',
+            number: '18',
+            title: 'Customers: status, statement and deletion',
+            blocks: [
+                {
+                    type: 'h4',
+                    text: 'a) Active, inactive and blocked',
+                },
+                {
+                    type: 'table',
+                    headers: ['Status', 'What it means'],
+                    rows: [
+                        ['Active', 'The customer is offered by the pickers on sales, receipts, payments and the other forms.'],
+                        ['Inactive', 'Not offered any more. The history stays where it is.'],
+                        ['Blocked', 'Not offered either. Use it for a customer you must not deal with.'],
+                    ],
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The status is switched on the customer’s own page, with the three buttons beside the name. It needs permission to edit customers. The edit form does not change it.',
+                        'Inactive and blocked behave the same in the pickers; the difference is the reason you recorded.',
+                        'The preferences screen that switches parties on and off never unblocks a blocked customer.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) The customer list',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'A Balance column shows what the customer owes you (or you owe them), written the way your balance preference says. A settled customer shows a dash.',
+                        'Phone numbers always read left to right, also in Dari and Pashto, so a leading + stays in front.',
+                        'Export to excel exports the list with the same balance and status.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'c) Code and names',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The code is suggested when you create the customer and is fixed once the customer is saved: documents and the other party’s records quote it. The edit form shows it greyed out.',
+                        'Name, phone and email must not repeat among customers. A customer and a supplier, however, may share them — the same person can be both, as two separate accounts.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'd) Deleting a customer',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'A customer who has transactions cannot be deleted. Set the customer inactive instead.',
+                        'A customer with a balance cannot be deleted until the balance is zero, so a debt is never written off by deleting the person. The delete action is greyed out in the list.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'e) The customer page and the statement',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The sales, receipts and payments tabs each have a button to create the matching document for this customer (New sale, New receipt, New payment). The first column of those tables is the transaction number.',
+                        'A voided document is left off the statement together with the entry that reversed it. The two cancel each other, so the closing balance is the same; the general ledger and the activity log still show both.',
+                        'The statement can be printed straight from the page (it opens as a PDF in the browser) as well as exported.',
+                    ],
+                },
+                {
+                    type: 'note',
+                    label: 'Cash customer',
+                    text: 'The cash customer is created with the company and is open to every branch, including branches you add later.',
                 },
             ],
         },

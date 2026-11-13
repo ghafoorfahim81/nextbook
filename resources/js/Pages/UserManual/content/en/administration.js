@@ -2,7 +2,7 @@ export default {
     id: 'administration',
     number: '14',
     title: 'Administration & company setup guide',
-    subtitle: 'Setup order · company · branch & warehouse · currency & unit · master data · invoice designer · users & roles',
+    subtitle: 'Setup order · company · branch & warehouse · currency & unit · master data · invoice designer · users & roles · several companies · subscription',
     summary:
         'The administration module is where you define the company’s master data before daily work: org structure, currencies, units, categories, the invoice template, and users.',
     chapters: [
@@ -51,6 +51,11 @@ export default {
                         ['Base currency', 'The currency all financial reports are presented in. Documents in other currencies are stored with an exchange rate to this currency.'],
                         ['Legal details', 'Official name, address, tax ID, phone — they appear on the printed invoice.'],
                         ['Invoice template', 'The sales print template for the whole company. Selected and designed on this page.'],
+                        ['Company logo', 'PNG or JPG, up to 2 MB. After you choose the file a window opens where you drag and zoom the picture so the whole logo sits in the frame; what you see is what is saved. The logo prints on invoices.'],
+                        ['Business type', 'Shapes which fields, reports and defaults you see (pharmacy, supermarket, manufacturing and so on).'],
+                        ['Company name in three languages', 'English is required. Add the Dari and Pashto names to print them on documents.'],
+                        ['Costing method', 'How the cost of goods sold is worked out (FIFO, LIFO or weighted average). An item can have its own method.'],
+                        ['Business licence', 'Licence number, issue date and expiry date. Shared by all branches and printed with the company name.'],
                     ],
                 },
                 {
@@ -185,8 +190,198 @@ export default {
             ],
         },
         {
-            id: 'troubleshooting',
+            id: 'companies-branches',
             number: '9',
+            title: 'Several companies and branches',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'One person can work in more than one company, and in several branches of each. Each company keeps its own books, items, customers and users’ roles; nothing is shared between companies. The company and the branch you are working in are always the ones shown in the header.',
+                },
+                {
+                    type: 'h4',
+                    text: 'a) Choosing where to work',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Your companies (profile menu): lists every company you may work in, with the one you are in marked Current. Press Switch on another company to work in it.',
+                        'Your branches (profile menu): lists the branches of the current company you may work in. Switch the same way.',
+                        'Only the companies and branches you were given are listed. Your home company and home branch are always available.',
+                        'A page left open on another company in an old browser tab is refused when you try to save, so a document can never be saved into the wrong company. Reload the tab.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) Who can create companies and give access',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Only a super-admin can create a company. A branch is added by someone who is allowed to create branches. The person who signs up becomes the super-admin of their own company.',
+                        'On the Your companies page, New company opens the setup wizard (next chapter). On the Your branches page, New branch adds another place to trade that shares the company’s books.',
+                        'To decide where a user may work, open Users and press Access on that user. For each company you can tick “Can work in this company” and pick the branches they may switch to.',
+                        'A super-admin works in every branch of a company they have, so no branches are picked for them.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'c) Roles per company',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The roles themselves (super-admin, admin, accountant, clerk and so on) are one shared set. What differs per company is who holds which role.',
+                        'Pick the user’s role next to each company on the Access page. Someone can be a super-admin in one company and a clerk in another.',
+                        'Only a super-admin of that company can change roles there.',
+                    ],
+                },
+                {
+                    type: 'note',
+                    label: 'Super-admin is per company',
+                    text: 'A super-admin has full power only in the companies where it was given to them, not everywhere in the system.',
+                },
+            ],
+        },
+        {
+            id: 'company-wizard',
+            number: '10',
+            title: 'Creating and editing a company',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'A company is created by a short wizard, at sign-up or from Your companies → New company. Every step is checked by the system before you move on, and nothing is created until the last step passes.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Step', 'What you enter'],
+                    rows: [
+                        ['Identity', 'The company name (English is required; add Dari and Pashto to print them on documents), the abbreviation, the logo, and the business type.'],
+                        ['Books & language', 'The base currency, the language, the calendar (Gregorian or Jalali), the working style, and the costing method (how the cost of goods sold is worked out).'],
+                        ['Contact & licence', 'How to reach the company, and its business licence: number, issue date and expiry date. The licence is shared by all branches and is printed with the company name.'],
+                        ['Review', 'Check everything and press Create company. Each line has an Edit link back to its step.'],
+                    ],
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The logo is PNG or JPG up to 2 MB. After you choose it, a window opens where you drag and zoom the picture so the whole logo sits in the frame.',
+                        'The business type shapes which fields, reports and defaults you see.',
+                        'The base currency is the one your books are kept in. It cannot be changed once you trade.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'What the system builds',
+                },
+                {
+                    type: 'p',
+                    text: 'After the last step an animated screen shows the company being set up: the company and its main branch, the chart of accounts, default currencies, units and measures, categories and brands, the walk-in cash customer, expense categories and journal classes, human resources defaults (departments, shifts, leave and salary), the financial year, the main warehouse, and your access. If anything fails, nothing is saved and you can try again.',
+                },
+                {
+                    type: 'h4',
+                    text: 'Editing an existing company',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Open the company page and press Edit company. You must be working in that company; otherwise the page asks you to switch to it first.',
+                        'The same steps open all at once, and two more join them: Company settings (numbering, posting, formats) and Invoice design (theme and formats).',
+                        'Nothing is saved until you press Save changes. The one exception is the invoice theme, which saves as soon as you pick it.',
+                        'You can view the company settings step without special rights, but changing it needs the company settings permission.',
+                    ],
+                },
+            ],
+        },
+        {
+            id: 'company-settings-modules',
+            number: '11',
+            title: 'Company settings and switching modules off',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'Company settings are the rules everyone in the company works by. They are grouped in four tabs.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Tab', 'What it holds'],
+                    rows: [
+                        ['Documents', 'Document numbering and document rules, such as the return window in days.'],
+                        ['Posting', 'How and when documents are posted.'],
+                        ['Formats', 'How numbers, dates and balances are written.'],
+                        ['Modules', 'Which modules the company uses.'],
+                    ],
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Modules: switch off the modules the company does not use. A module that is off disappears from the menu and its pages are closed. Its records are kept and come back when you switch it on again.',
+                        'Only someone allowed to change company settings can change them; everyone else sees them read-only.',
+                        'A module can also be missing because it is not part of the company’s package (see the next chapter).',
+                    ],
+                },
+            ],
+        },
+        {
+            id: 'subscription',
+            number: '12',
+            title: 'Your subscription and licence',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'Each company runs on a package that NextBook issues: which modules it has, how many users and branches it may have, and until when it is paid. The company’s licence is refreshed automatically from NextBook; you do not enter anything.',
+                },
+                {
+                    type: 'h4',
+                    text: 'a) The My subscription page',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Open My subscription from the profile menu. It shows your package, how long it runs, how much of it you use (users and branches), and the modules in your package.',
+                        'It also shows the invoices and payments recorded for your subscription.',
+                        'If the page says no package limits apply, the company has no limits.',
+                        'To change or renew the package, contact NextBook. The platform pages for packages and subscriptions are for the NextBook platform admin only.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) Warnings and read-only mode',
+                },
+                {
+                    type: 'table',
+                    headers: ['State', 'What you see', 'What you can do'],
+                    rows: [
+                        ['Active', 'Nothing.', 'Everything your role allows.'],
+                        ['Expiring soon', 'A banner with the end date and the days left, about two weeks before it ends.', 'Everything — renew to avoid interruption.'],
+                        ['Expired', 'A banner saying the subscription ended.', 'Read, print and export everything. Nothing can be added, changed, posted or deleted.'],
+                        ['Blocked', 'A banner with the reason.', 'The same as expired.'],
+                    ],
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The read-only mode is deliberately soft: nothing is locked or removed, so you can always read and print your own books.',
+                        'A few actions are still allowed: signing out, changing language, switching company or branch, notifications, and your own profile and personal settings.',
+                        'If NextBook cannot be reached for a while, the last licence keeps working and its end date is stretched by a few grace days. A block is never softened.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'c) Package limits',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Users and branches: when all the places in your package are used, adding another is refused with a message that names the package and the limit.',
+                        'Modules: only the modules in your package are available, even if they are switched on in Company settings.',
+                    ],
+                },
+            ],
+        },
+        {
+            id: 'troubleshooting',
+            number: '13',
             title: 'Troubleshooting',
             blocks: [
                 {
@@ -197,6 +392,10 @@ export default {
                         ['A user cannot see a menu', 'Their role does not have that permission. Add the permission to the role.'],
                         ['The invoice prints with the old logo', 'The template was changed on the company page but the browser cached it. Refresh the page.'],
                         ['The exchange rate on a new invoice is wrong', 'Today’s rate was not entered. Record today’s rate from "Currency rate update".'],
+                        ['A save is refused: “subscription ended” or “company is blocked”', 'The company is read-only. You can still read, print and export; contact NextBook to renew or unblock it.'],
+                        ['“Your package allows … users/branches, and they are all in use”', 'The package limit is reached. Ask NextBook to upgrade your package.'],
+                        ['I cannot see a company or branch I need', 'A super-admin must give you access on the user’s Access page. Only the companies and branches you were given are listed.'],
+                        ['A whole module is missing from the menu', 'It is switched off under Company settings → Modules, or it is not part of your package.'],
                     ],
                 },
             ],

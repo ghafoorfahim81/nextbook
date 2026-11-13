@@ -70,7 +70,7 @@ export default {
                     type: 'table',
                     headers: ['Menu', 'What it does'],
                     rows: [
-                        ['Account', 'Name, photo, password, two-factor login, and open sessions.'],
+                        ['Account', 'Name, photo, password, two-factor login, and open sessions. After you choose a photo (JPG or PNG, up to 1 MB) you can drag and zoom it to fit the round frame.'],
                         ['Notifications', 'In-app alerts for work that needs your attention (contract end, document expiry, pending approvals).'],
                         ['User Manual', 'This guide. It opens inside the application — it is not a separate PDF.'],
                         ['What’s New', 'A list of recent product changes.'],

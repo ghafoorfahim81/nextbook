@@ -14,7 +14,12 @@
 - Helpers: `getLabel()`, `values()`
 
 #### `App\Enums\SalesPurchaseType`
-- Values: `cash`, `credit`
+- Values: `cash`, `credit`, `on_loan`
+- Helpers: `getLabel()`, `values()`
+
+#### `App\Enums\UserStatus`
+- Values: `active`, `inactive`, `blocked`
+- Used by `ledgers.status`, which replaced the `is_active` boolean. Only `active` parties are offered by the pickers.
 - Helpers: `getLabel()`, `values()`
 
 #### `App\Enums\WorkingStyle`

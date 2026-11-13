@@ -19,7 +19,7 @@ export default {
         badge: 'NextBook — Financial & Administrative System',
         title: 'User Manual',
         subtitle: 'Module-by-module guides for users',
-        version: 'Version 2.0 · September 2026',
+        version: 'Version 2.0 · November 2026',
         howToRead:
             'Pick a module from the list below to open its full guide. If you are new to the system, start with “Getting started & overview”. Each guide has its own table of contents and can be read on its own.',
     },

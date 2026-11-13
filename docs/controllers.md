@@ -74,6 +74,9 @@ This section summarizes public actions, expected inputs, outputs, and side effec
 - `GET /customers` → Inertia `Ledgers/Customers/Index` with `LedgerResource` collection (`type=customer`).
 - `GET /customers/create` → Inertia `Ledgers/Customers/Create`.
 - `POST /customers` → `store(LedgerStoreRequest)` → Creates customer; optional opening transaction; redirect success.
+- `PATCH /customers/{customer}/status` → `updateStatus(Request, Ledger)` → Sets `status` (active|inactive|blocked). The edit form never changes it, and the code is fixed once the customer is saved.
+- `GET /customers/{customer}/export?list=statement&format=pdf&inline=1` → The statement PDF served inline (print) instead of as a download.
+- `DELETE /customers/{customer}` → Refused when the customer has transactions or a non-zero balance.
 
 #### `App\Http\Controllers\Purchase\PurchaseController`
 - `GET /purchases` → Inertia `Purchase/Purchases/Index` with `PurchaseResource` collection.

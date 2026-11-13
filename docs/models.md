@@ -46,7 +46,9 @@ Notation:
 - Relationships: `measures(): HasMany(UnitMeasure)`, `branch(): BelongsTo`
 
 #### `App\Models\Ledger\Ledger`
-- Attributes: `name, code, email, phone_no, address, type, branch_id, currency_id, ...`
+- Attributes: `name, code, email, phone_no, address, type, status, branch_id, currency_id, ...`
+- `status` is a `UserStatus` (active | inactive | blocked). `is_active` is no longer a column: it survives as a read/write attribute over `status` and is not queryable — filter with `scopeActive()` or on `status`.
+- Name, phone and email are unique per company **and type**, among live rows, so a customer and a supplier may share them.
 - Relationships: `currency(): BelongsTo(Currency)`, `branch(): BelongsTo(Branch)`
 
 #### `App\Models\Account\AccountType`

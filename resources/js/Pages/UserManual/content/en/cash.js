@@ -129,6 +129,11 @@ export default {
                         'Print the receipt if needed; the print window opens on the same page.',
                     ],
                 },
+                {
+                    type: 'tip',
+                    label: 'Three ways to save',
+                    text: 'On the new receipt and new payment forms, saving asks you to choose — Save, Save and new, or Save and print. The Left and Right arrow keys move between the three and Enter takes the one in focus. This choice is asked even when “confirm before save” is off.',
+                },
             ],
         },
         {

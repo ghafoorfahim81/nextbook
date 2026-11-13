@@ -331,6 +331,7 @@ export default {
                         ['Batch / lot', 'A specific consignment of a variant with its own expiry and cost.'],
                         ['FIFO', 'First in, first out; the oldest batch is sold first.'],
                         ['Weighted average', 'A costing method that updates the average purchase price based on quantity.'],
+                        ['Final cost', 'The item list column that shows the item’s current average cost, after purchase discounts and landed cost.'],
                         ['Stock in transit', 'Goods that have left the source warehouse but are not yet recorded at the destination.'],
                         ['Reorder point (minimum stock)', 'The figure at which the shortage report warns when stock falls to it.'],
                     ],

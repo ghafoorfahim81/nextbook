@@ -198,6 +198,11 @@ export default {
                     label: 'Order matters',
                     text: 'Record landed cost after posting the purchase invoice. If the item was sold before the landed cost was recorded, adjusting the cost gets complicated.',
                 },
+                {
+                    type: 'note',
+                    label: 'Reversing a purchase that has landed cost',
+                    text: 'While a landed cost is posted on a purchase, the purchase cannot be reversed — the message names the landed cost. Reverse the landed cost first, then the purchase.',
+                },
             ],
         },
         {
@@ -234,6 +239,9 @@ export default {
                         'The receiving warehouse must belong to the same branch.',
                         'A posted invoice is locked; correction only via reversal.',
                         'A purchase return cannot exceed the purchased quantity.',
+                        'A cash purchase must name the account the money comes from, and a payment cannot be more than the bill.',
+                        'An order is billed once; reversing the purchase made from it reopens the order.',
+                        'A purchase that has a landed cost cannot be reversed until that landed cost is reversed.',
                     ],
                 },
             ],
@@ -309,6 +317,242 @@ export default {
                         ['Supplier payable doubled', 'You probably posted both a purchase invoice and a manual journal entry. Reverse one.'],
                         ['Stock value went negative', 'An item was sold beyond stock and then a purchase was posted. Fix the document order by date.'],
                     ],
+                },
+            ],
+        },
+        {
+            id: 'keyboard',
+            number: '14',
+            title: 'Working fast with the keyboard',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'A purchase is entered the same way as a sale, entirely from the keyboard. The form opens with the cursor on the supplier, and Enter carries you through each line in the order you fill it.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Key', 'What it does'],
+                    rows: [
+                        ['Enter on the supplier', 'Goes to the barcode / item search box.'],
+                        ['Tab on the supplier', 'Goes to the item field of the first line.'],
+                        ['Enter on the item', 'Takes the highlighted item and goes to the variant — or straight to the quantity when the item has only one variant.'],
+                        ['Enter on the variant', 'Goes to the quantity.'],
+                        ['Enter on the quantity', 'Goes to the price.'],
+                        ['Enter on the price', 'Goes to the item field of the next line. A new line is added when there is none.'],
+                        ['Arrow keys', 'Move up, down, left and right between the fields of the lines table. They never change a value.'],
+                        ['Delete', 'On a number, or on an item box with nothing typed in it, empties the whole line. While you are typing text, Delete edits the text as usual.'],
+                        ['F2 or Alt+B', 'Jumps to the barcode search from anywhere on the form.'],
+                        ['Ctrl+S, then Enter', 'Saves. With “confirm before save” on, Ctrl+S opens the confirmation and Enter answers it; with it off, Ctrl+S steps onto the Save button and Enter presses it.'],
+                    ],
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Scan a barcode and the item is added as a line; scan it again and its quantity goes up by one. The barcode box is on the edit form as well.',
+                        'Number fields take no negative figures and do not change when you scroll the mouse wheel over them.',
+                        'Enter inside a line never saves the bill — only Ctrl+S followed by Enter does.',
+                        'The purchase return and sales return forms walk the returned quantities with Enter in the same way.',
+                    ],
+                },
+            ],
+        },
+        {
+            id: 'payment-and-currency',
+            number: '15',
+            title: 'Payment, currency, free goods, discounts and rounding',
+            blocks: [
+                {
+                    type: 'h4',
+                    text: 'a) Purchase type and payment',
+                },
+                {
+                    type: 'table',
+                    headers: ['Purchase type', 'What happens', 'Payment status'],
+                    rows: [
+                        ['Cash', 'The whole bill is paid now from the cash or bank account you pick. The account is required and cannot be left empty.', 'Paid'],
+                        ['Credit', 'A payment dialog opens: enter how much is paid now, the payment method and the cash/bank account. The rest stays owed to the supplier.', 'Paid when the full amount is paid, Partially paid when part of it is, Unpaid when nothing is'],
+                        ['On loan', 'Nothing is paid now. The whole bill is owed to the supplier.', 'Unpaid'],
+                    ],
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'The payment cannot be more than the bill. The dialog shows the bill after discounts, what is paid and what remains.',
+                        'Only cash and bank accounts are offered for a payment.',
+                        'The system works out the bill total from the lines itself: goods − line discounts − bill discount + tax. The form shows the same figure.',
+                        'A draft with no payment is shown as unpaid. The edit form keeps the payment you saved and reopens the payment dialog.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) Currency and rate',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Item prices are kept in the company currency. A bill in another currency shows each price divided by the rate.',
+                        'Changing the currency converts every price on the bill, and changing it back gives exactly the original price. This also works for a currency whose stored rate is zero.',
+                        'If a currency has no stored rate, pick the currency first and then type the rate — the prices convert as you type it. A rate of zero is not accepted.',
+                        'A price you typed yourself is kept when only the rate of the same currency is changed. The price agreed on an order is kept the same way when the order becomes a bill.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'c) Free goods',
+                },
+                {
+                    type: 'p',
+                    text: 'The Free column is for units the supplier gives with the purchase. You do not pay for them, but they do arrive on the shelf, and what you paid is shared across all the units. Buying 45 with 5 free puts 50 on the shelf, and each unit costs the amount paid divided by 50.',
+                },
+                {
+                    type: 'h4',
+                    text: 'd) Discounts and tax',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'A discount lowers the cost of the goods; it is not booked as income. Each line is received at its value after its own discount and its share of the bill discount.',
+                        'A percentage bill discount is taken on the value of the goods, before line discounts. A fixed bill discount comes off the bill once and is shared across the lines by their value.',
+                        'Tax paid on a purchase cannot be reclaimed here, so it is part of what the goods cost.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'e) Rounding',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Prices and unit costs keep their own precision (up to four decimals). A bag bought at 3,500 and kept per kilo is held as 71.4286 per kilo, not 71.43.',
+                        'Every amount a document posts is rounded to cents: 49 kg at 71.4286 posts 3,500.00, not 3,500.0014. The same applies to sales, returns, transfers, adjustments and item openings, and balances are read at cents.',
+                        'Stock columns on the forms are shown in the unit of the line with two decimals.',
+                    ],
+                },
+            ],
+        },
+        {
+            id: 'costing-returns-orders',
+            number: '16',
+            title: 'Cost of goods received, drafts, returns and orders',
+            blocks: [
+                {
+                    type: 'h4',
+                    text: 'a) At what cost the stock arrives',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Each line is received at what it really cost: its value after discounts, plus tax, spread over the units bought and the free units that came with them. A purchase discount therefore lowers the cost of the stock.',
+                        'Stock cost is kept in the company currency, per unit of the line’s own measure.',
+                        'Landed cost is shared out on that same received value and quantity.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) Drafts',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'A draft keeps its goods off the ledger and records the incoming stock only as expected. It becomes real stock when the purchase is posted.',
+                        'Deleting a draft keeps its entry and its expected stock aside; restoring it from Deleted records brings both back, so it can still be posted.',
+                        'There are no separate Approve and Reject buttons on a purchase. It is saved as a draft, posted, or reversed.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'c) Returns',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'A purchase return reduces what you owe the supplier by the net value per unit — after discounts — free units included.',
+                        'You can return at most what was received.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'd) Reversing a purchase',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'A purchase that has a landed cost cannot be reversed until that landed cost is reversed first. The message names the landed cost.',
+                        'Reversing a purchase made from an order reopens the order.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'e) Orders and quotations',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'An order is billed once. While a purchase made from it is a draft or posted, a second purchase from the same order is refused.',
+                        'The order, the quotation and the purchase made from them use the same total formula, so the amount does not change on conversion.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'f) Common questions',
+                },
+                {
+                    type: 'table',
+                    headers: ['Question', 'Answer'],
+                    rows: [
+                        ['“Choose the cash or bank account”', 'A cash purchase needs the account the money comes from. Pick it in the payment card.'],
+                        ['“The payment cannot be more than the bill total”', 'Lower the amount paid, or check the discount — the bill is smaller than the payment.'],
+                        ['“Landed cost … was added to this purchase. Reverse the landed cost first.”', 'Reverse the landed cost, then reverse the purchase.'],
+                        ['“This purchase order has already been billed”', 'A purchase from that order already exists. Open it, or reverse it first.'],
+                        ['The price did not change after I changed the currency', 'The currency has no stored rate. Type the rate and the prices convert.'],
+                    ],
+                },
+            ],
+        },
+        {
+            id: 'orders-quotations',
+            number: '17',
+            title: 'Orders and quotations in detail',
+            blocks: [
+                {
+                    type: 'p',
+                    text: 'Purchase orders and purchase quotations are filled in like a purchase invoice, so the keyboard chapter applies to them too. This chapter lists what is specific to them.',
+                },
+                {
+                    type: 'h4',
+                    text: 'a) The form',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'Variant column: the variant is picked beside the item, so one item bought in several variants is entered once per variant. The column is on by default and can be switched off in the form settings.',
+                        'Stock column: shows the stock of the chosen variant in the chosen warehouse, in the unit of the line. An order or a quotation does not move stock.',
+                        'Barcode box: scan a barcode and the item is added as a line; scan it again and the quantity goes up by one.',
+                        'Enter moves through item, variant, quantity and price and on to the next line. Delete on a number, or on an item box with nothing typed in it, empties the whole line.',
+                        'Note: the note sits among the general fields at the top of the form.',
+                        'Dates: the delivery date of an order and the validity date of a quotation may be in the future. The expiry date of a line is stored in Gregorian and shown in the company calendar.',
+                        'The rate must be greater than zero, and it no longer multiplies the price.',
+                        'The Category column is no longer on these forms.',
+                        'The list shows the net amount of each order and quotation, after discounts.',
+                    ],
+                },
+                {
+                    type: 'h4',
+                    text: 'b) The detail page',
+                },
+                {
+                    type: 'list',
+                    items: [
+                        'It shows every field that was saved: supplier, warehouse, currency and rate, bill discount, note, who created and who last updated it and when, and each line with its batch, expiry date, quantity, free units, price, line discount and total.',
+                        'Once an order has been billed, the page says “Completed by purchase” and links to that purchase.',
+                        'The Reverse button on a posted order or quotation voids it: it can no longer be turned into a purchase.',
+                        'Reversing the purchase made from an order releases the order, so it can be billed again.',
+                    ],
+                },
+                {
+                    type: 'note',
+                    label: 'Sidebar names',
+                    text: 'In the sidebar and in the quick links the documents are listed under short names: Purchase, Order, Return and Quotation, with the quotation last.',
                 },
             ],
         },

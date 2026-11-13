@@ -251,8 +251,8 @@ export default {
                     type: 'table',
                     headers: ['Field', 'Notes'],
                     rows: [
-                        ['Name', 'Required. Everything else is optional.'],
-                        ['Code', 'Optional. If you use one, it must be unique.'],
+                        ['Name', 'Required. Everything else is optional. The name — and the phone and email, if you fill them — must not belong to another customer. A supplier may share them.'],
+                        ['Code', 'Optional. Left empty, the system gives the next number. It must be unique, and it cannot be changed once the customer is saved.'],
                         [
                             'Phone, WhatsApp, email, address, contact person',
                             'Appear on the customer statement.',
@@ -290,7 +290,8 @@ export default {
                     type: 'list',
                     items: [
                         'You already have a Cash customer. Use it for walk-in sales so you don\'t have to name every buyer.',
-                        'A customer with no sales or receipts can be deleted. Once they have real transactions, deactivate them instead.',
+                        'A customer with no transactions and a zero balance can be deleted. Otherwise the system refuses; set the customer inactive instead.',
+                        'On the customer’s page, three buttons — Active, Inactive, Blocked — set the status. Only an active customer is offered when you create a sale, receipt or payment.',
                     ],
                 },
                 {
@@ -307,7 +308,7 @@ export default {
                 },
                 {
                     type: 'p',
-                    text: 'Create them once as a customer and once as a supplier, and keep the two accounts separate. When you want to cancel what each owes the other, use Cash Transactions → Set-off. It cancels the two balances against each other without any cash moving.',
+                    text: 'Create them once as a customer and once as a supplier, and keep the two accounts separate. When you want to cancel what each owes the other, use Cash Transactions → Set-off. It cancels the two balances against each other without any cash moving. The same name, phone and email may be used on both accounts, because they are only checked against accounts of the same type.',
                 },
             ],
         },
