@@ -28,6 +28,7 @@ import CompanySetupProgress from '@/Components/Onboarding/CompanySetupProgress.v
 import CompanySettingsForm from '@/Components/Company/CompanySettingsForm.vue'
 import InvoiceDesigner from '@/Pages/Preferences/InvoiceDesigner.vue'
 import NextInput from '@/Components/next/NextInput.vue'
+import ImageCropDialog from '@/Components/ImageCropDialog.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import { useToast } from '@/Components/ui/toast/use-toast'
@@ -172,14 +173,19 @@ const displayName = computed(() => {
 const initials = computed(() => (form.name_en || seed.name || '?').split(/\s+/).filter(Boolean).slice(0, 2)
     .map((word) => word[0]).join('').toUpperCase())
 
+const logoToCrop = ref(null)
+
 function chooseLogo(event) {
     const file = event.target.files?.[0]
     if (!file) return
-    logoFile.value = file
-    const reader = new FileReader()
-    reader.onload = (e) => { logoPreview.value = e.target.result }
-    reader.readAsDataURL(file)
+    logoToCrop.value = file
     event.target.value = ''
+}
+
+function applyLogo(file, dataUrl) {
+    logoFile.value = file
+    logoPreview.value = dataUrl
+    logoToCrop.value = null
 }
 
 function pickBusinessType(id) {
@@ -462,7 +468,7 @@ const optionCard = (selected) => [
 
                     <div class="hidden rounded-2xl border border-border bg-card/80 p-5 shadow-sm backdrop-blur lg:block">
                         <div class="flex items-center gap-3">
-                            <img v-if="logoPreview" :src="logoPreview" alt="" class="size-12 rounded-xl object-cover" />
+                            <img v-if="logoPreview" :src="logoPreview" alt="" class="size-12 rounded-xl object-contain" />
                             <div v-else class="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-400 text-base font-semibold text-white">
                                 {{ initials }}
                             </div>
@@ -506,8 +512,15 @@ const optionCard = (selected) => [
                                     </div>
                                 </div>
 
+                                <ImageCropDialog
+                                    v-if="logoToCrop"
+                                    :file="logoToCrop"
+                                    filename="logo.png"
+                                    @apply="applyLogo"
+                                    @cancel="logoToCrop = null"
+                                />
                                 <div class="flex flex-wrap items-center gap-4">
-                                    <img v-if="logoPreview" :src="logoPreview" alt="" class="size-16 rounded-xl object-cover ring-1 ring-border" />
+                                    <img v-if="logoPreview" :src="logoPreview" alt="" class="size-16 rounded-xl object-contain ring-1 ring-border" />
                                     <div v-else class="flex size-16 items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground">
                                         <ImagePlus class="size-6" />
                                     </div>

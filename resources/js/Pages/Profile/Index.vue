@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { useForm, router, Link } from '@inertiajs/vue3'
 import { usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/Layouts/Layout.vue'
+import ImageCropDialog from '@/Components/ImageCropDialog.vue'
 import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
 import { Label } from '@/Components/ui/label'
@@ -57,88 +58,22 @@ const profileForm = useForm({
     photo: null,
 })
 
-// Zoom / pan editor: the picture starts fitted whole inside the square and can be
-// zoomed in and dragged; what shows inside the circle is what gets uploaded.
-const CROP_VIEW = 288
-const CROP_OUT = 256
-const cropOpen = ref(false)
-const cropCanvas = ref(null)
-const cropZoom = ref(1)
-const cropImg = ref(null)
-const cropPos = ref({ x: 0, y: 0 })
-let cropDrag = null
-
-function cropScale(size) {
-    const img = cropImg.value
-    return Math.min(size / img.width, size / img.height) * cropZoom.value
-}
-
-function drawCrop(canvas, size, k = 1) {
-    const img = cropImg.value
-    if (!canvas || !img) return
-    const ctx = canvas.getContext('2d')
-    const s = cropScale(size)
-    ctx.clearRect(0, 0, size, size)
-    ctx.drawImage(
-        img,
-        size / 2 + cropPos.value.x * k - (img.width * s) / 2,
-        size / 2 + cropPos.value.y * k - (img.height * s) / 2,
-        img.width * s,
-        img.height * s,
-    )
-}
-
-function redrawCrop() {
-    const canvas = cropCanvas.value
-    drawCrop(canvas, CROP_VIEW)
-}
+const photoToCrop = ref(null)
 
 function onPhotoChange() {
     const file = photoInput.value?.files?.[0]
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => {
-        cropImg.value = img
-        cropZoom.value = 1
-        cropPos.value = { x: 0, y: 0 }
-        cropOpen.value = true
-        nextTick(redrawCrop)
-    }
-    img.src = url
+    if (file) photoToCrop.value = file
 }
 
 function cancelCrop() {
-    cropOpen.value = false
+    photoToCrop.value = null
     if (photoInput.value) photoInput.value.value = null
 }
 
-function onCropDown(e) {
-    cropDrag = { x: e.clientX, y: e.clientY, ox: cropPos.value.x, oy: cropPos.value.y }
-    e.currentTarget.setPointerCapture(e.pointerId)
-}
-function onCropMove(e) {
-    if (!cropDrag) return
-    cropPos.value = { x: cropDrag.ox + e.clientX - cropDrag.x, y: cropDrag.oy + e.clientY - cropDrag.y }
-    redrawCrop()
-}
-function onCropUp() { cropDrag = null }
-function onCropWheel(e) {
-    cropZoom.value = Math.min(5, Math.max(0.5, cropZoom.value - e.deltaY * 0.002))
-    redrawCrop()
-}
-
-function applyCrop() {
-    const out = document.createElement('canvas')
-    out.width = out.height = CROP_OUT
-    drawCrop(out, CROP_OUT, CROP_OUT / CROP_VIEW)
-    out.toBlob((blob) => {
-        if (!blob) return
-        const file = new File([blob], 'avatar.png', { type: 'image/png' })
-        profileForm.photo = file
-        photoPreview.value = out.toDataURL('image/png')
-        cropOpen.value = false
-    }, 'image/png')
+function applyCrop(file, dataUrl) {
+    profileForm.photo = file
+    photoPreview.value = dataUrl
+    photoToCrop.value = null
 }
 
 function removePhoto() {
@@ -366,41 +301,15 @@ function roleLabel(roles) {
                                 </div>
                                 <p v-if="profileForm.errors.photo" class="text-sm text-destructive mt-2">{{ profileForm.errors.photo }}</p>
 
-                                <!-- Zoom / pan editor -->
-                                <Teleport to="body">
-                                    <div v-if="cropOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-                                        <div class="w-full max-w-sm rounded-xl border border-border bg-background p-5 space-y-4 shadow-xl">
-                                            <div>
-                                                <p class="font-semibold text-foreground">{{ t('profile.profile.avatar.adjust_title') }}</p>
-                                                <p class="text-xs text-muted-foreground">{{ t('profile.profile.avatar.adjust_hint') }}</p>
-                                            </div>
-                                            <div class="relative mx-auto touch-none select-none" :style="{ width: CROP_VIEW + 'px', height: CROP_VIEW + 'px', maxWidth: '100%' }">
-                                                <canvas
-                                                    ref="cropCanvas"
-                                                    :width="CROP_VIEW"
-                                                    :height="CROP_VIEW"
-                                                    class="h-full w-full cursor-grab rounded-lg bg-muted active:cursor-grabbing"
-                                                    @pointerdown="onCropDown"
-                                                    @pointermove="onCropMove"
-                                                    @pointerup="onCropUp"
-                                                    @pointercancel="onCropUp"
-                                                    @wheel.prevent="onCropWheel"
-                                                />
-                                                <div class="pointer-events-none absolute inset-0 rounded-full ring-2 ring-white/80"
-                                                     style="box-shadow: 0 0 0 999px rgba(0,0,0,0.45)" />
-                                            </div>
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-xs text-muted-foreground">{{ t('profile.profile.avatar.zoom') }}</span>
-                                                <input v-model.number="cropZoom" type="range" min="0.5" max="5" step="0.01"
-                                                       class="flex-1 accent-violet-500" @input="redrawCrop" />
-                                            </div>
-                                            <div class="flex justify-end gap-2">
-                                                <Button type="button" variant="outline" @click="cancelCrop">{{ t('profile.profile.avatar.cancel') }}</Button>
-                                                <Button type="button" @click="applyCrop">{{ t('profile.profile.avatar.apply') }}</Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Teleport>
+                                <ImageCropDialog
+                                    v-if="photoToCrop"
+                                    :file="photoToCrop"
+                                    round
+                                    :output="256"
+                                    filename="avatar.png"
+                                    @apply="applyCrop"
+                                    @cancel="cancelCrop"
+                                />
                             </div>
 
                             <Separator />
