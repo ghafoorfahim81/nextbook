@@ -941,9 +941,9 @@ function logout() {
                                     size="lg"
                                     class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                                 >
-                                    <Avatar class="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
+                                    <Avatar class="h-8 w-8 rounded-lg ring-1 ring-border">
                                         <AvatarImage :src="profilePhotoUrl" :alt="data.user.name" />
-                                        <AvatarFallback class="rounded-lg">
+                                        <AvatarFallback class="rounded-lg bg-primary text-primary-foreground">
                                             {{ user?.name?.charAt(0) || 'NB' }}
                                         </AvatarFallback>
                                     </Avatar>
@@ -957,9 +957,9 @@ function logout() {
                             <DropdownMenuContent class="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" side="bottom" align="end" :side-offset="4">
                                 <DropdownMenuLabel class="p-0 font-normal">
                                     <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                                        <Avatar class="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
+                                        <Avatar class="h-8 w-8 rounded-lg ring-1 ring-border">
                                             <AvatarImage :src="profilePhotoUrl" :alt="data.user.name" />
-                                            <AvatarFallback class="rounded-lg">
+                                            <AvatarFallback class="rounded-lg bg-primary text-primary-foreground">
                                                 {{ user?.name?.charAt(0) || 'NB' }}
                                             </AvatarFallback>
                                         </Avatar>

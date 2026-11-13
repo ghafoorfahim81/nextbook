@@ -15,7 +15,12 @@
             "subtitle": "You can change your avatar here or remove the current avatar to revert to the default initials.",
             "upload_label": "Upload new avatar",
             "hint": "The ideal image size is 192 × 192 pixels. The maximum file size allowed is 2 MB.",
-            "remove": "Remove avatar"
+            "remove": "Remove avatar",
+            "adjust_title": "Adjust image",
+            "adjust_hint": "Drag the image to move it and use the slider to zoom in or out.",
+            "zoom": "Zoom",
+            "apply": "Apply",
+            "cancel": "Cancel"
         },
         "name": "Full Name",
         "email": "Email Address",

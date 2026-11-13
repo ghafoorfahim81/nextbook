@@ -40,7 +40,9 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            // Relative on purpose: an absolute URL built from APP_URL breaks whenever
+            // APP_URL differs from the address the browser used (local port, subdomain).
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
